@@ -1,0 +1,11 @@
+{
+  "name": "design-nexus",
+  "owner": { "name": "tkc310" },
+  "plugins": [
+    {
+      "name": "design-nexus",
+      "source": "./",
+      "description": "Distinctive, accessible UI design with built-in checks and a self-improvement loop."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700" rel="stylesheet">
+<style>
+  body { font-family: Inter, sans-serif; margin: 0; background: #0b0b12; color: #f5f5f5; }
+  .hero { background: linear-gradient(135deg, #6366f1, #a855f7); padding: 80px; text-align: center; border-radius: 24px; }
+  .hero h1 { background: linear-gradient(90deg,#fff,#c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .wide { width: 1400px; }
+  button { outline: none; transition: all .3s; border-radius: 20px; }
+  .card { border-radius: 24px; backdrop-filter: blur(12px); padding: 24px; }
+  .muted { color: #555566; font-size: 11px; }
+  @keyframes float { from { transform: translateY(0) } to { transform: translateY(-10px) } }
+  .float { animation: float 2s infinite alternate; }
+  .x1{border-radius:20px}.x2{border-radius:20px}.x3{border-radius:20px}.x4{border-radius:20px}.x5{border-radius:20px}
+  .g1{backdrop-filter: blur(4px)}.g2{backdrop-filter: blur(4px)}.g3{backdrop-filter: blur(4px)}
+</style>
+</head>
+<body>
+  <section class="hero">
+    <h1>🚀 Supercharge your workflow</h1>
+    <p>The next-generation platform to seamlessly elevate your team.</p>
+    <button>Get started</button> <button>Learn more</button>
+    <div class="wide float"></div>
+  </section>
+  <div class="card"><span>01</span> Fast</div>
+  <div class="card"><span>02</span> Secure</div>
+  <div class="card"><span>03</span> Scalable</div>
+  <div onClick="go()">Open</div>
+  <input placeholder="Email">
+  <button><svg width="16" height="16"><path d="M0 0h16v16H0z"/></svg></button>
+  <img src="hero.png">
+  <p class="muted">© 2026 Lorem ipsum</p>
+</body>
+</html>

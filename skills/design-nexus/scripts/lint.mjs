@@ -1,0 +1,300 @@
+#!/usr/bin/env node
+// design-nexus static lint. Node 18+, no dependencies.
+// Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json] [--surface mobile]
+// Exit: 0 clean, 2 floor findings, 1 usage error.
+// Suppress: `design-nexus: keep R02 because <reason>` or `design-nexus-disable R02` anywhere in a file.
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  parseColor, hsl, normHex, readTokens, tokenColors, OVERUSED_FONTS, primaryFamily, printFindings, summarize, tierOf,
+} from './lib.mjs';
+
+const EXT = new Set(['.html', '.htm', '.css', '.scss', '.sass', '.less', '.jsx', '.tsx', '.js', '.ts', '.vue', '.svelte', '.astro', '.mdx']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'out', 'coverage', '.design-nexus', 'vendor']);
+
+const args = process.argv.slice(2);
+const opt = { json: false, design: null, targets: [] };
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--json') opt.json = true;
+  else if (args[i] === '--design') opt.design = args[++i];
+  else if (args[i] === '--help' || args[i] === '-h') { usage(); process.exit(0); }
+  else opt.targets.push(args[i]);
+}
+if (!opt.targets.length) { usage(); process.exit(1); }
+
+function usage() {
+  console.log('usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json]');
+}
+
+function walk(p, out) {
+  const st = fs.statSync(p);
+  if (st.isDirectory()) {
+    for (const e of fs.readdirSync(p)) if (!SKIP_DIRS.has(e)) walk(path.join(p, e), out);
+  } else if (EXT.has(path.extname(p).toLowerCase())) out.push(p);
+}
+
+const files = [];
+for (const t of opt.targets) walk(t, files);
+
+// Auto-detect DESIGN.md next to the first target when not given.
+if (!opt.design) {
+  for (const t of opt.targets) {
+    const dir = fs.statSync(t).isDirectory() ? t : path.dirname(t);
+    const cand = path.join(dir, 'DESIGN.md');
+    if (fs.existsSync(cand)) { opt.design = cand; break; }
+  }
+}
+const tokens = opt.design && fs.existsSync(opt.design) ? readTokens(opt.design) : null;
+const allowed = tokens ? new Set(Object.values(tokenColors(tokens)).map(normHex)) : null;
+
+const findings = [];
+const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
+const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
+
+// Aggregate state across files.
+const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [] };
+
+const HYPE = [
+  'lorem ipsum', 'welcome to', 'unlock the', 'unlock your', 'elevate your', 'seamless', 'seamlessly',
+  'revolutionize', 'revolutionary', 'supercharge', 'empower', 'next-generation', 'next-gen', 'cutting-edge',
+  'game-changer', 'game changing', 'game-changing', 'unleash', 'take your .{1,20} to the next level',
+  '革新的な', '次世代の', 'シームレスな', 'を加速', '圧倒的な', '新時代の',
+];
+const HYPE_RE = new RegExp(`(${HYPE.join('|')})`, 'gi');
+const CJK_RE = /[぀-ヿ㐀-鿿]/;
+const EMOJI_RE = /\p{Extended_Pictographic}/u;
+
+for (const file of files) {
+  const text = fs.readFileSync(file, 'utf8');
+  const ext = path.extname(file).toLowerCase();
+  const rel = path.relative(process.cwd(), file) || file;
+  const isMarkup = !['.css', '.scss', '.sass', '.less'].includes(ext);
+  const isHtmlDoc = /<html[\s>]/i.test(text);
+  const hasCJK = CJK_RE.test(text.replace(/<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''));
+
+  const kept = new Map();
+  for (const m of text.matchAll(/design-nexus:\s*keep\s+([FRN]\d{2})\s+because\s+([^\n*>]+)/gi)) kept.set(m[1].toUpperCase(), m[2].trim());
+  const disabled = new Set();
+  for (const m of text.matchAll(/design-nexus-disable\s+([FRN]\d{2}(?:[\s,]+[FRN]\d{2})*)/gi)) {
+    for (const id of m[1].split(/[\s,]+/)) disabled.add(id.toUpperCase());
+  }
+
+  const seenAt = new Set();
+  const add = (id, idx, message, raw) => {
+    if (disabled.has(id)) return;
+    const key = `${id}:${idx == null ? "" : lineOf(text, idx)}:${id === "R03" ? "" : message}`;
+    if (seenAt.has(key)) return;
+    seenAt.add(key);
+    const f = { id, tier: tierOf(id), file: rel, line: idx == null ? null : lineOf(text, idx), message };
+    if (raw) f.snippet = snip(raw);
+    if (kept.has(id)) {
+      if (id.startsWith('F')) f.message += ' (floor checks cannot be kept)';
+      else f.kept = kept.get(id);
+    }
+    findings.push(f);
+  };
+  const each = (re, fn) => { for (const m of text.matchAll(re)) fn(m); };
+
+  // F02 focus removed without a focus-visible replacement in this file
+  const hasFocusStyle = /:focus-visible|focus-visible:|:focus\s*\{[^}]*(outline|box-shadow|border)|focus:ring|focus:outline-|focus-within:ring/.test(text);
+  each(/outline\s*:\s*(none|0)\b|\boutline-none\b/g, (m) => {
+    if (!hasFocusStyle) add('F02', m.index, 'Focus outline removed with no :focus-visible style in this file', m[0]);
+  });
+
+  if (isMarkup) {
+    // F03 / N04 images
+    each(/<(img|Image)\b([^>]*?)\/?>/g, (m) => {
+      const attrs = m[2];
+      if (!/\balt\s*=/.test(attrs)) add('F03', m.index, `<${m[1]}> without alt`, m[0]);
+      if (m[1] === 'img' && !/\bwidth\s*=/.test(attrs) && !/\bheight\s*=/.test(attrs) && !/\bfill\b/.test(attrs)) {
+        add('N04', m.index, '<img> without width/height (layout shift)', m[0]);
+      }
+    });
+
+    // F04 / N05 document basics
+    if (isHtmlDoc) {
+      const htmlTag = text.match(/<html\b[^>]*>/i);
+      if (htmlTag && !/\blang\s*=/.test(htmlTag[0])) add('F04', htmlTag.index, '<html> without lang', htmlTag[0]);
+      if (!/<meta[^>]+name=["']viewport["']/i.test(text)) add('F04', null, 'Missing viewport meta');
+      if (!/<title>[^<]+<\/title>/i.test(text)) add('N05', null, 'Missing <title>');
+      if (!/<meta[^>]+name=["']description["']/i.test(text)) add('N05', null, 'Missing meta description');
+    }
+
+    // F06 click handlers on non-interactive elements
+    each(/<(div|span|li|p|section|article|img|td|tr)\b([^>]*?)\b(onClick|onclick|@click|v-on:click|on:click)\s*=([^>]*)>/g, (m) => {
+      const attrs = m[2] + m[4];
+      if (!/\brole\s*=/.test(attrs) || !/\btab[iI]ndex\s*=/.test(attrs)) {
+        add('F06', m.index, `Click handler on <${m[1]}> without role and tabIndex; use <button> or <a>`, m[0]);
+      }
+    });
+
+    // F07 inputs without labels
+    each(/<(input|select|textarea)\b([^>]*?)\/?>/g, (m) => {
+      const attrs = m[2];
+      const type = (attrs.match(/\btype\s*=\s*["']?(\w+)/) || [])[1];
+      if (['hidden', 'submit', 'button', 'reset', 'image'].includes(type)) return;
+      if (/\baria-label(ledby)?\s*=/.test(attrs) || /\btitle\s*=/.test(attrs)) return;
+      const id = (attrs.match(/\bid\s*=\s*["'{]?([\w-]+)/) || [])[1];
+      if (id && new RegExp(`(for|htmlFor)\\s*=\\s*["'{]?${id}\\b`).test(text)) return;
+      const before = text.slice(Math.max(0, m.index - 400), m.index);
+      const lastOpen = before.lastIndexOf('<label');
+      if (lastOpen !== -1 && before.indexOf('</label>', lastOpen) === -1) return;
+      add('F07', m.index, `<${m[1]}> without a label${/placeholder=/.test(attrs) ? ' (placeholder is not a label)' : ''}`, m[0]);
+    });
+
+    // F10 icon-only buttons/links without accessible name
+    each(/<(button|a)\b([^>]*)>\s*(<svg[\s\S]*?<\/svg>|<[A-Z]\w*(?:Icon)?\b[^>]*\/>|<i\b[^>]*><\/i>|<span[^>]*class=["'][^"']*icon[^"']*["'][^>]*><\/span>)\s*<\/\1>/g, (m) => {
+      const attrs = m[2];
+      if (/\baria-label(ledby)?\s*=|\btitle\s*=/.test(attrs)) return;
+      if (/<title>/.test(m[3])) return;
+      add('F10', m.index, `Icon-only <${m[1]}> without aria-label`, m[0]);
+    });
+
+    // R05 emoji as icons in headings, buttons, list items
+    each(/<(h[1-6]|button|li|a)\b[^>]*>([^<]{0,160})/g, (m) => {
+      if (EMOJI_RE.test(m[2])) add('R05', m.index, `Emoji used as an icon in <${m[1]}>`, m[0]);
+    });
+
+    // R09 template hero CTA pair
+    const ctaPair = /(get started|start free|try (it )?free)[\s\S]{0,400}(learn more|see how it works|watch demo)/i.exec(text);
+    if (ctaPair) add('R09', ctaPair.index, 'Template hero CTA pair ("Get started" + "Learn more"); write actions specific to this product', ctaPair[0].slice(0, 80));
+
+    // R11 numbered markers
+    const markers = [...text.matchAll(/>\s*0[1-9]\.?\s*</g)];
+    if (markers.length >= 3) add('R11', markers[0].index, `${markers.length} numbered markers (01/02/03…): confirm they encode a real sequence`);
+  }
+
+  // R10 hype/template copy (skip code comments)
+  const textOnly = text.replace(/<!--[\s\S]*?-->|\/\*[\s\S]*?\*\//g, (s) => ' '.repeat(s.length));
+  const hype = new Set();
+  for (const m of textOnly.matchAll(HYPE_RE)) {
+    const k = m[1].toLowerCase();
+    if (hype.has(k)) continue;
+    hype.add(k);
+    add('R10', m.index, `Template/hype copy: "${m[1]}"`);
+  }
+
+  // F12 tiny text
+  each(/font-size\s*:\s*([\d.]+)(px|rem|em)\b/g, (m) => {
+    const px = m[2] === 'px' ? +m[1] : +m[1] * 16;
+    if (px < 12) add('F12', m.index, `Font size ${m[1]}${m[2]} is below 12px`, m[0]);
+  });
+  each(/\btext-\[(\d+(?:\.\d+)?)(px|rem)\]/g, (m) => {
+    const px = m[2] === 'px' ? +m[1] : +m[1] * 16;
+    if (px < 12) add('F12', m.index, `Font size ${m[1]}${m[2]} is below 12px`, m[0]);
+  });
+
+  // R01 overused primary font
+  const fontDecls = [
+    ...[...text.matchAll(/font-family\s*:\s*([^;}{"\n]+(?:"[^"]*"[^;}{\n]*)*)/g)].map((m) => [m.index, m[1]]),
+    ...[...text.matchAll(/fontFamily\s*:\s*\[?\s*["'`]([^"'`]+)/g)].map((m) => [m.index, m[1]]),
+    ...[...text.matchAll(/fonts\.googleapis\.com\/css2?\?family=([\w+]+)/g)].map((m) => [m.index, m[1].replace(/\+/g, ' ')]),
+    ...[...text.matchAll(/import\s*\{\s*(\w+)\s*\}\s*from\s*["']next\/font\/google["']/g)].map((m) => [m.index, m[1].replace(/_/g, ' ')]),
+  ];
+  const seenFont = new Set();
+  for (const [idx, decl] of fontDecls) {
+    const fam = primaryFamily(decl);
+    if (fam.startsWith('var(') || fam === 'inherit') continue;
+    if (OVERUSED_FONTS.includes(fam) && !seenFont.has(fam)) {
+      seenFont.add(fam);
+      add('R01', idx, `"${fam}" as the primary family; choose a face with a voice that fits the subject`);
+    }
+    if (/noto sans jp/i.test(decl) && decl.split(',').length <= 2 && !seenFont.has('noto')) {
+      seenFont.add('noto');
+      add('R01', idx, 'Noto Sans JP alone; consider a Latin pairing or a family with more voice (see japanese.md)');
+    }
+  }
+
+  // R02 purple/indigo gradients
+  each(/\b(from|via|to)-(indigo|purple|violet|fuchsia)-\d{2,3}\b/g, (m) => add('R02', m.index, 'Purple/indigo gradient utility', m[0]));
+  each(/(linear|radial|conic)-gradient\(([^;]*?)\)\s*[;"'}]/g, (m) => {
+    const hexes = m[2].match(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g) || [];
+    const purple = hexes.some((h) => {
+      const c = parseColor(h);
+      if (!c) return false;
+      const { h: hue, s, l } = hsl(c);
+      return hue >= 235 && hue <= 300 && s > 0.35 && l > 0.2 && l < 0.85;
+    });
+    if (purple) add('R02', m.index, 'Purple/indigo gradient', m[0]);
+  });
+
+  // R03 gradient text
+  each(/background-clip\s*:\s*text|\bbg-clip-text\b/g, (m) => add('R03', m.index, 'Gradient-filled text', m[0]));
+
+  // R12 transition: all
+  each(/transition\s*:\s*all\b|\btransition-all\b/g, (m) => add('R12', m.index, 'transition: all; list the properties you animate', m[0]));
+
+  // R14 Japanese typesetting
+  if (hasCJK) {
+    each(/font-style\s*:\s*italic|\bitalic\b(?=[^<>]*["'])/g, (m) => add('R14', m.index, 'Italic with Japanese text (no true italic in Japanese fonts)', m[0]));
+    each(/letter-spacing\s*:\s*-[\d.]+|\btracking-(tight|tighter)\b/g, (m) => add('R14', m.index, 'Negative letter-spacing with Japanese text', m[0]));
+    const selectorAt = (idx) => {
+      const open = text.lastIndexOf('{', idx);
+      const close = text.lastIndexOf('}', open);
+      return open === -1 ? '' : text.slice(close + 1, open);
+    };
+    each(/line-height\s*:\s*(1(?:\.[0-4]\d*)?)\s*[;}"']|\bleading-(none|tight|snug)\b/g, (m) => {
+      if (/h[1-6]|title|heading|display|hero|button|\.btn|label|badge|tag|nav|big|stat|kpi|figure|number|metric/i.test(selectorAt(m.index))) return;
+      if (m[2]) {
+        const tagStart = text.lastIndexOf('<', m.index);
+        if (/^<(h[1-6]|button|label|nav)/i.test(text.slice(tagStart, tagStart + 8))) return;
+      }
+      add('R14', m.index, 'Tight line-height on Japanese body text: use 1.7–1.9', m[0]);
+    });
+  }
+
+  // N01 z-index
+  each(/z-index\s*:\s*(\d{4,})|\bz-\[(\d{4,})\]/g, (m) => add('N01', m.index, `z-index ${m[1] || m[2]}; use a layering scale`, m[0]));
+  // N02 !important
+  const imp = [...text.matchAll(/!important/g)];
+  if (imp.length > 5) add('N02', imp[0].index, `${imp.length} !important declarations`);
+  // N03 inline styles
+  if (isMarkup) {
+    const inl = [...text.matchAll(/\sstyle\s*=\s*["{]/g)];
+    if (inl.length > 10) add('N03', inl[0].index, `${inl.length} inline styles; move values into tokens`);
+  }
+  // N07 heading balance
+  if (/<h1\b/.test(text) && !/text-wrap\s*:\s*balance|\btext-balance\b/.test(text) && isHtmlDoc) {
+    add('N07', null, 'Headings without text-wrap: balance');
+  }
+
+  // aggregates
+  for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
+    const before = text.slice(Math.max(0, m.index - 6), m.index);
+    if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
+    const h = normHex(m[0]);
+    if (!h) continue;
+    if (!agg.hexes.has(h)) agg.hexes.set(h, { file: rel, line: lineOf(text, m.index) });
+  }
+  const mot = /@keyframes|\banimation\s*:|\banimate-[a-z]|framer-motion|from ["']motion|gsap|\btransition\s*:\s*(?!none)/.exec(text);
+  if (mot && !agg.motionAt) agg.motionAt = { file: rel, line: lineOf(text, mot.index) };
+  if (/prefers-reduced-motion|motion-reduce:|motion-safe:|useReducedMotion|reducedMotion/.test(text)) agg.hasReducedMotion = true;
+  for (const m of text.matchAll(/border-radius\s*:\s*(\d+)px|\brounded-(2xl|3xl|\[\d+px\])/g)) {
+    const px = m[1] ? +m[1] : null;
+    if (px !== null && (px < 16 || px >= 999)) continue;
+    agg.radiusBig.push({ file: rel, line: lineOf(text, m.index) });
+  }
+  for (const m of text.matchAll(/backdrop-filter\s*:\s*blur|\bbackdrop-blur(-\w+)?\b/g)) agg.blur.push({ file: rel, line: lineOf(text, m.index) });
+}
+
+// Cross-file checks
+const push = (id, at, message) => findings.push({ id, tier: tierOf(id), file: at?.file, line: at?.line, message });
+if (agg.motionAt && !agg.hasReducedMotion) push('F05', agg.motionAt, 'Motion without any prefers-reduced-motion handling');
+if (agg.radiusBig.length > 8) push('R06', agg.radiusBig[0], `${agg.radiusBig.length} large radii (≥16px); reserve big radius for elements that need it`);
+if (agg.blur.length > 3) push('R07', agg.blur[0], `${agg.blur.length} backdrop blurs; glass on many surfaces reads as template`);
+if (allowed) {
+  const off = [...agg.hexes.entries()].filter(([h]) => !allowed.has(h));
+  for (const [h, at] of off.slice(0, 10)) push('R08', at, `${h} is not a DESIGN.md token`);
+  if (off.length > 10) push('R08', null, `…and ${off.length - 10} more off-token colors`);
+} else if (agg.hexes.size > 12) {
+  push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens`);
+}
+
+const counts = summarize(findings);
+if (opt.json) {
+  console.log(JSON.stringify({ tool: 'design-nexus-lint', files: files.length, design: opt.design || null, counts, findings }, null, 2));
+} else {
+  printFindings(findings, `design-nexus lint: ${files.length} file(s)${opt.design ? `, tokens from ${opt.design}` : ''}`);
+  if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
+}
+process.exit(counts.floor ? 2 : 0);

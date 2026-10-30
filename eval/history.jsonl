@@ -1,0 +1,4 @@
+{"run":"20261030-2204-v0.1.0-test","version":"0.1.0","commit":null,"at":"2026-10-30T22:05:20.193Z","mean_auto":20,"mean_judge":43.6,"mean_total":null,"gate_failures":1}
+{"run":"20261030-2204-v0.1.0-test","version":"0.1.0","commit":null,"at":"2026-10-30T22:05:43.896Z","mean_auto":20,"mean_judge":43.6,"mean_total":null,"gate_failures":1}
+{"run":"20261030-2208-v0.1.0-smoke","version":"0.1.0","commit":null,"at":"2026-10-30T22:09:50.543Z","mean_auto":22,"mean_judge":null,"mean_total":null,"gate_failures":1}
+{"run":"20261030-2208-v0.1.0-smoke","version":"0.1.0","commit":null,"at":"2026-10-30T22:10:15.343Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
