@@ -27,7 +27,7 @@ When instructions disagree, the higher one wins. Never load another design skill
 | **system** | No `DESIGN.md` yet and work will span several screens, or the user asks to set up a design system | `templates/DESIGN.md`, `references/direction.md` |
 | **retro** | After the user gives design feedback, or at the end of a session | `references/retro.md` |
 
-Pick the surface too, and read only that reference: `references/surface-marketing.md` (landing, portfolio, launch), `references/surface-product.md` (dashboards, admin, settings, data tools), `references/surface-mobile.md` (iOS, Android, React Native, small screens). Read `references/japanese.md` whenever the UI contains Japanese text. Read `references/motion.md` before adding any animation.
+Pick the surface too, and read only that reference: `references/surface-marketing.md` (landing, portfolio, launch), `references/surface-product.md` (dashboards, admin, settings, data tools), `references/surface-mobile.md` (iOS, Android, React Native, small screens). Read `references/japanese.md` whenever the UI contains Japanese text. Read `references/motion.md` before adding any animation. Read `references/handoff.md` when the project uses a component library, or the deliverable is a Figma or Canva file.
 
 ## Budget
 
@@ -40,14 +40,14 @@ State the budget you chose in one line before starting.
 ## Build loop
 
 1. **Ground.** Read `DESIGN.md` if it exists and obey it. Otherwise name the subject, the audience, and the page's single job in one sentence each. If the brief is ambiguous, ask at most five intake questions in one message, and only those whose answer would change the direction (audience, the one action, brand constraints, real material such as copy, numbers, screenshots, logos). If the agent cannot wait for answers, state your assumptions and proceed. Use plausible, specific content from the subject's world when real material is missing, and say so. Never invent testimonials, metrics, or customer logos presented as real.
-2. **Directions** (standard/deep). Propose three directions that differ in structure, not just color. Each is two lines: a name, and what makes it belong to this subject. Recommend one and proceed with it unless the user picks.
-3. **Token plan.** Before code, write: 4–6 named colors with hex and their role, type roles (display / body / utility) with families and a scale, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for.
-4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R-series).
+2. **Directions** (standard/deep). Propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Recommend one and proceed with it unless the user picks.
+3. **Token plan.** Before code, write: 4–6 named colors with hex and their role, type roles (display / body / utility) with families, a scale, and how each is loaded, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for.
+4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–d, including the agent house look).
 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
 7. **Critique.** Look at the screenshots (or the code, if no render is possible) against `references/audit.md`. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
 8. **Remove one accessory** before finishing: the least necessary decoration, effect, or label.
-9. **Record.** Update `DESIGN.md` with new tokens or patterns and add rejected ideas to its *Learnings* section, so the next pass doesn't repeat them.
+9. **Record.** Update `DESIGN.md` with new tokens or patterns, add rejected ideas to its *Learnings*, and add one line to *Looks used* (value, palette, type genre, surface), so later work doesn't repeat itself.
 
 Report at the end: the direction, the signature, the lint and render results (counts by tier), and anything kept with a reason.
 

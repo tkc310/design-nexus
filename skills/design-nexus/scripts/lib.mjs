@@ -58,16 +58,73 @@ export const normHex = (hex) => {
 
 // ---------- DESIGN.md tokens ----------
 
-// Reads the ```tokens block of a DESIGN.md: one `key: value` per line.
+// Reads design tokens from a DESIGN.md. Two formats:
+// 1. design-nexus: a ```tokens block, one `key: value` per line.
+// 2. Google's DESIGN.md spec (github.com/google-labs-code/design.md): YAML front matter with
+//    colors / typography / rounded / spacing / components. Mapped onto the same flat keys.
 export function readTokens(file) {
   const text = fs.readFileSync(file, 'utf8');
   const block = text.match(/```tokens\s*\n([\s\S]*?)```/);
-  if (!block) return null;
-  const tokens = {};
-  for (const line of block[1].split('\n')) {
-    const m = line.match(/^\s*([\w.-]+)\s*:\s*(.+?)\s*$/);
-    if (m) tokens[m[1]] = m[2];
+  if (block) {
+    const tokens = {};
+    for (const line of block[1].split('\n')) {
+      const m = line.match(/^\s*([\w.-]+)\s*:\s*(.+?)\s*$/);
+      if (m) tokens[m[1]] = m[2];
+    }
+    return tokens;
   }
+  const fm = text.match(/^---\s*\n([\s\S]*?)\n---/);
+  return fm ? fromGoogleSpec(parseYamlish(fm[1])) : null;
+}
+
+// Enough YAML for nested maps of scalars (the shape the DESIGN.md spec uses). Not a general parser.
+function parseYamlish(src) {
+  const root = {};
+  const stack = [{ indent: -1, obj: root }];
+  for (const raw of src.split('\n')) {
+    if (!raw.trim() || raw.trim().startsWith('#')) continue;
+    const indent = raw.match(/^ */)[0].length;
+    const m = raw.trim().match(/^(["']?)([^"':]+)\1\s*:\s*(.*)$/);
+    if (!m) continue;
+    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
+    const parent = stack[stack.length - 1].obj;
+    const value = m[3].replace(/\s+#.*$/, '').trim().replace(/^(["'])(.*)\1$/, '$2');
+    if (value === '') {
+      parent[m[2]] = {};
+      stack.push({ indent, obj: parent[m[2]] });
+    } else parent[m[2]] = value;
+  }
+  return root;
+}
+
+function fromGoogleSpec(y) {
+  const tokens = {};
+  const colors = y.colors || {};
+  const resolve = (v) => {
+    const ref = typeof v === 'string' && v.match(/^\{colors\.([\w-]+)\}$/);
+    return ref ? colors[ref[1]] : v;
+  };
+  for (const [k, v] of Object.entries(colors)) tokens[`color.${k}`] = v;
+  for (const [k, v] of Object.entries(y.typography || {})) if (v && v.fontFamily) tokens[`font.${k}`] = v.fontFamily;
+  for (const [k, v] of Object.entries(y.rounded || {})) tokens[`radius.${k}`] = v;
+  for (const [k, v] of Object.entries(y.spacing || {})) tokens[`space.${k}`] = v;
+  if (!tokens['space.base'] && Object.keys(y.spacing || {}).length) tokens['space.base'] = Object.values(y.spacing)[0];
+  // Contrast pairs: every on-X / X color pair, and every component's textColor on backgroundColor.
+  const pairs = [];
+  for (const k of Object.keys(colors)) if (k.startsWith('on-') && colors[k.slice(3)]) pairs.push(`${k}/${k.slice(3)}`);
+  let n = 0;
+  for (const [name, c] of Object.entries(y.components || {})) {
+    if (!c || !c.textColor || !c.backgroundColor) continue;
+    const fg = resolve(c.textColor), bg = resolve(c.backgroundColor);
+    if (!fg || !bg) continue;
+    tokens[`color.component-${n}-fg`] = fg;
+    tokens[`color.component-${n}-bg`] = bg;
+    tokens[`label.component-${n}`] = name;
+    pairs.push(`component-${n}-fg/component-${n}-bg`);
+    n++;
+  }
+  if (pairs.length) tokens.pairs = pairs.join(', ');
+  tokens.format = 'google-design-md';
   return tokens;
 }
 

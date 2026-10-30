@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // design-nexus evaluation runner. Node 18+, no dependencies (render step uses Playwright if present).
 //
-//   node eval/run.mjs prepare  [--label name] [--cases 01,03]   create a run folder with one PROMPT.md per case
+//   node eval/run.mjs prepare  [--label name] [--cases 01,03] [--skill dir]   snapshot the skill, one PROMPT.md per case
 //   node eval/run.mjs generate --run <dir> --cmd "<agent cli>"   optional: pipe each PROMPT.md to an agent CLI
 //   node eval/run.mjs judge    --run <dir> [--cmd "<agent cli>"] write JUDGE_PROMPT.md per case; with --cmd, collect judge.json
-//   node eval/run.mjs score    --run <dir>                       lint + render + judge.json -> score.json, summary.md
+//   node eval/run.mjs score    --run <dir>                       lint + render + judge*.json -> score.json, summary.md
+//                                                                (several judge.<model>.json files are averaged)
 //   node eval/run.mjs compare  --base <dir> --run <dir>          accept/reject a skill change (rules in eval/rubric.md)
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
 import fs from 'node:fs';
@@ -45,7 +46,8 @@ const runDir = (v) => {
   if (!fs.existsSync(p)) die(`run not found: ${v}`);
   return path.resolve(p);
 };
-const caseDirs = (run) => fs.readdirSync(run).filter((d) => fs.statSync(path.join(run, d)).isDirectory()).sort();
+// Case folders only: `_skill` (the snapshot) and dot folders are not cases.
+const caseDirs = (run) => fs.readdirSync(run).filter((d) => !/^[_.]/.test(d) && fs.statSync(path.join(run, d)).isDirectory()).sort();
 function die(msg) { console.error(msg); process.exit(1); }
 
 function findEntry(dir) {
@@ -97,19 +99,25 @@ const commands = {
     const run = path.join(RUNS, id);
     fs.mkdirSync(run, { recursive: true });
     const cases = listCases(opt.cases);
+    // Snapshot the skill so the run is reproducible and later edits don't leak into a running generation.
+    const skillSrc = path.resolve(opt.skill && opt.skill !== true ? opt.skill : SKILL);
+    const skill = path.join(run, '_skill/design-nexus');
+    fs.cpSync(skillSrc, skill, { recursive: true });
     for (const c of cases) {
       const dir = path.join(run, c.id);
       fs.mkdirSync(dir, { recursive: true });
       if (c.source) fs.copyFileSync(path.join(ROOT, c.source), path.join(dir, 'SOURCE.html'));
       fs.writeFileSync(path.join(dir, 'PROMPT.md'), [
-        `Use the design-nexus skill (budget: ${c.budget}, surface: ${c.surface}).`,
-        `Work only inside this folder. Write the result as a single self-contained \`index.html\` (inline CSS/JS) unless the brief says otherwise.`,
-        `Run the skill's lint and render check on \`index.html\` and fix Floor findings before finishing.`,
-        `When done, write \`NOTES.md\` with: the chosen direction, the signature element, and any Reflex findings kept with reasons.`,
+        `Use the design-nexus skill: read \`${skill}/SKILL.md\` and follow it (budget: ${c.budget}, surface: ${c.surface}). Its references, scripts, and templates are in that same folder.`,
+        `Work only inside this folder (${dir}). Write the result as a single self-contained \`index.html\` (inline CSS/JS) unless the brief says otherwise. Do not look at other case folders or earlier runs.`,
+        `Nobody will answer questions: state your assumptions and proceed.`,
+        `Run the skill's lint and render check on \`index.html\` (\`node ${skill}/scripts/lint.mjs index.html\`, \`node ${skill}/scripts/render-check.mjs index.html --out shots\`) and fix Floor findings before finishing.`,
+        `Treat this folder as the project root: if the skill's steps call for a \`DESIGN.md\`, write it here.`,
+        `When done, write \`NOTES.md\` with: the three directions you considered, the chosen one, the signature element, and any Reflex findings kept with reasons.`,
         '', '## Brief', '', c.brief, '',
       ].join('\n'));
     }
-    writeJSON(path.join(run, 'run.json'), { id, version: version(), commit: gitRev(), created: new Date().toISOString(), cases: cases.map((c) => c.id) });
+    writeJSON(path.join(run, 'run.json'), { id, version: version(), commit: gitRev(), skill: path.relative(ROOT, skillSrc), created: new Date().toISOString(), cases: cases.map((c) => c.id), ...(opt.generator ? { generator: opt.generator } : {}) });
     console.log(`prepared ${path.relative(ROOT, run)} with ${cases.length} case(s)`);
     console.log('next: have your agent complete each PROMPT.md in its folder (or use `generate --cmd`), then `judge` and `score`.');
   },
@@ -174,16 +182,21 @@ const commands = {
       const render = runTool('render-check.mjs', renderArgs);
       const findings = [...(lint.findings || []), ...(render.findings || [])];
       const auto = autoScore(findings);
-      const judge = fs.existsSync(path.join(dir, 'judge.json')) ? JSON.parse(read(path.join(dir, 'judge.json'))) : null;
-      const js = judgeScore(judge);
+      const judges = readJudges(dir);
+      const perJudge = Object.fromEntries(Object.entries(judges).map(([name, j]) => [name, judgeScore(j)]).filter(([, v]) => v !== null));
+      const jvals = Object.values(perJudge);
+      const js = jvals.length ? +(jvals.reduce((a, b) => a + b, 0) / jvals.length).toFixed(1) : null;
       const total = js === null ? null : +(auto.score + js).toFixed(1);
       const result = {
         case: d, surface: c.surface, auto, judge: js, total, gate: auto.floor === 0 ? 'pass' : 'fail',
+        judges: perJudge, judge_spread: jvals.length > 1 ? +(Math.max(...jvals) - Math.min(...jvals)).toFixed(1) : null,
         render: render.skipped ? 'skipped' : render.error ? 'error' : 'ok',
-        dims: judge?.scores || null,
+        dims: meanDims(Object.values(judges)),
+        fingerprint: { ...fingerprint(entry, dir), ...(render.look ? { look: render.look } : {}) },
         tools: { lint: lint.counts, render: render.counts || (render.skipped ? 'skipped' : render.error), ids: countIds(findings) },
       };
-      writeJSON(path.join(dir, 'score.json'), { ...result, findings, top_issues: judge?.top_issues || [] });
+      const issues = Object.entries(judges).flatMap(([name, j]) => (j.top_issues || []).map((i) => ({ judge: name, ...i })));
+      writeJSON(path.join(dir, 'score.json'), { ...result, findings, top_issues: issues });
       rows.push(result);
     }
     const scored = rows.filter((r) => !r.missing);
@@ -195,6 +208,9 @@ const commands = {
       mean_total: scored.every((r) => r.total !== null) ? mean(scored.map((r) => r.total)) : null,
       gate_failures: scored.filter((r) => r.gate === 'fail').map((r) => r.case),
       missing: rows.filter((r) => r.missing).map((r) => r.case),
+      dims: meanDims(scored.filter((r) => r.dims).map((r) => ({ scores: r.dims }))),
+      judges: judgeMeans(scored),
+      diversity: diversity(scored),
       cases: rows,
     };
     writeJSON(path.join(run, 'summary.json'), summary);
@@ -223,6 +239,16 @@ const commands = {
     const cm = key === 'total' ? cand.mean_total : cand.mean_auto;
     const dm = +(cm - bm).toFixed(1);
     lines.push('', `Mean: ${bm} → ${cm} (${dm > 0 ? '+' : ''}${dm})`);
+    if (base.dims && cand.dims) {
+      lines.push('', '| dim | base | cand | Δ |', '|---|---|---|---|');
+      for (const d of Object.keys(DIMS)) {
+        if (base.dims[d] === undefined || cand.dims[d] === undefined) continue;
+        const dd = +(cand.dims[d] - base.dims[d]).toFixed(2);
+        lines.push(`| ${d} | ${base.dims[d]} | ${cand.dims[d]} | ${dd > 0 ? '+' : ''}${dd} |`);
+      }
+    }
+    if (base.judges && cand.judges) lines.push('', `Judges (mean of 60): base ${JSON.stringify(base.judges)} → cand ${JSON.stringify(cand.judges)}`);
+    if (cand.diversity?.warnings?.length) lines.push('', 'Diversity warnings (candidate):', ...cand.diversity.warnings.map((w) => `- ${w}`));
     if (dm < -1) reasons.push(`mean dropped ${dm}`);
     let verdict = reasons.length ? 'REJECT' : dm >= 0 ? 'ACCEPT' : 'NEUTRAL';
     if (verdict === 'NEUTRAL') lines.push('Within noise (−1 to 0): accept only if the targeted dimension or check improved (see eval/rubric.md).');
@@ -252,13 +278,101 @@ const commands = {
       '## Most frequent findings', '', '| id | count |', '|---|---|', ...idRows.map(([id, n]) => `| ${id} | ${n} |`), '',
       '## Weakest dimensions (mean 0–4)', '', '| dim | mean |', '|---|---|', ...dimRows.map(([d, v]) => `| ${d} | ${v} |`), '',
       '## Judge issues with rule suggestions', '',
-      ...(issues.length ? issues.map((i) => `- [${i.case}] (${i.dimension || '?'}) ${i.issue}${i.rule_suggestion ? `\n  - suggestion: ${i.rule_suggestion}` : ''}`) : ['(no judge.json found)']), '',
+      ...(issues.length ? issues.map((i) => `- [${i.case}${i.judge ? ' · ' + i.judge : ''}] (${i.dimension || '?'}) ${i.issue}${i.rule_suggestion ? `\n  - suggestion: ${i.rule_suggestion}` : ''}`) : ['(no judge.json found)']), '',
+      '## Diversity across cases', '', ...(summaryDiversity(run)), '',
       '## Human feedback', '', 'See loop/feedback.md entries with status `open`.', '',
     ].join('\n');
     fs.writeFileSync(path.join(run, 'feedback.md'), md);
     console.log(md);
   },
 };
+
+// judge.json and judge.<name>.json in a case folder, keyed by judge name.
+function readJudges(dir) {
+  const out = {};
+  for (const f of fs.readdirSync(dir)) {
+    const m = f.match(/^judge(?:\.([\w.-]+))?\.json$/);
+    if (!m) continue;
+    try { out[m[1] || 'judge'] = JSON.parse(read(path.join(dir, f))); } catch { console.log(`  ${f} did not parse; skipped`); }
+  }
+  return out;
+}
+
+function meanDims(judges) {
+  const acc = {};
+  for (const j of judges) for (const [d, v] of Object.entries(j?.scores || {})) if (v !== 'n/a' && v !== null && !isNaN(Number(v))) (acc[d] ||= []).push(Number(v));
+  const keys = Object.keys(acc);
+  if (!keys.length) return null;
+  return Object.fromEntries(keys.map((d) => [d, +(acc[d].reduce((a, b) => a + b, 0) / acc[d].length).toFixed(2)]));
+}
+
+function judgeMeans(rows) {
+  const acc = {};
+  for (const r of rows) for (const [n, v] of Object.entries(r.judges || {})) (acc[n] ||= []).push(v);
+  return Object.fromEntries(Object.entries(acc).map(([n, v]) => [n, +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)]));
+}
+
+// A coarse visual fingerprint: primary font families and accent hue. Used to spot a skill that makes everything look alike.
+function fingerprint(entry, dir) {
+  const text = read(entry) + (fs.existsSync(path.join(dir, 'DESIGN.md')) ? '\n' + read(path.join(dir, 'DESIGN.md')) : '');
+  const fonts = new Map();
+  for (const m of text.matchAll(/font-family\s*:\s*([^;}{\n]+)/g)) {
+    const fam = m[1].split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+    if (!fam || fam.startsWith('var(') || /^(inherit|serif|sans-serif|monospace)$/i.test(fam)) continue;
+    fonts.set(fam, (fonts.get(fam) || 0) + 1);
+  }
+  for (const m of text.matchAll(/--[\w-]*font[\w-]*\s*:\s*([^;}\n]+)/g)) {
+    const fam = m[1].split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+    if (fam && !/^(var\(|inherit|serif|sans-serif|monospace|\d)/i.test(fam)) fonts.set(fam, (fonts.get(fam) || 0) + 2);
+  }
+  for (const m of text.matchAll(/^\s*font\.[\w-]+\s*:\s*(.+)$/gm)) {
+    const fam = m[1].split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+    if (fam) fonts.set(fam, (fonts.get(fam) || 0) + 2);
+  }
+  const hues = new Map();
+  for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
+    const n = parseInt(m[0].slice(1), 16);
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, dlt = max - min;
+    if (dlt === 0) continue;
+    const sat = l > 0.5 ? dlt / (2 - max - min) : dlt / (max + min);
+    if (sat < 0.35 || l < 0.15 || l > 0.85) continue;
+    let h = max === r ? (g - b) / dlt + (g < b ? 6 : 0) : max === g ? (b - r) / dlt + 2 : (r - g) / dlt + 4;
+    const bucket = Math.round((h * 60) / 30) * 30 % 360;
+    hues.set(bucket, (hues.get(bucket) || 0) + 1);
+  }
+  const top = (m, n) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
+  return { fonts: top(fonts, 3), accent_hue: top(hues, 1)[0] ?? null };
+}
+
+function diversity(rows) {
+  const withFp = rows.filter((r) => r.fingerprint);
+  const n = withFp.length;
+  const fontCount = {}, hueCount = {};
+  for (const r of withFp) {
+    for (const f of new Set(r.fingerprint.fonts)) fontCount[f] = (fontCount[f] || 0) + 1;
+    if (r.fingerprint.accent_hue !== null) hueCount[r.fingerprint.accent_hue] = (hueCount[r.fingerprint.accent_hue] || 0) + 1;
+  }
+  const warnings = [];
+  const looks = withFp.map((r) => r.fingerprint.look).filter(Boolean);
+  const house = looks.filter((l) => l.ground === 'light' && !l.shadows && l.radius_median <= 4);
+  if (looks.length >= 3 && house.length / looks.length >= 0.5) warnings.push(`house look (light ground, no shadows, radius ≤4px) in ${house.length}/${looks.length} cases`);
+  const grounds = {};
+  for (const l of looks) grounds[l.ground] = (grounds[l.ground] || 0) + 1;
+  if (n >= 3) {
+    for (const [f, k] of Object.entries(fontCount)) if (k / n >= 0.5) warnings.push(`font "${f}" appears in ${k}/${n} cases`);
+    for (const [h, k] of Object.entries(hueCount)) if (k / n >= 0.5) warnings.push(`accent hue ~${h}° in ${k}/${n} cases`);
+  }
+  return { fonts: fontCount, accent_hues: hueCount, grounds, house_look: looks.length ? `${house.length}/${looks.length}` : null, warnings };
+}
+
+function summaryDiversity(run) {
+  const f = path.join(run, 'summary.json');
+  if (!fs.existsSync(f)) return ['(run `score` first)'];
+  const d = JSON.parse(read(f)).diversity;
+  if (!d) return ['(none)'];
+  return [`Fonts: ${JSON.stringify(d.fonts)}`, `Accent hues: ${JSON.stringify(d.accent_hues)}`, ...(d.warnings.length ? d.warnings.map((w) => `- WARNING ${w}`) : ['No convergence warnings.'])];
+}
 
 function countIds(findings) {
   const out = {};
@@ -271,12 +385,15 @@ function summaryMd(s) {
     `# Eval ${s.run}`, '', `version ${s.version}${s.commit ? ` · commit ${s.commit}` : ''}`, '',
     `Mean auto ${s.mean_auto ?? '-'} / 40 · judge ${s.mean_judge ?? '-'} / 60 · total ${s.mean_total ?? '-'} / 100`,
     s.gate_failures.length ? `Floor gate failed: ${s.gate_failures.join(', ')}` : 'Floor gate: all pass',
+    ...(s.judges && Object.keys(s.judges).length ? [`Judges (mean of 60): ${Object.entries(s.judges).map(([n, v]) => `${n} ${v}`).join(' · ')}`] : []),
+    ...(s.diversity?.warnings?.length ? [`Diversity: ${s.diversity.warnings.join('; ')}`] : []),
     '', '| case | auto | judge | total | floor | reflex | finish | render |', '|---|---|---|---|---|---|---|---|',
   ];
   for (const r of s.cases) {
     if (r.missing) { lines.push(`| ${r.case} | – | – | – | – | – | – | no output |`); continue; }
-    lines.push(`| ${r.case} | ${r.auto.score} | ${r.judge ?? 'pending'} | ${r.total ?? '-'} | ${r.auto.floor} | ${r.auto.reflex} | ${r.auto.finish} | ${r.render} |`);
+    lines.push(`| ${r.case} | ${r.auto.score} | ${r.judge ?? 'pending'}${r.judge_spread ? ` (±${r.judge_spread / 2})` : ''} | ${r.total ?? '-'} | ${r.auto.floor} | ${r.auto.reflex} | ${r.auto.finish} | ${r.render} |`);
   }
+  if (s.dims) lines.push('', `Dims: ${Object.entries(s.dims).map(([d, v]) => `${d} ${v}`).join(' · ')}`);
   return lines.join('\n') + '\n';
 }
 

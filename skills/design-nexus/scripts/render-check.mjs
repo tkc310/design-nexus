@@ -52,6 +52,7 @@ fs.mkdirSync(opt.out, { recursive: true });
 const findings = [];
 const add = (id, where, message) => findings.push({ id, tier: tierOf(id), where, message });
 const shots = [];
+let look = null;
 
 // Runs in the page. Returns raw measurements; judgement stays in Node.
 function measure(minTap) {
@@ -87,7 +88,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], lowContrast: [], tap: [], brokenImg: [] };
+  const out = { overflow: null, small: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -106,6 +107,14 @@ function measure(minTap) {
     seen.add(el);
     const cs = getComputedStyle(el);
     const size = parseFloat(cs.fontSize);
+    // R14: multi-line Japanese running text set tighter than 1.6.
+    if (/[\u3040-\u30ff\u3400-\u9fff]{8,}/.test(t.textContent) && size < 22 && !el.closest('h1,h2,h3,h4,h5,h6') && out.cjkTight.length < 10) {
+      const lh = cs.lineHeight === 'normal' ? size * 1.2 : parseFloat(cs.lineHeight);
+      const r = document.createRange();
+      r.selectNodeContents(t);
+      const lines = new Set([...r.getClientRects()].filter((x) => x.width > 0).map((x) => Math.round(x.top))).size;
+      if (lines >= 2 && lh / size < 1.6) out.cjkTight.push({ sel: sel(el), ratio: +(lh / size).toFixed(2), text: t.textContent.trim().slice(0, 30) });
+    }
     if (size < 12 && out.small.length < 10) out.small.push({ sel: sel(el), size, text: t.textContent.trim().slice(0, 40) });
     const fg = parse(cs.color), bg = bgOf(el);
     if (fg && bg) {
@@ -133,6 +142,65 @@ function measure(minTap) {
   }
 
   for (const img of document.images) if (img.complete && img.naturalWidth === 0) out.brokenImg.push(img.getAttribute('src'));
+
+  // Layout breaks inside containers: content escaping a boxed panel, clipped text, figures wrapping mid-number.
+  const boxed = [...document.querySelectorAll('body *')].filter((el) => {
+    if (!visible(el)) return false;
+    const cs = getComputedStyle(el);
+    if (cs.overflowX !== 'visible') return false;
+    const bg = parse(cs.backgroundColor);
+    return parseFloat(cs.borderLeftWidth) > 0 || parseFloat(cs.borderRightWidth) > 0 || (bg && bg.a > 0);
+  }).slice(0, 300);
+  for (const box of boxed) {
+    if (out.breaks.length >= 10) break;
+    const br = box.getBoundingClientRect();
+    if (br.width >= vw - 1) continue;
+    for (const d of box.querySelectorAll('*')) {
+      const cs = getComputedStyle(d);
+      if (cs.position === 'absolute' || cs.position === 'fixed' || !visible(d)) continue;
+      const r = d.getBoundingClientRect();
+      if (r.right > br.right + 4 || r.left < br.left - 4) { out.breaks.push(`${sel(d)} escapes ${sel(box)} by ${Math.round(Math.max(r.right - br.right, br.left - r.left))}px`); break; }
+    }
+  }
+  for (const el of document.querySelectorAll('body *')) {
+    if (out.breaks.length >= 15) break;
+    const cs = getComputedStyle(el);
+    if (!/hidden|clip/.test(cs.overflowX) || cs.textOverflow === 'ellipsis' || !visible(el)) continue;
+    if (el.clientWidth <= 2 || el.clientHeight <= 2) continue; // visually-hidden text
+    if (el.scrollWidth > el.clientWidth + 2 && el.textContent.trim() && ['SELECT', 'INPUT', 'TEXTAREA'].indexOf(el.tagName) === -1 && el.children.length < 20) {
+      out.breaks.push(`${sel(el)} clips its content (${el.scrollWidth}px in ${el.clientWidth}px)`);
+    }
+  }
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode() && out.breaks.length < 15) {
+    const t = tw.currentNode;
+    const v = t.textContent.trim();
+    if (v.length < 4 || !/^[-−+]?[¥$€£]?\s?[-−]?\d[\d,.\s]*(円|%|件|名|日)?$/.test(v)) continue;
+    if (!t.parentElement || !visible(t.parentElement)) continue;
+    const range = document.createRange();
+    range.selectNodeContents(t);
+    const tops = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+    if (tops.size > 1) out.breaks.push(`figure "${v}" wraps across lines in ${sel(t.parentElement)}`);
+  }
+
+  // A coarse description of the look, for spotting runs that all converge on one style.
+  const bodyBg = bgOf(document.body) || { r: 255, g: 255, b: 255 };
+  const fam = (el) => (el ? getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '').trim() : null);
+  const all = [...document.querySelectorAll('body *')].filter(visible);
+  const shadows = all.filter((e) => getComputedStyle(e).boxShadow !== 'none').length;
+  const radii = all.map((e) => parseFloat(getComputedStyle(e).borderTopLeftRadius) || 0).filter((r) => r > 0 && r < 100);
+  const textEls = all.filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+  const mono = textEls.filter((e) => /mono|code|courier|consolas|menlo/i.test(getComputedStyle(e).fontFamily)).length;
+  const L = lum(bodyBg);
+  out.look = {
+    ground: L > 0.75 ? 'light' : L < 0.1 ? 'dark' : 'mid',
+    ground_rgb: [bodyBg.r, bodyBg.g, bodyBg.b].map(Math.round),
+    body_font: fam(document.querySelector('main p, article p, p') || document.body),
+    heading_font: fam(document.querySelector('h1') || document.querySelector('h2')),
+    shadows: shadows > 2,
+    radius_median: radii.length ? radii.sort((a, b) => a - b)[Math.floor(radii.length / 2)] : 0,
+    mono_share: textEls.length ? +(mono / textEls.length).toFixed(2) : 0,
+  };
   return out;
 }
 
@@ -188,6 +256,9 @@ try {
       for (const c of m.lowContrast) add('F01', `@${width}px ${c.sel}`, `contrast ${c.ratio}:1 < ${c.need}:1 "${c.text}"`);
     }
     if (width <= 768) for (const t of m.tap) add('F09', `@${width}px ${t.sel}`, `tap target ${t.w}×${t.h}px < ${minTap}px`);
+    for (const b of m.breaks) add('R17', `@${width}px`, b);
+    if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
+    if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;
     if (width === opt.widths[0]) {
       for (const src of m.brokenImg) add('N06', src, 'Broken image');
       const unfocused = await focusCheck(page);
@@ -236,7 +307,7 @@ try {
 }
 
 const counts = summarize(findings);
-if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings }, null, 2));
+if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look }, null, 2));
 else {
   printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');

@@ -27,37 +27,54 @@ Use these defaults only as a starting hypothesis, then argue with them.
 
 ## 3. Three directions
 
-Directions must differ in **structure** (layout concept, hierarchy, what leads), not only in palette. Format:
+Directions must differ on at least three axes, not only palette:
+
+| Axis | Range to pick from |
+|---|---|
+| Structure | single column · split · grid of artifacts · full-bleed sequence · table/board · canvas/diagram-led |
+| Value and temperature | light warm · light cool · mid-tone · dark · saturated ground |
+| Type genre | grotesk · humanist sans · serif · slab · mono-led · condensed display · rounded · script/hand accent |
+| Surface | flat hairlines · cards with real elevation · photographic · illustrated · textured material |
+| Density and energy | airy and calm · dense and precise · loud and maximal |
+
+At least one of the three must be a direction you would not pick by habit (dark, saturated, maximal, photographic, or playful) and argued from the subject, not added for contrast. Format, two lines each:
 
 ```
-A — "Almanac": tide data set as a printed almanac; the hero is today's tide curve drawn large.
-B — "Harbor board": a departures-board grid of ports; type is the interface.
-C — "Logbook": a single scrolling column of entries, handwritten-weight accents.
-Recommend A because the curve is the product's unique asset.
+A — "<name>": <what it borrows from the subject's world>; <what leads the page>.
+B — …
+C — …
+Recommend <X> because <the subject-specific reason>.
 ```
+
+### Avoid the house look
+
+Agents that follow rules like these drift into one recognizable look: pale cool paper, one ink-blue or teal accent plus a highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px corners, no shadows, and a dark closing band. It is tasteful and it is still a template (R04d). Use it only when the subject genuinely calls for a printed-document feel, and never as the default.
+
+If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, type genre, and surface.
 
 ## 4. Token plan
 
+Write the plan in this shape. The values are yours to choose; there are deliberately no example values here, so nothing anchors them.
+
 ```
-Colors (4–6, named by role):
-  ink      #1E2328  body text
-  paper    #F3F6F7  background
-  tide     #0E6E7E  accent, links, signature curve
-  foam     #CFE3E6  surfaces, rules
-  buoy     #D9480F  single alert/highlight, used sparingly
+Colors (4–6, named by role in the subject's vocabulary):
+  <name>  #RRGGBB  role (text / ground / surface / accent / status)
 Type:
-  display  "Fraunces" 600, opsz high — headings only, max 2 sizes on a page
-  body     "Source Serif 4" 400/600 — 17px, line-height 1.6
-  utility  "IBM Plex Mono" 500 — figures, timestamps, labels
-  scale    1.25 ratio from 17px
-Spacing: 4px base; section rhythm 96/64/40
-Radius: 2px everywhere except pills for tags; no shadows, rules instead
-Layout: asymmetric two-column; curve bleeds off the right edge
-  +----------------------+--------+
-  | H1 + today's tide    | curve->|
-  +----------------------+--------+
-Signature: the live tide curve, drawn as the page's main graphic
+  display  "<family>" <weights> — where it is used, how many sizes
+  body     "<family>" <weight> — size, line-height
+  utility  "<family>" (optional) — figures, labels
+  scale    ratio from base
+  loading  how each family is loaded (font CDN link, @font-face, or a system stack you accept)
+Spacing: base and section rhythm
+Shape: radius and elevation rules (shadows, borders, or neither, and why)
+Layout: one-sentence concept + ASCII wireframe
+Signature: the one element the page will be remembered for
 ```
+
+Two plans that both pass this skill, to show the range (do not reuse their values):
+
+- A night-market food guide: near-black ground, hot vermilion and acid-yellow signage colors, a condensed display face at huge sizes, dense photo grid, chunky 12px radius with hard offset shadows, signature = a lantern-lit map strip.
+- A municipal permit form: white ground, government-green accent, a humanist sans at generous sizes, large tap targets, no decoration at all, signature = a progress rail that shows every remaining step and its time estimate.
 
 ## 5. Challenge the plan
 

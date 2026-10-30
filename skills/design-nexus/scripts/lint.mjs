@@ -52,7 +52,10 @@ const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
 const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
 
 // Aggregate state across files.
-const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [] };
+const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false };
+
+// Faces that ship with common operating systems; declaring them needs no loader.
+const SYSTEM_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|ui-[\w-]+|segoe ui|roboto|helvetica( neue)?|arial|georgia|times( new roman)?|verdana|tahoma|trebuchet ms|courier( new)?|menlo|monaco|consolas|sf (pro|mono)[\w ]*|hiragino[\w ]*|yu (gothic|mincho)|游ゴシック|游明朝|meiryo|メイリオ|ms (p?gothic|p?mincho)|sans-serif|serif|monospace|cursive|fantasy|emoji|math)$/i;
 
 const HYPE = [
   'lorem ipsum', 'welcome to', 'unlock the', 'unlock your', 'elevate your', 'seamless', 'seamlessly',
@@ -228,19 +231,8 @@ for (const file of files) {
   if (hasCJK) {
     each(/font-style\s*:\s*italic|\bitalic\b(?=[^<>]*["'])/g, (m) => add('R14', m.index, 'Italic with Japanese text (no true italic in Japanese fonts)', m[0]));
     each(/letter-spacing\s*:\s*-[\d.]+|\btracking-(tight|tighter)\b/g, (m) => add('R14', m.index, 'Negative letter-spacing with Japanese text', m[0]));
-    const selectorAt = (idx) => {
-      const open = text.lastIndexOf('{', idx);
-      const close = text.lastIndexOf('}', open);
-      return open === -1 ? '' : text.slice(close + 1, open);
-    };
-    each(/line-height\s*:\s*(1(?:\.[0-4]\d*)?)\s*[;}"']|\bleading-(none|tight|snug)\b/g, (m) => {
-      if (/h[1-6]|title|heading|display|hero|button|\.btn|label|badge|tag|nav|big|stat|kpi|figure|number|metric/i.test(selectorAt(m.index))) return;
-      if (m[2]) {
-        const tagStart = text.lastIndexOf('<', m.index);
-        if (/^<(h[1-6]|button|label|nav)/i.test(text.slice(tagStart, tagStart + 8))) return;
-      }
-      add('R14', m.index, 'Tight line-height on Japanese body text: use 1.7–1.9', m[0]);
-    });
+    // Line-height is checked by render-check.mjs on multi-line Japanese text, where it can tell body copy from labels and numerals.
+
   }
 
   // N01 z-index
@@ -259,6 +251,22 @@ for (const file of files) {
   }
 
   // aggregates
+  for (const [id, why] of kept) if (!agg.kept.has(id)) agg.kept.set(id, why);
+  if (/prefers-color-scheme\s*:\s*dark|\[data-theme=["']?dark|\.dark\s*[{,]/.test(text)) agg.darkScheme = true;
+  for (const [idx, decl] of fontDecls) {
+    const fam = primaryFamily(decl);
+    if (!fam || /^(var\(|inherit|initial)/.test(fam) || SYSTEM_FONTS.test(fam)) continue;
+    if (!agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, idx) });
+  }
+  for (const m of text.matchAll(/--(?:[\w-]*-)?(?:font|family|serif|sans|mono|display|typeface)(?:-[\w-]+)?\s*:\s*([^;}\n]+)/gi)) {
+    const fam = primaryFamily(m[1]);
+    if (fam && !/^(var\(|[\d.#]|rgb|hsl|oklch|inherit|normal|bold)/.test(fam) && !SYSTEM_FONTS.test(fam) && !agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, m.index) });
+  }
+  for (const m of text.matchAll(/@font-face\s*\{[^}]*font-family\s*:\s*["']?([^;"'}]+)/g)) agg.fontsLoaded.add(m[1].trim().toLowerCase());
+  for (const m of text.matchAll(/fonts\.googleapis\.com\/css2?\?([^"'\s)]+)/g)) {
+    for (const f of m[1].matchAll(/family=([^&:"']+)/g)) agg.fontsLoaded.add(decodeURIComponent(f[1]).replace(/\+/g, ' ').toLowerCase());
+  }
+  for (const m of text.matchAll(/from\s*["']next\/font\/google["']|from\s*["']@fontsource|fonts\.bunny\.net|use\.typekit\.net|fontshare\.com/g)) agg.anyLoader = true;
   for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
     const before = text.slice(Math.max(0, m.index - 6), m.index);
     if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
@@ -286,8 +294,18 @@ if (allowed) {
   const off = [...agg.hexes.entries()].filter(([h]) => !allowed.has(h));
   for (const [h, at] of off.slice(0, 10)) push('R08', at, `${h} is not a DESIGN.md token`);
   if (off.length > 10) push('R08', null, `…and ${off.length - 10} more off-token colors`);
-} else if (agg.hexes.size > 12) {
-  push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens`);
+} else if (agg.hexes.size > (agg.darkScheme ? 24 : 12)) {
+  push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens per scheme`);
+}
+// R16 fonts named in CSS but never loaded: the page silently falls back to a default face.
+if (!agg.anyLoader) {
+  for (const [fam, at] of agg.fontsUsed) {
+    if (!agg.fontsLoaded.has(fam)) push('R16', at, `"${fam}" is declared but never loaded (@font-face, a font CDN link, or next/font); visitors without it installed see a fallback`);
+  }
+}
+// Cross-file findings honor a keep anywhere in the scanned files.
+for (const f of findings) {
+  if (!f.kept && ['R06', 'R07', 'R08', 'R16'].includes(f.id) && agg.kept.has(f.id)) f.kept = agg.kept.get(f.id);
 }
 
 const counts = summarize(findings);

@@ -43,3 +43,24 @@
 - expected: 見出し・数値表示は対象外。
 - which rule should have prevented it: lint.mjs の R14。セレクタに big/stat/kpi/figure/number/metric を含む場合は除外するよう修正済み。
 - applies beyond one project because: KPI 表示はプロダクトUI全般にある。
+
+### 2026-10-30 ベースラインで3モデルの審査がそろって指摘した定番ルック
+- status: in-experiment (EXP-001)
+- source: judge(Opus・Fable・Sonnet)
+- case / project: baseline 01・02・03・04・06
+- what happened: 淡い紙色、インクブルー1色と蛍光黄、mono の小ラベル、罫線、角丸2〜4px、影なし、濃い締めの帯がほぼ全ケースで共通していた。
+- expected: 題材ごとに明度・書体ジャンル・質感が変わる。
+- which rule should have prevented it: direction.md の作例が、この見た目そのものだった。
+- applies beyond one project because: スキルを使う全プロジェクトの出力が同じ顔に寄る。
+
+### 2026-10-30 タブレット幅(768px)の崩れが D7 の最低点
+- status: open
+- source: judge
+- case / project: baseline 03(金額が数字の途中で折り返す)、04(マトリクスがパネルからはみ出す)、02(ヒーローの SVG が 650px)、06(320px で図版の文字が約6px)
+- which rule should have prevented it: render-check に R17 を追加済み(はみ出し・切り取り・数字の折り返し)。craft 側のルールはまだない。
+- applies beyond one project because: 中間幅の確認が抜けるのは汎用的な傾向。
+
+### 2026-10-30 宣言したフォントが読み込まれていない
+- status: resolved(lint R16 を追加)
+- source: judge(Fable・Opus)、lint
+- case / project: baseline 01、04

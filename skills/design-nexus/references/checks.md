@@ -32,7 +32,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R01 | An overused default face as the primary family (Inter, Roboto, Arial, Helvetica, Open Sans, Poppins, Montserrat, Lato, bare system-ui; Japanese: Noto Sans JP alone with no other voice) | lint |
 | R02 | Purple/indigo/violet gradient as default decoration | lint |
 | R03 | Gradient-filled text | lint |
-| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns | audit |
+| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band | audit, eval diversity |
 | R05 | Emoji used as icons in headings, buttons, or list markers | lint |
 | R06 | Large uniform radius on everything | lint |
 | R07 | Glassmorphism (backdrop blur) on many surfaces | lint |
@@ -42,8 +42,10 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R11 | Numbered markers (01 / 02 / 03) that don't encode a real sequence | lint (hint), audit |
 | R12 | `transition: all` | lint |
 | R13 | Feature grid of identical icon-in-a-circle cards | audit |
-| R14 | Japanese text set with italic, negative letter-spacing, or tight body line-height | lint |
+| R14 | Japanese text set with italic or negative letter-spacing (lint), or multi-line Japanese running text below line-height 1.6 (render) | lint, render |
 | R15 | Every section has the same structure (heading + cards) | audit |
+| R16 | A font named in CSS is never loaded (no `@font-face`, font CDN link, or `next/font`), so visitors see a fallback and the type plan never appears | lint |
+| R17 | Layout break inside a container at some width: content escaping a bordered or filled panel, text clipped by `overflow: hidden`, or a figure (price, count, date) wrapping mid-number | render |
 
 ## Finish
 
