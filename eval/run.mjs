@@ -186,7 +186,9 @@ const commands = {
       const render = runTool('render-check.mjs', renderArgs);
       const findings = [...(lint.findings || []), ...(render.findings || [])];
       const auto = autoScore(findings);
-      const judges = readJudges(dir);
+      const samples = readJudges(dir);
+      // Repeat samples of one model (judge.opus.json, judge.opus.2.json) are averaged first, so each model counts once.
+      const judges = byModel(samples);
       const perJudge = Object.fromEntries(Object.entries(judges).map(([name, j]) => [name, judgeScore(j)]).filter(([, v]) => v !== null));
       const jvals = Object.values(perJudge);
       const js = jvals.length ? +(jvals.reduce((a, b) => a + b, 0) / jvals.length).toFixed(1) : null;
@@ -199,7 +201,7 @@ const commands = {
         fingerprint: { ...fingerprint(entry, dir), ...(render.look ? { look: render.look } : {}) },
         tools: { lint: lint.counts, render: render.counts || (render.skipped ? 'skipped' : render.error), ids: countIds(findings) },
       };
-      const issues = Object.entries(judges).flatMap(([name, j]) => (j.top_issues || []).map((i) => ({ judge: name, ...i })));
+      const issues = Object.entries(samples).flatMap(([name, j]) => (j.top_issues || []).map((i) => ({ judge: name, ...i })));
       writeJSON(path.join(dir, 'score.json'), { ...result, findings, top_issues: issues });
       rows.push(result);
     }
@@ -322,6 +324,12 @@ function readJudges(dir) {
     try { out[m[1] || 'judge'] = JSON.parse(read(path.join(dir, f))); } catch { console.log(`  ${f} did not parse; skipped`); }
   }
   return out;
+}
+
+function byModel(samples) {
+  const groups = {};
+  for (const [name, j] of Object.entries(samples)) (groups[name.split('.')[0]] ||= []).push(j);
+  return Object.fromEntries(Object.entries(groups).map(([m, js]) => [m, js.length === 1 ? js[0] : { scores: meanDims(js), samples: js.length }]));
 }
 
 function meanDims(judges) {
