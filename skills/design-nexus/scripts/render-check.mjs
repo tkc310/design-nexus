@@ -230,6 +230,26 @@ function measure(minTap) {
     }
     if (cut) out.breaks.push(`${sel(el)} clips its text "${cut}" (${el.scrollWidth}px in ${el.clientWidth}px)`);
   }
+  // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
+  for (const table of document.querySelectorAll('table')) {
+    if (!visible(table) || out.breaks.length >= 15) continue;
+    const head = table.tHead?.rows[table.tHead.rows.length - 1];
+    if (!head) continue;
+    if ([...head.cells].some((c) => getComputedStyle(c).display !== 'table-cell' && getComputedStyle(c).display !== 'none')) continue; // restyled as cards
+    if (head.getBoundingClientRect().height < 4) continue; // a visually hidden head
+    const edges = [...head.cells].filter(visible).map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0);
+    if (edges.length < 2) continue;
+    const rows = [...(table.tBodies[0]?.rows || [])].slice(0, 1).concat([...(table.tFoot?.rows || [])]);
+    for (const row of rows) {
+      const cells = [...row.cells].filter(visible).map((c) => ({ c, r: c.getBoundingClientRect() })).filter((x) => x.r.width > 0);
+      if (cells.length < 2 || cells.some((x) => x.c.colSpan > 1 || getComputedStyle(x.c).display !== 'table-cell')) continue;
+      const off = cells.find((x) => !edges.some((e) => Math.abs(e.left - x.r.left) < 4) && x.r.left > edges[0].left + 4);
+      if (off || cells.length > edges.length) {
+        out.breaks.push(`${sel(table)}: a ${row.parentElement.tagName.toLowerCase()} row has ${cells.length} visible cells under ${edges.length} column headings, so its figures sit under the wrong headings`);
+        break;
+      }
+    }
+  }
   const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (tw.nextNode() && out.breaks.length < 15) {
     const t = tw.currentNode;
