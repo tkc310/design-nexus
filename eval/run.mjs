@@ -206,6 +206,18 @@ const commands = {
         fingerprint: { ...fingerprint(entry, dir), ...(render.look ? { look: render.look } : {}) },
         tools: { lint: lint.counts, render: render.counts || (render.skipped ? 'skipped' : render.error), ids: countIds(findings) },
       };
+      // M-007: the judge is told to treat Floor findings as facts, so a verdict written against other tool results
+      // (a check added or a false positive fixed since) is stale for this case.
+      const jp = path.join(dir, 'JUDGE_PROMPT.md');
+      if (Object.keys(judges).length && fs.existsSync(jp)) {
+        const m = read(jp).match(/## Tool results\s*```json\s*([\s\S]*?)```/);
+        let seen = null; try { seen = m && JSON.parse(m[1]); } catch {}
+        const floorIds = (t) => JSON.stringify(Object.entries(t?.ids || {}).filter(([id]) => id.startsWith('F')).sort());
+        if (seen && floorIds(seen) !== floorIds(result.tools)) {
+          result.stale_judge = true;
+          console.log(`warning: ${d} was judged against Floor findings ${floorIds(seen)} but the current tools report ${floorIds(result.tools)}; run \`judge\` again for this case and re-judge it`);
+        }
+      }
       const issues = Object.entries(samples).flatMap(([name, j]) => (j.top_issues || []).map((i) => ({ judge: name, ...i })));
       writeJSON(path.join(dir, 'score.json'), { ...result, findings, top_issues: issues });
       rows.push(result);
