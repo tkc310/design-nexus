@@ -27,6 +27,9 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Group by proximity: space inside a group is smaller than space between groups.
 - Align to a grid; let one element break it on purpose (the signature).
 - Vary section structure. A page where every section is "heading + 3 cards" is a template.
+- **The signature is a system, not a widget.** Name the unit it is built from (the kiln shelf, the ticket stub, the ruled ledger line, the timetable row) and build at least two other sections from that same unit, grid, or material, so the page reads as one object. Test: cover the signature. If the rest could belong to any product, it is still a template.
+- **Retire the default section frame.** "Small kicker + heading + intro paragraph, then content" on every section is the agent's template rhythm. Give each section the structure its content needs (a table, a sequence, a single large figure, a two-up comparison) and let headings sit inside that structure.
+- **No half-empty rows at desktop.** At 1280 and 1920, every row either fills its width with content or is a deliberately narrow measure. When one column of a row is much shorter than the other, rebalance (move content, span the short one, or stack) instead of leaving a void.
 - Cards only when content is genuinely a collection of comparable items.
 
 ## Default render

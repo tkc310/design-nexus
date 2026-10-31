@@ -52,6 +52,13 @@ Agents that follow rules like these drift into one recognizable look: pale cool 
 
 Steering away from a named look tends to land on its nearest neighbor: cool paper becomes sage paper, teal becomes forest green, and every page ends up with the same pale tinted ground and one warm accent. So don't choose colors by moving away from something. Choose them from the subject: every color in the token plan names its source in the subject's world (the glaze, the ticket stock, the ledger ruling, the terminal phosphor). A tinted ground with no source is a habit; use a true neutral or the source color instead. Vary value and chroma, not only hue: of the three directions, at least one has a ground that is not pale.
 
+### Spread the candidates before choosing
+
+Sourcing a color from the subject is necessary, not sufficient: every subject contains something warm (lamp light, wood, clay, paper, signage, warning tape), so "sourced" picks still pile up on one amber-to-orange accent and one familiar display face. Decide by comparison, not by first association:
+
+- **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. Choose the one that carries meaning here (what the user acts on, what the subject owns, what the status means), and write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
+- **Display face**: name three candidates from different type genres (axis table above) and choose by what the subject's own lettering looks like (its signage, labels, documents, screens), not by legibility alone; legibility is the body face's job.
+
 If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, ground hue, type genre, and surface.
 
 ## 4. Token plan
@@ -61,8 +68,9 @@ Write the plan in this shape. The values are yours to choose; there are delibera
 ```
 Colors (4–6, named by role in the subject's vocabulary):
   <name>  #RRGGBB  role (text / ground / surface / accent / status) — source: where in the subject's world it comes from
+  accent candidates: <three hues ≥90° apart, each with a source> → chosen: <one> because <subject-specific reason>
 Type:
-  display  "<family>" <weights> — where it is used, how many sizes
+  display  "<family>" <weights> — where it is used, how many sizes (candidates: three genres → chosen because …)
   body     "<family>" <weight> — size, line-height
   utility  "<family>" (optional) — figures, labels
   scale    ratio from base
