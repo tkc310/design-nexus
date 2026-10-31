@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // design-nexus evaluation runner. Node 18+, no dependencies (render step uses Playwright if present).
 //
-//   node eval/run.mjs prepare  [--label name] [--cases 01,03] [--skill dir]   snapshot the skill, one PROMPT.md per case
+//   node eval/run.mjs prepare  [--label name] [--cases 01,03] [--split train|holdout|all] [--skill dir]   snapshot the skill, one PROMPT.md per case
 //   node eval/run.mjs generate --run <dir> --cmd "<agent cli>"   optional: pipe each PROMPT.md to an agent CLI
 //   node eval/run.mjs judge    --run <dir> [--cmd "<agent cli>"] write JUDGE_PROMPT.md per case; with --cmd, collect judge.json
 //   node eval/run.mjs score    --run <dir>                       lint + render + judge*.json -> score.json, summary.md
 //                                                                (several judge.<model>.json files are averaged)
-//   node eval/run.mjs compare  --base <dir> --run <dir>          accept/reject a skill change (rules in eval/rubric.md)
+//   node eval/run.mjs compare  --base <dir> --run <dir> [--primary opus] [--rescore no]   rescore the base, then accept/reject (eval/rubric.md)
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,9 +36,11 @@ function parseCase(file) {
   for (const line of m[1].split('\n')) { const [k, ...v] = line.split(':'); meta[k.trim()] = v.join(':').trim(); }
   return { ...meta, brief: m[2].trim() };
 }
-const listCases = (only) => fs.readdirSync(CASES).filter((f) => f.endsWith('.md')).sort()
+// `split: train` cases drive hypotheses; `split: holdout` cases are only for confirming a finished round.
+const listCases = (only, split) => fs.readdirSync(CASES).filter((f) => f.endsWith('.md')).sort()
   .map((f) => parseCase(path.join(CASES, f)))
-  .filter((c) => !only || only.split(',').some((p) => c.id.startsWith(p)));
+  .filter((c) => !only || only.split(',').some((p) => c.id.startsWith(p)))
+  .filter((c) => !split || split === 'all' || (c.split || 'train') === split);
 
 const runDir = (v) => {
   if (!v || v === true) die('--run <dir> is required');
@@ -100,7 +102,7 @@ const commands = {
     const id = `${stamp}-v${version()}${opt.label ? '-' + opt.label : ''}`;
     const run = path.join(RUNS, id);
     fs.mkdirSync(run, { recursive: true });
-    const cases = listCases(opt.cases);
+    const cases = listCases(opt.cases, opt.split);
     // Snapshot the skill so the run is reproducible and later edits don't leak into a running generation.
     const skillSrc = path.resolve(opt.skill && opt.skill !== true ? opt.skill : SKILL);
     const skill = path.join(run, '_skill/design-nexus');
@@ -119,7 +121,7 @@ const commands = {
         '', '## Brief', '', c.brief, '',
       ].join('\n'));
     }
-    writeJSON(path.join(run, 'run.json'), { id, version: version(), commit: gitRev(), skill: path.relative(ROOT, skillSrc), created: new Date().toISOString(), cases: cases.map((c) => c.id), ...(opt.generator ? { generator: opt.generator } : {}) });
+    writeJSON(path.join(run, 'run.json'), { id, version: version(), commit: gitRev(), skill: path.relative(ROOT, skillSrc), created: new Date().toISOString(), cases: cases.map((c) => c.id), ...(opt.split ? { split: opt.split } : {}), ...(opt.generator ? { generator: opt.generator } : {}) });
     console.log(`prepared ${path.relative(ROOT, run)} with ${cases.length} case(s)`);
     console.log('next: have your agent complete each PROMPT.md in its folder (or use `generate --cmd`), then `judge` and `score`.');
   },
@@ -190,7 +192,7 @@ const commands = {
       const js = jvals.length ? +(jvals.reduce((a, b) => a + b, 0) / jvals.length).toFixed(1) : null;
       const total = js === null ? null : +(auto.score + js).toFixed(1);
       const result = {
-        case: d, surface: c.surface, auto, judge: js, total, gate: auto.floor === 0 ? 'pass' : 'fail',
+        case: d, surface: c.surface, split: c.split || 'train', auto, judge: js, total, gate: auto.floor === 0 ? 'pass' : 'fail',
         judges: perJudge, judge_spread: jvals.length > 1 ? +(Math.max(...jvals) - Math.min(...jvals)).toFixed(1) : null,
         render: render.skipped ? 'skipped' : render.error ? 'error' : 'ok',
         dims: meanDims(Object.values(judges)),
@@ -212,6 +214,7 @@ const commands = {
       missing: rows.filter((r) => r.missing).map((r) => r.case),
       dims: meanDims(scored.filter((r) => r.dims).map((r) => ({ scores: r.dims }))),
       judges: judgeMeans(scored),
+      splits: splitMeans(scored),
       diversity: diversity(scored),
       cases: rows,
     };
@@ -222,6 +225,11 @@ const commands = {
   },
 
   compare() {
+    // Rescore the base with the current checks first, so a check added since the base ran isn't counted as a regression.
+    if (opt.rescore !== 'no') {
+      const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), 'score', '--run', runDir(opt.base)], { encoding: 'utf8', maxBuffer: 64 << 20 });
+      if (r.status !== 0) die(`rescoring the base failed:\n${r.stderr}`);
+    }
     const base = JSON.parse(read(path.join(runDir(opt.base), 'summary.json')));
     const cand = JSON.parse(read(path.join(runDir(opt.run), 'summary.json')));
     const key = base.mean_total !== null && cand.mean_total !== null ? 'total' : 'auto';
@@ -250,6 +258,16 @@ const commands = {
       }
     }
     if (base.judges && cand.judges) lines.push('', `Judges (mean of 60): base ${JSON.stringify(base.judges)} → cand ${JSON.stringify(cand.judges)}`);
+    // The primary judge has the final say: averaging in more lenient judges must not hide a drop it sees.
+    const primary = opt.primary && opt.primary !== true ? opt.primary : 'opus';
+    const common = cand.cases.filter((c) => !c.missing && byCase[c.case]?.judges?.[primary] !== undefined && c.judges?.[primary] !== undefined);
+    if (common.length) {
+      const pm = (rows, get) => +(rows.reduce((a, c) => a + get(c), 0) / rows.length).toFixed(1);
+      const pb = pm(common, (c) => byCase[c.case].judges[primary]), pc = pm(common, (c) => c.judges[primary]);
+      const dp = +(pc - pb).toFixed(1);
+      lines.push('', `Primary judge (${primary}, mean of 60 over ${common.length} cases): ${pb} → ${pc} (${dp > 0 ? '+' : ''}${dp})`);
+      if (dp < -1) reasons.push(`primary judge ${primary} dropped ${dp}`);
+    }
     if (cand.diversity?.warnings?.length) lines.push('', 'Diversity warnings (candidate):', ...cand.diversity.warnings.map((w) => `- ${w}`));
     if (dm < -1) reasons.push(`mean dropped ${dm}`);
     let verdict = reasons.length ? 'REJECT' : dm >= 0 ? 'ACCEPT' : 'NEUTRAL';
@@ -306,6 +324,12 @@ function meanDims(judges) {
   const keys = Object.keys(acc);
   if (!keys.length) return null;
   return Object.fromEntries(keys.map((d) => [d, +(acc[d].reduce((a, b) => a + b, 0) / acc[d].length).toFixed(2)]));
+}
+
+function splitMeans(rows) {
+  const acc = {};
+  for (const r of rows) if (r.total !== null) (acc[r.split || 'train'] ||= []).push(r.total);
+  return Object.fromEntries(Object.entries(acc).map(([k, v]) => [k, +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)]));
 }
 
 function judgeMeans(rows) {
@@ -417,6 +441,7 @@ function summaryMd(s) {
     `Mean auto ${s.mean_auto ?? '-'} / 40 · judge ${s.mean_judge ?? '-'} / 60 · total ${s.mean_total ?? '-'} / 100`,
     s.gate_failures.length ? `Floor gate failed: ${s.gate_failures.join(', ')}` : 'Floor gate: all pass',
     ...(s.judges && Object.keys(s.judges).length ? [`Judges (mean of 60): ${Object.entries(s.judges).map(([n, v]) => `${n} ${v}`).join(' · ')}`] : []),
+    ...(s.splits && Object.keys(s.splits).length > 1 ? [`By split (mean total): ${Object.entries(s.splits).map(([n, v]) => `${n} ${v}`).join(' · ')}`] : []),
     ...(s.diversity?.warnings?.length ? [`Diversity: ${s.diversity.warnings.join('; ')}`] : []),
     '', '| case | auto | judge | total | floor | reflex | finish | render |', '|---|---|---|---|---|---|---|---|',
   ];
