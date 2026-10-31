@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>t</title><meta name="description" content="t">
+<style>body{margin:0;padding:16px;font:16px/1.5 Georgia,serif;color:#1a1a1a;background:#fbfaf7}
+label{display:block;margin-top:16px}input,select{font:inherit;padding:8px;min-height:44px;box-sizing:border-box;width:100%;max-width:320px;color:#1a1a1a}
+#faint{border:1px solid #e2e0da;background:#fff}
+#ruled{border:0;border-bottom:2px solid #6b6760;background:transparent}
+#filled{border:0;background:#d9d4c7}
+#role{border:1px solid #ebe9e4;background:#fbfaf7}
+#wrapped{border:0;background:transparent;outline:none}.prompt{display:flex;gap:8px;border:1px solid #5d5a54;padding:0 8px}
+#ok{border:1px solid #767570;background:#fff}
+button,a{display:inline-block;min-height:44px;min-width:44px;margin:8px 0;font:inherit;color:#1a1a1a}</style></head>
+<body><main><h1>Sessions</h1>
+<label for="faint">Search patients</label><input id="faint" type="search">
+<label for="ruled">Name</label><input id="ruled" type="text">
+<label for="filled">Note</label><input id="filled" type="text">
+<label for="role">Role</label><select id="role"><option>Nurse</option></select>
+<label for="wrapped">Filter</label><div class="prompt"><span aria-hidden="true">$</span><input id="wrapped" type="text"></div>
+<label for="ok">Email</label><input id="ok" type="email">
+<p><a href="#s1" aria-label="11月8日 10時の回を予約">この回を予約する</a></p>
+<p><a href="#s2" aria-label="この回を予約する(11月8日 14時)">この回を予約する</a></p>
+<p><button type="button" aria-label="Open session details">Book</button></p>
+<p><button type="button" aria-label="Book, 8 November, 10:00">Book</button></p>
+<p><button type="button" aria-pressed="true" aria-label="Weekly digest by email">On</button></p>
+<p><span class="sr-wrap"><a href="#s3" aria-label="Book, 8 November"><span>Book</span><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">the 8 November session</span></a></span></p>
+<p><button type="button" aria-label="Close dialog"><svg width="16" height="16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="#1a1a1a"/></svg></button></p>
+</main></body></html>

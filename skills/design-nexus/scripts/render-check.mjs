@@ -122,7 +122,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], fine: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -179,6 +179,60 @@ function measure(minTap) {
       if (lr.width * lr.height > r.width * r.height) r = lr;
     }
     if ((r.width < minTap || r.height < minTap) && out.tap.length < 15) out.tap.push({ sel: sel(el), w: Math.round(r.width), h: Math.round(r.height) });
+  }
+
+  const ratioOf = (a, b) => { const L1 = lum(a), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
+  // F01 (non-text): a text field, select, or textarea needs a boundary of 3:1 against what surrounds it,
+  // from its border or its own fill, or from a tight wrapper that draws the field (a prompt line, a search pill).
+  // Shadows and background images are not measured.
+  const edge = (node) => {
+    const cs = getComputedStyle(node);
+    if (cs.boxShadow !== 'none' || cs.backgroundImage !== 'none') return Infinity;
+    const outer = node.parentElement && bgOf(node.parentElement);
+    if (!outer) return Infinity;
+    const fill = blend(parse(cs.backgroundColor), outer);
+    let best = ratioOf(fill, outer);
+    for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+      if (parseFloat(cs[`border${side}Width`]) < 1 || cs[`border${side}Style`] === 'none') continue;
+      const bc = parse(cs[`border${side}Color`]);
+      best = Math.max(best, ratioOf(blend(bc, outer), outer), ratioOf(blend(bc, fill), fill));
+    }
+    return best;
+  };
+  for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]), select, textarea')) {
+    if (!visible(el) || out.boundary.length >= 10) continue;
+    const er = el.getBoundingClientRect();
+    let best = edge(el);
+    for (let a = el.parentElement, k = 0; a && a !== document.body && k < 3 && best < 3; a = a.parentElement, k++) {
+      if (a.getBoundingClientRect().height > er.height + 48) break;
+      best = Math.max(best, edge(a));
+    }
+    if (best < 3) out.boundary.push({ sel: sel(el), ratio: +best.toFixed(2), name: (el.labels && el.labels[0] ? el.labels[0].innerText : el.getAttribute('aria-label') || el.name || '').trim().slice(0, 30) });
+  }
+  // F13: a control whose aria-label leaves out a word it shows (WCAG 2.5.3 Label in Name).
+  // Only painted text counts: visually hidden spans (clipped to a pixel) are not what a voice user sees.
+  const norm = (x) => x.toLowerCase().normalize('NFKC').replace(/[\s.,:;!?、。・…「」『』()\-–—'"’“”→←↗›»|/]+/g, '');
+  const shown = (root) => {
+    const words = [];
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (tw.nextNode()) {
+      const t = tw.currentNode, p = t.parentElement;
+      if (!t.data.trim() || !p || p.closest('[aria-hidden="true"]')) continue;
+      const r = p.getBoundingClientRect();
+      if (r.width <= 2 || r.height <= 2 || (p.checkVisibility && !p.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))) continue;
+      words.push(...t.data.trim().split(/\s+/));
+    }
+    return words.map(norm).filter((w) => w.length > 0);
+  };
+  for (const el of document.querySelectorAll('a[href][aria-label], button[aria-label], [role=button][aria-label], [role=link][aria-label], summary[aria-label], [role=tab][aria-label], [role=menuitem][aria-label]')) {
+    if (!visible(el) || out.nameMismatch.length >= 10) continue;
+    // A toggle's on/off text is its state, not its label.
+    if (el.hasAttribute('aria-pressed') || el.hasAttribute('aria-checked')) continue;
+    const words = shown(el);
+    if (words.join('').length < 2) continue;
+    const label = el.getAttribute('aria-label') || '', nl = norm(label);
+    const missing = words.filter((w) => !nl.includes(w));
+    if (missing.length) out.nameMismatch.push({ sel: sel(el), visible: words.join(' ').slice(0, 40), missing: missing.join(' ').slice(0, 30), label: label.slice(0, 60) });
   }
 
   for (const img of document.images) if (img.complete && img.naturalWidth === 0) out.brokenImg.push(img.getAttribute('src'));
@@ -501,6 +555,10 @@ try {
     }
     if (width === opt.widths[opt.widths.length - 1] || width >= 1280) {
       for (const c of m.lowContrast) add('F01', `@${width}px ${c.sel}`, `contrast ${c.ratio}:1 < ${c.need}:1 "${c.text}"`);
+    }
+    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+      for (const b of m.boundary) add('F01', `@${width}px ${b.sel}`, `field boundary ${b.ratio}:1 < 3:1${b.name ? ` "${b.name}"` : ''}; give the border or fill 3:1 against the surface so the field can be found`);
+      for (const n of m.nameMismatch) add('F13', `@${width}px ${n.sel}`, `aria-label "${n.label}" leaves out the visible "${n.missing}"; put the visible words in the label, first (voice users say what they see)`);
     }
     if (width <= 768) for (const t of m.tap) add('F09', `@${width}px ${t.sel}`, `tap target ${t.w}×${t.h}px < ${minTap}px`);
     for (const b of m.breaks) add('R17', `@${width}px`, b);

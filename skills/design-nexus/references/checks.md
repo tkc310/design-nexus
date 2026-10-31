@@ -12,7 +12,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 
 | ID | Check | Detected by |
 |---|---|---|
-| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1 | render, tokens |
+| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
 | F02 | Focus indicator removed or invisible | lint, render |
 | F03 | Image without `alt` | lint |
 | F04 | HTML document missing `lang` or viewport meta | lint |
@@ -24,6 +24,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | F10 | Icon-only button or link without an accessible name | lint |
 | F11 | Redesign lost a link, field, handler, or heading from the before-snapshot (a field that gained a name, id, label, or more specific text type still counts as kept) | render `--compare` |
 | F12 | Text smaller than 12px | lint, render |
+| F13 | A control's `aria-label` leaves out words it shows (WCAG 2.5.3 Label in Name); toggles' on/off state text is exempt | render |
 
 ## Reflex
 

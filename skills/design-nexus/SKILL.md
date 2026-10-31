@@ -67,7 +67,7 @@ Exit code 2 means Floor findings exist: the work is not done. If Node is unavail
 
 These apply in every mode and every budget. Full list with IDs in `references/checks.md`.
 
-- Text contrast at least 4.5:1 (3:1 for 24px+ or 19px+ bold). Focus is always visible. Every interactive element is reachable and operable by keyboard and has an accessible name.
+- Text contrast at least 4.5:1 (3:1 for 24px+ or 19px+ bold). Focus is always visible. Every interactive element is reachable and operable by keyboard and has an accessible name that includes the words it shows. Form fields have a border or fill of at least 3:1 against their surface.
 - Works from 320px wide with no horizontal scroll. Tap targets at least 24px (44px on mobile surfaces).
 - Motion respects `prefers-reduced-motion`. Nothing essential depends on hover alone.
 - Images have meaningful `alt` (or `alt=""` when decorative). Form fields have labels. Errors say what happened and how to fix it.

@@ -101,6 +101,12 @@ else {
   check('render flags R21 when a value is drawn over its label, not when rows scroll under a fixed bar', r21.length === 1 && /Total for 21 staff/.test(r21[0].message) && /5,764,200/.test(r21[0].message), JSON.stringify(r21));
   const okOv = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320');
   check('R21 ignores visually-hidden text and scroll containers', !okOv.out.findings.some((f) => f.id === 'R21'));
+  const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
+  const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
+  check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));
+  check('field boundary accepts a ruled field, a drawn wrapper, and a 3:1 border', !cnB.some((f) => /#ruled|#wrapped|#ok/.test(f.where)), JSON.stringify(cnB));
+  const cnN = cn.out.findings.filter((f) => f.id === 'F13');
+  check('render flags F13 when an aria-label drops the visible words', cnN.length === 2 && cnN.some((f) => /この回を予約する/.test(f.message)) && cnN.some((f) => /Open session details/.test(f.message)), JSON.stringify(cnN));
   const tm = run('render-check.mjs', path.join(S2, 'table-misaligned.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const tmF = tm.out.findings.filter((f) => f.id === 'R17' && /column headings/.test(f.message));
   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
