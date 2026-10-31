@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // design-nexus static lint. Node 18+, no dependencies.
-// Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json] [--surface mobile]
+// Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json]
+// (--surface is accepted and ignored, so the same flags work for lint and render-check.)
 // Exit: 0 clean, 2 floor findings, 1 usage error.
 // Suppress: `design-nexus: keep R02 because <reason>` or `design-nexus-disable R02` anywhere in a file.
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ const opt = { json: false, design: null, targets: [] };
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--json') opt.json = true;
   else if (args[i] === '--design') opt.design = args[++i];
+  else if (args[i] === '--surface') i++;
   else if (args[i] === '--help' || args[i] === '-h') { usage(); process.exit(0); }
   else opt.targets.push(args[i]);
 }
