@@ -11,7 +11,7 @@
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
 //   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03]   M-008: one PAIR_PROMPT.md per case and base run,
 //                                                                pages shown as A/B in a fixed pseudo-random order
-//   node eval/run.mjs pair-score --run <dir>                     candidate wins, losses, ties overall and per dimension
+//   node eval/run.mjs pair-score --run <dir> [--base <dir>]      candidate wins, losses, ties overall and per dimension
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
@@ -214,7 +214,9 @@ const commands = {
     const tally = () => ({ win: 0, loss: 0, tie: 0 });
     const byJudge = {}, byDim = Object.fromEntries(dims.map((k) => [k, tally()])), byCase = {};
     const side = (v, key) => (v !== 'A' && v !== 'B' ? 'tie' : (v === 'A') === (key.A === 'cand') ? 'win' : 'loss');
+    const baseFilter = opt.base ? String(opt.base).split(',').map((b) => path.basename(runDir(b))) : null;
     for (const [id, key] of Object.entries(keys)) {
+      if (baseFilter && !baseFilter.includes(path.basename(key.base))) continue;
       const dir = path.join(pairsDir, id);
       if (!fs.existsSync(dir)) continue;
       for (const f of fs.readdirSync(dir).filter((x) => /^pair\..+\.json$/.test(x))) {
@@ -238,8 +240,9 @@ const commands = {
       '| judge | overall |', '|---|---|', ...Object.entries(byJudge).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
       '| case | overall |', '|---|---|', ...Object.entries(byCase).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
       '| dim | win–loss–tie | net |', '|---|---|---|', ...dims.map((k) => `| ${k} | ${fmt(byDim[k])} | ${byDim[k].win - byDim[k].loss >= 0 ? '+' : ''}${byDim[k].win - byDim[k].loss} |`), ''];
-    fs.writeFileSync(path.join(cand, 'pairs.md'), lines.join('\n'));
-    writeJSON(path.join(cand, 'pairs.json'), { overall: all, p, byJudge, byCase, byDim });
+    const tag = baseFilter ? '-' + baseFilter.join('+') : '';
+    fs.writeFileSync(path.join(cand, `pairs${tag}.md`), lines.join('\n'));
+    writeJSON(path.join(cand, `pairs${tag}.json`), { overall: all, p, byJudge, byCase, byDim });
     console.log(lines.join('\n'));
   },
 
