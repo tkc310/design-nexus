@@ -8,7 +8,7 @@
 - **領域**: マーケ / プロダクトUI / モバイル を切り替え、和文組版にも対応
 - **改善ループ**: 評価ケース・ルーブリック・自動採点・審査エージェント・採用判定で、スキル自体を更新し続けられる
 
-調査と比較は [docs/comparison.md](docs/comparison.md)、2026年10月下旬の X 上の話題は [docs/design-skills.md](docs/design-skills.md) にあります。
+調査と比較は [docs/comparison.md](docs/comparison.md)、X 上のスキルの検証（2026-10-31）は [docs/design-skills.md](docs/design-skills.md) にあります。流行りのデザイン手法は [docs/design-trends.md](docs/design-trends.md) に、必要なときだけ引く参照用データベースとして置いています。スキルが普段から読むファイルではありません。
 
 ## インストール
 
@@ -87,7 +87,8 @@ scripts/build.mjs         Claude Code / Codex / Cursor 用に dist/ を生成
 scripts/test.mjs          チェックの回帰テスト
 install.sh                インストーラ
 docs/comparison.md        調査・比較レポート
-docs/design-skills.md     X上の話題（2026年10月下旬）
+docs/design-skills.md     X上のスキル検証（2026-10-31）
+docs/design-trends.md     デザイン手法の参照用データベース（スキルは常時読まない）
 ```
 
 ## クレジット
