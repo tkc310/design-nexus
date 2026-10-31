@@ -396,6 +396,53 @@ async function stateContrast(page) {
   return bad;
 }
 
+// R21: text drawn on top of other text (a totals row that collapses, a label under a button).
+// Each line box is clipped by its clipping ancestors first, so visually hidden and scrolled-away text don't count.
+function overlaps() {
+  const sel = (el) => (el.id ? `#${el.id}` : el.tagName.toLowerCase() + [...el.classList].slice(0, 2).map((c) => '.' + c).join(''));
+  const boxes = [];
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode()) {
+    const t = tw.currentNode;
+    if (!t.data.trim()) continue;
+    const el = t.parentElement;
+    if (!el || el.closest('[aria-hidden="true"], script, style, noscript, svg')) continue;
+    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true })) continue;
+    const clips = [];
+    for (let a = el; a && a !== document.body; a = a.parentElement) {
+      const c = getComputedStyle(a);
+      if (c.overflowX !== 'visible' || c.overflowY !== 'visible' || c.clip !== 'auto' || c.clipPath !== 'none') {
+        if (/inset\(50%|circle\(0|rect\(0/.test(c.clipPath)) { clips.push({ left: 0, right: 0, top: 0, bottom: 0 }); break; }
+        clips.push(a.getBoundingClientRect());
+      }
+    }
+    const rg = document.createRange();
+    rg.selectNodeContents(t);
+    for (const r of rg.getClientRects()) {
+      // The content box of a large face runs well past its glyphs; keep the middle 60% as the inked band.
+      const pad = r.height * 0.2;
+      let L = r.left, R = r.right, T = r.top + pad, B = r.bottom - pad;
+      for (const c of clips) { L = Math.max(L, c.left); R = Math.min(R, c.right); T = Math.max(T, c.top); B = Math.min(B, c.bottom); }
+      if (R - L > 2 && B - T > 3) boxes.push({ el, t, L, R, T, B, txt: t.data.trim().slice(0, 30) });
+    }
+  }
+  boxes.sort((a, b) => a.T - b.T);
+  const out = [];
+  for (let i = 0; i < boxes.length && out.length < 5; i++) {
+    const a = boxes[i];
+    for (let j = i + 1; j < boxes.length && boxes[j].T < a.B; j++) {
+      const c = boxes[j];
+      if (a.t === c.t) continue;
+      const ix = Math.min(a.R, c.R) - Math.max(a.L, c.L), iy = Math.min(a.B, c.B) - Math.max(a.T, c.T);
+      if (ix <= 2 || iy <= 2) continue;
+      if ((ix * iy) / Math.min((a.R - a.L) * (a.B - a.T), (c.R - c.L) * (c.B - c.T)) < 0.25) continue;
+      out.push(`"${a.txt}" (${sel(a.el)}) overlaps "${c.txt}" (${sel(c.el)})`);
+      break;
+    }
+  }
+  return out;
+}
+
 const browser = await pw.chromium.launch();
 try {
   for (const width of opt.widths) {
@@ -411,6 +458,8 @@ try {
     await page.screenshot({ path: file, fullPage: true });
     shots.push(file);
     const m = await page.evaluate(measure, minTap);
+    // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
+    for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
     if (width === 1280 && m.fine.length >= 3) {

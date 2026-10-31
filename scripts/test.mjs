@@ -96,6 +96,11 @@ else {
   const r20 = st.out.findings.filter((f) => f.id === 'R20');
   check('render flags R20 when hints and metadata are set at 13px', r20.length === 1 && /3 text block/.test(r20[0].message), JSON.stringify(r20));
   check('R20 ignores a one-word tag', !r20.some((f) => /Beta/.test(f.message)));
+  const ov = run('render-check.mjs', path.join(S2, 'overlap.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320');
+  const r21 = ov.out.findings.filter((f) => f.id === 'R21');
+  check('render flags R21 when a value is drawn over its label', r21.length === 1 && /Total for 21 staff/.test(r21[0].message) && /5,764,200/.test(r21[0].message), JSON.stringify(r21));
+  const okOv = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320');
+  check('R21 ignores visually-hidden text and scroll containers', !okOv.out.findings.some((f) => f.id === 'R21'));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
