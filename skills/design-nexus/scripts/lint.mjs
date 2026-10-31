@@ -68,6 +68,13 @@ const HYPE = [
   'game-changer', 'game changing', 'game-changing', 'unleash', 'take your .{1,20} to the next level',
   '革新的な', '次世代の', 'シームレスな', 'を加速', '圧倒的な', '新時代の',
 ];
+// Notes about the page itself (R19). Kept narrow: words a real product page would not say to its visitors.
+const META = [
+  'sample data', 'placeholder (?:name|text|image|photo|copy|logo)', 'dummy (?:data|text|content)', 'replace (?:this |it )?with (?:a |the )?real',
+  'before (?:publishing|launch|going live)', 'not the real (?:screen|product|data)', 'draft note', '\\bTODO\\b', '\\bTBD\\b',
+  'サンプルデータ', 'ダミー', '表示見本', '見本の(?:時刻|データ|画面|数字)', '仮の(?:名前|文章|データ|画像|写真|店名|住所)', '実際の画面ではありません', '公開前に(?:確認|差し替え)', '差し替えてください', '差し替え予定', '架空のデータ',
+];
+const META_RE = new RegExp(`(${META.join('|')})`, 'gi');
 const HYPE_RE = new RegExp(`(${HYPE.join('|')})`, 'gi');
 const CJK_RE = /[぀-ヿ㐀-鿿]/;
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
@@ -180,6 +187,22 @@ for (const file of files) {
     if (hype.has(k)) continue;
     hype.add(k);
     add('R10', m.index, `Template/hype copy: "${m[1]}"`);
+  }
+
+  // R19 the page talks about itself: notes to the owner or reviewer left in visible copy or alt text
+  if (isMarkup) {
+    const visible = text.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<!--[\s\S]*?-->/gi, (s) => s.replace(/[^\n]/g, ' '))
+      .replace(/<[^>]*>/g, (tag) => {
+        const alt = tag.match(/\balt\s*=\s*("[^"]*"|'[^']*')/i);
+        return alt ? ' '.repeat(tag.indexOf(alt[1])) + alt[1] + ' '.repeat(tag.length - tag.indexOf(alt[1]) - alt[1].length) : ' '.repeat(tag.length);
+      });
+    const seen = new Set();
+    for (const m of visible.matchAll(META_RE)) {
+      const k = m[1].toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      add('R19', m.index, `Note to the owner or reviewer in visible copy: "${m[1]}"; move it to NOTES.md`);
+    }
   }
 
   // F12 tiny text

@@ -37,6 +37,10 @@ const lone = run('lint.mjs', path.join(S2, 'token-drift-component.css'), '--desi
 check('lint skips N09 when the scan does not include the theme', !lone.out.findings.some((f) => f.id === 'N09'));
 const hexText = run('lint.mjs', path.join(S2, 'hex-in-text.html'), '--design', path.join(S2, 'hex-in-text.DESIGN.md'));
 check('lint ignores #-numbers in body text when counting colors (R08)', !hexText.out.findings.some((f) => f.id === 'R08'), JSON.stringify(hexText.out.findings.filter((f) => f.id === 'R08')));
+const meta = run('lint.mjs', path.join(S2, 'meta-copy.html'));
+const r19 = meta.out.findings.filter((f) => f.id === 'R19').map((f) => f.message);
+check('lint flags R19 for notes to the reviewer in visible copy and alt text', ['Sample data', 'Placeholder photo', '表示見本', '実際の画面ではありません'].every((w) => r19.some((m) => m.includes(w))), JSON.stringify(r19));
+check('R19 ignores comments, scripts, styles, and placeholder attributes', !r19.some((m) => /TODO|Search stops/.test(m)), JSON.stringify(r19));
 const keptAgg = run('lint.mjs', path.join(S2, 'kept-aggregate.css'));
 check('a keep comment suppresses an aggregate R08', keptAgg.out.findings.filter((f) => f.id === 'R08').every((f) => f.kept));
 

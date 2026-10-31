@@ -47,6 +47,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R16 | A font named in CSS is never loaded (no `@font-face`, font CDN link, or `next/font`), so visitors see a fallback and the type plan never appears | lint |
 | R17 | Layout break inside a container at some width: in-flow content escaping a bordered or filled panel, text cut off by `overflow: hidden`, or a figure (price, count, date) wrapping mid-number | render |
 | R18 | Content removed at the narrowest width instead of reflowed: text readable at 1280px is hidden (`display: none`, zero size) at 320px. Navigation and `aria-hidden` decoration are exempt | render |
+| R19 | The page talks about itself: a note to the owner or reviewer in visible copy or `alt` text ("sample data", "placeholder name", "before publishing", "draft note", TODO;「サンプルデータ」「ダミー」「表示見本」「実際の画面ではありません」「公開前に確認」). Move it to NOTES.md | lint |
 
 ## Finish
 
