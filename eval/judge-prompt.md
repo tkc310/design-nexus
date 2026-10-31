@@ -13,7 +13,11 @@ Review the page four times, once as each person, before agreeing on scores. Each
 | **Layout and front-end design engineer** | D6, D7, D10 | Is the spacing on a scale? Does the layout change with the content? Is each width designed, including 768 and 1920? Do the code, tokens, and DESIGN.md agree? |
 | **Accessibility and localization specialist** | vetoes on any dimension | Contrast, focus, target size, reading order, reduced motion, and for Japanese pages line breaking, phrase splitting, and type size. |
 
-The lead persona proposes the score for their dimensions; any other persona can lower it with a concrete reason (never raise it). The specialist's concrete accessibility or localization defect caps the affected dimension at 2.
+The lead persona proposes the score for their dimensions; any other persona can lower it with a concrete reason (never raise it).
+
+The specialist's veto has two levels. A defect that fails WCAG 2.2 AA (contrast, visible focus, target size, keyboard access, name and role, reflow at 320px, reduced motion) or makes content unreadable or misleading caps the affected dimension at 2. A lesser concrete defect, such as a typesetting blemish, lowers the dimension by at most 1, and only when it is prominent (a heading, a button, the first screen) or repeated across the page.
+
+Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* (JLReq), not by Latin habits. In running text, a break between any two kana or kanji is correct typesetting, even inside a word; it is not a defect. These are defects: a line-start or line-end prohibition broken (a line beginning with 、。」）ー or a small kana, or ending with 「（); a figure split from itself or from its unit (12,3/00円, 15/分); a break inside a word in headings, buttons, labels, navigation, and other text of one or two lines, where phrase-aware breaking is expected; and a heading or display line whose last line holds one or two characters.
 
 ## Inputs
 
