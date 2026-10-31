@@ -453,6 +453,11 @@ try {
     } catch (e) {
       await page.goto(url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
     }
+    // Wait for images (decoding="async" data URIs too) and web fonts, so the screenshot shows what a visitor sees.
+    await page.evaluate(() => Promise.race([
+      Promise.all([...document.images].map((i) => (i.complete ? i.decode() : new Promise((r) => { i.onload = i.onerror = r; })).catch(() => {})).concat(document.fonts ? [document.fonts.ready] : [])),
+      new Promise((r) => setTimeout(r, 5000)),
+    ])).catch(() => {});
     await page.waitForTimeout(400);
     const file = path.join(opt.out, `w${width}.png`);
     await page.screenshot({ path: file, fullPage: true });
