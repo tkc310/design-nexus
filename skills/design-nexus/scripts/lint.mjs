@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // design-nexus static lint. Node 18+, no dependencies.
-// Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json] [--surface mobile]
+// Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json]
+// (--surface is accepted and ignored, so the same flags work for lint and render-check.)
 // Exit: 0 clean, 2 floor findings, 1 usage error.
 // Suppress: `design-nexus: keep R02 because <reason>` or `design-nexus-disable R02` anywhere in a file.
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ const opt = { json: false, design: null, targets: [] };
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--json') opt.json = true;
   else if (args[i] === '--design') opt.design = args[++i];
+  else if (args[i] === '--surface') i++;
   else if (args[i] === '--help' || args[i] === '-h') { usage(); process.exit(0); }
   else opt.targets.push(args[i]);
 }
@@ -52,7 +54,15 @@ const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
 const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
 
 // Aggregate state across files.
-const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [] };
+const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false, props: new Map() };
+
+// Faces that ship with common operating systems; declaring them needs no loader.
+const SYSTEM_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|ui-[\w-]+|segoe ui|roboto|helvetica( neue)?|arial|georgia|times( new roman)?|verdana|tahoma|trebuchet ms|courier( new)?|menlo|monaco|consolas|sf (pro|mono)[\w ]*|hiragino[\w ]*|yu (gothic|mincho)|游ゴシック|游明朝|meiryo|メイリオ|ms (p?gothic|p?mincho)|sans-serif|serif|monospace|cursive|fantasy|emoji|math)$/i;
+
+// Blanks out text between tags (keeping <style>, <script>, and the tags themselves) so offsets and line numbers still line up.
+const maskTextNodes = (text) => text.replace(/(<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<!--[\s\S]*?-->|<[^>]*>)|[^<]+/g, (m, keep) => keep || m.replace(/[^\n]/g, ' '));
+
+const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 
 const HYPE = [
   'lorem ipsum', 'welcome to', 'unlock the', 'unlock your', 'elevate your', 'seamless', 'seamlessly',
@@ -60,6 +70,13 @@ const HYPE = [
   'game-changer', 'game changing', 'game-changing', 'unleash', 'take your .{1,20} to the next level',
   '革新的な', '次世代の', 'シームレスな', 'を加速', '圧倒的な', '新時代の',
 ];
+// Notes about the page itself (R19). Kept narrow: words a real product page would not say to its visitors.
+const META = [
+  'sample data', 'placeholder (?:name|text|image|photo|copy|logo)', 'dummy (?:data|text|content)', 'replace (?:this |it )?with (?:a |the )?real',
+  'before (?:publishing|launch|going live)', 'not the real (?:screen|product|data)', 'draft note', '\\bTODO\\b', '\\bTBD\\b',
+  'サンプルデータ', 'ダミー', '表示見本', '見本の(?:時刻|データ|画面|数字)', '仮の(?:名前|文章|データ|画像|写真|店名|住所)', '実際の画面ではありません', '公開前に(?:確認|差し替え)', '差し替えてください', '差し替え予定', '架空のデータ',
+];
+const META_RE = new RegExp(`(${META.join('|')})`, 'gi');
 const HYPE_RE = new RegExp(`(${HYPE.join('|')})`, 'gi');
 const CJK_RE = /[぀-ヿ㐀-鿿]/;
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
@@ -174,6 +191,22 @@ for (const file of files) {
     add('R10', m.index, `Template/hype copy: "${m[1]}"`);
   }
 
+  // R19 the page talks about itself: notes to the owner or reviewer left in visible copy or alt text
+  if (isMarkup) {
+    const visible = text.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<!--[\s\S]*?-->/gi, (s) => s.replace(/[^\n]/g, ' '))
+      .replace(/<[^>]*>/g, (tag) => {
+        const alt = tag.match(/\balt\s*=\s*("[^"]*"|'[^']*')/i);
+        return alt ? ' '.repeat(tag.indexOf(alt[1])) + alt[1] + ' '.repeat(tag.length - tag.indexOf(alt[1]) - alt[1].length) : ' '.repeat(tag.length);
+      });
+    const seen = new Set();
+    for (const m of visible.matchAll(META_RE)) {
+      const k = m[1].toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      add('R19', m.index, `Note to the owner or reviewer in visible copy: "${m[1]}"; move it to NOTES.md`);
+    }
+  }
+
   // F12 tiny text
   each(/font-size\s*:\s*([\d.]+)(px|rem|em)\b/g, (m) => {
     const px = m[2] === 'px' ? +m[1] : +m[1] * 16;
@@ -228,19 +261,8 @@ for (const file of files) {
   if (hasCJK) {
     each(/font-style\s*:\s*italic|\bitalic\b(?=[^<>]*["'])/g, (m) => add('R14', m.index, 'Italic with Japanese text (no true italic in Japanese fonts)', m[0]));
     each(/letter-spacing\s*:\s*-[\d.]+|\btracking-(tight|tighter)\b/g, (m) => add('R14', m.index, 'Negative letter-spacing with Japanese text', m[0]));
-    const selectorAt = (idx) => {
-      const open = text.lastIndexOf('{', idx);
-      const close = text.lastIndexOf('}', open);
-      return open === -1 ? '' : text.slice(close + 1, open);
-    };
-    each(/line-height\s*:\s*(1(?:\.[0-4]\d*)?)\s*[;}"']|\bleading-(none|tight|snug)\b/g, (m) => {
-      if (/h[1-6]|title|heading|display|hero|button|\.btn|label|badge|tag|nav|big|stat|kpi|figure|number|metric/i.test(selectorAt(m.index))) return;
-      if (m[2]) {
-        const tagStart = text.lastIndexOf('<', m.index);
-        if (/^<(h[1-6]|button|label|nav)/i.test(text.slice(tagStart, tagStart + 8))) return;
-      }
-      add('R14', m.index, 'Tight line-height on Japanese body text: use 1.7–1.9', m[0]);
-    });
+    // Line-height is checked by render-check.mjs on multi-line Japanese text, where it can tell body copy from labels and numerals.
+
   }
 
   // N01 z-index
@@ -259,9 +281,36 @@ for (const file of files) {
   }
 
   // aggregates
-  for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
+  for (const [id, why] of kept) if (!agg.kept.has(id)) agg.kept.set(id, why);
+  if (/prefers-color-scheme\s*:\s*dark|\[data-theme=["']?dark|\.dark\s*[{,]/.test(text)) agg.darkScheme = true;
+  for (const [idx, decl] of fontDecls) {
+    const fam = primaryFamily(decl);
+    if (!fam || /^(var\(|inherit|initial)/.test(fam) || SYSTEM_FONTS.test(fam)) continue;
+    if (!agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, idx) });
+  }
+  // Custom properties that hold a font stack: a family-like name, and a value that is quoted or a comma list.
+  for (const m of text.matchAll(/--((?:[\w-]*-)?(?:font|family|serif|sans|mono|display|typeface)(?:-[\w-]+)?)\s*:\s*([^;}\n]+)/gi)) {
+    if (/size|weight|wght|line|leading|lh|tracking|spacing|feature|settings|variation|color|colour|shadow|style|stretch|case|variant|scale|ratio|width|height|gap|radius|transform|opsz|axis/i.test(m[1])) continue;
+    if (!/^\s*["']|,/.test(m[2])) continue;
+    const fam = primaryFamily(m[2]);
+    if (fam && !/^(var\(|[\d.#-]|rgb|hsl|oklch|inherit|normal|bold)/.test(fam) && !SYSTEM_FONTS.test(fam) && !agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, m.index) });
+  }
+  for (const m of text.matchAll(/@font-face\s*\{[^}]*font-family\s*:\s*["']?([^;"'}]+)/g)) agg.fontsLoaded.add(m[1].trim().toLowerCase());
+  for (const m of text.matchAll(/fonts\.googleapis\.com\/css2?\?([^"'\s)]+)/g)) {
+    // css2 repeats family=; the legacy css API separates families with |.
+    for (const f of m[1].matchAll(/family=([^&"']+)/g)) {
+      for (const one of safeDecode(f[1]).split('|')) agg.fontsLoaded.add(one.split(':')[0].replace(/\+/g, ' ').trim().toLowerCase());
+    }
+  }
+  for (const m of text.matchAll(/from\s*["']next\/font\/google["']|from\s*["']@fontsource|fonts\.bunny\.net|use\.typekit\.net|fontshare\.com/g)) agg.anyLoader = true;
+  for (const m of text.matchAll(/--([\w-]+)\s*:\s*([^;}\n]+)/g)) if (!agg.props.has(m[1].toLowerCase())) agg.props.set(m[1].toLowerCase(), m[2].trim());
+  // In markup, only styles, scripts, and tag attributes hold colors; "#214" in body text is a ticket number.
+  const colorText = isMarkup ? maskTextNodes(text) : text;
+  for (const m of colorText.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
     const before = text.slice(Math.max(0, m.index - 6), m.index);
     if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
+    // An all-digit "#221" in a script string is a ticket or issue number unless it sits where a color value does.
+    if (/^#\d+$/.test(m[0]) && !(/[:=(,'"`]\s*$/.test(before) && /^\s*(?:['"`),;}!]|$)/m.test(colorText.slice(m.index + m[0].length, m.index + m[0].length + 3)))) continue;
     const h = normHex(m[0]);
     if (!h) continue;
     if (!agg.hexes.has(h)) agg.hexes.set(h, { file: rel, line: lineOf(text, m.index) });
@@ -286,8 +335,36 @@ if (allowed) {
   const off = [...agg.hexes.entries()].filter(([h]) => !allowed.has(h));
   for (const [h, at] of off.slice(0, 10)) push('R08', at, `${h} is not a DESIGN.md token`);
   if (off.length > 10) push('R08', null, `…and ${off.length - 10} more off-token colors`);
-} else if (agg.hexes.size > 12) {
-  push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens`);
+} else if (agg.hexes.size > (agg.darkScheme ? 24 : 12)) {
+  push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens per scheme`);
+}
+// N09 the design record and the code disagree: a DESIGN.md color the code never uses (by value or by a matching custom property).
+// Only when the scan includes the theme, i.e. at least half the token colors were found; linting one component alone says nothing.
+if (tokens) {
+  const colors = Object.entries(tokenColors(tokens)).filter(([k]) => !/component-/.test(k));
+  // A same-named custom property in another color syntax (oklch, rgb) counts as present; one with a different hex does not.
+  const propFor = (k) => [k.replace(/^(dark\.)?color\./, ''), k.replace(/^dark\./, '').replace(/\./g, '-')].map((n) => agg.props.get(n)).find(Boolean);
+  const missing = colors.filter(([k, v]) => {
+    if (agg.hexes.has(normHex(v))) return false;
+    const p = propFor(k);
+    return !p || /^#[0-9a-f]{3,8}$/i.test(p);
+  });
+  if (colors.length && missing.length <= colors.length / 2) {
+    for (const [k, v] of missing) {
+      const p = propFor(k);
+      push('N09', { file: opt.design }, `DESIGN.md token ${k} (${v}) ${p ? `is ${p} in the code` : 'does not appear in the code'}; make the record match what ships`);
+    }
+  }
+}
+// R16 fonts named in CSS but never loaded: the page silently falls back to a default face.
+if (!agg.anyLoader) {
+  for (const [fam, at] of agg.fontsUsed) {
+    if (!agg.fontsLoaded.has(fam)) push('R16', at, `"${fam}" is declared but never loaded (@font-face, a font CDN link, or next/font); visitors without it installed see a fallback`);
+  }
+}
+// Cross-file findings honor a keep anywhere in the scanned files.
+for (const f of findings) {
+  if (!f.kept && ['R06', 'R07', 'R08', 'R16'].includes(f.id) && agg.kept.has(f.id)) f.kept = agg.kept.get(f.id);
 }
 
 const counts = summarize(findings);

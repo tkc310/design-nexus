@@ -12,7 +12,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 
 | ID | Check | Detected by |
 |---|---|---|
-| F01 | Text contrast below 4.5:1 (3:1 for large text); UI component contrast below 3:1 | render, tokens |
+| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
 | F02 | Focus indicator removed or invisible | lint, render |
 | F03 | Image without `alt` | lint |
 | F04 | HTML document missing `lang` or viewport meta | lint |
@@ -22,8 +22,9 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | F08 | Horizontal scroll at 320px or other tested widths | render |
 | F09 | Tap target smaller than 24×24px (44px on mobile surfaces) | render |
 | F10 | Icon-only button or link without an accessible name | lint |
-| F11 | Redesign lost a link, field, handler, or heading from the before-snapshot | render `--compare` |
+| F11 | Redesign lost a link, field, handler, or heading from the before-snapshot (a field that gained a name, id, label, or more specific text type still counts as kept) | render `--compare` |
 | F12 | Text smaller than 12px | lint, render |
+| F13 | A control's `aria-label` leaves out words it shows (WCAG 2.5.3 Label in Name); toggles' on/off state text is exempt | render |
 
 ## Reflex
 
@@ -32,7 +33,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R01 | An overused default face as the primary family (Inter, Roboto, Arial, Helvetica, Open Sans, Poppins, Montserrat, Lato, bare system-ui; Japanese: Noto Sans JP alone with no other voice) | lint |
 | R02 | Purple/indigo/violet gradient as default decoration | lint |
 | R03 | Gradient-filled text | lint |
-| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns | audit |
+| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band | audit, eval diversity |
 | R05 | Emoji used as icons in headings, buttons, or list markers | lint |
 | R06 | Large uniform radius on everything | lint |
 | R07 | Glassmorphism (backdrop blur) on many surfaces | lint |
@@ -42,8 +43,14 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R11 | Numbered markers (01 / 02 / 03) that don't encode a real sequence | lint (hint), audit |
 | R12 | `transition: all` | lint |
 | R13 | Feature grid of identical icon-in-a-circle cards | audit |
-| R14 | Japanese text set with italic, negative letter-spacing, or tight body line-height | lint |
+| R14 | Japanese text set with italic or negative letter-spacing (lint), or multi-line Japanese running text below line-height 1.6 (render) | lint, render |
 | R15 | Every section has the same structure (heading + cards) | audit |
+| R16 | A font named in CSS is never loaded (no `@font-face`, font CDN link, or `next/font`), so visitors see a fallback and the type plan never appears | lint |
+| R17 | Layout break inside a container at some width: in-flow content escaping a bordered or filled panel, text cut off by `overflow: hidden`, or a figure (price, count, date) wrapping mid-number | render |
+| R18 | Content removed at the narrowest width instead of reflowed: text readable at 1280px is hidden (`display: none`, zero size) at 320px. Navigation and `aria-hidden` decoration are exempt | render |
+| R19 | The page talks about itself: a note to the owner or reviewer in visible copy or `alt` text ("sample data", "placeholder name", "before publishing", "draft note", TODO;「サンプルデータ」「ダミー」「表示見本」「実際の画面ではありません」「公開前に確認」). Move it to NOTES.md | lint |
+| R20 | Informative text below 14px at 1280: three or more blocks of hints, metadata, captions, table cells, or errors set at 12–13px | render |
+| R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
 
 ## Finish
 
@@ -57,6 +64,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | N06 | Broken image | render |
 | N07 | Headings without `text-wrap: balance` | lint (hint) |
 | N08 | Token plan incomplete or odd (same display and body family, no spacing base, type ratio outside 1.1–1.618) | tokens |
+| N09 | DESIGN.md and the code disagree: a DESIGN.md color is not used in the code, or a same-named custom property holds a different value (checked when the scan includes the theme) | lint `--design` |
 
 ## Without tools
 
