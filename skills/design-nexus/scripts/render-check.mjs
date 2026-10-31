@@ -316,11 +316,13 @@ try {
   const narrow = Math.min(...opt.widths);
   const wide = opt.widths.includes(1280) ? 1280 : Math.max(...opt.widths);
   if (narrow <= 480 && wide > narrow) {
+    // Digits are ignored when matching, so a live clock or countdown that ticked between captures still counts as the same text.
+    const key = (t) => t.replace(/\d/g, '0');
     const left = new Map();
-    for (const t of textsAt.get(narrow) || []) left.set(t, (left.get(t) || 0) + 1);
+    for (const t of textsAt.get(narrow) || []) left.set(key(t), (left.get(key(t)) || 0) + 1);
     const gone = [];
     for (const t of textsAt.get(wide) || []) {
-      if (left.get(t)) left.set(t, left.get(t) - 1);
+      if (left.get(key(t))) left.set(key(t), left.get(key(t)) - 1);
       else gone.push(t);
     }
     // Japanese characters carry about twice the content of Latin ones.
