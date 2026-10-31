@@ -11,6 +11,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Pair faces deliberately: a characterful display face used sparingly, a highly readable body face, optionally a utility face for figures and labels.
 - Use a modular scale (1.2–1.333). No more than 5–6 distinct sizes on a page.
 - Body 16–18px; measure 60–75 characters (Japanese: 30–40 characters, see `japanese.md`).
+- **Secondary text is still text.** Anything a person reads to decide or act (hints, help, metadata, captions, legends, table cells, small print, errors) is 14px or more; 12–13px is only for a one- or two-word tag that repeats something visible nearby. Raise the floor to 16px when the brief's reader is tired, older, reading at a distance, or one-handed on a phone. Make secondary text secondary with color or weight, not by shrinking it, and never stack both: muted color is for 15px and up, so 14px text uses the body ink. The render check flags informative text below 14px as R20.
 - Headings get tighter line-height (1.1–1.25) and `text-wrap: balance`; body gets 1.5–1.7 and `text-wrap: pretty`.
 - Numbers in tables and stats use `font-variant-numeric: tabular-nums`.
 - Never fake bold or italic; load the weights you use. Use `font-display: swap`.

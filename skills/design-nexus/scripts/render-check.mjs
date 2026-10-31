@@ -120,7 +120,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -148,6 +148,12 @@ function measure(minTap) {
       if (lines >= 2 && lh / size < 1.6) out.cjkTight.push({ sel: sel(el), ratio: +(lh / size).toFixed(2), text: t.textContent.trim().slice(0, 30) });
     }
     if (size < 12 && out.small.length < 10) out.small.push({ sel: sel(el), size, text: t.textContent.trim().slice(0, 40) });
+    // R20: informative text set below 14px (a word or two of metadata is fine; sentences and data are not).
+    else if (size < 14) {
+      const txt = t.textContent.trim();
+      const cjk = (txt.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+      if ((cjk >= 6 || txt.split(/\s+/).length >= 3 || /\d[\d,.:]*\s*\S/.test(txt) && txt.length >= 5) && !el.closest('[aria-hidden="true"], .visually-hidden, .sr-only')) out.fine.push({ sel: sel(el), size, text: txt.slice(0, 40) });
+    }
     const fg = parse(cs.color), bg = bgOf(el);
     if (fg && bg) {
       const f = blend(fg, bg);
@@ -407,6 +413,10 @@ try {
     const m = await page.evaluate(measure, minTap);
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
+    if (width === 1280 && m.fine.length >= 3) {
+      const sizes = [...new Set(m.fine.map((x) => x.size))].sort((a, b) => a - b).join('/');
+      add('R20', `@${width}px`, `${m.fine.length} text block(s) carry information at ${sizes}px, e.g. ${m.fine.slice(0, 3).map((x) => `"${x.text}"`).join(', ')}; set hints, metadata, captions, table cells and errors at 14px or more`);
+    }
     if (width === opt.widths[opt.widths.length - 1] || width >= 1280) {
       for (const c of m.lowContrast) add('F01', `@${width}px ${c.sel}`, `contrast ${c.ratio}:1 < ${c.need}:1 "${c.text}"`);
     }

@@ -90,6 +90,10 @@ else {
   check('render flags F01 when a link loses contrast on hover', scF.some((f) => /hover/.test(f.where) && /Book a fitting/.test(f.message)), JSON.stringify(scF));
   check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
   check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
+  const st = run('render-check.mjs', path.join(S2, 'small-text.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
+  const r20 = st.out.findings.filter((f) => f.id === 'R20');
+  check('render flags R20 when hints and metadata are set at 13px', r20.length === 1 && /3 text block/.test(r20[0].message), JSON.stringify(r20));
+  check('R20 ignores a one-word tag', !r20.some((f) => /Beta/.test(f.message)));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');

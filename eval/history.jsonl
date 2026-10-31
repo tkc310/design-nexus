@@ -45,3 +45,5 @@
 {"run":"20261031-1441-v0.6.0-base-v060","version":"0.6.0","commit":"9e5b865","at":"2026-10-31T15:28:09.424Z","mean_auto":40,"mean_judge":51.3,"mean_total":91.3,"gate_failures":0}
 {"run":"20261031-1530-v0.6.0-exp013","version":"0.6.0","commit":"f309526","at":"2026-10-31T15:51:13.666Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261031-1530-v0.6.0-exp013","version":"0.6.0","commit":"f309526","at":"2026-10-31T16:01:44.186Z","mean_auto":40,"mean_judge":49.8,"mean_total":89.8,"gate_failures":0}
+{"run":"20261031-1610-v0.6.0-exp014","version":"0.6.0","commit":"3bf7402","at":"2026-10-31T16:27:07.735Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261031-1610-v0.6.0-exp014","version":"0.6.0","commit":"3bf7402","at":"2026-10-31T16:34:13.328Z","mean_auto":40,"mean_judge":49,"mean_total":89,"gate_failures":0}

@@ -6,7 +6,8 @@
 //   node eval/run.mjs judge    --run <dir> [--cmd "<agent cli>"] write JUDGE_PROMPT.md per case; with --cmd, collect judge.json
 //   node eval/run.mjs score    --run <dir>                       lint + render + judge*.json -> score.json, summary.md
 //                                                                (several judge.<model>.json files are averaged)
-//   node eval/run.mjs compare  --base <dir> --run <dir> [--primary opus] [--rescore no]   rescore the base, then accept/reject (eval/rubric.md)
+//   node eval/run.mjs compare  --base <dir>[,<dir>…] --run <dir> [--primary opus] [--rescore no]   rescore the base(s), then accept/reject;
+//                                                                several base runs of one version are averaged per case
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
 import fs from 'node:fs';
 import path from 'node:path';
@@ -228,15 +229,36 @@ const commands = {
 
   compare() {
     // Rescore the base with the current checks first, so a check added since the base ran isn't counted as a regression.
+    // --base may list several runs of the same version (comma-separated): each case is then the mean of its runs,
+    // because one generation per case varies by about as much as a typical effect (M-005).
+    const baseDirs = String(opt.base).split(',').map((b) => runDir(b.trim()));
     if (opt.rescore !== 'no') {
-      const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), 'score', '--run', runDir(opt.base)], { encoding: 'utf8', maxBuffer: 64 << 20 });
-      if (r.status !== 0) die(`rescoring the base failed:\n${r.stderr}`);
+      for (const b of baseDirs) {
+        const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), 'score', '--run', b], { encoding: 'utf8', maxBuffer: 64 << 20 });
+        if (r.status !== 0) die(`rescoring the base failed:\n${r.stderr}`);
+      }
     }
-    const base = JSON.parse(read(path.join(runDir(opt.base), 'summary.json')));
+    const bases = baseDirs.map((b) => JSON.parse(read(path.join(b, 'summary.json'))));
     const cand = JSON.parse(read(path.join(runDir(opt.run), 'summary.json')));
-    const key = base.mean_total !== null && cand.mean_total !== null ? 'total' : 'auto';
+    const key = bases.every((b) => b.mean_total !== null) && cand.mean_total !== null ? 'total' : 'auto';
     const val = (r) => (key === 'total' ? r.total : r.auto?.score);
-    const byCase = Object.fromEntries(base.cases.filter((c) => !c.missing).map((c) => [c.case, c]));
+    const mean1 = (xs) => +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(1);
+    const byCase = {};
+    for (const name of new Set(bases.flatMap((b) => b.cases.filter((c) => !c.missing).map((c) => c.case)))) {
+      const rows = bases.map((b) => b.cases.find((c) => c.case === name && !c.missing)).filter(Boolean);
+      if (rows.length === 1) { byCase[name] = rows[0]; continue; }
+      const judgeModels = [...new Set(rows.flatMap((r) => Object.keys(r.judges || {})))];
+      byCase[name] = {
+        case: name,
+        n: rows.length,
+        total: rows.every((r) => r.total != null) ? mean1(rows.map((r) => r.total)) : null,
+        auto: { score: mean1(rows.map((r) => r.auto?.score ?? 0)) },
+        gate: rows.some((r) => r.gate === 'fail') ? 'fail' : 'pass',
+        dims: rows.every((r) => r.dims) ? meanDims(rows.map((r) => ({ scores: r.dims }))) : null,
+        judges: Object.fromEntries(judgeModels.map((m) => [m, mean1(rows.filter((r) => r.judges?.[m] !== undefined).map((r) => r.judges[m]))])),
+      };
+    }
+    const base = { run: bases.map((b) => b.run).join(' + '), judges: bases.length === 1 ? bases[0].judges : null };
     const lines = [`# Compare ${cand.run} vs base ${base.run}`, '', `Metric: ${key}${key === 'auto' ? ' (judge scores missing in one run; automatic part only)' : ''}`, '', '| case | base | cand | Δ | gate |', '|---|---|---|---|---|'];
     const reasons = [];
     for (const c of cand.cases.filter((c) => !c.missing)) {
