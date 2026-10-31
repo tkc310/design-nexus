@@ -438,6 +438,11 @@ function overlaps() {
         clips.push(a.getBoundingClientRect());
       }
     }
+    // Content scrolls under fixed and sticky bars by design; only text in the same layer can collide.
+    let layer = null;
+    for (let a = el; a && a !== document.body; a = a.parentElement) {
+      if (/fixed|sticky/.test(getComputedStyle(a).position)) { layer = a; break; }
+    }
     const rg = document.createRange();
     rg.selectNodeContents(t);
     for (const r of rg.getClientRects()) {
@@ -445,7 +450,7 @@ function overlaps() {
       const pad = r.height * 0.2;
       let L = r.left, R = r.right, T = r.top + pad, B = r.bottom - pad;
       for (const c of clips) { L = Math.max(L, c.left); R = Math.min(R, c.right); T = Math.max(T, c.top); B = Math.min(B, c.bottom); }
-      if (R - L > 2 && B - T > 3) boxes.push({ el, t, L, R, T, B, txt: t.data.trim().slice(0, 30) });
+      if (R - L > 2 && B - T > 3) boxes.push({ el, t, layer, L, R, T, B, txt: t.data.trim().slice(0, 30) });
     }
   }
   boxes.sort((a, b) => a.T - b.T);
@@ -454,7 +459,7 @@ function overlaps() {
     const a = boxes[i];
     for (let j = i + 1; j < boxes.length && boxes[j].T < a.B; j++) {
       const c = boxes[j];
-      if (a.t === c.t) continue;
+      if (a.t === c.t || a.layer !== c.layer) continue;
       const ix = Math.min(a.R, c.R) - Math.max(a.L, c.L), iy = Math.min(a.B, c.B) - Math.max(a.T, c.T);
       if (ix <= 2 || iy <= 2) continue;
       if ((ix * iy) / Math.min((a.R - a.L) * (a.B - a.T), (c.R - c.L) * (c.B - c.T)) < 0.25) continue;
