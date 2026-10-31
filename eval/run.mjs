@@ -178,7 +178,11 @@ const commands = {
       const caseFile = path.join(CASES, `${d}.md`);
       const c = fs.existsSync(caseFile) ? parseCase(caseFile) : {};
       const lint = runTool('lint.mjs', [entry, ...(fs.existsSync(path.join(dir, 'DESIGN.md')) ? ['--design', path.join(dir, 'DESIGN.md')] : [])]);
-      const renderArgs = [entry, '--out', path.join(dir, 'shots'), ...(c.surface === 'mobile' ? ['--surface', 'mobile'] : [])];
+      // M-006: every scored render sees the same weekday mid-morning in the page's own zone, so a timetable or
+      // opening-hours page isn't judged on whatever hour the scoring happened to run.
+      const ja = /lang=["']ja/i.test(fs.readFileSync(entry, 'utf8').slice(0, 2000));
+      const clock = ja ? ['--time', '2026-11-04T10:30:00+09:00', '--tz', 'Asia/Tokyo'] : ['--time', '2026-11-04T10:30:00-05:00', '--tz', 'America/New_York'];
+      const renderArgs = [entry, '--out', path.join(dir, 'shots'), ...clock, ...(c.surface === 'mobile' ? ['--surface', 'mobile'] : [])];
       if (fs.existsSync(path.join(dir, 'SOURCE.html'))) {
         const before = path.join(dir, 'before.json');
         if (!fs.existsSync(before)) runTool('render-check.mjs', [path.join(dir, 'SOURCE.html'), '--out', path.join(dir, 'shots-source'), '--snapshot', before]);

@@ -13,7 +13,7 @@ import { pathToFileURL } from 'node:url';
 import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
 const args = process.argv.slice(2);
-const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null };
+const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--out') opt.out = args[++i];
@@ -22,10 +22,12 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--surface') opt.surface = args[++i];
   else if (a === '--snapshot') opt.snapshot = args[++i];
   else if (a === '--compare') opt.compare = args[++i];
+  else if (a === '--time') opt.time = args[++i]; // ISO instant, e.g. 2026-11-04T10:30:00+09:00: pins the page clock
+  else if (a === '--tz') opt.tz = args[++i]; // IANA zone for the page, e.g. Asia/Tokyo
   else opt.target = a;
 }
 if (!opt.target) {
-  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--json]');
+  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--json]');
   process.exit(1);
 }
 
@@ -446,8 +448,9 @@ function overlaps() {
 const browser = await pw.chromium.launch();
 try {
   for (const width of opt.widths) {
-    const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
+    const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ...(opt.tz ? { timezoneId: opt.tz } : {}) });
     const page = await ctx.newPage();
+    if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
     } catch (e) {
@@ -513,8 +516,9 @@ try {
   }
 
   // Reduced motion: anything still moving with the preference set?
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', ...(opt.tz ? { timezoneId: opt.tz } : {}) });
   const page = await ctx.newPage();
+  if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
   await page.goto(url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(200);
   const moving = await page.evaluate(() => document.getAnimations()
