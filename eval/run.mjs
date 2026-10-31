@@ -245,16 +245,22 @@ const commands = {
       if (c.gate === 'fail' && b.gate === 'pass') reasons.push(`${c.case}: new Floor failure`);
       if (d < -5) reasons.push(`${c.case}: regressed ${d}`);
     }
-    const bm = key === 'total' ? base.mean_total : base.mean_auto;
-    const cm = key === 'total' ? cand.mean_total : cand.mean_auto;
+    // Means and dims over the cases both runs have, so a partial candidate (e.g. --cases 02,03,05) is compared like for like.
+    const shared = cand.cases.filter((c) => !c.missing && byCase[c.case] && val(c) != null && val(byCase[c.case]) != null);
+    const avg = (xs) => (xs.length ? +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(1) : null);
+    const bm = avg(shared.map((c) => val(byCase[c.case])));
+    const cm = avg(shared.map((c) => val(c)));
     const dm = +(cm - bm).toFixed(1);
-    lines.push('', `Mean: ${bm} → ${cm} (${dm > 0 ? '+' : ''}${dm})`);
-    if (base.dims && cand.dims) {
+    lines.push('', `Mean over ${shared.length} shared cases: ${bm} → ${cm} (${dm > 0 ? '+' : ''}${dm})`);
+    const withDims = shared.filter((c) => c.dims && byCase[c.case].dims);
+    if (withDims.length) {
+      const bd = meanDims(withDims.map((c) => ({ scores: byCase[c.case].dims }))) || {};
+      const cd = meanDims(withDims.map((c) => ({ scores: c.dims }))) || {};
       lines.push('', '| dim | base | cand | Δ |', '|---|---|---|---|');
       for (const d of Object.keys(DIMS)) {
-        if (base.dims[d] === undefined || cand.dims[d] === undefined) continue;
-        const dd = +(cand.dims[d] - base.dims[d]).toFixed(2);
-        lines.push(`| ${d} | ${base.dims[d]} | ${cand.dims[d]} | ${dd > 0 ? '+' : ''}${dd} |`);
+        if (bd[d] === undefined || cd[d] === undefined) continue;
+        const dd = +(cd[d] - bd[d]).toFixed(2);
+        lines.push(`| ${d} | ${bd[d]} | ${cd[d]} | ${dd > 0 ? '+' : ''}${dd} |`);
       }
     }
     if (base.judges && cand.judges) lines.push('', `Judges (mean of 60): base ${JSON.stringify(base.judges)} → cand ${JSON.stringify(cand.judges)}`);
