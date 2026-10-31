@@ -13,3 +13,6 @@
 {"run":"20261030-2353-v0.2.0-exp002","version":"0.2.0","commit":"a3192bd","at":"2026-10-31T00:01:09.720Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261030-2353-v0.2.0-exp002","version":"0.2.0","commit":"a3192bd","at":"2026-10-31T00:10:33.622Z","mean_auto":40,"mean_judge":46.8,"mean_total":86.9,"gate_failures":0}
 {"run":"20261030-2353-v0.2.0-exp002","version":"0.2.0","commit":"a3192bd","at":"2026-10-31T00:12:11.936Z","mean_auto":40,"mean_judge":46.8,"mean_total":86.9,"gate_failures":0}
+{"run":"20261031-0012-v0.2.1-exp003","version":"0.2.1","commit":"9c8d7d3","at":"2026-10-31T00:24:02.322Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261031-0012-v0.2.1-exp003","version":"0.2.1","commit":"9c8d7d3","at":"2026-10-31T00:34:13.212Z","mean_auto":40,"mean_judge":48.1,"mean_total":88.1,"gate_failures":0}
+{"run":"20261031-0012-v0.2.1-exp003","version":"0.2.1","commit":"9c8d7d3","at":"2026-10-31T00:35:41.322Z","mean_auto":40,"mean_judge":48.1,"mean_total":88.1,"gate_failures":0}

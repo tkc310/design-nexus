@@ -37,6 +37,22 @@ The page as loaded, before any scroll, click, or wait, is what reviewers, screen
 - **Review-only controls stay out of the product.** State switchers for showing loading, empty, or error views are hidden unless a query parameter (e.g. `?states`) is set; show the states as separate labeled examples instead if they matter to the page.
 - **Plausible invented data is labeled** inline (a small "sample data" note), not only in the notes.
 
+## Responsive
+Design each width; don't let it happen. The middle width (about 768px, a tablet or a narrow laptop window) breaks most often, because desktop layouts get squeezed there and mobile layouts get stretched. The tools catch overflow, not ugliness: a layout can pass every check and still be broken.
+- **Open the 320, 768, and 1280 screenshots in that order** and look at each one before saying a width works. At 768 look for squeezed components, overlapping labels, and orphaned columns.
+- **At 320, the signature or the primary action appears within the first screen** (about 640px). Move intro copy below it, or shorten it.
+- **Grid and flex children that hold tables, code, or long words get `min-width: 0`**, or they push their track wider than the screen.
+- **A component that spans the page at desktop spans it at every width.** When a grid collapses, check that wide items (rulers, timelines, charts) still get the full row, not a narrow column.
+- **Figures never wrap mid-number.** Prices, totals, dates, and counts get `white-space: nowrap`; a strip of figures drops to fewer columns before its longest figure stops fitting.
+- **Commands, code, and log lines never wrap mid-token.** Give them `white-space: pre` (or `nowrap`) inside a container that scrolls horizontally, with a visible edge, or shorten the sample. Never use `overflow-wrap: anywhere` on code.
+- **Short labels stay whole.** Buttons, tags, and nav items get `white-space: nowrap` and a layout that has room for them. In Japanese, wrap phrases in `word-break: auto-phrase` (or `keep-all` with `<wbr>` at phrase boundaries) so words like 今日は／こちら don't split; check the largest text setting too.
+- **Headings beside a taller column use `align-self: start`**, so the kicker, heading, and paragraph stay together instead of stretching apart.
+- **Illustrations and diagrams get a max size per breakpoint.** In a single column, keep a decorative or explanatory graphic under about half the viewport height. Text inside an SVG must stay at least 12px when rendered at 320px; otherwise switch to an HTML version or a simplified graphic.
+- **Wide tables** scroll inside a container with a visible edge, or reflow to stacked rows below about 640px. A table never escapes its panel (R17).
+- **Sticky bars at narrow widths** stay one line high, and the page reserves their height so the last field and the last paragraph remain visible.
+- **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
+- **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
+
 ## Components and states
 - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.
 - Every data view has: loading (skeleton matching final layout), empty (explains and invites), error (what happened + how to fix), and overflow (long names, many items).
