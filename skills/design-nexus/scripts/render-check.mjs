@@ -199,12 +199,13 @@ function measure(minTap) {
     }
     return best;
   };
-  for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]), select, textarea')) {
+  const FIELDS = 'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]), select, textarea';
+  for (const el of document.querySelectorAll(FIELDS)) {
     if (!visible(el) || out.boundary.length >= 10) continue;
-    const er = el.getBoundingClientRect();
     let best = edge(el);
+    // Climb through wrappers that hold only this field (a prompt line, a ruled form cell with its label and hint).
     for (let a = el.parentElement, k = 0; a && a !== document.body && k < 3 && best < 3; a = a.parentElement, k++) {
-      if (a.getBoundingClientRect().height > er.height + 48) break;
+      if ([...a.querySelectorAll(FIELDS)].filter(visible).length > 1) break;
       best = Math.max(best, edge(a));
     }
     if (best < 3) out.boundary.push({ sel: sel(el), ratio: +best.toFixed(2), name: (el.labels && el.labels[0] ? el.labels[0].innerText : el.getAttribute('aria-label') || el.name || '').trim().slice(0, 30) });

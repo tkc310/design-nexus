@@ -104,7 +104,7 @@ else {
   const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
   check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));
-  check('field boundary accepts a ruled field, a drawn wrapper, and a 3:1 border', !cnB.some((f) => /#ruled|#wrapped|#ok/.test(f.where)), JSON.stringify(cnB));
+  check('field boundary accepts a ruled field, a drawn wrapper, a ruled form cell, and a 3:1 border', !cnB.some((f) => /#ruled|#wrapped|#cell|#ok/.test(f.where)), JSON.stringify(cnB));
   const cnN = cn.out.findings.filter((f) => f.id === 'F13');
   check('render flags F13 when an aria-label drops the visible words', cnN.length === 2 && cnN.some((f) => /この回を予約する/.test(f.message)) && cnN.some((f) => /Open session details/.test(f.message)), JSON.stringify(cnN));
   const tm = run('render-check.mjs', path.join(S2, 'table-misaligned.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
