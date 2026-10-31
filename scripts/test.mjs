@@ -35,6 +35,8 @@ const n09 = drift.out.findings.filter((f) => f.id === 'N09');
 check('lint flags N09 when DESIGN.md and the CSS disagree on a color', n09.length === 1 && /color\.border\b/.test(n09[0].message), JSON.stringify(n09));
 const lone = run('lint.mjs', path.join(S2, 'token-drift-component.css'), '--design', path.join(S2, 'token-drift.DESIGN.md'));
 check('lint skips N09 when the scan does not include the theme', !lone.out.findings.some((f) => f.id === 'N09'));
+const hexText = run('lint.mjs', path.join(S2, 'hex-in-text.html'), '--design', path.join(S2, 'hex-in-text.DESIGN.md'));
+check('lint ignores #-numbers in body text when counting colors (R08)', !hexText.out.findings.some((f) => f.id === 'R08'), JSON.stringify(hexText.out.findings.filter((f) => f.id === 'R08')));
 const keptAgg = run('lint.mjs', path.join(S2, 'kept-aggregate.css'));
 check('a keep comment suppresses an aggregate R08', keptAgg.out.findings.filter((f) => f.id === 'R08').every((f) => f.kept));
 

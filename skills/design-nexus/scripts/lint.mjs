@@ -57,6 +57,9 @@ const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusB
 // Faces that ship with common operating systems; declaring them needs no loader.
 const SYSTEM_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|ui-[\w-]+|segoe ui|roboto|helvetica( neue)?|arial|georgia|times( new roman)?|verdana|tahoma|trebuchet ms|courier( new)?|menlo|monaco|consolas|sf (pro|mono)[\w ]*|hiragino[\w ]*|yu (gothic|mincho)|游ゴシック|游明朝|meiryo|メイリオ|ms (p?gothic|p?mincho)|sans-serif|serif|monospace|cursive|fantasy|emoji|math)$/i;
 
+// Blanks out text between tags (keeping <style>, <script>, and the tags themselves) so offsets and line numbers still line up.
+const maskTextNodes = (text) => text.replace(/(<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<!--[\s\S]*?-->|<[^>]*>)|[^<]+/g, (m, keep) => keep || m.replace(/[^\n]/g, ' '));
+
 const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 
 const HYPE = [
@@ -276,7 +279,9 @@ for (const file of files) {
   }
   for (const m of text.matchAll(/from\s*["']next\/font\/google["']|from\s*["']@fontsource|fonts\.bunny\.net|use\.typekit\.net|fontshare\.com/g)) agg.anyLoader = true;
   for (const m of text.matchAll(/--([\w-]+)\s*:\s*([^;}\n]+)/g)) if (!agg.props.has(m[1].toLowerCase())) agg.props.set(m[1].toLowerCase(), m[2].trim());
-  for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
+  // In markup, only styles, scripts, and tag attributes hold colors; "#214" in body text is a ticket number.
+  const colorText = isMarkup ? maskTextNodes(text) : text;
+  for (const m of colorText.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
     const before = text.slice(Math.max(0, m.index - 6), m.index);
     if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
     const h = normHex(m[0]);
