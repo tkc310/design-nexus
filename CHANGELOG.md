@@ -1,5 +1,11 @@
 # Changelog
 
+## 未リリース
+
+- render-check: F01 をホバーとキーボードフォーカスの状態でも測る(各操作要素の中の文字を、状態の背景に対して測る。トランジションは止めて最終値で測る)。EXP-012 の 02 で審査が指摘したホバー時の 4.01:1 と 2.89:1 を、同じ値で検出する。fixture `state-contrast.html` を追加。
+- render-check: `color-mix()` や `oklch()` の計算値を色として読めず、親の背景で測っていた誤りを直した(canvas で解決する)。
+- render-check: ページの `design-nexus: keep Rxx because …` を lint と同じく読む。fixture `hidden-narrow-kept.html` を追加。
+
 ## 0.6.0 — 2026-10-31
 
 EXP-012 を採用(v0.5.0 の学習用6件に対し 88.8 → 88.1、−0.7 で横ばい。主審査 Opus は +0.7)。狙った欠陥が消えたことを確かめたうえで、EXP-002 と同じく「横ばいで採用」とした。

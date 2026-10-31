@@ -84,11 +84,20 @@ function measure(minTap) {
     const cls = [...el.classList].slice(0, 2).join('.');
     return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
   };
+  // Any CSS color (rgb, color(srgb …) from color-mix, oklch …) resolved through a 1×1 canvas.
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const parse = (c) => {
-    const m = c.match(/rgba?\(([^)]+)\)/);
-    if (!m) return null;
-    const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
-    return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    if (!c || c === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
   };
   const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
   const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
@@ -294,6 +303,93 @@ async function focusCheck(page) {
   });
 }
 
+// F01 in interactive states: text inside a control must keep its contrast on hover and on keyboard focus.
+// Transitions are switched off so the state is measured at its end value.
+function stateTexts(i) {
+  // Any CSS color (rgb, color(srgb …) from color-mix, oklch …) resolved through a 1×1 canvas.
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const parse = (c) => {
+    if (!c || c === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
+  };
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+  const bgOf = (el) => {
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.backgroundImage !== 'none') return null;
+      const c = parse(cs.backgroundColor);
+      if (c && c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const c of layers.reverse()) base = blend(c, base);
+    return base;
+  };
+  const root = document.querySelector(`[data-dn-i="${i}"]`);
+  if (!root) return [];
+  const out = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode() && out.length < 4) {
+    const t = walker.currentNode;
+    if (!t.textContent.trim()) continue;
+    const el = t.parentElement;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    const fg = parse(cs.color), bg = bgOf(el);
+    if (!fg || !bg) continue;
+    const L1 = lum(blend(fg, bg)), L2 = lum(bg);
+    const size = parseFloat(cs.fontSize);
+    const large = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700);
+    out.push({ text: t.textContent.trim().slice(0, 30), ratio: +((Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05)).toFixed(2), need: large ? 3 : 4.5 });
+  }
+  return out;
+}
+
+async function stateContrast(page) {
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important}' }).catch(() => {});
+  const n = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('a[href], button, [role=button], [role=tab], summary, input[type=submit], input[type=button], label:has(> input[type=radio]), label:has(> input[type=checkbox])')]
+      .filter((e) => !e.matches('[disabled], [aria-disabled="true"]'))
+      .filter((e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden'; })
+      .slice(0, 40);
+    els.forEach((e, i) => e.setAttribute('data-dn-i', i));
+    return els.length;
+  });
+  const bad = [];
+  const seen = new Set();
+  for (let i = 0; i < n && bad.length < 10; i++) {
+    const rest = await page.evaluate(stateTexts, i);
+    const okAtRest = (t) => { const r = rest.find((x) => x.text === t.text); return !r || r.ratio >= r.need; };
+    const loc = page.locator(`[data-dn-i="${i}"]`);
+    const hovered = await loc.hover({ timeout: 1000 }).then(() => true).catch(() => false);
+    if (hovered) {
+      for (const t of await page.evaluate(stateTexts, i)) {
+        if (t.ratio < t.need && okAtRest(t) && !seen.has('h' + t.text)) { seen.add('h' + t.text); bad.push({ state: 'hover', ...t }); }
+      }
+      await page.mouse.move(0, 0);
+    }
+    const focused = await page.evaluate((k) => { const e = document.querySelector(`[data-dn-i="${k}"]`); e.focus({ focusVisible: true }); return document.activeElement === e; }, i);
+    if (focused) {
+      for (const t of await page.evaluate(stateTexts, i)) {
+        if (t.ratio < t.need && okAtRest(t) && !seen.has('f' + t.text)) { seen.add('f' + t.text); bad.push({ state: 'focus', ...t }); }
+      }
+      await page.evaluate(() => document.activeElement?.blur());
+    }
+  }
+  return bad;
+}
+
 const browser = await pw.chromium.launch();
 try {
   for (const width of opt.widths) {
@@ -318,6 +414,9 @@ try {
     for (const b of m.breaks) add('R17', `@${width}px`, b);
     if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
     if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;
+    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+      for (const b of await stateContrast(page)) add('F01', `@${width}px :${b.state}`, `contrast ${b.ratio}:1 < ${b.need}:1 on ${b.state} "${b.text}"`);
+    }
     textsAt.set(width, m.texts);
     if (width === opt.widths[0]) {
       for (const src of m.brokenImg) add('N06', src, 'Broken image');

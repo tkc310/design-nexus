@@ -83,6 +83,11 @@ else {
   check('R18 ignores a collapsed nav and text swapped for a narrow copy', r18.every((f) => !/Workshops|Saturday/.test(f.message)));
   const hk = run('render-check.mjs', path.join(S2, 'hidden-narrow-kept.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render honors a keep comment for R18', hk.out.findings.some((f) => f.id === 'R18' && f.kept) && hk.out.counts.kept >= 1, JSON.stringify(hk.out.findings.filter((f) => f.id === 'R18')));
+  const sc = run('render-check.mjs', path.join(S2, 'state-contrast.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
+  const scF = sc.out.findings.filter((f) => f.id === 'F01');
+  check('render flags F01 when a link loses contrast on hover', scF.some((f) => /hover/.test(f.where) && /Book a fitting/.test(f.message)), JSON.stringify(scF));
+  check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
+  check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');

@@ -12,7 +12,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 
 | ID | Check | Detected by |
 |---|---|---|
-| F01 | Text contrast below 4.5:1 (3:1 for large text); UI component contrast below 3:1 | render, tokens |
+| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1 | render, tokens |
 | F02 | Focus indicator removed or invisible | lint, render |
 | F03 | Image without `alt` | lint |
 | F04 | HTML document missing `lang` or viewport meta | lint |
