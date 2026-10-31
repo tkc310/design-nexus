@@ -29,6 +29,14 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Vary section structure. A page where every section is "heading + 3 cards" is a template.
 - Cards only when content is genuinely a collection of comparable items.
 
+## Default render
+The page as loaded, before any scroll, click, or wait, is what reviewers, screenshots, and most visitors see. It must show the work at its best.
+- **The signature is visible and in its meaningful state on load.** Never gate it behind scroll-triggered drawing, a hover, or a tab. A reveal animation is fine only if the element is complete without it (and under `prefers-reduced-motion`).
+- **Time- or data-dependent views fall back to a representative state.** If the real clock or data would show an empty or edge state (after the last bus, a closed shop, zero results), show a typical state by default and make the edge state reachable, or pin the demo to a stated time.
+- **Sticky and fixed bars never cover content** at any checked width: reserve their space with padding, and check the screenshots for overlap.
+- **Review-only controls stay out of the product.** State switchers for showing loading, empty, or error views are hidden unless a query parameter (e.g. `?states`) is set; show the states as separate labeled examples instead if they matter to the page.
+- **Plausible invented data is labeled** inline (a small "sample data" note), not only in the notes.
+
 ## Components and states
 - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.
 - Every data view has: loading (skeleton matching final layout), empty (explains and invites), error (what happened + how to fix), and overflow (long names, many items).
