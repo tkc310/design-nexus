@@ -9,6 +9,9 @@
 //   node eval/run.mjs compare  --base <dir>[,<dir>…] --run <dir> [--primary opus] [--rescore no]   rescore the base(s), then accept/reject;
 //                                                                several base runs of one version are averaged per case
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
+//   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03]   M-008: one PAIR_PROMPT.md per case and base run,
+//                                                                pages shown as A/B in a fixed pseudo-random order
+//   node eval/run.mjs pair-score --run <dir>                     candidate wins, losses, ties overall and per dimension
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
@@ -165,6 +168,79 @@ const commands = {
       }
     }
     if (!opt.cmd) console.log('wrote JUDGE_PROMPT.md per case. Give each to a fresh-context agent and save its JSON reply as judge.json in the same folder, then run `score` again.');
+  },
+
+  // M-008: paired judging. The same panel sees the base page and the candidate page side by side and states a preference
+  // per dimension, which cancels the judge's day-to-day calibration drift that absolute 0–4 scores carry.
+  pair() {
+    const cand = runDir(opt.run);
+    const bases = String(opt.base || '').split(',').filter(Boolean).map(runDir);
+    if (!bases.length) die('pair needs --base <dir>[,<dir>…]');
+    const base = read(path.join(ROOT, 'eval/pair-prompt.md'));
+    const pairsDir = path.join(cand, '_pairs');
+    fs.mkdirSync(pairsDir, { recursive: true });
+    const keyFile = path.join(pairsDir, 'key.json');
+    const keys = fs.existsSync(keyFile) ? JSON.parse(read(keyFile)) : {};
+    const only = opt.cases ? String(opt.cases).split(',') : null;
+    let n = 0;
+    for (const d of caseDirs(cand)) {
+      if (only && !only.some((p) => d.startsWith(p))) continue;
+      for (const b of bases) {
+        if (!fs.existsSync(path.join(b, d))) continue;
+        const id = `${d}--${path.basename(b)}`;
+        // Fixed pseudo-random side, so re-running pair does not reshuffle a pair that was already judged.
+        const h = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+        const candIsA = h % 2 === 0;
+        keys[id] = { A: candIsA ? 'cand' : 'base', base: path.relative(ROOT, b) };
+        const [aDir, bDir] = candIsA ? [path.join(cand, d), path.join(b, d)] : [path.join(b, d), path.join(cand, d)];
+        const shots = (dir) => (fs.existsSync(path.join(dir, 'shots')) ? fs.readdirSync(path.join(dir, 'shots')).map((f) => `- ${path.join(dir, 'shots', f)}`) : ['(none)']);
+        const caseFile = path.join(CASES, `${d}.md`);
+        const brief = fs.existsSync(caseFile) ? parseCase(caseFile).brief : '(brief missing)';
+        const prompt = [base, '', '## BRIEF', '', brief, '', '## Page A', '', aDir, '', ...shots(aDir), '', '## Page B', '', bDir, '', ...shots(bDir), ''].join('\n');
+        fs.mkdirSync(path.join(pairsDir, id), { recursive: true });
+        fs.writeFileSync(path.join(pairsDir, id, 'PAIR_PROMPT.md'), prompt);
+        n++;
+      }
+    }
+    writeJSON(keyFile, keys);
+    console.log(`wrote ${n} PAIR_PROMPT.md under ${path.relative(ROOT, pairsDir)}/. Give each to a fresh-context judge and save its JSON as pair.<model>.json next to the prompt, then run \`pair-score\`.`);
+  },
+
+  'pair-score'() {
+    const cand = runDir(opt.run);
+    const pairsDir = path.join(cand, '_pairs');
+    const keys = JSON.parse(read(path.join(pairsDir, 'key.json')));
+    const dims = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'];
+    const tally = () => ({ win: 0, loss: 0, tie: 0 });
+    const byJudge = {}, byDim = Object.fromEntries(dims.map((k) => [k, tally()])), byCase = {};
+    const side = (v, key) => (v !== 'A' && v !== 'B' ? 'tie' : (v === 'A') === (key.A === 'cand') ? 'win' : 'loss');
+    for (const [id, key] of Object.entries(keys)) {
+      const dir = path.join(pairsDir, id);
+      if (!fs.existsSync(dir)) continue;
+      for (const f of fs.readdirSync(dir).filter((x) => /^pair\..+\.json$/.test(x))) {
+        const j = JSON.parse(read(path.join(dir, f)));
+        const judge = f.replace(/^pair\.|\.json$/g, '');
+        const o = side(j.overall, key);
+        (byJudge[judge] = byJudge[judge] || tally())[o]++;
+        const c = id.split('--')[0];
+        (byCase[c] = byCase[c] || tally())[o]++;
+        for (const k of dims) byDim[k][side(j.dims?.[k], key)]++;
+      }
+    }
+    const all = Object.values(byJudge).reduce((a, t) => ({ win: a.win + t.win, loss: a.loss + t.loss, tie: a.tie + t.tie }), tally());
+    // Two-sided sign test on decided pairs (ties dropped).
+    const nDec = all.win + all.loss;
+    const choose = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r; };
+    const tail = (k) => { let p = 0; for (let i = 0; i <= k; i++) p += choose(nDec, i); return p / 2 ** nDec; };
+    const p = nDec ? Math.min(1, 2 * tail(Math.min(all.win, all.loss))) : 1;
+    const fmt = (t) => `${t.win}–${t.loss}–${t.tie}`;
+    const lines = [`# Pairs: ${path.basename(cand)} (candidate) vs base`, '', `Overall (win–loss–tie, candidate's view): **${fmt(all)}**, sign test p = ${p.toFixed(3)}`, '',
+      '| judge | overall |', '|---|---|', ...Object.entries(byJudge).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
+      '| case | overall |', '|---|---|', ...Object.entries(byCase).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
+      '| dim | win–loss–tie | net |', '|---|---|---|', ...dims.map((k) => `| ${k} | ${fmt(byDim[k])} | ${byDim[k].win - byDim[k].loss >= 0 ? '+' : ''}${byDim[k].win - byDim[k].loss} |`), ''];
+    fs.writeFileSync(path.join(cand, 'pairs.md'), lines.join('\n'));
+    writeJSON(path.join(cand, 'pairs.json'), { overall: all, p, byJudge, byCase, byDim });
+    console.log(lines.join('\n'));
   },
 
   score() {
