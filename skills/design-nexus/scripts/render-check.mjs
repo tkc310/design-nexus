@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { execSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
@@ -33,7 +34,13 @@ function loadPlaywright() {
   for (const base of tries) {
     try { return createRequire(base)('playwright'); } catch {}
   }
-  try { return createRequire(import.meta.url)(path.join(process.env.NPM_GLOBAL || '/usr/local/lib/node_modules', 'playwright')); } catch {}
+  // A global install: $NPM_GLOBAL, then wherever `npm root -g` points, then the usual prefix.
+  const globals = [process.env.NPM_GLOBAL];
+  try { globals.push(execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString().trim()); } catch {}
+  globals.push('/usr/local/lib/node_modules');
+  for (const dir of globals.filter(Boolean)) {
+    try { return createRequire(import.meta.url)(path.join(dir, 'playwright')); } catch {}
+  }
   return null;
 }
 
