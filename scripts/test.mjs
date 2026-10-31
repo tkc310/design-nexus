@@ -81,6 +81,8 @@ else {
   const r18 = hn.out.findings.filter((f) => f.id === 'R18');
   check('render flags R18 when a paragraph is display:none at 320px', r18.length === 1 && /Classes run twice/.test(r18[0].message), JSON.stringify(r18));
   check('R18 ignores a collapsed nav and text swapped for a narrow copy', r18.every((f) => !/Workshops|Saturday/.test(f.message)));
+  const hk = run('render-check.mjs', path.join(S2, 'hidden-narrow-kept.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  check('render honors a keep comment for R18', hk.out.findings.some((f) => f.id === 'R18' && f.kept) && hk.out.counts.kept >= 1, JSON.stringify(hk.out.findings.filter((f) => f.id === 'R18')));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');

@@ -57,7 +57,22 @@ const minTap = opt.surface === 'mobile' ? 44 : 24;
 fs.mkdirSync(opt.out, { recursive: true });
 
 const findings = [];
-const add = (id, where, message) => findings.push({ id, tier: tierOf(id), where, message });
+// The same keep comments the lint reads: `design-nexus: keep Rxx because …` in the page source.
+const kept = new Map();
+if (!/^https?:\/\//.test(opt.target)) {
+  try {
+    const src = fs.readFileSync(path.resolve(opt.target), 'utf8');
+    for (const m of src.matchAll(/design-nexus:\s*keep\s+([FRN]\d{2})\s+because\s+([^\n*>]+)/gi)) kept.set(m[1].toUpperCase(), m[2].trim());
+  } catch {}
+}
+const add = (id, where, message) => {
+  const f = { id, tier: tierOf(id), where, message };
+  if (kept.has(id)) {
+    if (id.startsWith('F')) f.message += ' (floor checks cannot be kept)';
+    else f.kept = kept.get(id);
+  }
+  findings.push(f);
+};
 const shots = [];
 let look = null;
 const textsAt = new Map();
