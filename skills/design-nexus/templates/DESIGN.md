@@ -57,7 +57,7 @@ Pages that intentionally deviate. Format: `path — what differs — why`.
 
 ## Looks used
 
-One line per shipped surface: value (light/dark/mid), palette in two words, type genre, surface treatment. Read before choosing a new direction.
+One line per shipped surface: value (light/dark/mid), ground hue and accent hue, type genre, surface treatment. Read before choosing a new direction.
 
 ## Learnings
 

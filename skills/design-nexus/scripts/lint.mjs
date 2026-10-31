@@ -52,10 +52,12 @@ const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
 const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
 
 // Aggregate state across files.
-const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false };
+const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false, props: new Map() };
 
 // Faces that ship with common operating systems; declaring them needs no loader.
 const SYSTEM_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|ui-[\w-]+|segoe ui|roboto|helvetica( neue)?|arial|georgia|times( new roman)?|verdana|tahoma|trebuchet ms|courier( new)?|menlo|monaco|consolas|sf (pro|mono)[\w ]*|hiragino[\w ]*|yu (gothic|mincho)|游ゴシック|游明朝|meiryo|メイリオ|ms (p?gothic|p?mincho)|sans-serif|serif|monospace|cursive|fantasy|emoji|math)$/i;
+
+const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 
 const HYPE = [
   'lorem ipsum', 'welcome to', 'unlock the', 'unlock your', 'elevate your', 'seamless', 'seamlessly',
@@ -258,15 +260,22 @@ for (const file of files) {
     if (!fam || /^(var\(|inherit|initial)/.test(fam) || SYSTEM_FONTS.test(fam)) continue;
     if (!agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, idx) });
   }
-  for (const m of text.matchAll(/--(?:[\w-]*-)?(?:font|family|serif|sans|mono|display|typeface)(?:-[\w-]+)?\s*:\s*([^;}\n]+)/gi)) {
-    const fam = primaryFamily(m[1]);
-    if (fam && !/^(var\(|[\d.#]|rgb|hsl|oklch|inherit|normal|bold)/.test(fam) && !SYSTEM_FONTS.test(fam) && !agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, m.index) });
+  // Custom properties that hold a font stack: a family-like name, and a value that is quoted or a comma list.
+  for (const m of text.matchAll(/--((?:[\w-]*-)?(?:font|family|serif|sans|mono|display|typeface)(?:-[\w-]+)?)\s*:\s*([^;}\n]+)/gi)) {
+    if (/size|weight|wght|line|leading|lh|tracking|spacing|feature|settings|variation|color|colour|shadow|style|stretch|case|variant|scale|ratio|width|height|gap|radius|transform|opsz|axis/i.test(m[1])) continue;
+    if (!/^\s*["']|,/.test(m[2])) continue;
+    const fam = primaryFamily(m[2]);
+    if (fam && !/^(var\(|[\d.#-]|rgb|hsl|oklch|inherit|normal|bold)/.test(fam) && !SYSTEM_FONTS.test(fam) && !agg.fontsUsed.has(fam)) agg.fontsUsed.set(fam, { file: rel, line: lineOf(text, m.index) });
   }
   for (const m of text.matchAll(/@font-face\s*\{[^}]*font-family\s*:\s*["']?([^;"'}]+)/g)) agg.fontsLoaded.add(m[1].trim().toLowerCase());
   for (const m of text.matchAll(/fonts\.googleapis\.com\/css2?\?([^"'\s)]+)/g)) {
-    for (const f of m[1].matchAll(/family=([^&:"']+)/g)) agg.fontsLoaded.add(decodeURIComponent(f[1]).replace(/\+/g, ' ').toLowerCase());
+    // css2 repeats family=; the legacy css API separates families with |.
+    for (const f of m[1].matchAll(/family=([^&"']+)/g)) {
+      for (const one of safeDecode(f[1]).split('|')) agg.fontsLoaded.add(one.split(':')[0].replace(/\+/g, ' ').trim().toLowerCase());
+    }
   }
   for (const m of text.matchAll(/from\s*["']next\/font\/google["']|from\s*["']@fontsource|fonts\.bunny\.net|use\.typekit\.net|fontshare\.com/g)) agg.anyLoader = true;
+  for (const m of text.matchAll(/--([\w-]+)\s*:\s*([^;}\n]+)/g)) if (!agg.props.has(m[1].toLowerCase())) agg.props.set(m[1].toLowerCase(), m[2].trim());
   for (const m of text.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
     const before = text.slice(Math.max(0, m.index - 6), m.index);
     if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
@@ -296,6 +305,24 @@ if (allowed) {
   if (off.length > 10) push('R08', null, `…and ${off.length - 10} more off-token colors`);
 } else if (agg.hexes.size > (agg.darkScheme ? 24 : 12)) {
   push('R08', [...agg.hexes.values()][0], `${agg.hexes.size} distinct hex colors; consolidate into 4–8 tokens per scheme`);
+}
+// N09 the design record and the code disagree: a DESIGN.md color the code never uses (by value or by a matching custom property).
+// Only when the scan includes the theme, i.e. at least half the token colors were found; linting one component alone says nothing.
+if (tokens) {
+  const colors = Object.entries(tokenColors(tokens)).filter(([k]) => !/component-/.test(k));
+  // A same-named custom property in another color syntax (oklch, rgb) counts as present; one with a different hex does not.
+  const propFor = (k) => [k.replace(/^(dark\.)?color\./, ''), k.replace(/^dark\./, '').replace(/\./g, '-')].map((n) => agg.props.get(n)).find(Boolean);
+  const missing = colors.filter(([k, v]) => {
+    if (agg.hexes.has(normHex(v))) return false;
+    const p = propFor(k);
+    return !p || /^#[0-9a-f]{3,8}$/i.test(p);
+  });
+  if (colors.length && missing.length <= colors.length / 2) {
+    for (const [k, v] of missing) {
+      const p = propFor(k);
+      push('N09', { file: opt.design }, `DESIGN.md token ${k} (${v}) ${p ? `is ${p} in the code` : 'does not appear in the code'}; make the record match what ships`);
+    }
+  }
 }
 // R16 fonts named in CSS but never loaded: the page silently falls back to a default face.
 if (!agg.anyLoader) {

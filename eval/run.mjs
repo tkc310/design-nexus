@@ -66,7 +66,9 @@ function autoScore(findings) {
   const seen = new Set();
   const open = findings.filter((f) => {
     if (f.kept) return false;
-    const k = `${f.id}|${f.file || ''}|${f.line || ''}|${(f.where || '').replace(/@\d+px\s*/, '')}|${f.where ? '' : f.message}`;
+    // Render findings carry the width in `where`; when nothing else is left there, the message tells issues apart.
+    const where = (f.where || '').replace(/@\d+px\s*/, '');
+    const k = `${f.id}|${f.file || ''}|${f.line || ''}|${where}|${where ? '' : f.message}`;
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
@@ -321,8 +323,9 @@ function fingerprint(entry, dir) {
     if (!fam || fam.startsWith('var(') || /^(inherit|serif|sans-serif|monospace)$/i.test(fam)) continue;
     fonts.set(fam, (fonts.get(fam) || 0) + 1);
   }
-  for (const m of text.matchAll(/--[\w-]*font[\w-]*\s*:\s*([^;}\n]+)/g)) {
-    const fam = m[1].split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+  for (const m of text.matchAll(/--([\w-]*font[\w-]*)\s*:\s*([^;}\n]+)/g)) {
+    if (/size|weight|line|leading|tracking|spacing|feature|settings/i.test(m[1]) || !/^\s*["']|,/.test(m[2])) continue; // not a font stack
+    const fam = m[2].split(',')[0].trim().replace(/^['"]|['"]$/g, '');
     if (fam && !/^(var\(|inherit|serif|sans-serif|monospace|\d)/i.test(fam)) fonts.set(fam, (fonts.get(fam) || 0) + 2);
   }
   for (const m of text.matchAll(/^\s*font\.[\w-]+\s*:\s*(.+)$/gm)) {
@@ -359,19 +362,47 @@ function diversity(rows) {
   if (looks.length >= 3 && house.length / looks.length >= 0.5) warnings.push(`house look (light ground, no shadows, radius ≤4px) in ${house.length}/${looks.length} cases`);
   const grounds = {};
   for (const l of looks) grounds[l.ground] = (grounds[l.ground] || 0) + 1;
+  // Ground tint: a pale ground still carries a hue (mint, sage, cream). Neutral grounds (channel spread < 6/255) have none.
+  const groundHues = looks.map((l) => tintHue(l.ground_rgb)).filter((h) => h !== null);
+  const accentHues = withFp.map((r) => r.fingerprint.accent_hue).filter((h) => h !== null);
   if (n >= 3) {
     for (const [f, k] of Object.entries(fontCount)) if (k / n >= 0.5) warnings.push(`font "${f}" appears in ${k}/${n} cases`);
-    for (const [h, k] of Object.entries(hueCount)) if (k / n >= 0.5) warnings.push(`accent hue ~${h}° in ${k}/${n} cases`);
+    // Hues are compared within a 60° arc, so neighbours like amber and orange count as one family.
+    const a = hueCluster(accentHues);
+    if (a && a.k / n >= 0.5) warnings.push(`accent hue within 30° of ${a.h}° (${hueName(a.h)}) in ${a.k}/${n} cases`);
   }
-  return { fonts: fontCount, accent_hues: hueCount, grounds, house_look: looks.length ? `${house.length}/${looks.length}` : null, warnings };
+  if (looks.length >= 3) {
+    const g = hueCluster(groundHues);
+    if (g && g.k / looks.length >= 0.5) warnings.push(`ground tinted toward ${g.h}° (${hueName(g.h)}) in ${g.k}/${looks.length} cases`);
+  }
+  return { fonts: fontCount, accent_hues: hueCount, grounds, ground_hues: groundHues, house_look: looks.length ? `${house.length}/${looks.length}` : null, warnings };
 }
+
+function tintHue(rgb) {
+  if (!rgb) return null;
+  const [r, g, b] = rgb;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  if (d < 6) return null;
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return Math.round(h * 60) % 360;
+}
+// The largest set of hues that fit within ±30° of one of them.
+function hueCluster(hues) {
+  let best = null;
+  for (const c of hues) {
+    const k = hues.filter((h) => Math.min(Math.abs(h - c), 360 - Math.abs(h - c)) <= 30).length;
+    if (!best || k > best.k) best = { h: c, k };
+  }
+  return best;
+}
+const hueName = (h) => ['red', 'orange', 'yellow', 'yellow-green', 'green', 'green', 'cyan', 'azure', 'blue', 'violet', 'magenta', 'rose'][Math.round(h / 30) % 12];
 
 function summaryDiversity(run) {
   const f = path.join(run, 'summary.json');
   if (!fs.existsSync(f)) return ['(run `score` first)'];
   const d = JSON.parse(read(f)).diversity;
   if (!d) return ['(none)'];
-  return [`Fonts: ${JSON.stringify(d.fonts)}`, `Accent hues: ${JSON.stringify(d.accent_hues)}`, ...(d.warnings.length ? d.warnings.map((w) => `- WARNING ${w}`) : ['No convergence warnings.'])];
+  return [`Fonts: ${JSON.stringify(d.fonts)}`, `Accent hues: ${JSON.stringify(d.accent_hues)}`, ...(d.ground_hues ? [`Ground tints: ${JSON.stringify(d.ground_hues)}`] : []), ...(d.warnings.length ? d.warnings.map((w) => `- WARNING ${w}`) : ['No convergence warnings.'])];
 }
 
 function countIds(findings) {

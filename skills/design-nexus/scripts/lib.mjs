@@ -63,7 +63,7 @@ export const normHex = (hex) => {
 // 2. Google's DESIGN.md spec (github.com/google-labs-code/design.md): YAML front matter with
 //    colors / typography / rounded / spacing / components. Mapped onto the same flat keys.
 export function readTokens(file) {
-  const text = fs.readFileSync(file, 'utf8');
+  const text = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const block = text.match(/```tokens\s*\n([\s\S]*?)```/);
   if (block) {
     const tokens = {};
@@ -145,6 +145,34 @@ export const OVERUSED_FONTS = [
 
 export const primaryFamily = (decl) =>
   decl.split(',')[0].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
+
+// ---------- redesign snapshot ----------
+
+// Pairs before-fields with after-fields, most specific evidence first; returns the before-fields left unpaired.
+export function unmatchedFields(beforeList, afterList) {
+  const TEXTLIKE = new Set(['', 'text', 'email', 'tel', 'url', 'search', 'number', 'password']);
+  const parse = (s) => {
+    const [head, ...rest] = s.split(' | ');
+    const m = head.match(/^(\w+)\[([^\]]*)\]\s*(.*)$/) || [];
+    return { raw: s, tag: m[1] || '', type: m[2] || '', key: (m[3] || '').trim(), label: rest.join(' | ').trim().toLowerCase() };
+  };
+  const compatible = (a, b) => a.tag === b.tag && (a.type === b.type || (a.tag === 'input' && TEXTLIKE.has(a.type) && TEXTLIKE.has(b.type)));
+  const pending = beforeList.map(parse);
+  const free = afterList.map(parse);
+  const rules = [
+    (a, b) => a.tag === b.tag && a.type === b.type && a.key === b.key, // unchanged
+    (a, b) => a.key && a.key === b.key, // same name or id; type or element may change
+    (a, b) => a.label && a.label === b.label && compatible(a, b), // same label, renamed
+    (a, b) => !a.key && compatible(a, b), // the old field had no name or id: any compatible field
+  ];
+  for (const rule of rules) {
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const j = free.findIndex((b) => rule(pending[i], b));
+      if (j !== -1) { free.splice(j, 1); pending.splice(i, 1); }
+    }
+  }
+  return pending.map((p) => p.raw);
+}
 
 // ---------- output ----------
 

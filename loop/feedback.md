@@ -18,7 +18,7 @@
 ## エントリ
 
 ### 2026-10-30 表を含むグリッドが 320px で横スクロールする
-- status: open
+- status: resolved(EXP-003 で craft.md *Responsive* に `min-width: 0` の規則を追加)
 - source: lint(render F08)
 - case / project: eval 03-dash-clinic(スモークテスト)
 - what happened: `grid-template-columns: 1fr` の子にテーブルがあり、min-content で列が広がってページ全体が 718px になった。
@@ -45,7 +45,7 @@
 - applies beyond one project because: KPI 表示はプロダクトUI全般にある。
 
 ### 2026-10-30 ベースラインで3モデルの審査がそろって指摘した定番ルック
-- status: in-experiment (EXP-001)
+- status: resolved(EXP-001、v0.2.0)。ただし別の定番(緑みの淡い地)へ移ったため EXP-004 で継続
 - source: judge(Opus・Fable・Sonnet)
 - case / project: baseline 01・02・03・04・06
 - what happened: 淡い紙色、インクブルー1色と蛍光黄、mono の小ラベル、罫線、角丸2〜4px、影なし、濃い締めの帯がほぼ全ケースで共通していた。
@@ -54,13 +54,22 @@
 - applies beyond one project because: スキルを使う全プロジェクトの出力が同じ顔に寄る。
 
 ### 2026-10-30 タブレット幅(768px)の崩れが D7 の最低点
-- status: open
+- status: resolved(EXP-003、v0.2.2 で craft.md *Responsive* を追加)
 - source: judge
 - case / project: baseline 03(金額が数字の途中で折り返す)、04(マトリクスがパネルからはみ出す)、02(ヒーローの SVG が 650px)、06(320px で図版の文字が約6px)
-- which rule should have prevented it: render-check に R17 を追加済み(はみ出し・切り取り・数字の折り返し)。craft 側のルールはまだない。
+- which rule should have prevented it: render-check の R17(はみ出し・切り取り・数字の折り返し)と craft.md *Responsive*。
 - applies beyond one project because: 中間幅の確認が抜けるのは汎用的な傾向。
 
 ### 2026-10-30 宣言したフォントが読み込まれていない
 - status: resolved(lint R16 を追加)
 - source: judge(Fable・Opus)、lint
 - case / project: baseline 01、04
+
+### 2026-10-31 検査が生成側に「欠陥を残す」動機を与えた
+- status: in-experiment (EXP-004)
+- source: judge(Opus)、生成ログ
+- case / project: EXP-002・EXP-003 の 06-redesign、EXP-003 の 03・04
+- what happened: redesign の照合がフィールドを name/id/type の完全一致で比べるため、生成側がメール欄を name なしの type=text のまま残した(2回)。また「確認用の状態切替は ?states のときだけ」という規則に従った結果、読み込み中・空・エラーの状態がスクリーンショットに一度も写らなかった。
+- expected: フィールドの改善(name の追加、type=email への変更)は照合を通る。必要な状態は操作なしで見える。
+- which rule should have prevented it: render-check の F11 照合、craft.md *Default render*。
+- applies beyond one project because: 検査や規則が「守るほど悪くなる」形になっていると、どのプロジェクトでも同じ回避が起きる。

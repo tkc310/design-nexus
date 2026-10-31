@@ -19,7 +19,7 @@ Calibration: 4 is rare and means a senior designer would ship it as is. A clean,
 
 ## Output
 
-Write only one JSON object (no prose before or after) to the judge file named in your instructions:
+Output only one JSON object (no prose before or after). If your instructions name a judge file (for example `judge.<model>.json`), write the same object to that file:
 
 ```json
 {

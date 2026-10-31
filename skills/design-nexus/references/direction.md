@@ -50,7 +50,9 @@ Recommend <X> because <the subject-specific reason>.
 
 Agents that follow rules like these drift into one recognizable look: pale cool paper, one ink-blue or teal accent plus a highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px corners, no shadows, and a dark closing band. It is tasteful and it is still a template (R04d). Use it only when the subject genuinely calls for a printed-document feel, and never as the default.
 
-If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, type genre, and surface.
+Steering away from a named look tends to land on its nearest neighbor: cool paper becomes sage paper, teal becomes forest green, and every page ends up with the same pale tinted ground and one warm accent. So don't choose colors by moving away from something. Choose them from the subject: every color in the token plan names its source in the subject's world (the glaze, the ticket stock, the ledger ruling, the terminal phosphor). A tinted ground with no source is a habit; use a true neutral or the source color instead. Vary value and chroma, not only hue: of the three directions, at least one has a ground that is not pale.
+
+If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, ground hue, type genre, and surface.
 
 ## 4. Token plan
 
@@ -58,7 +60,7 @@ Write the plan in this shape. The values are yours to choose; there are delibera
 
 ```
 Colors (4–6, named by role in the subject's vocabulary):
-  <name>  #RRGGBB  role (text / ground / surface / accent / status)
+  <name>  #RRGGBB  role (text / ground / surface / accent / status) — source: where in the subject's world it comes from
 Type:
   display  "<family>" <weights> — where it is used, how many sizes
   body     "<family>" <weight> — size, line-height
@@ -71,10 +73,10 @@ Layout: one-sentence concept + ASCII wireframe
 Signature: the one element the page will be remembered for
 ```
 
-Two plans that both pass this skill, to show the range (do not reuse their values):
+Two plans that both pass this skill, to show the range. They describe where values come from, not the values, because example values get copied:
 
-- A night-market food guide: near-black ground, hot vermilion and acid-yellow signage colors, a condensed display face at huge sizes, dense photo grid, chunky 12px radius with hard offset shadows, signature = a lantern-lit map strip.
-- A municipal permit form: white ground, government-green accent, a humanist sans at generous sizes, large tap targets, no decoration at all, signature = a progress rail that shows every remaining step and its time estimate.
+- A night-market food guide: ground and accents sampled from the stalls' signage and lantern light, so the page is dark and loud; a condensed display face at poster sizes; a dense photo grid; signature = a map strip lit stall by stall.
+- A municipal permit form: the ground is the paper of the printed form, the accent is the city's own color from its seal; a humanist sans at generous sizes, large tap targets, no decoration at all; signature = a progress rail that shows every remaining step and its time estimate.
 
 ## 5. Challenge the plan
 

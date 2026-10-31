@@ -22,7 +22,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | F08 | Horizontal scroll at 320px or other tested widths | render |
 | F09 | Tap target smaller than 24×24px (44px on mobile surfaces) | render |
 | F10 | Icon-only button or link without an accessible name | lint |
-| F11 | Redesign lost a link, field, handler, or heading from the before-snapshot | render `--compare` |
+| F11 | Redesign lost a link, field, handler, or heading from the before-snapshot (a field that gained a name, id, label, or more specific text type still counts as kept) | render `--compare` |
 | F12 | Text smaller than 12px | lint, render |
 
 ## Reflex
@@ -45,7 +45,8 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R14 | Japanese text set with italic or negative letter-spacing (lint), or multi-line Japanese running text below line-height 1.6 (render) | lint, render |
 | R15 | Every section has the same structure (heading + cards) | audit |
 | R16 | A font named in CSS is never loaded (no `@font-face`, font CDN link, or `next/font`), so visitors see a fallback and the type plan never appears | lint |
-| R17 | Layout break inside a container at some width: content escaping a bordered or filled panel, text clipped by `overflow: hidden`, or a figure (price, count, date) wrapping mid-number | render |
+| R17 | Layout break inside a container at some width: in-flow content escaping a bordered or filled panel, text cut off by `overflow: hidden`, or a figure (price, count, date) wrapping mid-number | render |
+| R18 | Content removed at the narrowest width instead of reflowed: text readable at 1280px is hidden (`display: none`, zero size) at 320px. Navigation and `aria-hidden` decoration are exempt | render |
 
 ## Finish
 
@@ -59,6 +60,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | N06 | Broken image | render |
 | N07 | Headings without `text-wrap: balance` | lint (hint) |
 | N08 | Token plan incomplete or odd (same display and body family, no spacing base, type ratio outside 1.1–1.618) | tokens |
+| N09 | DESIGN.md and the code disagree: a DESIGN.md color is not used in the code, or a same-named custom property holds a different value (checked when the scan includes the theme) | lint `--design` |
 
 ## Without tools
 

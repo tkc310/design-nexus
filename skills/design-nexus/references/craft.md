@@ -32,16 +32,17 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 ## Default render
 The page as loaded, before any scroll, click, or wait, is what reviewers, screenshots, and most visitors see. It must show the work at its best.
 - **The signature is visible and in its meaningful state on load.** Never gate it behind scroll-triggered drawing, a hover, or a tab. A reveal animation is fine only if the element is complete without it (and under `prefers-reduced-motion`).
-- **Time- or data-dependent views fall back to a representative state.** If the real clock or data would show an empty or edge state (after the last bus, a closed shop, zero results), show a typical state by default and make the edge state reachable, or pin the demo to a stated time.
-- **Sticky and fixed bars never cover content** at any checked width: reserve their space with padding, and check the screenshots for overlap.
-- **Review-only controls stay out of the product.** State switchers for showing loading, empty, or error views are hidden unless a query parameter (e.g. `?states`) is set; show the states as separate labeled examples instead if they matter to the page.
+- **Time- or data-dependent views fall back to a representative state.** If the real clock or data would show an empty or edge state (a closed shop, zero results, an expired offer), show a typical state by default and make the edge state reachable, or pin the demo to a stated time.
+- **Sticky and fixed bars never cover content** at any checked width: keep them one line high at narrow widths, reserve their height with padding so the last field and paragraph stay visible, and check the screenshots for overlap.
+- **Every required state is visible without interaction, outside the product view.** Loading, empty, error, and success views that the brief asks for must not exist only behind a query parameter, a click, or a timer, because reviewers and screenshots never see them. In a single-file prototype, render them after the main view as a labeled specimen section (static copies at real size, marked as examples); in a codebase, as stories or a preview route. Keep state switchers out of the product itself.
 - **Plausible invented data is labeled** inline (a small "sample data" note), not only in the notes.
 
 ## Responsive
 Design each width; don't let it happen. The middle width (about 768px, a tablet or a narrow laptop window) breaks most often, because desktop layouts get squeezed there and mobile layouts get stretched. The tools catch overflow, not ugliness: a layout can pass every check and still be broken.
-- **Open the 320, 768, and 1280 screenshots in that order** and look at each one before saying a width works. At 768 look for squeezed components, overlapping labels, and orphaned columns.
+- **Open the 320, 768, 1280, and 1920 screenshots in that order** and look at each one before saying a width works. At 768 look for squeezed components, overlapping labels, and orphaned columns.
 - **At 320, the signature or the primary action appears within the first screen** (about 640px). Move intro copy below it, or shorten it.
 - **Grid and flex children that hold tables, code, or long words get `min-width: 0`**, or they push their track wider than the screen.
+- **Narrow widths reflow content; they don't delete it.** Hide only duplicates and decoration. Anything a desktop reader can read is still there at 320: stacked, shortened, or behind a labeled disclosure, never `display: none` (R18). Collapsing the navigation into a menu is fine.
 - **A component that spans the page at desktop spans it at every width.** When a grid collapses, check that wide items (rulers, timelines, charts) still get the full row, not a narrow column.
 - **Figures never wrap mid-number.** Prices, totals, dates, and counts get `white-space: nowrap`; a strip of figures drops to fewer columns before its longest figure stops fitting.
 - **Commands, code, and log lines never wrap mid-token.** Give them `white-space: pre` (or `nowrap`) inside a container that scrolls horizontally, with a visible edge, or shorten the sample. Never use `overflow-wrap: anywhere` on code.
@@ -49,7 +50,6 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet 
 - **Headings beside a taller column use `align-self: start`**, so the kicker, heading, and paragraph stay together instead of stretching apart.
 - **Illustrations and diagrams get a max size per breakpoint.** In a single column, keep a decorative or explanatory graphic under about half the viewport height. Text inside an SVG must stay at least 12px when rendered at 320px; otherwise switch to an HTML version or a simplified graphic.
 - **Wide tables** scroll inside a container with a visible edge, or reflow to stacked rows below about 640px. A table never escapes its panel (R17).
-- **Sticky bars at narrow widths** stay one line high, and the page reserves their height so the last field and the last paragraph remain visible.
 - **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
 - **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
 

@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { printFindings, summarize, tierOf } from './lib.mjs';
+import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
 const args = process.argv.slice(2);
 const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null };
@@ -53,6 +53,7 @@ const findings = [];
 const add = (id, where, message) => findings.push({ id, tier: tierOf(id), where, message });
 const shots = [];
 let look = null;
+const textsAt = new Map();
 
 // Runs in the page. Returns raw measurements; judgement stays in Node.
 function measure(minTap) {
@@ -88,7 +89,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], look: null };
+  const out = { overflow: null, small: [], lowContrast: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -156,8 +157,14 @@ function measure(minTap) {
     const br = box.getBoundingClientRect();
     if (br.width >= vw - 1) continue;
     for (const d of box.querySelectorAll('*')) {
-      const cs = getComputedStyle(d);
-      if (cs.position === 'absolute' || cs.position === 'fixed' || !visible(d)) continue;
+      if (!visible(d)) continue;
+      // Skip content that is positioned out of flow or sits in its own scroll or clip container (the intended fix for wide tables and code).
+      let contained = false;
+      for (let e = d; e && e !== box; e = e.parentElement) {
+        const cs = getComputedStyle(e);
+        if (cs.position === 'absolute' || cs.position === 'fixed' || (e !== d && cs.overflowX !== 'visible')) { contained = true; break; }
+      }
+      if (contained) continue;
       const r = d.getBoundingClientRect();
       if (r.right > br.right + 4 || r.left < br.left - 4) { out.breaks.push(`${sel(d)} escapes ${sel(box)} by ${Math.round(Math.max(r.right - br.right, br.left - r.left))}px`); break; }
     }
@@ -167,9 +174,22 @@ function measure(minTap) {
     const cs = getComputedStyle(el);
     if (!/hidden|clip/.test(cs.overflowX) || cs.textOverflow === 'ellipsis' || !visible(el)) continue;
     if (el.clientWidth <= 2 || el.clientHeight <= 2) continue; // visually-hidden text
-    if (el.scrollWidth > el.clientWidth + 2 && el.textContent.trim() && ['SELECT', 'INPUT', 'TEXTAREA'].indexOf(el.tagName) === -1 && el.children.length < 20) {
-      out.breaks.push(`${sel(el)} clips its content (${el.scrollWidth}px in ${el.clientWidth}px)`);
+    if (el.scrollWidth <= el.clientWidth + 2 || ['SELECT', 'INPUT', 'TEXTAREA'].includes(el.tagName)) continue;
+    // Only text that is cut off counts; decoration bleeding out of an overflow:hidden hero is intended.
+    const er = el.getBoundingClientRect();
+    const tx = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let cut = null;
+    for (let n = 0; tx.nextNode() && n < 200 && !cut; n++) {
+      const t = tx.currentNode;
+      if (!t.textContent.trim() || !t.parentElement || !visible(t.parentElement)) continue;
+      let inner = false;
+      for (let e = t.parentElement; e && e !== el; e = e.parentElement) if (getComputedStyle(e).overflowX !== 'visible') { inner = true; break; }
+      if (inner) continue;
+      const r = document.createRange();
+      r.selectNodeContents(t);
+      if ([...r.getClientRects()].some((x) => x.width > 0 && (x.right > er.right + 2 || x.left < er.left - 2))) cut = t.textContent.trim().slice(0, 30);
     }
+    if (cut) out.breaks.push(`${sel(el)} clips its text "${cut}" (${el.scrollWidth}px in ${el.clientWidth}px)`);
   }
   const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (tw.nextNode() && out.breaks.length < 15) {
@@ -182,6 +202,19 @@ function measure(minTap) {
     const tops = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
     if (tops.size > 1) out.breaks.push(`figure "${v}" wraps across lines in ${sel(t.parentElement)}`);
   }
+
+  // Visible running text, to find content that a narrow width hides instead of reflowing (R18).
+  // Navigation and aria-hidden decoration are left out: a collapsed menu is not lost content.
+  const texts = [];
+  const tt = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tt.nextNode() && texts.length < 3000) {
+    const t = tt.currentNode;
+    const v = t.textContent.replace(/\s+/g, ' ').trim();
+    const p = t.parentElement;
+    if (v.length < 2 || !p || p.closest('nav, script, style, noscript, template, [aria-hidden="true"]') || !visible(p)) continue;
+    texts.push(v);
+  }
+  out.texts = texts;
 
   // A coarse description of the look, for spotting runs that all converge on one style.
   const bodyBg = bgOf(document.body) || { r: 255, g: 255, b: 255 };
@@ -208,7 +241,11 @@ function snapshot() {
   const txt = (e) => (e.getAttribute('aria-label') || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80);
   return {
     links: [...document.querySelectorAll('a[href]')].map((a) => `${a.getAttribute('href')} | ${txt(a)}`),
-    fields: [...document.querySelectorAll('input, select, textarea')].map((f) => `${f.tagName.toLowerCase()}[${f.type || ''}] ${f.name || f.id || ''}`),
+    // `tag[type] name-or-id | label`: the label lets a field that gained a name or a better type still match.
+    fields: [...document.querySelectorAll('input, select, textarea')].map((f) => {
+      const label = (f.labels?.[0]?.textContent || f.getAttribute('aria-label') || f.getAttribute('placeholder') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+      return `${f.tagName.toLowerCase()}[${f.type || ''}] ${f.name || f.id || ''}${label ? ' | ' + label : ''}`;
+    }),
     buttons: [...document.querySelectorAll('button, [role=button], input[type=submit]')].map((b) => txt(b) || b.value || ''),
     handlers: [...document.querySelectorAll('[onclick], [onsubmit], [onchange], form[action]')].map((e) => `${e.tagName.toLowerCase()} ${e.getAttribute('action') || ''}`.trim()),
     headings: [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => `${h.tagName.toLowerCase()} ${txt(h)}`),
@@ -259,12 +296,33 @@ try {
     for (const b of m.breaks) add('R17', `@${width}px`, b);
     if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
     if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;
+    textsAt.set(width, m.texts);
     if (width === opt.widths[0]) {
       for (const src of m.brokenImg) add('N06', src, 'Broken image');
       const unfocused = await focusCheck(page);
       for (const u of unfocused.slice(0, 10)) add('F02', u, 'No visible focus change on keyboard focus');
     }
     await ctx.close();
+  }
+
+  // R18: text readable at desktop width that the narrowest width removes (display:none, zero size) instead of reflowing.
+  const narrow = Math.min(...opt.widths);
+  const wide = opt.widths.includes(1280) ? 1280 : Math.max(...opt.widths);
+  if (narrow <= 480 && wide > narrow) {
+    const left = new Map();
+    for (const t of textsAt.get(narrow) || []) left.set(t, (left.get(t) || 0) + 1);
+    const gone = [];
+    for (const t of textsAt.get(wide) || []) {
+      if (left.get(t)) left.set(t, left.get(t) - 1);
+      else gone.push(t);
+    }
+    // Japanese characters carry about twice the content of Latin ones.
+    const weight = (t) => t.length + (t.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+    const total = gone.reduce((a, t) => a + weight(t), 0);
+    if (total >= 60) {
+      const sample = gone.sort((a, b) => weight(b) - weight(a)).slice(0, 2).map((t) => `"${t.slice(0, 40)}"`).join(', ');
+      add('R18', `@${narrow}px`, `${gone.length} text block(s) shown at ${wide}px are hidden at ${narrow}px (${total} chars), e.g. ${sample}; reflow or collapse them behind a labeled control instead of removing them`);
+    }
   }
 
   // Reduced motion: anything still moving with the preference set?
@@ -285,16 +343,16 @@ try {
     if (opt.snapshot) fs.writeFileSync(opt.snapshot, JSON.stringify(snap, null, 2));
     if (opt.compare) {
       const before = JSON.parse(fs.readFileSync(opt.compare, 'utf8'));
-      // Links and fields must survive exactly; buttons, headings, and handlers may change form but not be dropped.
-      for (const key of ['links', 'fields']) {
-        const now = (snap[key] || []).map((x) => x.split(' | ')[0]);
-        for (const item of before[key] || []) {
-          const k = item.split(' | ')[0];
-          const i = now.indexOf(k);
-          if (i === -1) add('F11', key, `Lost after redesign: ${item}`);
-          else now.splice(i, 1);
-        }
+      // Links must survive by href. Fields must survive, but a field may improve: gain a name or id,
+      // move from type=text to a more specific text type, or get a real label. Buttons, headings, and handlers
+      // may change form but not be dropped.
+      const nowLinks = (snap.links || []).map((x) => x.split(' | ')[0]);
+      for (const item of before.links || []) {
+        const i = nowLinks.indexOf(item.split(' | ')[0]);
+        if (i === -1) add('F11', 'links', `Lost after redesign: ${item}`);
+        else nowLinks.splice(i, 1);
       }
+      for (const item of unmatchedFields(before.fields || [], snap.fields || [])) add('F11', 'fields', `Lost after redesign: ${item}`);
       for (const key of ['buttons', 'headings', 'handlers']) {
         const was = (before[key] || []).length, is = (snap[key] || []).length;
         if (is < was) add('F11', key, `${was - is} fewer ${key} than before (${was} → ${is}); confirm none was lost`);
