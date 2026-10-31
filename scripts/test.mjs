@@ -23,6 +23,8 @@ check('lint exits 2 on floor findings', bad.code === 2, `got ${bad.code}`);
 const good = run('lint.mjs', path.join(ROOT, 'eval/fixtures/good.html'));
 check('lint is clean on good.html', good.out.findings.length === 0, JSON.stringify(good.out.findings.map((f) => f.id)));
 check('lint exits 0 on good.html', good.code === 0);
+const tickets = run('lint.mjs', path.join(ROOT, 'eval/fixtures/ticket-numbers.html'), '--design', path.join(ROOT, 'eval/fixtures/ticket-numbers.DESIGN.md'));
+check('R08 does not count "#221" ticket numbers in script strings as colors', !tickets.out.findings.some((f) => f.id === 'R08'), JSON.stringify(tickets.out.findings));
 const goodMobile = run('lint.mjs', path.join(ROOT, 'eval/fixtures/good.html'), '--surface', 'mobile');
 check('lint accepts --surface like render-check', goodMobile.code === 0 && goodMobile.out.findings.length === 0);
 

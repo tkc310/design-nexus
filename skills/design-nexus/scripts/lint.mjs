@@ -309,6 +309,8 @@ for (const file of files) {
   for (const m of colorText.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])/g)) {
     const before = text.slice(Math.max(0, m.index - 6), m.index);
     if (/&$|href=["']?$|url\([^)]*$/.test(before)) continue;
+    // An all-digit "#221" in a script string is a ticket or issue number unless it sits where a color value does.
+    if (/^#\d+$/.test(m[0]) && !(/[:=(,'"`]\s*$/.test(before) && /^\s*(?:['"`),;}!]|$)/m.test(colorText.slice(m.index + m[0].length, m.index + m[0].length + 3)))) continue;
     const h = normHex(m[0]);
     if (!h) continue;
     if (!agg.hexes.has(h)) agg.hexes.set(h, { file: rel, line: lineOf(text, m.index) });
