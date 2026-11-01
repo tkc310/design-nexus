@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11月分の給与 | みなと内科・小児科 給与計算</title>
+<meta name="description" content="今月の給与の確定状況、未承認の勤怠申請、スタッフ別の支給額と前月比を確認して、給与を確定します。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* 帳票: the payslip form this screen produces */
+  --paper: #F4F4F1;      /* ground: form stock */
+  --sheet: #FFFFFF;      /* surface: one payslip sheet */
+  --ink: #1A2320;        /* text: printer ink */
+  --ink-muted: #4F5A55;  /* secondary text, 15px and up */
+  --form-green: #1D6A4A; /* accent: printed rules of the form; primary action, focus */
+  --on-accent: #FFFFFF;
+  --band: #E6F0E9;       /* green-bar stripe of continuous form paper */
+  --rule: #C3CCC7;       /* hairline between 欄 (decorative) */
+  --field: #6E7A74;      /* control outlines, 3:1+ on sheet */
+  --shu: #B3361F;        /* 朱肉: where a seal is applied or still needed; errors */
+
+  --font-display: "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --font-body: "BIZ UDPGothic", "Hiragino Sans", sans-serif;
+  --font-fig: "IBM Plex Sans", "BIZ UDPGothic", sans-serif;
+
+  /* scale 1.25 from 16 */
+  --fs-small: 14px;
+  --fs-body: 16px;
+  --fs-h3: 20px;
+  --fs-h2: 25px;
+  --fs-fig: 31px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+  --radius: 6px;
+  --shadow-sheet: 0 1px 2px rgba(26, 35, 32, .08), 0 6px 16px -8px rgba(26, 35, 32, .18);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  letter-spacing: .02em;
+  line-break: strict;
+}
+h1, h2, h3 { margin: 0; line-height: 1.35; text-wrap: balance; word-break: auto-phrase; font-weight: 700; }
+p { margin: 0; text-wrap: pretty; }
+button, input { font: inherit; color: inherit; letter-spacing: inherit; }
+.nw { white-space: nowrap; }
+.fig { font-family: var(--font-fig); font-variant-numeric: tabular-nums; letter-spacing: 0; white-space: nowrap; }
+.vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:focus-visible { outline: 3px solid var(--form-green); outline-offset: 2px; }
+
+/* ---------- top bar ---------- */
+.topbar { background: var(--sheet); border-bottom: 1px solid var(--rule); }
+.topbar-inner {
+  max-width: 1440px; margin: 0 auto; padding: 0 var(--s5);
+  display: flex; align-items: center; gap: var(--s5); min-height: 56px; flex-wrap: wrap;
+}
+.clinic { font-weight: 700; white-space: nowrap; }
+.clinic span { color: var(--ink-muted); font-weight: 400; margin-left: var(--s2); }
+.topnav ul { display: flex; gap: var(--s1); list-style: none; margin: 0; padding: 0; }
+.topnav a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s3);
+  color: var(--ink); text-decoration: none; white-space: nowrap; border-bottom: 3px solid transparent;
+}
+.topnav a[aria-current="page"] { border-bottom-color: var(--form-green); font-weight: 700; }
+@media (hover: hover) and (pointer: fine) { .topnav a:hover { background: var(--band); } }
+.user { margin-left: auto; color: var(--ink-muted); white-space: nowrap; }
+
+/* ---------- page ---------- */
+main { max-width: 1440px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s7); }
+
+.page-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s4) var(--s6); align-items: end;
+  margin-bottom: var(--s5);
+}
+.title-block { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2) var(--s5); min-width: 0; }
+h1 { font-family: var(--font-display); font-size: var(--fs-fig); letter-spacing: .02em; }
+.asof { color: var(--ink-muted); white-space: nowrap; }
+
+.months { display: inline-flex; border: 1px solid var(--field); border-radius: var(--radius); overflow: hidden; background: var(--sheet); }
+.months button {
+  min-height: 44px; padding: 0 var(--s4); border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.months button + button { border-left: 1px solid var(--field); }
+.months button[aria-pressed="true"] { background: var(--band); font-weight: 700; box-shadow: inset 0 -3px 0 var(--form-green); }
+@media (hover: hover) and (pointer: fine) { .months button:hover { background: var(--band); } }
+
+.actions { display: grid; justify-items: end; gap: var(--s2); }
+.action-row { display: flex; gap: var(--s3); flex-wrap: wrap; justify-content: flex-end; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s5); border-radius: var(--radius); cursor: pointer;
+  font-weight: 700; white-space: nowrap; text-decoration: none;
+  border: 1px solid var(--form-green); background: var(--sheet); color: var(--form-green);
+  transition: background-color .15s ease, color .15s ease, transform .12s var(--ease-out);
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn-primary { background: var(--form-green); color: var(--on-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) { background: var(--band); }
+  .btn-primary:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); }
+}
+.btn:disabled { cursor: not-allowed; border-color: var(--field); color: var(--ink-muted); background: var(--paper); border-style: dashed; }
+.btn .count {
+  font-family: var(--font-fig); font-variant-numeric: tabular-nums; font-size: var(--fs-small);
+  background: var(--sheet); color: var(--shu); border-radius: 999px; padding: 0 var(--s2); line-height: 1.6;
+}
+.btn-text { border-color: transparent; background: transparent; padding: 0 var(--s2); text-decoration: underline; text-underline-offset: 3px; font-weight: 400; }
+.reason { font-size: var(--fs-small); color: var(--ink); max-width: 40em; text-align: right; }
+.reason strong { color: var(--shu); }
+.reason .btn-text { min-height: 32px; font-size: var(--fs-small); }
+
+/* ---------- sheet (one payslip) ---------- */
+.sheet { background: var(--sheet); border-radius: var(--radius); box-shadow: var(--shadow-sheet); }
+.sheet-head {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s1) var(--s5);
+  padding: var(--s3) var(--s5); border-bottom: 2px solid var(--form-green);
+}
+.sheet-head h2 { font-family: var(--font-display); font-size: var(--fs-h3); letter-spacing: .08em; }
+.sheet-head p { color: var(--ink-muted); }
+
+/* 欄: label strip on top, figure set bottom-right, as on the printed form */
+.ledger {
+  display: grid; gap: 1px; background: var(--rule);
+  grid-template-columns: repeat(2, minmax(0, 1fr)) repeat(2, minmax(0, 1.15fr)) minmax(0, 1.5fr) 140px;
+}
+#summary { overflow: hidden; }
+.ran { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--sheet); }
+.ran-label {
+  background: var(--band); padding: var(--s1) var(--s3); font-size: var(--fs-small); font-weight: 700;
+  border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+.ran-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: var(--s1); padding: var(--s3) var(--s4) var(--s4); text-align: right; }
+.ran-fig { font-size: var(--fs-fig); font-weight: 600; line-height: 1.2; }
+.ran-fig .unit { font-family: var(--font-body); font-size: var(--fs-body); font-weight: 400; margin-left: 2px; }
+.ran-note { color: var(--ink-muted); font-size: 15px; }
+.ran-note.ink { color: var(--ink); font-size: var(--fs-small); }
+.ran--attn .ran-fig { color: var(--shu); }
+/* operators sit on the rule between 支給・控除・差引 */
+.op {
+  position: absolute; left: -13px; top: 50%; z-index: 1; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--sheet); border: 1px solid var(--rule);
+  font-family: var(--font-fig); font-weight: 600; line-height: 1; color: var(--ink);
+}
+
+/* 印 box: the signature */
+.ran--seal .ran-body { align-items: center; justify-content: center; text-align: center; }
+.ran--seal .ran-note { font-size: var(--fs-small); color: var(--ink); white-space: nowrap; }
+.seal {
+  width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  border: 2px dashed var(--shu); color: var(--ink); font-size: 15px; line-height: 1.3;
+}
+.seal.is-empty { border-color: var(--field); color: var(--ink-muted); }
+.seal.is-stamped {
+  border: 3px solid var(--shu); color: var(--shu); font-family: var(--font-display); font-size: var(--fs-h3);
+  transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 3px var(--sheet), inset 0 0 0 4px var(--shu);
+}
+.seal.is-stamped small { display: block; font-family: var(--font-fig); font-size: var(--fs-small); letter-spacing: 0; }
+.seal.just-stamped { animation: stamp .22s var(--ease-out) both; }
+@keyframes stamp { from { transform: rotate(-8deg) scale(1.12); opacity: 0; } to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+
+/* skeleton */
+.sk { display: inline-block; height: 1em; width: 6em; border-radius: 3px; background: var(--band); animation: pulse 1.2s ease-in-out infinite; vertical-align: middle; }
+@keyframes pulse { 50% { opacity: .5; } }
+
+/* ---------- staff table ---------- */
+.staff { margin-top: var(--s6); }
+.staff-head {
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s3) var(--s5);
+  padding: var(--s4) var(--s5); border-bottom: 2px solid var(--form-green);
+}
+.staff-head h2 { font-family: var(--font-display); font-size: var(--fs-h3); letter-spacing: .08em; }
+.staff-head h2 .fig { font-family: var(--font-fig); font-size: var(--fs-body); font-weight: 500; color: var(--ink-muted); margin-left: var(--s2); letter-spacing: 0; }
+.filter { display: grid; gap: var(--s1); }
+.filter label { font-size: var(--fs-small); font-weight: 700; }
+.filter input {
+  min-height: 44px; width: 16em; max-width: 100%; padding: 0 var(--s3);
+  border: 1px solid var(--field); border-radius: var(--radius); background: var(--sheet);
+}
+
+.pay { width: 100%; border-collapse: collapse; font-size: 15px; }
+.pay th, .pay td { padding: var(--s2) var(--s4); border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.pay thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--sheet); text-align: left; font-size: var(--fs-small);
+  font-weight: 700; white-space: nowrap; box-shadow: inset 0 -1px 0 var(--field);
+}
+.pay th.num, .pay td.num { text-align: right; }
+.pay tbody tr:nth-child(even) { background: var(--band); }
+.sort {
+  display: inline-flex; align-items: center; gap: var(--s1); min-height: 32px; padding: 0 var(--s1); margin: 0 calc(var(--s1) * -1);
+  border: 0; background: none; cursor: pointer; font-weight: 700; white-space: nowrap;
+}
+.sort .dir { font-family: var(--font-fig); color: var(--ink-muted); width: 1em; }
+.pay tbody th { text-align: left; font-weight: 400; }
+.name { font-weight: 700; white-space: nowrap; }
+.name small { font-weight: 400; font-size: var(--fs-small); margin-left: var(--s2); }
+.role { white-space: nowrap; }
+.net { font-weight: 600; font-size: var(--fs-body); }
+.delta { color: var(--ink); }
+.tag {
+  display: inline-block; margin-top: 2px; padding: 0 var(--s1); border: 1px solid var(--shu); border-radius: 3px;
+  color: var(--shu); font-size: var(--fs-small); line-height: 1.6; white-space: nowrap; font-family: var(--font-body);
+}
+.cell-stack { display: flex; flex-direction: column; align-items: flex-end; }
+.sync-error { color: var(--shu); font-size: var(--fs-small); white-space: nowrap; }
+.retry { min-height: 32px; padding: 0 var(--s3); font-size: var(--fs-small); }
+.pay tfoot td { border-bottom: 0; border-top: 2px solid var(--form-green); font-weight: 700; background: var(--sheet); }
+.cell-label { display: none; }
+
+.state { padding: var(--s7) var(--s5); display: grid; justify-items: center; gap: var(--s3); text-align: center; }
+.state h3 { font-size: var(--fs-h3); }
+.state p { max-width: 36em; }
+.state--error h3 { color: var(--shu); }
+
+/* ---------- dialogs ---------- */
+dialog {
+  width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 0;
+  border-radius: var(--radius); background: var(--sheet); color: var(--ink); box-shadow: 0 12px 40px rgba(26, 35, 32, .3);
+}
+dialog::backdrop { background: rgba(26, 35, 32, .45); }
+dialog[open] { animation: rise .2s var(--ease-out); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.dlg-head { padding: var(--s4) var(--s5); border-bottom: 2px solid var(--form-green); }
+.dlg-head h2 { font-family: var(--font-display); font-size: var(--fs-h3); }
+.dlg-body { padding: var(--s4) var(--s5); display: grid; gap: var(--s3); }
+.dlg-foot { padding: var(--s4) var(--s5); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s3); border-top: 1px solid var(--rule); }
+.req-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--rule); border-radius: var(--radius); }
+.req-list li + li { border-top: 1px solid var(--rule); }
+.req { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--s1) var(--s3); align-items: start; padding: var(--s3) var(--s4); cursor: pointer; }
+.req input { width: 22px; height: 22px; margin: 3px 0 0; accent-color: var(--form-green); }
+.req-who { font-weight: 700; }
+.req-what { font-size: var(--fs-small); grid-column: 2; }
+.req-amt { text-align: right; font-size: var(--fs-small); }
+.confirm-grid { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s4); margin: 0; }
+.confirm-grid dt { font-weight: 700; }
+.confirm-grid dd { margin: 0; text-align: right; }
+.dlg-msg { color: var(--shu); font-size: var(--fs-small); }
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: var(--s5); z-index: 20; transform: translateX(-50%);
+  max-width: calc(100vw - 32px); padding: var(--s3) var(--s5); border-radius: var(--radius);
+  background: var(--ink); color: var(--sheet); box-shadow: var(--shadow-sheet);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s var(--ease-out);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+.toast:empty { display: none; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) {
+  .ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ran--gross, .ran--minus, .ran--net { order: 1; }
+}
+@media (max-width: 960px) {
+  .page-head { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .actions { justify-items: start; }
+  .action-row { justify-content: flex-start; }
+  .reason { text-align: left; }
+}
+@media (max-width: 720px) {
+  main { padding: var(--s5) var(--s4) var(--s7); }
+  .topbar-inner { padding: 0 var(--s4); gap: 0 var(--s4); }
+  .user { margin-left: 0; }
+  .topnav { order: 3; width: 100%; }
+  .topnav ul { flex-wrap: wrap; }
+  .topnav a { padding: 0 var(--s2); }
+  h1 { font-size: var(--fs-h2); }
+  .ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ran--net { grid-column: 1 / -1; }
+  .ran--net .op { display: none; }
+  .ran--seal { grid-column: 1 / -1; order: 2; }
+  .ran--seal .ran-body { flex-direction: row; justify-content: flex-start; gap: var(--s4); }
+  .ran-body { padding: var(--s2) var(--s3) var(--s3); }
+  .ran-fig { font-size: var(--fs-h2); }
+  .ran--net .ran-fig { font-size: var(--fs-fig); }
+  .seal { width: 72px; height: 72px; }
+  .sheet-head, .staff-head { padding-left: var(--s4); padding-right: var(--s4); }
+  .filter, .filter input { width: 100%; }
+  .btn { padding: 0 var(--s4); }
+}
+@media (max-width: 900px) {
+  /* each staff row becomes its own small payslip of 欄 */
+  .pay, .pay tbody, .pay tfoot, .pay tr, .pay td, .pay tbody th { display: block; }
+  .pay thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pay tbody tr, .pay tfoot tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid var(--field);
+    padding: var(--s3) var(--s4) var(--s4); gap: 0;
+  }
+  .pay tbody tr:nth-child(even) { background: var(--sheet); }
+  .pay td, .pay tbody th { border: 0; padding: var(--s1) 0; min-width: 0; }
+  .pay .c-name { grid-column: 1; grid-row: 1; }
+  .pay .c-role { grid-column: 1; grid-row: 2; color: var(--ink-muted); padding-top: 0; }
+  .pay .c-net { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .pay td.c-base, .pay td.c-ot, .pay td.c-ded, .pay td.c-delta {
+    border: 1px solid var(--rule); margin-top: var(--s2); padding: 0; text-align: right;
+  }
+  .pay td.c-base, .pay td.c-ded { border-right: 0; }
+  .pay td.c-ded, .pay td.c-delta { margin-top: -1px; }
+  .cell-label {
+    display: block; background: var(--band); padding: 2px var(--s2); font-size: var(--fs-small); font-weight: 700;
+    text-align: left; border-bottom: 1px solid var(--rule);
+  }
+  .c-net .cell-label { background: none; border: 0; padding: 0; text-align: right; font-weight: 400; }
+  .cell-val { display: block; padding: var(--s1) var(--s2); }
+  .c-net .cell-val { padding: 0; font-size: var(--fs-h3); }
+  .cell-stack { align-items: flex-end; }
+  .pay tfoot tr { background: var(--band); border-top: 2px solid var(--form-green); }
+  .pay tfoot td { border-top: 0; background: transparent; }
+  .pay tfoot td.c-name { grid-row: 1 / span 2; align-self: center; }
+  .pay tfoot td.c-role:empty { display: none; }
+  .pay tfoot td.c-base, .pay tfoot td.c-ot, .pay tfoot td.c-ded, .pay tfoot td.c-delta { background: var(--sheet); }
+}
+@media (min-width: 721px) and (max-width: 900px) {
+  .pay tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pay tbody tr:nth-child(odd) { border-right: 1px solid var(--field); }
+}
+@media (max-width: 480px) {
+  .ran-body { padding: var(--s2) var(--s2) var(--s3); }
+  .ran-fig { font-size: var(--fs-h3); }
+  .ran--net .ran-fig { font-size: var(--fs-fig); }
+  .ran .btn-text { font-size: var(--fs-small); }
+  .pay tbody tr, .pay tfoot tr { padding-left: var(--s3); padding-right: var(--s3); }
+  .cell-val { padding-left: 6px; padding-right: 6px; }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .toast.show { transform: translateX(-50%); }
+  .btn:active:not(:disabled) { transform: none; }
+  .sk { animation: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="clinic">みなと内科・小児科<span>給与計算</span></div>
+    <nav class="topnav" aria-label="メインメニュー">
+      <ul>
+        <li><a href="#" aria-current="page">今月の給与</a></li>
+        <li><a href="#attendance">勤怠</a></li>
+        <li><a href="#staff">スタッフ</a></li>
+        <li><a href="#settings">設定</a></li>
+      </ul>
+    </nav>
+    <div class="user">山本 浩二(事務長)</div>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <div class="title-block">
+      <h1 id="page-title">11月分の給与</h1>
+      <div class="months" role="group" aria-label="対象月">
+        <button type="button" data-month="2026-10" aria-pressed="false">10月分</button>
+        <button type="button" data-month="2026-11" aria-pressed="true">11月分</button>
+        <button type="button" data-month="2026-12" aria-pressed="false">12月分</button>
+      </div>
+      <p class="asof" id="asof">11月13日(金)現在</p>
+    </div>
+    <div class="actions">
+      <div class="action-row">
+        <button type="button" class="btn btn-primary" id="btn-approve">勤怠を承認する <span class="count fig" id="approve-count">7件</span></button>
+        <button type="button" class="btn" id="btn-confirm" disabled aria-describedby="confirm-reason">給与を確定する</button>
+      </div>
+      <p class="reason" id="confirm-reason"></p>
+    </div>
+  </div>
+
+  <section class="sheet" aria-labelledby="sheet-title" id="summary">
+    <div class="sheet-head">
+      <h2 id="sheet-title">給与支払明細 クリニック合計</h2>
+      <p id="sheet-meta">対象期間 10月21日〜11月20日 · 18名</p>
+    </div>
+    <div class="ledger" id="ledger" aria-live="polite"></div>
+  </section>
+
+  <section class="sheet staff" aria-labelledby="staff-title" id="staff">
+    <div class="staff-head">
+      <h2 id="staff-title">スタッフ別の支給額<span class="fig" id="staff-count">18名</span></h2>
+      <div class="filter">
+        <label for="q">氏名・職種で絞り込む</label>
+        <input id="q" type="search" autocomplete="off" inputmode="search">
+      </div>
+    </div>
+    <div id="staff-body"></div>
+  </section>
+</main>
+
+<dialog id="dlg-approve" aria-labelledby="dlg-approve-title">
+  <form method="dialog" id="form-approve">
+    <div class="dlg-head"><h2 id="dlg-approve-title">未承認の勤怠申請</h2></div>
+    <div class="dlg-body">
+      <p>承認した残業は、この月の残業代に反映されます。差し戻す申請はチェックを外してください。</p>
+      <ul class="req-list" id="req-list"></ul>
+      <p class="dlg-msg" id="approve-msg" role="alert"></p>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn" data-close>閉じる</button>
+      <button type="submit" class="btn btn-primary" id="approve-submit">選択した申請を承認する</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-confirm" aria-labelledby="dlg-confirm-title">
+  <form method="dialog" id="form-confirm">
+    <div class="dlg-head"><h2 id="dlg-confirm-title">11月分の給与を確定しますか</h2></div>
+    <div class="dlg-body">
+      <dl class="confirm-grid" id="confirm-grid"></dl>
+      <p>確定すると振込データを作成し、11月25日(水)に各スタッフの口座へ振り込みます。11月20日(金)までは「確定を取り消す」から修正できます。</p>
+      <p class="dlg-msg" id="confirm-msg" role="alert"></p>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn" data-close>戻る</button>
+      <button type="submit" class="btn btn-primary" id="confirm-submit">給与を確定する</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const yen = new Intl.NumberFormat('ja-JP');
+  const fmt = (n) => yen.format(Math.round(n));
+  const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '±') + yen.format(Math.abs(Math.round(n)));
+  const W = '日月火水木金土';
+  const dur = (h) => (h < 1 ? `<span class="fig">${Math.round(h * 60)}</span>分` : `<span class="fig">${h}</span>時間`);
+  const md = (iso) => { const d = new Date(iso + 'T00:00:00'); return `${d.getMonth() + 1}月${d.getDate()}日(${W[d.getDay()]})`; };
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ---------- server side (mock API) ---------- */
+  // id, name, role, employment, base, Oct overtime h, Nov approved overtime h, deduction rate, Sep→Oct delta
+  const ROSTER = [
+    [101, '青木 達也', '医師', '', 820000, 0, 0, .262, 0],
+    [102, '今井 隆之', '医師', '非常勤', 360000, 0, 0, .214, 0],
+    [201, '森川 恵', '看護師', '', 298000, 9.5, 6, .207, 4200],
+    [202, '小野寺 真由美', '看護師', '', 286000, 7, 8.5, .205, -2600],
+    [203, '田村 彩', '看護師', '', 274000, 11, 5, .203, 6900],
+    [204, '西村 優子', '准看護師', '', 241000, 6, 4.25, .199, 0],
+    [205, '山口 奈々', '准看護師', '', 236000, 4, 3, .198, -1800],
+    [301, '伊藤 健', '臨床検査技師', '', 262000, 5, 2, .202, 3100],
+    [302, '長谷川 亮', '診療放射線技師', '', 268000, 3, 4, .203, 0],
+    [401, '山本 浩二', '事務長', '', 390000, 0, 0, .224, 0],
+    [402, '坂本 美咲', '医療事務', '', 212000, 8, 6.5, .192, 2400],
+    [403, '中島 さやか', '医療事務', '', 205000, 10, 9, .190, -3300],
+    [404, '藤井 千尋', '医療事務', 'パート', 148000, 0, 0, .118, 5200],
+    [405, '岡田 由紀', '受付', '', 198000, 4, 3.5, .188, 0],
+    [406, '清水 葵', '受付', 'パート', 112000, 0, 0, .062, -4100],
+    [501, '石田 真理子', '看護助手', '', 186000, 3, 4, .186, 1500],
+    [502, '村上 陽菜', '看護助手', '', 180000, 2, 1, .185, 0],
+    [503, '松尾 和子', '看護助手', 'パート', 142000, 0, 0, .112, 2800],
+  ];
+  const otRate = (base) => Math.round(base / 160 * 1.25);
+  const row = (r, hours) => {
+    const [id, name, role, emp, base, , , dedRate] = r;
+    const overtime = Math.round(otRate(base) * hours);
+    const deduction = Math.round((base + overtime) * dedRate);
+    return { id, name, role, emp, base, overtime, deduction, net: base + overtime - deduction };
+  };
+  const OCT = ROSTER.map((r) => { const x = row(r, r[5]); x.prevNet = x.net - r[8]; return x; });
+  const NOV_PENDING = [
+    { id: 'a1', staff: 201, kind: '残業申請', date: '2026-11-11', hours: 2.5, note: '発熱外来の延長' },
+    { id: 'a2', staff: 203, kind: '残業申請', date: '2026-11-12', hours: 1.5, note: 'インフルエンザ予防接種の予約対応' },
+    { id: 'a3', staff: 204, kind: '打刻修正', date: '2026-11-06', hours: 0.75, note: '退勤 18:45 → 19:30' },
+    { id: 'a4', staff: 301, kind: '残業申請', date: '2026-11-10', hours: 3, note: '検査機器の定期点検の立ち会い' },
+    { id: 'a5', staff: 402, kind: '有給休暇', date: '2026-11-12', hours: 0, note: '1日' },
+    { id: 'a6', staff: 502, kind: '残業申請', date: '2026-11-09', hours: 2, note: '院内清掃・消毒' },
+    { id: 'a7', staff: 405, kind: '打刻修正', date: '2026-11-10', hours: 0, note: '出勤の打刻漏れ 8:25' },
+  ];
+  const server = {
+    online: () => navigator.onLine !== false,
+    approvedHours: Object.fromEntries(ROSTER.map((r) => [r[0], r[6]])),
+    pending: NOV_PENDING.slice(),
+    unsynced: new Set([501]),
+    confirmed: { '2026-10': '2026-10-20' },
+    month(m) {
+      if (m === '2026-12') return { month: m, label: '12月分', status: 'not-started', staff: [], pending: [], period: ['2026-11-21', '2026-12-20'], due: '2026-12-18', payday: '2026-12-25' };
+      if (m === '2026-10') return { month: m, label: '10月分', status: 'confirmed', confirmedOn: this.confirmed[m], staff: OCT, pending: [], unsynced: [], period: ['2026-09-21', '2026-10-20'], due: '2026-10-20', payday: '2026-10-23', asOf: '2026-11-13' };
+      const staff = ROSTER.map((r) => {
+        const x = row(r, this.approvedHours[r[0]]);
+        x.prevNet = OCT.find((o) => o.id === r[0]).net;
+        x.pendingHours = this.pending.filter((p) => p.staff === r[0]).reduce((a, p) => a + p.hours, 0);
+        x.pendingCount = this.pending.filter((p) => p.staff === r[0]).length;
+        if (this.unsynced.has(r[0])) { x.unsynced = true; x.overtime = null; x.deduction = null; x.net = null; }
+        return x;
+      });
+      return { month: m, label: '11月分', status: this.confirmed[m] ? 'confirmed' : 'open', confirmedOn: this.confirmed[m], staff, pending: this.pending.map((p) => ({ ...p, name: ROSTER.find((r) => r[0] === p.staff)[1] })), period: ['2026-10-21', '2026-11-20'], due: '2026-11-20', payday: '2026-11-25', asOf: '2026-11-13' };
+    },
+  };
+  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+  const api = {
+    async getMonth(m) { await delay(650); if (!server.online()) throw new Error('offline'); return server.month(m); },
+    async syncAttendance(id) { await delay(900); if (!server.online()) throw new Error('offline'); server.unsynced.delete(id); },
+    async approve(ids) {
+      await delay(500); if (!server.online()) throw new Error('offline');
+      for (const id of ids) { const p = server.pending.find((x) => x.id === id); if (!p) continue; server.approvedHours[p.staff] += p.hours; }
+      server.pending = server.pending.filter((p) => !ids.includes(p.id));
+    },
+    async unconfirm(m) { await delay(400); if (!server.online()) throw new Error('offline'); delete server.confirmed[m]; },
+    async confirm(m) { await delay(600); if (!server.online()) throw new Error('offline'); server.confirmed[m] = '2026-11-13'; },
+  };
+
+  /* ---------- client state ---------- */
+  const st = { month: '2026-11', view: 'ready', data: server.month('2026-11'), q: '', sort: null, justStamped: false, syncing: new Set(), syncError: new Set(), req: 0 };
+
+  const totals = (staff) => {
+    const ok = staff.filter((s) => !s.unsynced);
+    const sum = (k) => ok.reduce((a, s) => a + s[k], 0);
+    return { base: sum('base'), gross: sum('base') + sum('overtime'), overtime: sum('overtime'), deduction: sum('deduction'), net: sum('net'), prevNet: ok.reduce((a, s) => a + s.prevNet, 0), missing: staff.length - ok.length };
+  };
+
+  /* ---------- head ---------- */
+  function renderHead() {
+    const d = st.data;
+    const label = d ? d.label : { '2026-10': '10月分', '2026-11': '11月分', '2026-12': '12月分' }[st.month];
+    $('#page-title').textContent = `${label}の給与`;
+    document.title = `${label}の給与 | みなと内科・小児科 給与計算`;
+    document.querySelectorAll('.months button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.month === st.month)));
+    const ap = $('#btn-approve'), cf = $('#btn-confirm'), reason = $('#confirm-reason');
+    const ready = st.view === 'ready' && d;
+    const pending = ready ? d.pending.length : 0;
+    const missing = ready ? d.staff.filter((s) => s.unsynced).length : 0;
+    $('#approve-count').textContent = `${pending}件`;
+    $('#approve-count').hidden = pending === 0;
+    ap.disabled = !ready || d.status !== 'open' || pending === 0;
+    const canConfirm = ready && d.status === 'open' && pending === 0 && missing === 0;
+    cf.disabled = !canConfirm;
+    ap.classList.toggle('btn-primary', ready && d.status === 'open' && pending > 0);
+    cf.classList.toggle('btn-primary', canConfirm);
+    let why = '';
+    if (st.view === 'loading') why = '読み込み中です。';
+    else if (st.view === 'error') why = '給与データを読み込めないため、承認と確定はできません。';
+    else if (d.status === 'not-started') why = `${d.label}はまだ集計が始まっていません。`;
+    else if (d.status === 'confirmed') why = `${d.label}は${md(d.confirmedOn)}に確定済みです。` + (d.asOf && d.asOf <= d.due && d.month !== '2026-10' ? ` <button type="button" class="btn btn-text" data-unconfirm>確定を取り消す</button>` : '');
+    else if (!canConfirm) {
+      const parts = [];
+      if (pending) parts.push(`勤怠<strong class="fig">${pending}件</strong>の承認`);
+      if (missing) parts.push(`<strong class="fig">${missing}名</strong>の勤怠データ取得`);
+      why = `確定するには、${parts.join('と')}が必要です。`;
+    } else why = `すべての勤怠を承認しました。${md(d.due)}までに確定してください。`;
+    reason.innerHTML = why;
+    $('#asof').textContent = d && d.asOf ? `${md(d.asOf)}現在` : '';
+  }
+
+  /* ---------- ledger (the clinic-wide payslip) ---------- */
+  const ran = (cls, label, body, extra = '') => `<div class="ran ${cls}">${extra}<span class="ran-label">${label}</span><div class="ran-body">${body}</div></div>`;
+  const op = (c) => `<span class="op" aria-hidden="true">${c}</span>`;
+  function renderLedger() {
+    const L = $('#ledger');
+    const d = st.data;
+    if (st.view === 'loading') {
+      const sk = '<span class="sk" aria-hidden="true"></span>';
+      L.innerHTML = ['確定期限まで', '未承認の勤怠申請', '支給合計', '控除合計', '差引支給合計', '確定印'].map((l, i) =>
+        ran(['ran--due', 'ran--attn', '', 'ran--minus', 'ran--net', 'ran--seal'][i], l, `<span class="ran-fig">${sk}</span><span class="ran-note">${sk}</span>`)).join('');
+      L.setAttribute('aria-busy', 'true');
+      $('#sheet-meta').textContent = '読み込み中…';
+      return;
+    }
+    L.removeAttribute('aria-busy');
+    if (st.view === 'error' || !d) { L.innerHTML = ''; $('#sheet-meta').textContent = ''; return; }
+    $('#sheet-meta').innerHTML = `<span class="nw">対象期間 ${md(d.period[0]).replace(/\(.\)/, '')}〜${md(d.period[1]).replace(/\(.\)/, '')}</span> · <span class="nw">${d.staff.length}名</span>`;
+    const t = totals(d.staff);
+    const asOf = new Date((d.asOf || '2026-11-13') + 'T00:00:00');
+    const days = Math.round((new Date(d.due + 'T00:00:00') - asOf) / 86400000);
+    const empty = d.status === 'not-started';
+    const dueFig = d.status === 'confirmed' ? '確定済み' : days > 0 ? `あと<span class="fig">${days}</span>日` : days === 0 ? '本日' : `<span class="fig">${-days}</span>日超過`;
+    const dueNote = `<span class="nw">${md(d.due)}</span>締め<br>振込 <span class="nw">${md(d.payday)}</span>`;
+    const pend = d.pending.length;
+    const pendBody = d.status !== 'open'
+      ? `<span class="ran-fig fig">—</span><span class="ran-note">${empty ? '申請はまだありません' : 'すべて承認済み'}</span>`
+      : pend
+        ? `<span class="ran-fig fig">${pend}<span class="unit">件</span></span><button type="button" class="btn btn-text" data-open-approve>申請を確認する</button>`
+        : `<span class="ran-fig fig">0<span class="unit">件</span></span><span class="ran-note">すべて承認済み</span>`;
+    const money = (n) => empty ? '<span class="ran-fig fig">—</span>' : `<span class="ran-fig fig">${fmt(n)}<span class="unit">円</span></span>`;
+    const diff = t.net - t.prevNet;
+    const pct = t.prevNet ? (diff / t.prevNet * 100).toFixed(1) : '0.0';
+    const netNote = empty ? '<span class="ran-note">集計前です</span>'
+      : `<span class="ran-note ink">前月比 <span class="fig">${signed(diff)}円(${diff >= 0 ? '+' : '−'}${Math.abs(pct)}%)</span></span>` + (t.missing ? `<span class="ran-note ink"><span class="fig">${t.missing}</span>名の勤怠を除く暫定額</span>` : '');
+    const stamped = d.status === 'confirmed';
+    const sealOn = stamped ? new Date(d.confirmedOn + 'T00:00:00') : null;
+    const seal = stamped
+      ? `<div class="seal is-stamped${st.justStamped ? ' just-stamped' : ''}" role="img" aria-label="確定済み ${md(d.confirmedOn)}">確定<small>${sealOn.getMonth() + 1}.${sealOn.getDate()}</small></div>`
+      : `<div class="seal${empty ? ' is-empty' : ''}">${empty ? '集計前' : '未確定'}</div>`;
+    const sealNote = stamped ? `<span class="ran-note">${sealOn.getMonth() + 1}月${sealOn.getDate()}日 山本</span>` : `<span class="ran-note">${empty ? '集計後に確定' : '確定すると押印'}</span>`;
+    L.innerHTML =
+      ran(`ran--due${!stamped && days <= 3 ? ' ran--attn' : ''}`, '確定期限まで', `<span class="ran-fig">${dueFig}</span><span class="ran-note">${dueNote}</span>`) +
+      ran(`ran--pend${pend ? ' ran--attn' : ''}`, '未承認の勤怠申請', pendBody) +
+      ran('ran--gross', '支給合計', money(t.gross) + `<span class="ran-note">基本給＋残業代</span>`) +
+      ran('ran--minus', '控除合計', money(t.deduction) + `<span class="ran-note">社会保険・税</span>`, op('−')) +
+      ran('ran--net', '差引支給合計', money(t.net) + netNote, op('=')) +
+      ran('ran--seal', '確定印', seal + sealNote);
+    st.justStamped = false;
+  }
+
+  /* ---------- staff table ---------- */
+  const COLS = [
+    { key: 'name', label: '氏名', cls: 'c-name' },
+    { key: 'role', label: '職種', cls: 'c-role' },
+    { key: 'base', label: '基本給', cls: 'c-base num' },
+    { key: 'overtime', label: '残業代', cls: 'c-ot num' },
+    { key: 'deduction', label: '控除', cls: 'c-ded num' },
+    { key: 'net', label: '差引支給額', cls: 'c-net num' },
+    { key: 'delta', label: '前月比', cls: 'c-delta num' },
+  ];
+  const lbl = (c) => `<span class="cell-label" aria-hidden="true">${c.label}</span>`;
+  function renderStaff() {
+    const B = $('#staff-body');
+    const d = st.data;
+    $('#q').disabled = st.view !== 'ready';
+    if (st.view === 'loading') {
+      $('#staff-count').textContent = '';
+      const skRow = `<tr>${COLS.map((c) => `<td class="${c.cls}">${lbl(c)}<span class="cell-val"><span class="sk" aria-hidden="true"></span></span></td>`).join('')}</tr>`;
+      B.innerHTML = `<table class="pay" aria-busy="true"><caption class="vh">スタッフ別の支給額を読み込み中</caption><thead><tr>${COLS.map((c) => `<th scope="col" class="${c.cls}">${c.label}</th>`).join('')}</tr></thead><tbody>${skRow.repeat(6)}</tbody></table>`;
+      return;
+    }
+    if (st.view === 'error') {
+      $('#staff-count').textContent = '';
+      B.innerHTML = `<div class="state state--error" role="alert"><h3>給与データを読み込めませんでした</h3><p>インターネットに接続されていない可能性があります。接続を確認してから、もう一度読み込んでください。入力済みの勤怠と承認内容は保存されています。</p><button type="button" class="btn btn-primary" data-reload>もう一度読み込む</button></div>`;
+      return;
+    }
+    if (d.status === 'not-started') {
+      $('#staff-count').textContent = '0名';
+      B.innerHTML = `<div class="state"><h3>${d.label}の給与はまだありません</h3><p>勤怠の集計は${md(d.period[0])}から始まります。それまでに、新しく入るスタッフの登録と、基本給の改定を済ませておけます。</p><div class="action-row"><button type="button" class="btn" data-month-go="2026-11">11月分に戻る</button><a class="btn btn-text" href="#staff">スタッフを登録する</a></div></div>`;
+      return;
+    }
+    const q = st.q.trim();
+    let rows = d.staff.map((s) => ({ ...s, delta: s.net == null ? null : s.net - s.prevNet }));
+    if (q) rows = rows.filter((s) => (s.name + s.role + s.emp).replace(/\s/g, '').includes(q.replace(/\s/g, '')));
+    if (st.sort) {
+      const { key, dir } = st.sort;
+      rows.sort((a, b) => {
+        const x = a[key], y = b[key];
+        if (x == null) return 1; if (y == null) return -1;
+        return (typeof x === 'string' ? x.localeCompare(y, 'ja') : x - y) * (dir === 'asc' ? 1 : -1);
+      });
+    }
+    $('#staff-count').textContent = q ? `${rows.length} / ${d.staff.length}名` : `${d.staff.length}名`;
+    if (!rows.length) {
+      B.innerHTML = `<div class="state"><h3>「${esc(q)}」に一致するスタッフはいません</h3><p>氏名は姓と名のどちらか、職種は「看護師」「医療事務」のように入力してください。</p><button type="button" class="btn" data-clear>絞り込みを解除する</button></div>`;
+      return;
+    }
+    const head = COLS.map((c) => {
+      const s = st.sort && st.sort.key === c.key ? st.sort.dir : null;
+      const aria = s ? ` aria-sort="${s === 'asc' ? 'ascending' : 'descending'}"` : '';
+      return `<th scope="col" class="${c.cls}"${aria}><button type="button" class="sort" data-sort="${c.key}">${c.label}<span class="dir" aria-hidden="true">${s === 'asc' ? '↑' : s === 'desc' ? '↓' : '↕'}</span></button></th>`;
+    }).join('');
+    const body = rows.map((s) => {
+      const syncing = st.syncing.has(s.id);
+      const failed = st.syncError.has(s.id);
+      const ot = s.unsynced
+        ? `<span class="cell-stack"><span class="sync-error">${syncing ? '取得中…' : failed ? '取得できませんでした' : 'タイムカード未取得'}</span>${syncing ? '' : `<button type="button" class="btn retry" data-sync="${s.id}" aria-label="${esc(s.name)}さんの勤怠を再取得する">再取得する</button>`}</span>`
+        : `<span class="cell-stack"><span class="fig">${fmt(s.overtime)}</span>${s.pendingCount && d.status === 'open' ? `<span class="tag">申請中 ${s.pendingHours ? `+${dur(s.pendingHours)}` : `<span class="fig">${s.pendingCount}</span>件`}</span>` : ''}</span>`;
+      const cells = {
+        name: `<span class="name">${esc(s.name)}${s.emp ? `<small>${s.emp}</small>` : ''}</span>`,
+        role: `<span class="role">${esc(s.role)}</span>`,
+        base: `<span class="fig">${fmt(s.base)}</span>`,
+        overtime: ot,
+        deduction: s.unsynced ? '<span class="fig">—</span>' : `<span class="fig">${fmt(s.deduction)}</span>`,
+        net: s.unsynced ? '<span class="fig">—</span>' : `<span class="fig net">${fmt(s.net)}</span>`,
+        delta: s.unsynced ? '<span class="fig">—</span>' : `<span class="fig delta">${signed(s.delta)}</span>`,
+      };
+      return `<tr>${COLS.map((c, i) => `<${i === 0 ? 'th scope="row"' : 'td'} class="${c.cls}">${i > 1 ? lbl(c) : ''}<span class="cell-val">${cells[c.key]}</span></${i === 0 ? 'th' : 'td'}>`).join('')}</tr>`;
+    }).join('');
+    const t = totals(rows);
+    const foot = q ? '' : `<tfoot><tr><td class="c-name">合計${t.missing ? `<br><span class="sync-error">${t.missing}名を除く</span>` : ''}</td><td class="c-role"></td>` +
+      `<td class="c-base num">${lbl(COLS[2])}<span class="cell-val fig">${fmt(t.base)}</span></td>` +
+      `<td class="c-ot num">${lbl(COLS[3])}<span class="cell-val fig">${fmt(t.overtime)}</span></td>` +
+      `<td class="c-ded num">${lbl(COLS[4])}<span class="cell-val fig">${fmt(t.deduction)}</span></td>` +
+      `<td class="c-net num">${lbl(COLS[5])}<span class="cell-val fig net">${fmt(t.net)}</span></td>` +
+      `<td class="c-delta num">${lbl(COLS[6])}<span class="cell-val fig">${signed(t.net - t.prevNet)}</span></td></tr></tfoot>`;
+    B.innerHTML = `<table class="pay"><caption class="vh">${d.label}のスタッフ別の支給額(円)</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`;
+  }
+
+  function render() { renderHead(); renderLedger(); renderStaff(); }
+
+  /* ---------- flows ---------- */
+  let toastTimer;
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg; void el.offsetWidth; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.textContent = ''; }, 250); }, 3200);
+  }
+
+  async function load(month) {
+    st.month = month; st.view = 'loading'; st.q = ''; $('#q').value = ''; st.data = null;
+    const req = ++st.req;
+    render();
+    try {
+      const data = await api.getMonth(month);
+      if (req !== st.req) return;
+      st.data = data; st.view = 'ready';
+    } catch (e) {
+      if (req !== st.req) return;
+      st.view = 'error';
+    }
+    render();
+  }
+
+  async function refresh() { st.data = server.month(st.month); render(); }
+
+  document.addEventListener('click', async (e) => {
+    const t = e.target.closest('button, a');
+    if (!t) return;
+    if (t.matches('.months button')) { if (t.dataset.month !== st.month || st.view !== 'ready') load(t.dataset.month); }
+    else if (t.dataset.monthGo) load(t.dataset.monthGo);
+    else if (t.hasAttribute('data-reload')) load(st.month);
+    else if (t.hasAttribute('data-clear')) { st.q = ''; $('#q').value = ''; renderStaff(); $('#q').focus(); }
+    else if (t.dataset.sort) {
+      const k = t.dataset.sort;
+      st.sort = st.sort && st.sort.key === k ? (st.sort.dir === 'desc' ? { key: k, dir: 'asc' } : null) : { key: k, dir: ['name', 'role'].includes(k) ? 'asc' : 'desc' };
+      renderStaff();
+      document.querySelector(`[data-sort="${k}"]`)?.focus();
+    }
+    else if (t.dataset.sync) {
+      const id = +t.dataset.sync;
+      st.syncing.add(id); st.syncError.delete(id); renderStaff();
+      try { await api.syncAttendance(id); st.syncing.delete(id); await refresh(); toast('勤怠データを取得しました'); }
+      catch { st.syncing.delete(id); st.syncError.add(id); renderStaff(); toast('勤怠データを取得できませんでした。接続を確認してください'); }
+    }
+    else if (t.id === 'btn-approve' || t.hasAttribute('data-open-approve')) openApprove(t);
+    else if (t.id === 'btn-confirm') openConfirm(t);
+    else if (t.hasAttribute('data-unconfirm')) {
+      try { await api.unconfirm(st.month); await refresh(); $('#btn-confirm').focus(); toast(`${st.data.label}の確定を取り消しました`); }
+      catch { toast('確定を取り消せませんでした。接続を確認してください'); }
+    }
+    else if (t.hasAttribute('data-close')) t.closest('dialog').close();
+  });
+
+  $('#q').addEventListener('input', (e) => { st.q = e.target.value; renderStaff(); });
+
+  let returnFocus = null;
+  document.querySelectorAll('dialog').forEach((dl) => dl.addEventListener('close', () => { (returnFocus && document.contains(returnFocus) ? returnFocus : $('#btn-confirm'))?.focus(); }));
+
+  function openApprove(trigger) {
+    returnFocus = trigger;
+    const d = st.data;
+    $('#approve-msg').textContent = '';
+    $('#req-list').innerHTML = d.pending.map((p) => {
+      const s = d.staff.find((x) => x.id === p.staff);
+      const amt = p.hours ? `残業代 +${fmt(otRate(s.base) * p.hours)}円` : '支給額の変更なし';
+      return `<li><label class="req"><input type="checkbox" name="req" value="${p.id}" checked><span class="req-who">${esc(p.name)} · ${p.kind}</span><span class="req-amt fig">${amt}</span><span class="req-what">${md(p.date)} ${p.hours ? `${dur(p.hours)} · ` : ''}${esc(p.note)}</span></label></li>`;
+    }).join('');
+    syncApproveLabel();
+    $('#dlg-approve').showModal();
+  }
+  function syncApproveLabel() {
+    const n = document.querySelectorAll('#req-list input:checked').length;
+    const b = $('#approve-submit');
+    b.textContent = n ? `選択した${n}件を承認する` : '承認する申請を選んでください';
+    b.disabled = n === 0;
+  }
+  $('#req-list').addEventListener('change', syncApproveLabel);
+  $('#form-approve').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ids = [...document.querySelectorAll('#req-list input:checked')].map((i) => i.value);
+    const b = $('#approve-submit'); b.disabled = true; b.textContent = '承認しています…';
+    try {
+      await api.approve(ids);
+      returnFocus = null;
+      $('#dlg-approve').close();
+      await refresh();
+      toast(`${ids.length}件の勤怠を承認しました`);
+    } catch {
+      $('#approve-msg').textContent = '承認できませんでした。インターネット接続を確認して、もう一度「承認する」を押してください。';
+      syncApproveLabel();
+    }
+  });
+
+  function openConfirm(trigger) {
+    returnFocus = trigger;
+    const d = st.data, t = totals(d.staff);
+    $('#dlg-confirm-title').textContent = `${d.label}の給与を確定しますか`;
+    $('#confirm-msg').textContent = '';
+    $('#confirm-grid').innerHTML = `<dt>対象</dt><dd class="fig">${d.staff.length}名</dd><dt>支給合計</dt><dd class="fig">${fmt(t.gross)}円</dd><dt>控除合計</dt><dd class="fig">${fmt(t.deduction)}円</dd><dt>差引支給合計</dt><dd class="fig">${fmt(t.net)}円</dd><dt>振込日</dt><dd>${md(d.payday)}</dd>`;
+    const b = $('#confirm-submit'); b.disabled = false; b.textContent = '給与を確定する';
+    $('#dlg-confirm').showModal();
+  }
+  $('#form-confirm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const b = $('#confirm-submit'); b.disabled = true; b.textContent = '確定しています…';
+    try {
+      await api.confirm(st.month);
+      returnFocus = $('#btn-confirm');
+      $('#dlg-confirm').close();
+      st.justStamped = true;
+      await refresh();
+      toast(`${st.data.label}の給与を確定しました`);
+    } catch {
+      $('#confirm-msg').textContent = '確定できませんでした。インターネット接続を確認して、もう一度「給与を確定する」を押してください。';
+      b.disabled = false; b.textContent = '給与を確定する';
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

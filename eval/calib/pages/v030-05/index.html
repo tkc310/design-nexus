@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ひばり号 時刻表|ひばり市コミュニティバス</title>
+<meta name="description" content="ひばり市コミュニティバス「ひばり号」の時刻表。停留所を選ぶと、次の3本の発車時刻とあと何分かを大きく表示します。">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Sources: shelter concrete, enamel plate, plate ink, stop pole, ひばり号 livery, 土休日 red, notice paper */
+  --concrete: #EFEFEF;
+  --plate: #FFFFFF;
+  --ink: #161616;
+  --pole: #565B60;
+  --livery: #0A6B4B;
+  --on-livery: #FFFFFF;
+  --holiday: #B8102A;
+  --on-holiday: #FFFFFF;
+  --notice: #FFD83D;
+  --notice-ink: #161616;
+
+  --font-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-fig: "BIZ UDGothic", "BIZ UDPGothic", "Hiragino Sans", monospace;
+
+  /* scale 1.25 from 1rem (18px, 22px in large mode) */
+  --fs-s: 0.889rem;
+  --fs-m: 1rem;
+  --fs-l: 1.25rem;
+  --fs-xl: 1.563rem;
+  --fs-2xl: 2.441rem;
+  --fs-3xl: 3.052rem;
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px;
+  --radius: 10px;
+  --edge: 2px solid var(--ink);
+  --tap: 48px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --concrete: #111315;
+    --plate: #1B1E21;
+    --ink: #F1F2F3;
+    --pole: #A7ADB2;
+    --livery: #5CC99A;
+    --on-livery: #0B1210;
+    --holiday: #FF8A96;
+    --on-holiday: #0B1210;
+  }
+}
+
+html { font-size: 112.5%; -webkit-text-size-adjust: 100%; }
+html.large { font-size: 137.5%; }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--concrete);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-m);
+  line-height: 1.75;
+  letter-spacing: 0.03em;
+  line-break: strict;
+  overflow-wrap: anywhere;
+}
+h1, h2, h3 { line-height: 1.35; text-wrap: balance; word-break: auto-phrase; margin: 0; font-feature-settings: "palt"; letter-spacing: 0.02em; }
+p { margin: 0; text-wrap: pretty; }
+.fig { font-family: var(--font-fig); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0; overflow-wrap: normal; }
+.nw { white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
+:focus-visible { outline: 4px solid var(--livery); outline-offset: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Header: the band on the stop sign */
+.band {
+  background: var(--livery);
+  color: var(--on-livery);
+  padding: var(--s1) var(--s2);
+  padding-top: max(var(--s1), env(safe-area-inset-top));
+}
+.band-in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.brand { flex: 1 1 auto; min-width: 0; word-break: auto-phrase; }
+.btn-size { flex: none; }
+.brand { font-size: var(--fs-l); font-weight: 700; line-height: 1.35; }
+@media (max-width: 400px) { .brand { font-size: var(--fs-m); } .btn-size { padding: 0 var(--s1); } }
+.brand small { display: block; font-size: var(--fs-s); font-weight: 400; line-height: 1.4; }
+.btn {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--s2);
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  word-break: keep-all;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.btn-size { background: transparent; color: var(--on-livery); border: 2px solid var(--on-livery); }
+.btn-size[aria-pressed="true"] { background: var(--on-livery); color: var(--livery); }
+.btn-size:focus-visible { outline-color: var(--on-livery); }
+
+/* Layout */
+main { max-width: 640px; margin: 0 auto; padding: var(--s2) var(--s2) var(--s5); padding-bottom: max(var(--s5), env(safe-area-inset-bottom)); display: grid; gap: var(--s3); }
+.col { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
+@media (min-width: 960px) {
+  .band-in { max-width: 1120px; }
+  main { max-width: 1120px; grid-template-columns: minmax(380px, 440px) minmax(0, 1fr); gap: var(--s4); padding-top: var(--s4); }
+  .col-now { position: sticky; top: var(--s2); }
+}
+
+/* Notice: yellow paper on the pole */
+.notices { display: grid; gap: var(--s1); }
+.notice {
+  background: var(--notice);
+  color: var(--notice-ink);
+  border: 2px solid var(--notice-ink);
+  border-radius: var(--radius);
+  padding: var(--s1) var(--s2);
+}
+.notice h2 { font-size: var(--fs-m); display: flex; gap: var(--s1); align-items: baseline; flex-wrap: wrap; }
+.tag {
+  display: inline-block;
+  font-size: var(--fs-s);
+  font-weight: 700;
+  line-height: 1.5;
+  padding: 0 var(--s1);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.tag-ink { background: var(--notice-ink); color: var(--notice); }
+.notice p { font-size: var(--fs-s); line-height: 1.7; }
+.notice.later { background: var(--plate); color: var(--ink); border-color: var(--ink); }
+.notice.later .tag-ink { background: var(--ink); color: var(--plate); }
+
+/* Stop picker */
+.picker label { display: block; font-weight: 700; margin-bottom: var(--s1); }
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: "";
+  position: absolute; right: var(--s2); top: 50%;
+  width: 12px; height: 12px;
+  border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--s1) var(--s5) var(--s1) var(--s2);
+  font: inherit;
+  font-size: var(--fs-l);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--plate);
+  border: var(--edge);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* Next three: the sign plate head */
+.next { background: var(--plate); border: var(--edge); border-radius: var(--radius); overflow: hidden; }
+.next-head { background: var(--livery); color: var(--on-livery); padding: var(--s1) var(--s2); display: flex; justify-content: space-between; align-items: baseline; gap: var(--s1); flex-wrap: wrap; }
+.next-head h2 { font-size: var(--fs-l); }
+.next-head .asof { font-size: var(--fs-s); }
+.dep-list { list-style: none; margin: 0; padding: 0; }
+.dep {
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap;
+  column-gap: var(--s2); row-gap: 0;
+  padding: var(--s1) var(--s2);
+  border-top: 1px solid var(--pole);
+}
+.dep:first-child { border-top: 0; padding-top: var(--s2); padding-bottom: var(--s2); }
+.dep .when { display: flex; align-items: baseline; gap: var(--s1); }
+.num {
+  display: inline-grid; place-items: center;
+  width: 1.6em; height: 1.6em;
+  border: 2px solid var(--livery); color: var(--ink);
+  border-radius: 50%;
+  font-family: var(--font-fig); font-weight: 700; font-size: var(--fs-s); line-height: 1;
+  flex: none; align-self: center;
+}
+.dep .time { font-size: var(--fs-xl); font-weight: 700; }
+.dep .hatsu { font-size: var(--fs-s); }
+.dep .left { font-size: var(--fs-l); font-weight: 700; }
+.dep .left b { font-family: var(--font-fig); font-size: var(--fs-xl); }
+.dep:first-child .time { font-size: var(--fs-2xl); line-height: 1.2; }
+.dep:first-child .left b { font-size: var(--fs-3xl); line-height: 1.1; color: var(--livery); }
+.dep:first-child .num { background: var(--livery); color: var(--on-livery); }
+.dep.skip { color: var(--pole); padding-top: 4px; padding-bottom: 4px; }
+.dep.skip .time { font-size: var(--fs-m); text-decoration: line-through; text-decoration-thickness: 2px; }
+.dep.skip .tag { background: var(--notice); color: var(--notice-ink); }
+.dep.last-note { display: block; font-size: var(--fs-s); color: var(--pole); }
+.state { padding: var(--s3) var(--s2); }
+.state h3 { font-size: var(--fs-xl); }
+.state p { margin-top: var(--s1); }
+.state .fig { font-weight: 700; font-size: var(--fs-l); }
+
+/* Timetable plate */
+.tt-head { display: grid; gap: var(--s2); }
+.tt-head h2 { font-size: var(--fs-xl); }
+.route { font-size: var(--fs-s); color: var(--pole); margin-top: 4px; }
+.days { border: 0; margin: 0; padding: 0; min-width: 0; }
+.days legend { font-weight: 700; margin-bottom: var(--s1); padding: 0; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: var(--edge); border-radius: var(--radius); overflow: hidden; background: var(--plate); }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label {
+  display: flex; align-items: center; justify-content: center; gap: var(--s1);
+  min-height: 56px; padding: 0 var(--s1);
+  font-weight: 700; font-size: var(--fs-l);
+  cursor: pointer; white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.seg label + input + label, .seg input + label + input + label { border-left: var(--edge); }
+.seg .hol { color: var(--holiday); }
+.seg input:checked + label { background: var(--ink); color: var(--plate); }
+.seg input:checked + label.hol { background: var(--holiday); color: var(--on-holiday); }
+.seg input:focus-visible + label { outline: 4px solid var(--livery); outline-offset: -6px; }
+.seg .today { font-size: var(--fs-s); font-weight: 400; }
+.day-hint { font-size: var(--fs-s); margin-top: var(--s1); }
+.day-hint strong { color: var(--holiday); }
+
+.plate { background: var(--plate); border: var(--edge); border-radius: var(--radius); overflow: hidden; }
+.plate.is-hol { border-color: var(--holiday); }
+.plate-cap { display: flex; justify-content: space-between; gap: var(--s1); flex-wrap: wrap; align-items: baseline; padding: var(--s1) var(--s2); border-bottom: var(--edge); font-weight: 700; }
+.plate.is-hol .plate-cap { color: var(--holiday); border-bottom-color: var(--holiday); }
+.tt { width: 100%; border-collapse: collapse; }
+.tt th, .tt td { border-top: 1px solid var(--pole); padding: 4px var(--s1); vertical-align: middle; }
+.tt thead th { border-top: 0; font-size: var(--fs-s); font-weight: 700; color: var(--pole); text-align: left; padding-top: var(--s1); padding-bottom: var(--s1); }
+.tt th[scope="row"], .tt thead th:first-child { width: 3.4em; text-align: center; border-right: var(--edge); }
+.tt th[scope="row"] { font-family: var(--font-fig); font-size: var(--fs-xl); font-weight: 700; }
+.plate.is-hol .tt th[scope="row"] { color: var(--holiday); }
+.mins { display: flex; flex-wrap: wrap; gap: 4px var(--s2); align-items: center; padding: 4px 0; }
+.m { position: relative; font-family: var(--font-fig); font-size: var(--fs-xl); font-weight: 700; line-height: 1; padding: 0.3em 0.2em; white-space: nowrap; }
+.m.past { color: var(--pole); font-weight: 400; }
+.m.ring { border: 3px solid var(--livery); border-radius: 999px; padding: 0.22em 0.32em; }
+.m.ring sup { position: absolute; top: -0.55em; right: -0.55em; background: var(--livery); color: var(--on-livery); font-size: var(--fs-s); line-height: 1; border-radius: 999px; padding: 0.2em 0.42em; }
+.m.cut s { text-decoration-thickness: 3px; }
+.m.cut .tag { margin-left: 4px; vertical-align: middle; background: var(--notice); color: var(--notice-ink); font-family: var(--font-body); }
+tr.now-row td, tr.now-row th { border-top: 0; padding: 0; }
+.now-line { display: flex; align-items: center; gap: var(--s1); padding: 4px var(--s1); }
+.now-line::after { content: ""; flex: 1; height: 4px; background: var(--livery); border-radius: 2px; }
+.now-line span { background: var(--livery); color: var(--on-livery); font-weight: 700; font-size: var(--fs-s); padding: 0 var(--s1); border-radius: 999px; white-space: nowrap; }
+
+/* Specimens and footer */
+.specimens { border-top: var(--edge); padding-top: var(--s3); display: grid; gap: var(--s2); }
+.specimens > h2 { font-size: var(--fs-l); }
+.specimens > p { font-size: var(--fs-s); color: var(--pole); }
+.spec-grid { display: grid; gap: var(--s2); }
+@media (min-width: 600px) { .spec-grid { grid-template-columns: 1fr 1fr; } }
+.foot { font-size: var(--fs-s); color: var(--pole); display: grid; gap: var(--s1); }
+.foot p { color: var(--pole); }
+.btn-clock { background: var(--plate); color: var(--ink); border: var(--edge); justify-self: start; margin-top: var(--s1); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-clock:hover { background: var(--concrete); }
+  .seg input:not(:checked) + label:hover { background: var(--concrete); }
+}
+.btn:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .seg label { transition: none; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="band-in">
+    <p class="brand">ひばり号 時刻表<small>ひばり市<wbr>コミュニティバス</small></p>
+    <button type="button" class="btn btn-size" id="sizeBtn" aria-pressed="false">文字を大きく</button>
+  </div>
+</header>
+
+<main>
+  <div class="col col-now">
+    <div class="picker">
+      <label for="stop">停留所を選ぶ</label>
+      <div class="select-wrap">
+        <select id="stop" name="stop"></select>
+      </div>
+    </div>
+
+    <section class="next" aria-labelledby="nextTitle">
+      <div class="next-head">
+        <h2 id="nextTitle">つぎのバス</h2>
+        <p class="asof" id="asof"></p>
+      </div>
+      <div id="nextBody" aria-live="polite"></div>
+    </section>
+
+    <div class="notices" id="notices" aria-label="運休のお知らせ"></div>
+  </div>
+
+  <div class="col col-table">
+    <section aria-labelledby="ttTitle" class="col">
+      <div class="tt-head">
+        <div>
+          <h2 id="ttTitle">本日の時刻表</h2>
+          <p class="route"><span class="nw">右回り循環</span> <span class="nw">ひばり駅前 →</span> <span class="nw">市役所前 →</span> <span class="nw">中央病院前 →</span> <span class="nw">… →</span> <span class="nw">ひばり駅前</span></p>
+        </div>
+        <fieldset class="days">
+          <legend>表示する時刻表</legend>
+          <div class="seg">
+            <input type="radio" name="days" id="dWk" value="weekday">
+            <label for="dWk">平日 <span class="today" id="tWk"></span></label>
+            <input type="radio" name="days" id="dHol" value="holiday">
+            <label for="dHol" class="hol">土日祝 <span class="today" id="tHol"></span></label>
+          </div>
+          <p class="day-hint" id="dayHint"></p>
+        </fieldset>
+      </div>
+      <div class="plate" id="plate"></div>
+    </section>
+
+    <section class="specimens" aria-labelledby="specTitle">
+      <h2 id="specTitle">こんなときの表示(見本)</h2>
+      <p>実際にはその時刻・その日にだけ出る表示です。確認用に並べています。</p>
+      <div class="spec-grid">
+        <div class="next"><div class="next-head"><h3>つぎのバス</h3><p class="asof">20:10 現在(見本)</p></div><div id="specEnd"></div></div>
+        <div class="next"><div class="next-head"><h3>つぎのバス</h3><p class="asof">11月3日 9:00 現在(見本)</p></div><div id="specOff"></div></div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>架空の路線による見本データです。時刻表は2026年10月1日改正、運賃は大人100円・小学生と障がい者手帳をお持ちの方50円。</p>
+      <p>このページは一度開けば、電波が弱い場所でも時刻表を表示できます。</p>
+      <p id="clockNote"></p>
+      <button type="button" class="btn btn-clock" id="clockBtn">いまの時刻で見る</button>
+    </footer>
+  </div>
+</main>
+
+<script>
+(() => {
+  const STOPS = [
+    { id: 'eki', name: 'ひばり駅前', off: 0 },
+    { id: 'shiyakusho', name: '市役所前', off: 5 },
+    { id: 'byoin', name: '中央病院前', off: 9 },
+    { id: 'toshokan', name: '図書館・公民館前', off: 13 },
+    { id: 'asahi', name: '旭町二丁目', off: 16 },
+    { id: 'midori', name: 'スーパーみどり前', off: 20 },
+    { id: 'higashi', name: '東団地', off: 24 },
+    { id: 'onsen', name: 'ゆけむり温泉センター', off: 29 },
+  ];
+  // Departure times from ひばり駅前; other stops add their offset.
+  const BASE = {
+    weekday: ['7:00','7:30','8:00','8:30','9:10','9:50','10:30','11:10','11:50','13:00','13:40','14:20','15:00','15:40','16:20','17:00','17:40','18:20','19:00'],
+    holiday: ['8:10','9:10','10:10','11:10','12:10','13:10','14:10','15:10','16:10','17:10'],
+  };
+  const HOLIDAYS = ['2026-11-03','2026-11-23','2027-01-01','2027-01-11','2027-02-11','2027-02-23'];
+  const NOTICES = [
+    { date: '2026-11-02', cancel: ['11:10'], title: '本日、1便を運休します', reason: '車両点検のため' },
+    { date: '2026-11-03', all: true, title: '11月3日(火・祝)は全便運休します', reason: 'ひばり市民まつりの交通規制のため' },
+  ];
+  const DEMO = new Date(2026, 10, 2, 10, 30); // 見本: 2026年11月2日(月) 10:30
+  const WD = ['日','月','火','水','木','金','土'];
+
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+  const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+  const fmt = (min) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const md = (d) => `${d.getMonth() + 1}月${d.getDate()}日(${WD[d.getDay()]})`;
+  const dayType = (d) => (d.getDay() === 0 || d.getDay() === 6 || HOLIDAYS.includes(ymd(d)) ? 'holiday' : 'weekday');
+  const noticeFor = (d) => NOTICES.find((n) => n.date === ymd(d));
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Trips for a stop on a date: [{min, cut}]
+  function trips(stop, type, date) {
+    const n = date ? noticeFor(date) : null;
+    return BASE[type].map((t) => ({
+      min: toMin(t) + stop.off,
+      cut: !!(n && (n.all || (n.cancel || []).includes(t))),
+    }));
+  }
+  function untilText(diff) {
+    if (diff <= 0) return '<b>まもなく</b>';
+    if (diff < 60) return `あと<b>${diff}</b>分`;
+    return `あと<b>${Math.floor(diff / 60)}</b>時間<b>${diff % 60}</b>分`;
+  }
+  function untilLabel(diff) {
+    if (diff <= 0) return 'まもなく発車';
+    if (diff < 60) return `あと${diff}分`;
+    return `あと${Math.floor(diff / 60)}時間${diff % 60}分`;
+  }
+  function firstTomorrow(stop, now) {
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const t = trips(stop, dayType(d), d).find((x) => !x.cut);
+      if (t) return { d, t, i };
+    }
+    return null;
+  }
+
+  function renderNext(stop, now) {
+    const type = dayType(now);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const all = trips(stop, type, now);
+    const n = noticeFor(now);
+    if (n && n.all) {
+      const f = firstTomorrow(stop, now);
+      return `<div class="state"><h3>本日は全便運休です</h3><p>${esc(n.reason)}。</p>${f ? `<p>つぎの運行は <span class="nw">${md(f.d)}</span> <span class="fig">${fmt(f.t.min)}</span> 発です。</p>` : ''}</div>`;
+    }
+    const upcoming = all.filter((t) => t.min >= nowMin);
+    const running = upcoming.filter((t) => !t.cut).slice(0, 3);
+    if (!running.length) {
+      const f = firstTomorrow(stop, now);
+      return `<div class="state"><h3>本日の運行は終了しました</h3>${f ? `<p>${f.i === 1 ? 'あす' : md(f.d)}の始発は <span class="fig">${fmt(f.t.min)}</span> 発です。</p>` : ''}</div>`;
+    }
+    const lastRun = running[running.length - 1];
+    const rows = upcoming.filter((t) => t.min <= lastRun.min);
+    let k = 0;
+    const li = rows.map((t) => {
+      if (t.cut) {
+        return `<li class="dep skip"><span class="when"><span class="time fig">${fmt(t.min)}</span><span class="hatsu">発</span><span class="tag">運休</span></span></li>`;
+      }
+      k++;
+      const diff = t.min - nowMin;
+      return `<li class="dep" aria-label="${k}本目 ${fmt(t.min)}発 ${untilLabel(diff)}"><span class="when"><span class="num" aria-hidden="true">${k}</span><span class="time fig">${fmt(t.min)}</span><span class="hatsu">発</span></span><span class="left nw">${untilText(diff)}</span></li>`;
+    }).join('');
+    const isLast = running.length < 3 || all.filter((t) => !t.cut).slice(-1)[0].min === lastRun.min;
+    const note = isLast ? `<li class="dep last-note">${fmt(lastRun.min)} 発が本日の最終便です。</li>` : '';
+    return `<ol class="dep-list">${li}${note}</ol>`;
+  }
+
+  function renderPlate(stop, type, now) {
+    const today = dayType(now) === type;
+    const list = trips(stop, type, today ? now : null);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const nextRun = today ? list.filter((t) => t.min >= nowMin && !t.cut).slice(0, 3).map((t) => t.min) : [];
+    const byHour = new Map();
+    list.forEach((t) => { const h = Math.floor(t.min / 60); if (!byHour.has(h)) byHour.set(h, []); byHour.get(h).push(t); });
+    let lineDone = !today || !list.some((t) => t.min >= nowMin);
+    let rows = '';
+    for (const [h, ts] of byHour) {
+      if (!lineDone && ts.some((t) => t.min >= nowMin)) {
+        rows += `<tr class="now-row"><td colspan="2"><div class="now-line"><span>いま ${fmt(nowMin)}</span></div></td></tr>`;
+        lineDone = true;
+      }
+      const mins = ts.map((t) => {
+        const mm = String(t.min % 60).padStart(2, '0');
+        const idx = nextRun.indexOf(t.min);
+        if (t.cut) return `<span class="m cut"><s>${mm}</s><span class="tag">運休</span></span>`;
+        if (idx >= 0) return `<span class="m ring" aria-label="${mm}分 ${idx + 1}本目">${mm}<sup aria-hidden="true">${idx + 1}</sup></span>`;
+        if (today && t.min < nowMin) return `<span class="m past" aria-label="${mm}分 発車済み">${mm}</span>`;
+        return `<span class="m">${mm}</span>`;
+      }).join('');
+      rows += `<tr><th scope="row">${h}</th><td><div class="mins">${mins}</div></td></tr>`;
+    }
+    if (!lineDone) rows += `<tr class="now-row"><td colspan="2"><div class="now-line"><span>いま ${fmt(nowMin)}</span></div></td></tr>`;
+    const label = type === 'holiday' ? '土日祝' : '平日';
+    $('plate').className = 'plate' + (type === 'holiday' ? ' is-hol' : '');
+    $('plate').innerHTML = `<p class="plate-cap"><span>${esc(stop.name)} ${label}</span></p>
+      <table class="tt"><caption class="vh">${esc(stop.name)} ${label}の発車時刻</caption><thead><tr><th scope="col">時</th><th scope="col">分</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderNotices(stop, now) {
+    const out = [];
+    for (let i = 0; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const n = noticeFor(d);
+      if (!n) continue;
+      let body = `${esc(n.reason)}。`;
+      if (!n.all && n.cancel) {
+        const ts = n.cancel.map((t) => fmt(toMin(t) + stop.off)).join('、');
+        body = `${esc(n.reason)}、ひばり駅前 <span class="fig">${n.cancel.join('、')}</span> 発の便が走りません。${esc(stop.name)}では <span class="fig">${ts}</span> 発が運休です。`;
+      } else if (n.all) {
+        body = `${esc(n.reason)}、終日すべての便が走りません。`;
+      }
+      const when = i === 0 ? '本日' : i === 1 ? 'あす' : md(d);
+      out.push(`<div class="notice${i ? ' later' : ''}" role="${i ? 'note' : 'alert'}"><h2><span class="tag tag-ink">運休</span><span>${i ? `${when}・` : ''}${esc(n.title)}</span></h2><p>${body}</p></div>`);
+    }
+    $('notices').innerHTML = out.join('');
+    $('notices').hidden = !out.length;
+  }
+
+  // State
+  let live = false;
+  let stop = STOPS.find((s) => s.id === store.get('hibari-stop')) || STOPS[2];
+  let shown = null;
+  const clock = () => (live ? new Date() : DEMO);
+
+  function render() {
+    const now = clock();
+    const today = dayType(now);
+    if (!shown) shown = today;
+    $(shown === 'weekday' ? 'dWk' : 'dHol').checked = true;
+    $('tWk').textContent = today === 'weekday' ? '(本日)' : '';
+    $('tHol').textContent = today === 'holiday' ? '(本日)' : '';
+    $('ttTitle').textContent = shown === today ? `${stop.name}の本日の時刻表` : `${stop.name}の時刻表`;
+    $('dayHint').innerHTML = shown === today
+      ? `${md(now)}は${today === 'holiday' ? '土日祝' : '平日'}の時刻で走ります。`
+      : `<strong>本日の時刻表ではありません。</strong>${md(now)}は${today === 'holiday' ? '土日祝' : '平日'}の時刻です。`;
+    $('asof').innerHTML = `<span class="nw">${md(now)}</span> <span class="fig">${fmt(now.getHours() * 60 + now.getMinutes())}</span> 現在${live ? '' : '(見本)'}`;
+    $('nextTitle').textContent = `${stop.name} つぎのバス`;
+    $('nextBody').innerHTML = renderNext(stop, now);
+    renderNotices(stop, now);
+    renderPlate(stop, shown, now);
+    $('clockNote').textContent = live ? 'この端末の時計で表示しています。' : '見本として 2026年11月2日(月) 10:30 時点の表示にしています。';
+    $('clockBtn').textContent = live ? '見本の時刻に戻す' : 'いまの時刻で見る';
+  }
+
+  // Static specimens
+  const specStop = STOPS[2];
+  $('specEnd').innerHTML = renderNext(specStop, new Date(2026, 10, 4, 20, 10));
+  $('specOff').innerHTML = renderNext(specStop, new Date(2026, 10, 3, 9, 0));
+
+  // Controls
+  const sel = $('stop');
+  sel.innerHTML = STOPS.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  sel.value = stop.id;
+  sel.addEventListener('change', () => { stop = STOPS.find((s) => s.id === sel.value); store.set('hibari-stop', stop.id); render(); });
+  document.querySelectorAll('input[name="days"]').forEach((r) => r.addEventListener('change', () => { shown = r.value; render(); }));
+  $('clockBtn').addEventListener('click', () => { live = !live; shown = null; render(); });
+
+  const sizeBtn = $('sizeBtn');
+  const setSize = (big) => {
+    document.documentElement.classList.toggle('large', big);
+    sizeBtn.setAttribute('aria-pressed', String(big));
+    sizeBtn.textContent = big ? '文字を標準に' : '文字を大きく';
+  };
+  setSize(store.get('hibari-large') === '1');
+  sizeBtn.addEventListener('click', () => { const big = sizeBtn.getAttribute('aria-pressed') !== 'true'; setSize(big); store.set('hibari-large', big ? '1' : '0'); });
+
+  render();
+  setInterval(() => { if (live) render(); }, 20000);
+})();
+</script>
+</body>
+</html>

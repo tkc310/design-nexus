@@ -5,5 +5,6 @@ budget: standard
 language: en
 split: train
 source: eval/fixtures/slop.html
+assets: eval/cases/assets/06-redesign/hero.png
 ---
 Redesign the page in `SOURCE.html` (copied into this folder) into something that would not be mistaken for an AI template. It is the landing page of a small team-workflow tool. Keep every button, field, image, and the click handler working; you may rewrite copy and structure. Fix all Floor findings.

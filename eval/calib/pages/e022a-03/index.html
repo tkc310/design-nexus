@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11月分の給与 | みどり台内科クリニック | 給与帳</title>
+<meta name="description" content="今月の給与ダッシュボード。締め日までの日数、未承認の勤怠申請、スタッフ別の支給額と前月比を確認し、給与を確定します。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@700&family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* 明細用紙 (payslip form) palette */
+  --surface: #FFFFFF;      /* the payslip sheet */
+  --bg: #EDEFEC;           /* desk tray; also the 控除 field tint */
+  --text: #1B2420;         /* form ink */
+  --muted: #535E58;
+  --accent: #2C6A4C;       /* green ruling of the printed form */
+  --on-accent: #FFFFFF;
+  --accent-tint: #E2EEE6;  /* tinted 支給 field */
+  --border: #848F89;       /* control borders, 3:1 on the sheet */
+  --hairline: #D3D8D4;
+  --warn: #8A5300;
+  --warn-bg: #FBEFD5;
+  --danger: #B3261E;
+
+  --font-display: "BIZ UDPMincho", serif;
+  --font-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-figure: "IBM Plex Sans", "BIZ UDPGothic", sans-serif;
+
+  --fs-tag: 14px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 25px;
+  --fs-2xl: 31px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+  --r-panel: 6px;
+  --r-control: 4px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  line-break: strict;
+}
+h1, h2, h3 { margin: 0; line-height: 1.35; text-wrap: balance; word-break: auto-phrase; font-feature-settings: "palt"; }
+p { margin: 0; text-wrap: pretty; }
+button, input, select { font: inherit; color: inherit; letter-spacing: inherit; }
+a { color: var(--accent); }
+.fig { font-family: var(--font-figure); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0; }
+.vh { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.nowrap { white-space: nowrap; }
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- top bar ---------- */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--hairline); }
+.topbar-in { max-width: 1600px; margin: 0 auto; padding: 0 var(--s8); display: flex; align-items: center; gap: var(--s6); min-height: 56px; }
+.brand { font-weight: 700; white-space: nowrap; display: flex; align-items: baseline; gap: var(--s2); }
+.brand small { font-weight: 400; font-size: var(--fs-sm); color: var(--text); }
+.nav { display: flex; gap: var(--s1); overflow-x: auto; margin-left: auto; scrollbar-width: none; }
+.nav a { display: block; padding: var(--s3) var(--s3); color: var(--text); text-decoration: none; white-space: nowrap; font-size: var(--fs-sm); border-bottom: 2px solid transparent; }
+.nav a[aria-current="page"] { border-bottom-color: var(--accent); font-weight: 700; }
+@media (hover: hover) and (pointer: fine) { .nav a:hover { border-bottom-color: var(--border); } }
+
+/* ---------- page ---------- */
+.page { max-width: 1600px; margin: 0 auto; padding: var(--s6) var(--s8) var(--s10); }
+
+.pagehead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s4) var(--s8); align-items: end; margin-bottom: var(--s5); }
+.titleblock h1 { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 700; letter-spacing: 0.04em; }
+.titleblock .period { color: var(--muted); }
+.monthpick { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); flex-wrap: wrap; }
+.monthpick label { font-size: var(--fs-sm); }
+select {
+  appearance: none; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231B2420' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid var(--border); border-radius: var(--r-control); padding: var(--s1) var(--s8) var(--s1) var(--s3); min-height: 36px; font-size: var(--fs-sm);
+}
+
+.commit { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s2); max-width: 360px; }
+.commit .why { font-size: var(--fs-sm); text-align: right; }
+.commit .why a { white-space: nowrap; }
+.commit .done { font-size: var(--fs-sm); display: flex; align-items: center; gap: var(--s2); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 40px; padding: var(--s2) var(--s5); border-radius: var(--r-control);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-weight: 700; white-space: nowrap; cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms var(--ease-out);
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { border-color: var(--text); }
+  .btn-primary:hover { background: var(--text); border-color: var(--text); }
+}
+.btn[aria-disabled="true"] { background: var(--surface); border-color: var(--hairline); color: var(--muted); cursor: not-allowed; }
+.btn[aria-disabled="true"]:active { transform: none; }
+.btn-lg { min-height: 48px; padding: var(--s3) var(--s6); font-size: var(--fs-md); }
+.btn-sm { min-height: 32px; padding: var(--s1) var(--s3); font-size: var(--fs-sm); }
+.linkbtn { background: none; border: 0; padding: var(--s1) 0; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: var(--fs-sm); min-height: 28px; }
+
+/* ---------- schedule (deadline rail) ---------- */
+.schedule { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-panel); padding: var(--s4) var(--s6); margin-bottom: var(--s4); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s4) var(--s8); align-items: center; }
+.countdown { display: flex; align-items: baseline; gap: var(--s2); white-space: nowrap; }
+.countdown .num { font-family: var(--font-figure); font-weight: 600; font-size: var(--fs-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
+.countdown-label { font-size: var(--fs-sm); }
+.rail { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: relative; }
+.rail::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; background: var(--hairline); }
+.rail li { position: relative; padding-top: var(--s5); font-size: var(--fs-sm); line-height: 1.5; }
+.rail li::before { content: ""; position: absolute; left: 0; top: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); }
+.rail li.past::before { background: var(--accent); border-color: var(--accent); }
+.rail li.today::before { background: var(--text); border-color: var(--text); }
+.rail li.deadline::before { border-color: var(--warn); border-width: 3px; }
+.rail .d { font-family: var(--font-figure); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; display: block; }
+.pendingnote { display: flex; align-items: baseline; gap: var(--s2); white-space: nowrap; }
+.pendingnote .num { font-family: var(--font-figure); font-weight: 600; font-size: var(--fs-2xl); line-height: 1; font-variant-numeric: tabular-nums; color: var(--warn); }
+.pendingnote.clear .num { color: var(--accent); }
+.pendingnote a, .commit .why a, .queue-foot .hint a { font-size: var(--fs-sm); display: inline-block; padding: var(--s1) 0; line-height: 1.5; }
+
+/* ---------- signature: 明細帯 (payslip band) ---------- */
+.band { display: grid; grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr) auto minmax(0, 1.25fr); align-items: stretch; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-panel); overflow: hidden; margin-bottom: var(--s6); }
+.field { display: flex; flex-direction: column; min-width: 0; }
+.field-tab { padding: var(--s1) var(--s4); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.12em; }
+.field-body { padding: var(--s3) var(--s4) var(--s4); display: flex; flex-direction: column; gap: var(--s1); flex: 1; }
+.field-fig { font-family: var(--font-figure); font-weight: 600; font-size: var(--fs-2xl); line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0; }
+.field-sub { font-size: var(--fs-sm); display: flex; flex-wrap: wrap; gap: 0 var(--s4); }
+.field-sub span { white-space: nowrap; }
+.f-pay .field-tab { background: var(--accent-tint); color: var(--accent); }
+.f-ded .field-tab { background: var(--bg); color: var(--text); }
+.f-net .field-tab { background: var(--text); color: var(--surface); }
+.f-net { border-left: 2px solid var(--text); }
+.op { display: flex; align-items: center; justify-content: center; padding: var(--s6) var(--s2) 0; font-family: var(--font-figure); font-size: var(--fs-xl); color: var(--muted); }
+.delta { display: inline-flex; align-items: baseline; gap: var(--s2); font-size: var(--fs-sm); flex-wrap: wrap; }
+.delta b { font-family: var(--font-figure); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: var(--fs-md); }
+
+/* ---------- workspace ---------- */
+.work { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s6); align-items: start; }
+.work.solo { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1181px) { .queue { position: sticky; top: var(--s4); } }
+.panel { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-panel); min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3) var(--s4); padding: var(--s4) var(--s5); flex-wrap: wrap; border-bottom: 1px solid var(--hairline); }
+.panel-head h2 { font-size: var(--fs-lg); }
+.panel-head h2 .count { font-family: var(--font-figure); font-weight: 500; font-size: var(--fs-md); margin-left: var(--s2); }
+
+.filter { display: flex; align-items: center; gap: var(--s2); }
+.filter label { font-size: var(--fs-sm); white-space: nowrap; }
+.filter input { width: 200px; min-height: 36px; padding: var(--s1) var(--s3); border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); font-size: var(--fs-sm); }
+
+/* ---------- table ---------- */
+.ledger { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; }
+.ledger th, .ledger td { padding: var(--s2) var(--s3); text-align: left; vertical-align: middle; border-bottom: 1px solid var(--hairline); }
+.ledger thead th { position: sticky; background: var(--surface); z-index: 2; font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; }
+.ledger thead tr.groups th { top: 0; height: 30px; padding-top: var(--s1); padding-bottom: var(--s1); letter-spacing: 0.12em; border-bottom: 0; }
+.ledger thead tr.cols th { top: 30px; }
+.ledger thead tr.groups th.g-pay { background: var(--accent-tint); color: var(--accent); }
+.ledger thead tr.groups th.g-ded { background: var(--bg); }
+.ledger thead tr.groups th.g-net { background: var(--text); color: var(--surface); }
+.ledger .num { text-align: right; font-family: var(--font-figure); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0; }
+.ledger td.c-pay { background: color-mix(in srgb, var(--accent-tint) 45%, var(--surface)); }
+.ledger td.c-net { font-weight: 600; border-left: 2px solid var(--text); }
+.ledger th.c-net { border-left: 2px solid var(--text); }
+.ledger tbody tr:last-child td { border-bottom: 0; }
+@media (hover: hover) and (pointer: fine) { .ledger tbody tr.row:hover td { background-color: var(--bg); } }
+.sortbtn { background: none; border: 0; padding: var(--s1) 0; font-weight: 700; cursor: pointer; display: inline-flex; gap: var(--s1); align-items: center; white-space: nowrap; min-height: 28px; }
+.sortbtn .arrow { font-family: var(--font-figure); color: var(--muted); width: 1em; display: inline-block; text-align: center; }
+th[aria-sort] .sortbtn .arrow { color: var(--text); }
+.namecell { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s2); }
+.who { font-weight: 700; white-space: nowrap; }
+.ledger td.c-role { word-break: keep-all; min-width: 4.5em; }
+.dval { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 var(--s2); }
+.tag { display: inline-block; font-size: var(--fs-tag); font-weight: 700; padding: 0 var(--s2); border-radius: var(--r-control); white-space: nowrap; line-height: 22px; vertical-align: 1px; letter-spacing: 0.04em; }
+.tag-warn { background: var(--warn-bg); color: var(--warn); }
+.est { font-size: var(--fs-tag); color: var(--warn); font-weight: 700; margin-right: var(--s1); font-family: var(--font-body); }
+.cell-label { display: none; }
+.failrow td.failcell { background: var(--surface); }
+.fail { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; color: var(--danger); font-size: var(--fs-sm); font-weight: 700; }
+.fail .btn { color: var(--text); }
+.flag { color: var(--warn); font-weight: 600; }
+
+/* states inside the table */
+.state { padding: var(--s10) var(--s6); text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--s3); }
+.state h3 { font-size: var(--fs-lg); }
+.state p { max-width: 34em; }
+.state.error h3 { color: var(--danger); }
+.skel td { padding-top: var(--s3); padding-bottom: var(--s3); }
+.bar { display: block; height: 14px; border-radius: 3px; background: var(--bg); }
+.bar.w-s { width: 48px; } .bar.w-m { width: 72px; } .bar.w-l { width: 96px; }
+.num .bar { margin-left: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  .loading .bar { animation: pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.45; } }
+}
+
+/* ---------- approval queue ---------- */
+.queue-list { list-style: none; margin: 0; padding: 0; }
+.queue-list li { border-bottom: 1px solid var(--hairline); }
+.queue-list label { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--s3); padding: var(--s3) var(--s5); cursor: pointer; }
+.queue-list input { width: 18px; height: 18px; margin: 4px 0 0; accent-color: var(--accent); }
+.q-who { font-weight: 700; }
+.q-what { font-size: var(--fs-sm); display: block; line-height: 1.7; }
+.q-kind { display: inline-block; font-size: var(--fs-tag); font-weight: 700; padding: 0 var(--s2); border-radius: var(--r-control); background: var(--warn-bg); color: var(--warn); margin-right: var(--s2); line-height: 22px; white-space: nowrap; }
+.queue-foot { padding: var(--s4) var(--s5); display: flex; flex-direction: column; gap: var(--s3); }
+.queue-foot .row2 { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.queue-foot .hint { font-size: var(--fs-sm); }
+.queue-foot .btn-primary { width: 100%; }
+.queue-empty { padding: var(--s6) var(--s5); display: flex; flex-direction: column; gap: var(--s2); }
+.queue-empty b { color: var(--accent); }
+
+/* ---------- dialog ---------- */
+dialog { border: 0; border-radius: var(--r-panel); padding: 0; width: min(640px, calc(100vw - 32px)); background: var(--surface); color: var(--text); box-shadow: 0 12px 40px color-mix(in srgb, var(--text) 30%, transparent); }
+dialog::backdrop { background: color-mix(in srgb, var(--text) 55%, transparent); }
+.dlg-head { padding: var(--s5) var(--s6) var(--s3); }
+.dlg-head h2 { font-family: var(--font-display); font-size: var(--fs-xl); }
+.dlg-body { padding: 0 var(--s6) var(--s5); display: flex; flex-direction: column; gap: var(--s4); }
+.dlg-body .band { margin: 0; grid-template-columns: 1fr; }
+.dlg-body .band .op { display: none; }
+.dlg-body .band .field + .field { border-top: 1px solid var(--hairline); }
+.dlg-body .band .f-net { border-left: 0; }
+.dlg-body .field { display: grid; grid-template-columns: 120px minmax(0, 1fr); }
+.dlg-body .field-tab { display: flex; align-items: center; }
+.dlg-body .field-body { flex-direction: row; align-items: baseline; justify-content: flex-end; padding: var(--s3) var(--s4); }
+.dlg-body .field-fig { font-size: var(--fs-lg); }
+.dlg-body .f-net .field-fig { font-size: var(--fs-xl); }
+.dlg-foot { padding: var(--s4) var(--s6) var(--s5); display: flex; justify-content: flex-end; gap: var(--s3); flex-wrap: wrap; border-top: 1px solid var(--hairline); }
+.dlg-error { color: var(--danger); font-size: var(--fs-sm); font-weight: 700; }
+
+/* ---------- toast ---------- */
+.toast { position: fixed; left: 50%; bottom: var(--s6); transform: translateX(-50%); background: var(--text); color: var(--surface); padding: var(--s3) var(--s5); border-radius: var(--r-panel); font-weight: 700; z-index: 20; box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 25%, transparent); max-width: calc(100vw - 32px); opacity: 0; pointer-events: none; transition: opacity 160ms ease; }
+.toast.show { opacity: 1; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) {
+  .work { grid-template-columns: minmax(0, 1fr); }
+  .queue { order: -1; }
+  .schedule { grid-template-columns: auto minmax(0, 1fr); }
+  .pendingnote { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .page { padding: var(--s5) var(--s5) var(--s10); }
+  .topbar-in { padding: 0 var(--s5); }
+  .pagehead { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .commit { align-items: stretch; max-width: none; }
+  .commit .why { text-align: left; }
+  .band { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .band .f-net { grid-column: 1 / -1; border-left: 0; border-top: 2px solid var(--text); }
+  .band .op-eq { display: none; }
+  .band .f-net .field-body { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s6); }
+  .schedule { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .ledger th, .ledger td { padding-left: 6px; padding-right: 6px; }
+  .ledger { font-size: var(--fs-sm); }
+  .namecell { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .topbar-in { flex-wrap: wrap; gap: 0 var(--s4); padding-top: var(--s2); }
+  .nav { margin-left: calc(var(--s3) * -1); width: calc(100% + var(--s3)); }
+  .page { padding: var(--s4) var(--s4) var(--s10); }
+  .titleblock h1 { font-size: var(--fs-xl); }
+  .schedule { padding: var(--s4); }
+  .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s4); }
+  .rail::before { display: none; }
+  .band { grid-template-columns: minmax(0, 1fr); }
+  .band .op { display: none; }
+  .band .field + .field { border-top: 1px solid var(--hairline); }
+  .band .f-net { border-top: 2px solid var(--text); }
+  .band .field { display: grid; grid-template-columns: 100px minmax(0, 1fr); }
+  .band .field-tab { display: flex; align-items: flex-start; padding: var(--s3) var(--s3) 0; letter-spacing: 0.02em; white-space: nowrap; }
+  .band .field-body { padding: var(--s3); }
+  .band .field-fig { font-size: var(--fs-xl); }
+  .band .field-sub span { white-space: normal; }
+  .dval { justify-content: flex-start; }
+  .dlg-body .field { grid-template-columns: 100px minmax(0, 1fr); }
+  .panel-head { padding: var(--s4); }
+  .filter { width: 100%; flex-wrap: wrap; }
+  .filter input { width: 100%; }
+
+  /* table rows become payslip cards */
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ledger, .ledger tbody, .ledger tr, .ledger td { display: block; width: 100%; }
+  .ledger tbody tr.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--hairline); padding: var(--s3) var(--s4) var(--s4); gap: var(--s1) var(--s3); }
+  .ledger tbody tr.row td { border: 0; padding: var(--s1) 0; background: none; }
+  .ledger td.c-name { grid-column: 1 / -1; }
+  .ledger tbody tr.row td.c-role { grid-column: 1 / -1; order: -2; padding-top: 0; font-size: var(--fs-sm); }
+  .ledger tbody tr.row td.c-net { grid-column: 1 / -1; order: -1; margin: var(--s1) 0; display: flex; justify-content: space-between; align-items: baseline; border: 0; background: var(--text); color: var(--surface); padding: var(--s1) var(--s3); border-radius: var(--r-control); font-size: var(--fs-lg); }
+  .ledger tbody tr.row td.c-name { order: -3; }
+  .ledger tbody tr.row td.num:not(.c-net) { text-align: left; display: flex; flex-direction: column; padding: var(--s2) var(--s3); border-radius: var(--r-control); }
+  .ledger tbody tr.row td.c-pay { background: var(--accent-tint); }
+  .ledger tbody tr.row td.c-ded { background: var(--bg); }
+  .ledger tbody tr.row td.c-delta { border: 1px solid var(--hairline); }
+  .ledger td.c-net .cell-label { color: var(--surface); }
+  .cell-label { display: block; font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.04em; }
+  .ledger td.c-net .cell-label { display: inline; font-size: var(--fs-sm); }
+  .ledger tbody tr.failrow { display: grid; grid-template-columns: minmax(0, 1fr); padding: var(--s3) var(--s4) var(--s4); border-bottom: 1px solid var(--hairline); }
+  .ledger tbody tr.failrow td { border: 0; padding: var(--s1) 0; }
+  .ledger tbody tr.skel { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); padding: var(--s4); border-bottom: 1px solid var(--hairline); }
+  .ledger tbody tr.skel td { border: 0; padding: 0; }
+  .num .bar { margin-left: 0; }
+  .toast { bottom: var(--s4); }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">給与帳 <small>みどり台内科クリニック</small></div>
+    <nav class="nav" aria-label="メインメニュー">
+      <a href="#" aria-current="page">今月の給与</a>
+      <a href="#">勤怠</a>
+      <a href="#">スタッフ</a>
+      <a href="#">給与明細</a>
+      <a href="#">振込データ</a>
+      <a href="#">設定</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page" id="main">
+  <div class="pagehead">
+    <div class="titleblock">
+      <h1 id="title">11月分の給与</h1>
+      <p class="period" id="period">10月1日〜31日の勤務分 · 支給日 11月25日(水)</p>
+      <div class="monthpick">
+        <label for="month">表示する月</label>
+        <select id="month">
+          <option value="2026-10">2026年10月分(確定済み)</option>
+          <option value="2026-11" selected>2026年11月分</option>
+          <option value="2026-12">2026年12月分</option>
+        </select>
+      </div>
+    </div>
+    <div class="commit" id="commit">
+      <button type="button" class="btn btn-lg" id="confirmBtn" aria-disabled="true" aria-describedby="confirmWhy">給与を確定する</button>
+      <p class="why" id="confirmWhy">確定するには、残りの作業を終えてください。</p>
+    </div>
+  </div>
+
+  <section class="schedule" id="schedule" aria-label="今月の締め日と申請">
+    <div class="countdown" id="countdown">
+      <span class="countdown-label">締め日まで</span><span class="num">4</span><span>日</span>
+    </div>
+    <ol class="rail" id="rail"></ol>
+    <div class="pendingnote" id="pendingnote"></div>
+  </section>
+
+  <section class="band" id="band" aria-label="今月の支給総額"></section>
+
+  <div class="work" id="work">
+    <section class="panel" aria-labelledby="ledgerTitle" id="ledgerPanel">
+      <div class="panel-head">
+        <h2 id="ledgerTitle">スタッフ別の支給額<span class="count fig" id="staffCount"></span></h2>
+        <div class="filter">
+          <label for="q">絞り込む</label>
+          <input id="q" type="search" placeholder="氏名・職種" autocomplete="off">
+        </div>
+      </div>
+      <div id="ledgerWrap" aria-live="polite" aria-busy="true">
+        <table class="ledger loading" id="ledger">
+          <caption class="vh">スタッフ別の基本給、残業代、控除、差引支給額、前月比</caption>
+          <thead>
+            <tr class="groups">
+              <th colspan="2" scope="colgroup">スタッフ</th>
+              <th colspan="2" scope="colgroup" class="g-pay">支給</th>
+              <th scope="colgroup" class="g-ded">控除</th>
+              <th scope="colgroup" class="g-net c-net">差引</th>
+              <th scope="colgroup"></th>
+            </tr>
+            <tr class="cols" id="colhead"></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel queue" aria-labelledby="queueTitle" id="queue">
+      <div class="panel-head">
+        <h2 id="queueTitle">未承認の勤怠申請<span class="count fig" id="queueCount"></span></h2>
+      </div>
+      <div id="queueBody"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="confirmDialog" aria-labelledby="dlgTitle">
+  <form method="dialog" id="confirmForm">
+    <div class="dlg-head">
+      <h2 id="dlgTitle">11月分の給与を確定します</h2>
+    </div>
+    <div class="dlg-body">
+      <p id="dlgLead">18名分の差引支給額を確定し、11月25日(水)支給の振込データを作成します。確定後に金額を直すときは、給与明細から再計算を申請してください。</p>
+      <div class="band" id="dlgBand"></div>
+      <p class="dlg-error" id="dlgError" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn" id="dlgCancel">戻る</button>
+      <button type="submit" class="btn btn-primary" id="dlgOk" value="ok">11月分の給与を確定する</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  // The pay month is pinned so the screen always opens on a working day before the deadline.
+  const TODAY = new Date(2026, 10, 16);
+  const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+  const md = (d) => `${d.getMonth() + 1}月${d.getDate()}日(${DOW[d.getDay()]})`;
+  const mdShort = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+  const yen = (n) => '¥' + Math.abs(n).toLocaleString('ja-JP');
+  const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '±') + yen(n);
+  const pct = (a, b) => (b ? ((a - b) / b) * 100 : 0);
+  const pctText = (p) => (p > 0 ? '+' : p < 0 ? '−' : '±') + Math.abs(p).toFixed(1) + '%';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- data (stands in for the payroll API) ----------
+  // [id, name, role, 基本給, 残業代, 控除, 前月差]
+  const STAFF = [
+    ['s01', '佐藤 健一', '医師', 980000, 0, 251200, 0],
+    ['s02', '高橋 美和', '看護師長', 412000, 38600, 92300, 6200],
+    ['s03', '伊藤 さやか', '看護師', 318000, 42800, 71900, 18400],
+    ['s04', '田中 亜紀', '看護師', 305000, 21500, 64800, -3200],
+    ['s05', '松本 葵', '看護師', 298000, 18200, 62100, 1500],
+    ['s06', '井上 智子', '准看護師', 262000, 12400, 53600, 4100],
+    ['s07', '木村 里奈', '准看護師', 255000, 0, 49800, -8600],
+    ['s08', '渡辺 翔太', '臨床検査技師', 276000, 16800, 57300, 2300],
+    ['s09', '加藤 直樹', '診療放射線技師', 289000, 31200, 63500, 9700],
+    ['s10', '中村 拓也', '理学療法士', 268000, 9800, 54100, -1200],
+    ['s11', '小林 由美', '医療事務', 228000, 14600, 46300, 5400],
+    ['s12', '山本 恵', '医療事務', 221000, 19800, 46100, 11200],
+    ['s13', '長谷川 光', '医療事務', 214000, 28400, 46700, 27200],
+    ['s14', '清水 陽菜', '受付', 198000, 6200, 38900, 0],
+    ['s15', '森 由佳', '受付(パート)', 132400, 0, 14200, -12600],
+    ['s16', '吉田 真央', '看護助手', 186000, 0, 35700, 0],
+    ['s17', '斎藤 恭子', '看護助手(パート)', 104800, 3100, 9600, 2900],
+    ['s18', '岡田 誠', '医師(非常勤)', 360000, 0, 86400, 0],
+  ];
+  const PENDING = [
+    { id: 'p1', staff: 's03', kind: '残業', text: '10月28日(水) 1.5時間 · 診療時間の延長' },
+    { id: 'p2', staff: 's03', kind: '残業', text: '10月30日(金) 2.0時間 · 発熱外来の対応' },
+    { id: 'p3', staff: 's08', kind: '打刻修正', text: '10月17日(土) 退勤 18:42 → 19:15' },
+    { id: 'p4', staff: 's11', kind: '有給休暇', text: '10月24日(土) 全日' },
+    { id: 'p5', staff: 's12', kind: '残業', text: '10月31日(土) 1.0時間 · 月末のレセプト点検' },
+    { id: 'p6', staff: 's09', kind: '残業', text: '10月22日(木) 2.5時間 · CT装置の点検立会い' },
+    { id: 'p7', staff: 's16', kind: '遅刻', text: '10月9日(金) 30分 · 電車の遅延' },
+  ];
+
+  const MONTHS = {
+    '2026-10': { label: '10月分', period: '9月1日〜30日の勤務分', pay: new Date(2026, 9, 23), deadline: new Date(2026, 9, 20), close: new Date(2026, 8, 30), confirmedOn: new Date(2026, 9, 19), prev: null },
+    '2026-11': { label: '11月分', period: '10月1日〜31日の勤務分', pay: new Date(2026, 10, 25), deadline: new Date(2026, 10, 20), close: new Date(2026, 9, 31), confirmedOn: null, prev: '2026-10' },
+    '2026-12': { label: '12月分', period: '11月1日〜30日の勤務分', pay: new Date(2026, 11, 25), deadline: new Date(2026, 11, 18), close: new Date(2026, 10, 30), confirmedOn: null, prev: '2026-11' },
+  };
+
+  function buildRows(month) {
+    if (month === '2026-12') return [];
+    return STAFF.map(([id, name, role, base, ot, ded, d]) => {
+      const net = base + ot - ded;
+      const prevNet = net - d;
+      if (month === '2026-10') {
+        const ot0 = Math.max(0, ot - d);
+        return { id, name, role, base, ot: ot0, ded: base + ot0 - prevNet, net: prevNet, prev: null };
+      }
+      return { id, name, role, base, ot, ded, net, prev: prevNet };
+    });
+  }
+
+  const server = { importFailed: new Set(['s10']), pending: PENDING.slice(), confirmed: new Set(['2026-10']) };
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const api = {
+    async getPayroll(month, delay) {
+      await wait(delay);
+      if (!navigator.onLine) throw new Error('offline');
+      const isCurrent = month === '2026-11';
+      return {
+        rows: buildRows(month),
+        pending: isCurrent && !server.confirmed.has(month) ? server.pending.slice() : [],
+        importFailed: isCurrent ? new Set(server.importFailed) : new Set(),
+        confirmed: server.confirmed.has(month),
+      };
+    },
+    async approve(ids) {
+      await wait(450);
+      if (!navigator.onLine) throw new Error('offline');
+      server.pending = server.pending.filter((p) => !ids.includes(p.id));
+    },
+    async reimport(id) {
+      await wait(700);
+      if (!navigator.onLine) throw new Error('offline');
+      server.importFailed.delete(id);
+    },
+    async confirm(month) {
+      await wait(600);
+      if (!navigator.onLine) throw new Error('offline');
+      server.confirmed.add(month);
+    },
+  };
+
+  // ---------- state ----------
+  const st = { month: '2026-11', status: 'loading', rows: [], pending: [], importFailed: new Set(), confirmed: false, filter: '', sort: null, busyRow: null, approving: false };
+  const $ = (id) => document.getElementById(id);
+  const nameOf = (id) => STAFF.find((s) => s[0] === id)[1];
+
+  const COLS = [
+    { key: 'name', label: '氏名', cls: 'c-name' },
+    { key: 'role', label: '職種', cls: 'c-role' },
+    { key: 'base', label: '基本給', cls: 'num c-pay', sort: true },
+    { key: 'ot', label: '残業代', cls: 'num c-pay', sort: true },
+    { key: 'ded', label: '控除', cls: 'num c-ded', sort: true },
+    { key: 'net', label: '差引支給額', cls: 'num c-net', sort: true },
+    { key: 'delta', label: '前月比', cls: 'num c-delta', sort: true },
+  ];
+
+  function pendingBy(id) { return st.pending.filter((p) => p.staff === id).length; }
+  function counted() { return st.rows.filter((r) => !st.importFailed.has(r.id)); }
+  function totals(rows) {
+    const t = { base: 0, ot: 0, ded: 0, net: 0, prev: 0 };
+    rows.forEach((r) => { t.base += r.base; t.ot += r.ot; t.ded += r.ded; t.net += r.net; t.prev += r.prev || 0; });
+    return t;
+  }
+  function blockers() {
+    const b = [];
+    if (st.pending.length) b.push({ text: `未承認の勤怠申請 ${st.pending.length}件`, target: 'queue' });
+    if (st.importFailed.size) b.push({ text: `打刻データの取り込み失敗 ${st.importFailed.size}名`, target: 'row-' + [...st.importFailed][0] });
+    return b;
+  }
+
+  // ---------- render: header ----------
+  function renderHead() {
+    const m = MONTHS[st.month];
+    $('title').textContent = `${m.label}の給与`;
+    $('period').textContent = `${m.period} · 支給日 ${md(m.pay)}`;
+    document.title = `${m.label}の給与 | みどり台内科クリニック | 給与帳`;
+
+    const days = Math.round((m.deadline - TODAY) / 86400000);
+    const done = st.confirmed || !!m.confirmedOn;
+    const cd = $('countdown');
+    if (done) cd.innerHTML = `<span class="countdown-label">確定済み</span><span class="fig">${md(m.confirmedOn || TODAY)}</span>`;
+    else if (days >= 0) cd.innerHTML = `<span class="countdown-label">締め日まで</span><span class="num">${days}</span><span>日</span>`;
+    else cd.innerHTML = `<span class="countdown-label">締め日を</span><span class="num">${-days}</span><span>日過ぎています</span>`;
+
+    const stops = [
+      { d: m.close, t: '勤怠の締め', c: m.close <= TODAY ? 'past' : '' },
+      { d: TODAY, t: '今日', c: 'today' },
+      { d: m.deadline, t: '給与確定の締め日', c: done || m.deadline < TODAY ? 'past' : 'deadline' },
+      { d: m.pay, t: '支給日', c: m.pay < TODAY ? 'past' : '' },
+    ].sort((a, b) => a.d - b.d);
+    $('rail').innerHTML = stops.map((s) => `<li class="${s.c}"><span class="d">${mdShort(s.d)}(${DOW[s.d.getDay()]})</span>${s.t}</li>`).join('');
+
+    const pn = $('pendingnote');
+    if (st.status !== 'ready') { pn.innerHTML = ''; pn.className = 'pendingnote'; }
+    else if (st.pending.length) {
+      pn.className = 'pendingnote';
+      pn.innerHTML = `<span>未承認の勤怠申請</span><span class="num">${st.pending.length}</span><span>件</span><a href="#queue">申請を見る</a>`;
+    } else {
+      pn.className = 'pendingnote clear';
+      pn.innerHTML = `<span>未承認の勤怠申請</span><span class="num">0</span><span>件</span>`;
+    }
+  }
+
+  function renderCommit() {
+    const btn = $('confirmBtn'), why = $('confirmWhy');
+    const m = MONTHS[st.month];
+    btn.textContent = `給与を確定する`;
+    if (st.confirmed || m.confirmedOn) {
+      btn.hidden = true;
+      why.innerHTML = `<span class="done">${m.label}の給与は${md(m.confirmedOn || TODAY)}に確定しました。</span><a href="#">振込データをダウンロードする</a>`;
+      return;
+    }
+    btn.hidden = false;
+    if (st.status !== 'ready' || !st.rows.length) {
+      btn.setAttribute('aria-disabled', 'true');
+      btn.className = 'btn btn-lg';
+      why.textContent = st.status === 'loading' ? '給与データを読み込んでいます。' : st.status === 'error' ? '給与データを読み込めないため、確定できません。' : 'この月の給与データはまだありません。';
+      return;
+    }
+    const b = blockers();
+    if (b.length) {
+      btn.setAttribute('aria-disabled', 'true');
+      btn.className = 'btn btn-lg';
+      why.innerHTML = '確定するには、先に ' + b.map((x) => `<a href="#${x.target}">${x.text}</a>`).join(' と ') + ' を解決してください。';
+    } else {
+      btn.setAttribute('aria-disabled', 'false');
+      btn.className = 'btn btn-lg btn-primary';
+      why.textContent = `${st.rows.length}名分、すべての勤怠が承認済みです。${md(m.deadline)}までに確定してください。`;
+    }
+  }
+
+  // ---------- render: signature band ----------
+  function bandHTML(rows, opts = {}) {
+    const t = totals(rows);
+    const m = MONTHS[st.month];
+    let delta = '';
+    if (m.prev && t.prev) {
+      const p = pct(t.net, t.prev);
+      delta = `<span class="delta">前月比 <b>${signed(t.net - t.prev)}</b> <b>${pctText(p)}</b></span>`;
+    } else if (!opts.dialog) {
+      delta = `<span class="delta">前月比 <b>—</b></span>`;
+    }
+    const missing = st.importFailed.size && !opts.dialog ? ` · ${st.importFailed.size}名は取り込み待ち` : '';
+    return `
+      <div class="field f-pay"><div class="field-tab">支給合計</div><div class="field-body">
+        <span class="field-fig">${yen(t.base + t.ot)}</span>
+        ${opts.dialog ? '' : `<span class="field-sub"><span>基本給 <span class="fig">${yen(t.base)}</span></span><span>残業代 <span class="fig">${yen(t.ot)}</span></span></span>`}
+      </div></div>
+      <div class="op" aria-hidden="true">−</div>
+      <div class="field f-ded"><div class="field-tab">控除合計</div><div class="field-body">
+        <span class="field-fig">${yen(t.ded)}</span>
+      </div></div>
+      <div class="op op-eq" aria-hidden="true">＝</div>
+      <div class="field f-net"><div class="field-tab">差引支給額</div><div class="field-body">
+        <span class="field-fig">${yen(t.net)}</span>
+        ${opts.dialog ? '' : `<span class="field-sub"><span>${rows.length}名分${missing}</span></span>`}
+        ${delta}
+      </div></div>`;
+  }
+
+  function renderBand() {
+    const band = $('band');
+    if (st.status === 'ready' && st.rows.length) {
+      band.hidden = false;
+      band.innerHTML = bandHTML(counted());
+    } else if (st.status === 'loading') {
+      band.hidden = false;
+      band.innerHTML = ['f-pay', 'f-ded', 'f-net'].map((c, i) => `${i ? '<div class="op" aria-hidden="true"></div>' : ''}<div class="field ${c}"><div class="field-tab">${['支給合計', '控除合計', '差引支給額'][i]}</div><div class="field-body loading"><span class="bar w-l" style="height:28px"></span></div></div>`).join('');
+    } else {
+      band.hidden = true;
+    }
+  }
+
+  // ---------- render: table ----------
+  function renderColhead() {
+    $('colhead').innerHTML = COLS.map((c) => {
+      const sorted = st.sort && st.sort.key === c.key;
+      const aria = sorted ? ` aria-sort="${st.sort.dir > 0 ? 'ascending' : 'descending'}"` : '';
+      const inner = c.sort
+        ? `<button type="button" class="sortbtn" data-sort="${c.key}">${c.label}<span class="arrow" aria-hidden="true">${sorted ? (st.sort.dir > 0 ? '↑' : '↓') : '↕'}</span></button>`
+        : c.label;
+      return `<th scope="col" class="${c.cls.replace('c-pay', '').replace('c-ded', '')}"${aria}>${inner}</th>`;
+    }).join('');
+  }
+
+  function rowHTML(r) {
+    const p = pendingBy(r.id);
+    const name = `<td class="c-name"><div class="namecell"><span class="who">${esc(r.name)}</span>${p ? `<span class="tag tag-warn">未承認 ${p}件</span>` : ''}</div></td>`;
+    const role = `<td class="c-role">${esc(r.role)}</td>`;
+    if (st.importFailed.has(r.id)) {
+      const busy = st.busyRow === r.id;
+      return `<tr class="failrow" id="row-${r.id}">${name}${role}<td colspan="5" class="failcell"><div class="fail">
+        <span>10月の打刻データを取り込めませんでした。タイムカード端末の通信を確認してから再取得してください。</span>
+        <button type="button" class="btn btn-sm" data-reimport="${r.id}" ${busy ? 'aria-disabled="true"' : ''}>${busy ? '取得しています…' : '打刻データを再取得する'}</button>
+      </div></td></tr>`;
+    }
+    const d = r.prev == null ? null : r.net - r.prev;
+    const dp = r.prev ? pct(r.net, r.prev) : 0;
+    const big = d != null && Math.abs(dp) >= 10;
+    const cell = (label, cls, html) => `<td class="${cls}"><span class="cell-label">${label}</span><span>${html}</span></td>`;
+    return `<tr class="row" id="row-${r.id}">${name}${role}
+      ${cell('基本給', 'num c-pay', yen(r.base))}
+      ${cell('残業代', 'num c-pay', (p ? '<span class="est">見込み</span>' : '') + yen(r.ot))}
+      ${cell('控除', 'num c-ded', yen(r.ded))}
+      ${cell('差引支給額', 'num c-net', yen(r.net))}
+      ${cell('前月比', 'num c-delta', d == null ? '—' : `<span class="dval"><span class="${big ? 'flag' : ''}">${signed(d)}</span>${big ? `<span class="tag tag-warn">${pctText(dp)}</span>` : ''}</span>`)}
+    </tr>`;
+  }
+
+  function sortedRows() {
+    const q = st.filter.trim();
+    let rows = st.rows.filter((r) => !q || r.name.replace(/\s/g, '').includes(q.replace(/\s/g, '')) || r.role.includes(q));
+    if (st.sort) {
+      const { key, dir } = st.sort;
+      const v = (r) => (st.importFailed.has(r.id) ? -Infinity : key === 'delta' ? (r.prev == null ? 0 : r.net - r.prev) : r[key]);
+      rows = rows.slice().sort((a, b) => (v(a) - v(b)) * dir);
+    }
+    return rows;
+  }
+
+  function renderTable() {
+    const wrap = $('ledgerWrap'), table = $('ledger'), body = $('rows');
+    wrap.setAttribute('aria-busy', st.status === 'loading' ? 'true' : 'false');
+    table.classList.toggle('loading', st.status === 'loading');
+    $('staffCount').textContent = st.status === 'ready' && st.rows.length ? `${st.rows.length}名` : '';
+    $('q').disabled = st.status !== 'ready' || !st.rows.length;
+    renderColhead();
+    const span = COLS.length;
+    if (st.status === 'loading') {
+      body.innerHTML = Array.from({ length: 6 }, () => `<tr class="skel"><td><span class="bar w-l"></span></td><td><span class="bar w-m"></span></td><td class="num"><span class="bar w-m"></span></td><td class="num"><span class="bar w-s"></span></td><td class="num"><span class="bar w-m"></span></td><td class="num"><span class="bar w-m"></span></td><td class="num"><span class="bar w-s"></span></td></tr>`).join('');
+      return;
+    }
+    if (st.status === 'error') {
+      body.innerHTML = `<tr><td colspan="${span}"><div class="state error" role="alert">
+        <h3>給与データを読み込めませんでした</h3>
+        <p>インターネットに接続されていないようです。接続を確認してから、もう一度読み込んでください。入力済みの勤怠や承認は失われていません。</p>
+        <button type="button" class="btn" data-reload>もう一度読み込む</button></div></td></tr>`;
+      return;
+    }
+    if (!st.rows.length) {
+      const m = MONTHS[st.month];
+      body.innerHTML = `<tr><td colspan="${span}"><div class="state">
+        <h3>${m.label}の給与データはまだありません</h3>
+        <p>${md(m.close)}に勤怠が締まると、打刻データからスタッフごとの支給額を作成します。新しく入職するスタッフがいれば、先に登録しておいてください。</p>
+        <a class="btn" href="#">スタッフを登録する</a></div></td></tr>`;
+      return;
+    }
+    const rows = sortedRows();
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="${span}"><div class="state">
+        <h3>「${esc(st.filter)}」に一致するスタッフはいません</h3>
+        <p>氏名は姓だけ、職種は「看護」のように一部だけでも探せます。</p>
+        <button type="button" class="btn" data-clearfilter>絞り込みを解除する</button></div></td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map(rowHTML).join('');
+  }
+
+  // ---------- render: approval queue ----------
+  function renderQueue() {
+    const q = $('queue'), body = $('queueBody');
+    const isCurrent = st.month === '2026-11';
+    q.hidden = !isCurrent || st.status === 'error';
+    $('work').classList.toggle('solo', q.hidden);
+    $('queueCount').textContent = st.status === 'ready' ? `${st.pending.length}件` : '';
+    if (q.hidden) return;
+    if (st.status === 'loading') {
+      body.innerHTML = `<ul class="queue-list loading">${Array.from({ length: 3 }, () => `<li><label><span></span><span><span class="bar w-l"></span></span></label></li>`).join('')}</ul>`;
+      return;
+    }
+    if (st.confirmed) {
+      body.innerHTML = `<div class="queue-empty"><p>この月の給与は確定済みです。申請はすべて処理されています。</p></div>`;
+      return;
+    }
+    if (!st.pending.length) {
+      body.innerHTML = `<div class="queue-empty"><p><b>すべての勤怠を承認しました。</b></p><p>残業代は承認後の金額で計算されています。内容を確認して、給与を確定してください。</p></div>`;
+      return;
+    }
+    const busy = st.approving;
+    body.innerHTML = `<ul class="queue-list">${st.pending.map((p) => `<li><label>
+        <input type="checkbox" data-pid="${p.id}" checked ${busy ? 'disabled' : ''}>
+        <span><span class="q-who">${esc(nameOf(p.staff))}</span>
+        <span class="q-what"><span class="q-kind">${p.kind}</span>${esc(p.text)}</span></span>
+      </label></li>`).join('')}</ul>
+      <div class="queue-foot">
+        <div class="row2"><span class="hint" id="selHint">${st.pending.length}件を選択中</span><button type="button" class="linkbtn" data-toggleall>選択をすべて外す</button></div>
+        <button type="button" class="btn btn-primary btn-lg" id="approveBtn" ${busy ? 'aria-disabled="true"' : ''}>${busy ? '承認しています…' : `勤怠を承認する(${st.pending.length}件)`}</button>
+        <p class="hint">差し戻すときは<a href="#">勤怠画面</a>から理由を添えて返してください。</p>
+      </div>`;
+  }
+
+  function render() {
+    renderHead();
+    renderCommit();
+    renderBand();
+    renderTable();
+    renderQueue();
+  }
+
+  // ---------- flows ----------
+  let loadSeq = 0;
+  async function load(month, delay) {
+    const seq = ++loadSeq;
+    st.month = month; st.status = 'loading'; st.filter = ''; $('q').value = '';
+    render();
+    try {
+      const data = await api.getPayroll(month, delay);
+      if (seq !== loadSeq) return;
+      Object.assign(st, { rows: data.rows, pending: data.pending, importFailed: data.importFailed, confirmed: data.confirmed, status: 'ready' });
+    } catch (e) {
+      if (seq !== loadSeq) return;
+      st.status = 'error';
+    }
+    render();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  function selectedIds() { return [...document.querySelectorAll('[data-pid]')].filter((c) => c.checked).map((c) => c.dataset.pid); }
+  function updateSel() {
+    const n = selectedIds().length;
+    const hint = $('selHint'), btn = $('approveBtn'), tog = document.querySelector('[data-toggleall]');
+    if (!hint) return;
+    hint.textContent = `${n}件を選択中`;
+    btn.textContent = `勤怠を承認する(${n}件)`;
+    btn.setAttribute('aria-disabled', n ? 'false' : 'true');
+    tog.textContent = n ? '選択をすべて外す' : 'すべて選択する';
+  }
+
+  async function approve() {
+    const ids = selectedIds();
+    if (!ids.length || st.approving) return;
+    st.approving = true; renderQueue();
+    try {
+      await api.approve(ids);
+      st.pending = st.pending.filter((p) => !ids.includes(p.id));
+      toast(`${ids.length}件の勤怠を承認しました`);
+    } catch (e) {
+      toast('承認できませんでした。接続を確認して、もう一度押してください');
+    }
+    st.approving = false;
+    render();
+    if (!st.pending.length) $('queueTitle').focus?.();
+  }
+
+  async function reimport(id) {
+    if (st.busyRow) return;
+    st.busyRow = id; renderTable();
+    try {
+      await api.reimport(id);
+      st.importFailed.delete(id);
+      toast(`${nameOf(id)}さんの打刻データを取り込みました`);
+    } catch (e) {
+      toast('取り込めませんでした。接続を確認して、もう一度押してください');
+    }
+    st.busyRow = null;
+    render();
+  }
+
+  const dlg = $('confirmDialog');
+  function openConfirm() {
+    const m = MONTHS[st.month];
+    $('dlgTitle').textContent = `${m.label}の給与を確定します`;
+    $('dlgLead').textContent = `${st.rows.length}名分の差引支給額を確定し、${md(m.pay)}支給の振込データを作成します。確定後に金額を直すときは、給与明細から再計算を申請してください。`;
+    $('dlgBand').innerHTML = bandHTML(counted(), { dialog: true });
+    $('dlgOk').textContent = `${m.label}の給与を確定する`;
+    $('dlgOk').removeAttribute('aria-disabled');
+    $('dlgError').hidden = true;
+    dlg.showModal();
+  }
+
+  $('confirmBtn').addEventListener('click', () => {
+    if ($('confirmBtn').getAttribute('aria-disabled') === 'true') {
+      const b = blockers()[0];
+      if (b) { const el = $(b.target); el.scrollIntoView({ block: 'center' }); const f = el.querySelector('button, input'); f && f.focus({ preventScroll: true }); }
+      return;
+    }
+    openConfirm();
+  });
+  $('dlgCancel').addEventListener('click', () => dlg.close());
+  $('confirmForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ok = $('dlgOk');
+    if (ok.getAttribute('aria-disabled') === 'true') return;
+    ok.setAttribute('aria-disabled', 'true'); ok.textContent = '確定しています…';
+    try {
+      await api.confirm(st.month);
+      MONTHS[st.month].confirmedOn = TODAY;
+      st.confirmed = true;
+      dlg.close();
+      render();
+      toast(`${MONTHS[st.month].label}の給与を確定しました`);
+    } catch (err) {
+      ok.removeAttribute('aria-disabled'); ok.textContent = `${MONTHS[st.month].label}の給与を確定する`;
+      const er = $('dlgError');
+      er.textContent = '確定できませんでした。インターネット接続を確認してから、もう一度押してください。金額はまだ変わっていません。';
+      er.hidden = false;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button, a');
+    if (!t) return;
+    if (t.id === 'approveBtn') { if (t.getAttribute('aria-disabled') !== 'true') approve(); }
+    else if (t.dataset.reimport) { if (t.getAttribute('aria-disabled') !== 'true') reimport(t.dataset.reimport); }
+    else if (t.dataset.sort) {
+      const k = t.dataset.sort;
+      st.sort = st.sort && st.sort.key === k ? (st.sort.dir < 0 ? { key: k, dir: 1 } : null) : { key: k, dir: -1 };
+      renderTable();
+      document.querySelector(`[data-sort="${k}"]`).focus();
+    }
+    else if (t.hasAttribute('data-reload')) load(st.month, 500);
+    else if (t.hasAttribute('data-clearfilter')) { st.filter = ''; $('q').value = ''; renderTable(); $('q').focus(); }
+    else if (t.hasAttribute('data-toggleall')) {
+      const boxes = [...document.querySelectorAll('[data-pid]')];
+      const any = boxes.some((b) => b.checked);
+      boxes.forEach((b) => { b.checked = !any; });
+      updateSel();
+    }
+  });
+  document.addEventListener('change', (e) => { if (e.target.dataset && e.target.dataset.pid) updateSel(); });
+  $('q').addEventListener('input', (e) => { st.filter = e.target.value; renderTable(); });
+  $('month').addEventListener('change', (e) => load(e.target.value, 600));
+  window.addEventListener('online', () => { if (st.status === 'error') load(st.month, 300); });
+
+  load('2026-11', 0);
+})();
+</script>
+</body>
+</html>

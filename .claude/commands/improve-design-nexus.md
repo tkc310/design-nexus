@@ -13,4 +13,6 @@ Run one iteration of `loop/IMPROVEMENT.md` for this repository. Arguments: $ARGU
 6. `node eval/run.mjs score --run <run>`, then `node eval/run.mjs judge --run <run>`; for each case spawn a separate fresh subagent with that case's `JUDGE_PROMPT.md` and save its JSON reply as `judge.json`. Then score again.
 7. `node eval/run.mjs compare --base baseline --run <run>`. Apply the verdict as `loop/IMPROVEMENT.md` step 4 says, record the result in `loop/experiments.md`, and report the comparison table.
 
+Scale v2 (M-017): once `validate` has passed on the calibration set (recorded under M-018 in `loop/method.md`), judge with `node eval/run.mjs judge --run <run> --scale v2` (one fresh Opus subagent per page writes `judge-v2.opus.json`), decide by pairs (`pair`, `pair-score`) following the rubric's 採用の手順 a–g, and read `compare --scale v2` as the level and the guard. Before that, follow `loop/plan.md` 「次のループで最初に行うこと」.
+
 Do not commit or push unless asked.

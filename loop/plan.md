@@ -562,3 +562,88 @@ EXP-026 の変更そのものは、これまでで最も強い効果を示した
 - ツールの小さな修正と、base の撮り直し。
 - 審査の条件が変わるので、新しい base を作る回に、base と候補の両方へ同時に入れる。
 - EXP-027 の新 base で入れるなら、撮り直しの費用はほぼ0。
+
+
+## 状態(2026-11-01、利用者の指示でループを止めた時点)
+
+- 採用済みの版は v0.10.0(main にマージ済み、PR #3)。EXP-024〜028 はすべて却下。
+- 評価の作り直し(M-017〜M-022: 尺度 v2、較正セット、第1画面とタイルの撮影、06 の hero.png、参照ページ、採用の手順)を実装した。v2 はまだ一度も審査していない。検証は週末の最初の作業(下)。
+- 仮説1(EXP-027、出典表の再現): 18対で clear +4、基準 +5 に1届かず。EXP-026 と合わせた30対では clear 12–3、D2 +16、D4 +16。負け筋は D7 と D8。変種の差分は、いまのスキルに当て直して `loop/variants/exp026-source-sheet.patch` に置いた(`cp -r skills/design-nexus <scratch>/b1/ && patch -p3 -d <scratch>/b1/design-nexus < loop/variants/exp026-source-sheet.patch`)。
+- 仮説2(EXP-028、幅ごとの形を計画で決める): clear 0、D7 −7、D6 −7 で却下。
+- v0.10.0 の新 base は 20261101-0711-v0.10.0-base100a と 20261101-0712-v0.10.0-base100b(01・03・04)。eval/runs は git に入らないが、両方のページは較正セットに凍結したので、新しい環境では `restore` で戻せる(M-018)。
+- 再開するときの候補: (1) 出典表に「狭い幅では表を表のまま保ち、320 は小さなカード」という形の判断を足して、D7 の負け筋を直す。ただし2つの変更を同時に入れないという「やめること」2に当たるので、まず出典表を採用できる形(D7・D8 を落とさない最小の変更)を Opus max で設計し直す。(2) 仮説3(EXP-029、コードとコマンドの狭い幅の指示の矛盾)と仮説4(和文の行で読む数字)。(3) M-016 の残り(06 の hero.png、全ページ撮影の固定バー)は M-019 で直した。
+
+## 次のループで最初に行うこと(週末、2026-11-01 更新)
+
+評価の尺度は v2 に作り直した(M-017〜M-022、`eval/rubric.md` の尺度 v2 と採用の手順)。週末は、**まず v2 を検証し、次に v0.10.0 の水準を v2 で測り、それから仮説に進む。** 条件は変えない: 生成と審査は Opus(並列の審査が要るときだけ Sonnet)、同時に動かすのは4体まで、ケースは学習用 01〜06、審査は生成と別の新しいコンテキストで1ページ1体。
+
+### 0. 準備(数分)
+
+```bash
+node scripts/test.mjs                 # 86件すべて通ること
+node eval/run.mjs plateau             # 停滞していないこと
+# 新しい環境で eval/runs が空なら、v0.10.0 の base(01・03・04)を較正セットから戻す
+node eval/run.mjs restore --set v2-validation --groups b100a,b100b
+```
+
+### 1. v2 の検証(最初に行う。Opus の審査 57回、同時4体で約15波)
+
+```bash
+node eval/run.mjs calib --set v2-validation --tier all     # 45ページの盲検 run(<ケース>--cNN)
+node eval/run.mjs score --run <calib run>                  # 第1画面と900pxのタイルを撮る
+node eval/run.mjs judge --run <calib run> --scale v2       # 各フォルダに JUDGE_PROMPT.v2.md
+```
+
+- 審査役への指示(1ページ1体、新しいコンテキストの Opus): 「`<フォルダ>/JUDGE_PROMPT.v2.md` を読み、その指示どおりに審査して、JSON を同じフォルダの `judge-v2.opus.json` に書いてください。」
+- 45ページが終わったら、`_calib/retest.txt` の12ページを、別の新しいコンテキストでもう1回審査し、`judge-v2.opus.2.json` に書く。
+- そのあと `node eval/run.mjs score --run <calib run>` と `node eval/run.mjs validate --run <calib run>`。
+- 任意(V5): 利用者に時間があれば、retest のうち6ページを人が審査する(`node eval/run.mjs v2-template > <フォルダ>/judge-v2.human.json` を埋める)。
+- V4(参照ページ)は、候補のホストに接続できる環境でだけ行う(`eval/reference/README.md`)。この環境ではネットワーク方針で拒否される。
+
+### 2. 検証の結果で分ける
+
+- **PASS**: v2 で水準を追う。採否は `eval/rubric.md` の「採用の手順 a〜g」で決める。v1 の審査はやめる。
+- **FAIL**: `validate.md` の落ちた検証と「Criteria flipped most」を読み、`judge-prompt-v2.md` を1回だけ直す(M-010 に従い Opus max)。直した版は、3 の base(新しい生成)を2回ずつ審査して V2 を測り直す。V3 は新しい対比較が溜まってから見直す。それでも外れたら、v1 の規則0〜6と対比較で続け、v2 は記録だけにする。
+
+### 3. v0.10.0 の水準を v2 で測る(生成6、審査12。FAIL のあとは審査24)
+
+```bash
+node eval/run.mjs prepare --cases 02,05,06 --label base100c
+node eval/run.mjs prepare --cases 02,05,06 --label base100d
+# 6件を生成する(06 のフォルダには hero.png が入る、M-019)
+for r in 20261101-0711-v0.10.0-base100a 20261101-0712-v0.10.0-base100b <base100c> <base100d>; do
+  node eval/run.mjs score --run $r && node eval/run.mjs judge --run $r --scale v2
+done
+# 12ページを Opus が1回ずつ審査(judge-v2.opus.json)。終わったら4つの run で score をもう一度
+```
+
+- これが v0.10.0 の v2 の基準点になる。`summary.md` の v2 の平均(旧尺度の目安つき)、目標の92以上と95以上のページ数、落ちた基準の上位を、この下の「状態」に書く。過去の v1 の点とは比べない。ループの目標は v2 の 92(旧尺度の95点相当、M-023)。
+- base100a・b の 01・03・04 は、較正の run とは別に、この run でも審査する(盲検の較正と、base としての記録を分けるため)。
+
+### 4. 仮説(採用の手順 a〜g。1仮説あたり生成6、v2 の審査6、対比較12、同時4体で約6波)
+
+base は4つの run(`--base <base100a>,<base100b>,<base100c>,<base100d>`)。各ケースが2つの base と組んで12対になる。候補は学習用の6ケースすべてで作る(`--split train` を忘れると検証用まで作られる)。
+
+```bash
+node eval/run.mjs prepare --skill <変種のフォルダ> --split train --label exp<番号>
+# 6件を生成 → score → judge --scale v2(6ページを Opus で1回ずつ)→ score
+node eval/run.mjs pair --base <base100a>,<base100b>,<base100c>,<base100d> --run <候補>   # 12対を Opus が片順で審査(pair.opus.json)
+node eval/run.mjs pair-score --run <候補>
+node eval/run.mjs compare --base <base100a>,<base100b>,<base100c>,<base100d> --run <候補> --scale v2
+```
+
+1. **出典表と、320 での形**(path-to-95.md の B1): `loop/variants/exp026-source-sheet.patch` を当てた変種に、出典表の各項目へ「320 での形」(表は表のまま保つ、借りた要素の狭い幅の形)を足す。足す文は Opus max で設計する(M-010)。守る次元は D7 と D8。
+2. **狭い幅で意味が壊れる型の自動検出**(C1): チェックの条件を Opus max で設計し、fixture と `scripts/test.mjs` を足してから生成する。守る次元は D6 と D7。
+3. 条件つきで、コマンドとコードの狭い幅の指示の矛盾(B2、効くのは 01)、和文の行で読む数字の書体(B3、03・05)、D8 の失敗の道筋(この計画の仮説5)。
+4. 2案を作って対比較で選ぶ(A1)は、費用が2倍なので最後にする。
+
+- 各実験の前に `loop/experiments.md` に仮説を書き、判定のあとに `node eval/run.mjs plateau` を実行する。最初の仮説が却下されると、EXP-027・028 と合わせて3件続くので STALLED になる。そのときは `loop/plan-review.md` の見直しを、v2 の落ちた基準と対比較の決め手を材料にして行う。
+- 審査の波には、`node eval/run.mjs calib --set v2-validation --tier drift --label drift<n>` の4ページを週末に1回だけ混ぜ、最後に `validate --run <drift run> --against <1 の calib run>` で審査のずれを見る(M-022)。
+
+### 95点の見込みと、モデルが良くなったとき(利用者の問いへの答え)
+
+- **目標の置き直し(M-023)**: 利用者の決定で、ループの目標は v2 の 92(旧尺度の95点相当)になった。下の見込みの「95」は v2 の 95(旧尺度の約97)のことで、目標の92は満たさない基準が重み1で3つまで。
+
+- **見込み(測る前の推定)**: v0.10.0 の v2 は 78〜85 程度と見ている。1ページが 95 以上になる確率は数%、6ケースの平均が 95 に届くことは、この週末のループでは見込めない。95 以上は「拒否権がなく、40基準のうち満たさないのが重み1で2つまで」なので、典型的なページが基準をあと5〜8個満たす必要がある。対比較で勝つ仮説1つは、いくつかのページで基準を1〜3個動かす程度(平均で +1〜2点)と見ている。3 で測ったら、平均、ページの SD、95以上のページ数で、この推定を置き換える。
+- **生成のモデルが良くなったとき**: v2 の基準は観察できる条件で、上限 100 まで余地がある。だから生成が良くなれば v2 は上がる。ただし版の差とモデルの差が混ざるので、同じ版を新しいモデルで2回生成して、モデルの効果を先に記録する(M-022)。
+- **審査のモデルが良くなったとき**: 欠陥を多く見つけて、同じページでも v2 が下がることがある。drift の4ページ(できれば較正セット全体)を新しい審査で採点し直し、新しい系列として始める。

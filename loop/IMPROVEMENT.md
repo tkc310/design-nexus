@@ -85,7 +85,22 @@ node eval/run.mjs prepare --label exp-<番号>
 node eval/run.mjs compare --base baseline --run <run>
 ```
 
-判定基準は `eval/rubric.md` の「採用判定」。
+判定基準は `eval/rubric.md`。尺度 v2 の検証(`validate`)が通ったあとは「採用の手順 a〜g」、それまでは「採用判定(改善ループ、v1)」の規則0〜6。
+
+### 尺度 v2 で回すとき(M-017〜M-022)
+
+```bash
+node eval/run.mjs prepare --skill <変種> --split train --label exp-<番号>
+# 生成 → score(第1画面と900pxのタイルを撮る)
+node eval/run.mjs judge --run <run> --scale v2      # JUDGE_PROMPT.v2.md。1ページ1体の Opus が judge-v2.opus.json を書く
+node eval/run.mjs score --run <run>                 # v2 は基準から計算される
+node eval/run.mjs pair --base <base の run> --run <run> && node eval/run.mjs pair-score --run <run>   # 採否はここで決まる
+node eval/run.mjs compare --base <base の run> --run <run> --scale v2   # 水準と動いた基準。HOLD なら根拠を読む
+```
+
+- v2 は v1 と別の系列で、比べない。主審査のモデルの点だけを使い、Sonnet や人は別の系列として記録する。
+- 審査のモデルかプロンプトを変えたら、較正セットの drift ページで採点し直してから続ける(`calib --tier drift`、`validate --against`)。
+- 新しい環境で eval/runs が空のときは、`restore` で凍結した base を戻す。
 
 - **ACCEPT**: `VERSION` を上げ(ルール追加は minor、修正は patch)、`CHANGELOG.md` に記録、`node scripts/build.mjs` でアダプターを再生成、新しい run を baseline に置き換える。
 - **NEUTRAL**: 狙った次元・チェックが改善していれば採用、そうでなければ戻す。
@@ -124,5 +139,6 @@ node eval/run.mjs compare --base baseline --run <run>
 - 審査エージェントのスコアは揺れます。差が小さいときは、同じ run を2回 judge して平均を取る。
 - 審査は複数モデルで並列に行い、最も厳しいモデルを主審査にする(`compare --primary`)。合計点は平均でも、主審査の悪化は不採用の理由になる。
 - 審査は熟練デザイナー4人のパネルとして行う(`eval/judge-prompt.md`)。
-- 自動スコア(40点)は決定的なので、回帰の検知はまずこちらを見る。
+- 自動スコア(40点)は決定的なので、回帰の検知はまずこちらを見る。v2 では自動の部分を足さず、Floor をゲートとして使う。
+- v2 の審査のぶれと、対比較との一致は、較正セット(`eval/calib/`)で測る(`validate`)。数字の意味は `eval/rubric.md` の尺度 v2。
 - 月に1度程度、人が数ケースを採点し、審査エージェントとの差が大きい次元はルーブリックの基準文を具体化する。

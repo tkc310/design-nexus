@@ -4,6 +4,7 @@
 // Usage:
 //   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]
 //        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
+//        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
 // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
 const args = process.argv.slice(2);
-const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null };
+const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null, first: false, tiles: false };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--out') opt.out = args[++i];
@@ -24,10 +25,14 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--compare') opt.compare = args[++i];
   else if (a === '--time') opt.time = args[++i]; // ISO instant, e.g. 2026-11-04T10:30:00+09:00: pins the page clock
   else if (a === '--tz') opt.tz = args[++i]; // IANA zone for the page, e.g. Asia/Tokyo
+  // Evaluation captures (eval/run.mjs score): the first screen as a visitor sees it, and the page in 900px tiles with
+  // fixed and sticky bars laid out in flow, so a judge can read every width and no bar covers content in a full-page shot.
+  else if (a === '--first-screen') opt.first = true;
+  else if (a === '--tiles') opt.tiles = true;
   else opt.target = a;
 }
 if (!opt.target) {
-  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--json]');
+  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--first-screen] [--tiles] [--json]');
   process.exit(1);
 }
 
@@ -77,6 +82,52 @@ const add = (id, where, message) => {
 };
 const shots = [];
 let look = null;
+// Evaluation captures: which widths were tiled, how tall the page was, and which bars were laid out in flow.
+const TILE = { height: 900, step: 840, max: 30 };
+const capture = opt.first || opt.tiles ? { first_screen: opt.first, tiles: opt.tiles, tile_height: TILE.height, tile_step: TILE.step, widths: {} } : null;
+
+// Runs in the page. Fixed and sticky bars are laid out in flow so a full-page capture shows what they would otherwise
+// cover. Off-canvas drawers and empty decorative layers are not bars over content and stay as they are.
+function flattenBars() {
+  const done = [];
+  const name = (el) => (el.id ? `#${el.id}` : el.tagName.toLowerCase() + (el.classList[0] ? `.${el.classList[0]}` : ''));
+  for (const el of document.querySelectorAll('body *')) {
+    const cs = getComputedStyle(el);
+    if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
+    if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    if (cs.position === 'fixed') {
+      if (r.right <= 0 || r.left >= innerWidth || r.bottom <= 0 || r.top >= innerHeight) continue;
+      if (!(el.innerText || '').trim()) continue;
+    }
+    done.push({ el, v: el.style.getPropertyValue('position'), p: el.style.getPropertyPriority('position'), name: name(el) });
+    el.style.setProperty('position', 'static', 'important');
+  }
+  window.__dnFlat = done;
+  return done.map((d) => d.name);
+}
+function restoreBars() {
+  for (const d of window.__dnFlat || []) {
+    if (d.v) d.el.style.setProperty('position', d.v, d.p);
+    else d.el.style.removeProperty('position');
+  }
+  window.__dnFlat = [];
+}
+// The page in 900px tiles, top to bottom, overlapping by 60px so no line is lost at a cut.
+async function captureTiles(page, width) {
+  for (const f of fs.readdirSync(opt.out)) if (new RegExp(`^w${width}-\\d{2}\\.png$`).test(f)) fs.rmSync(path.join(opt.out, f));
+  const height = await page.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0));
+  const files = [];
+  for (let y = 0, i = 1; y < height && i <= TILE.max; y += TILE.step, i++) {
+    if (i > 1 && height - y <= TILE.height - TILE.step) break; // only the overlap is left
+    const f = path.join(opt.out, `w${width}-${String(i).padStart(2, '0')}.png`);
+    await page.screenshot({ path: f, fullPage: true, clip: { x: 0, y, width, height: Math.min(TILE.height, height - y) } });
+    files.push(f);
+  }
+  const covered = files.length ? (files.length - 1) * TILE.step + TILE.height : 0;
+  return { files, height, truncated: covered < height };
+}
 const textsAt = new Map();
 
 // Runs in the page. Returns raw measurements; judgement stays in Node.
@@ -585,8 +636,22 @@ try {
     ])).catch(() => {});
     await page.waitForTimeout(400);
     const file = path.join(opt.out, `w${width}.png`);
+    if (opt.first) {
+      const first = path.join(opt.out, `w${width}-first.png`);
+      await page.screenshot({ path: first });
+      shots.push(first);
+    }
+    // With --tiles the bars go back in place before any check below, so every check measures the page as it is.
+    const flattened = opt.tiles ? await page.evaluate(flattenBars) : null;
     await page.screenshot({ path: file, fullPage: true });
     shots.push(file);
+    if (opt.tiles) {
+      const t = await captureTiles(page, width);
+      shots.push(...t.files);
+      await page.evaluate(restoreBars);
+      await page.waitForTimeout(50);
+      capture.widths[width] = { tiles: t.files.length, page_height: t.height, truncated: t.truncated, flattened };
+    }
     const m = await page.evaluate(measure, minTap);
     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
@@ -684,7 +749,7 @@ try {
 }
 
 const counts = summarize(findings);
-if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look }, null, 2));
+if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(capture ? { capture } : {}) }, null, 2));
 else {
   printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');

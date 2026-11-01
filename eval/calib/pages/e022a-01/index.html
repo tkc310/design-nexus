@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline: search log fields, not log text</title>
+<meta name="description" content="grepline is an open-source CLI, written in Rust, that searches JSON and logfmt logs across many files with filters like level=error and latency_ms>500. MIT licensed, one binary.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=Martian+Mono:wdth,wght@75..112.5,500..800&display=swap">
+<style>
+:root {
+  /* Colours: green-bar line-printer paper. Sources in DESIGN.md. */
+  --paper: #FBFBF9;   /* white band of continuous-form stock */
+  --bar: #E3F0DF;     /* green band */
+  --ink: #1C211E;     /* printer ribbon */
+  --muted: #5B635E;   /* faded ribbon */
+  --form: #1E6A44;    /* the form's own printed ink: matched / do this */
+  --ribbon: #B3261E;  /* red half of the ribbon: level=error only */
+
+  --display: "Martian Mono", ui-monospace, monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --t-code: 0.9375rem;   /* 15 */
+  --t-body: 1.0625rem;   /* 17 */
+  --t-lead: 1.3125rem;   /* 21 */
+  --t-h2: 1.6875rem;     /* 27 */
+  --t-h1: clamp(2.125rem, 4.9vw, 4rem);
+
+  --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+  --feed: 32px;          /* tractor-feed margin */
+  --radius: 6px;
+  --gutter: 16px;
+  --wrap: 1320px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--t-body)/1.6 var(--body);
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--form); text-underline-offset: 3px; }
+a:hover { color: var(--ink); }
+code, kbd { font-family: var(--mono); }
+:focus-visible { outline: 3px solid var(--form); outline-offset: 2px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+.skip { position: absolute; left: var(--s3); top: -100px; background: var(--ink); color: var(--paper); padding: var(--s2) var(--s3); }
+.skip:focus { top: var(--s2); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 40px; padding: 0 var(--s3);
+  border: 1px solid var(--form); border-radius: var(--radius);
+  background: var(--form); color: var(--paper);
+  font: 600 var(--t-code)/1 var(--mono); white-space: nowrap; text-decoration: none; cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+}
+.btn:active { transform: scale(0.97); }
+.btn--line { background: var(--paper); color: var(--ink); border-color: var(--muted); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+}
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; gap: var(--s4); padding-block: var(--s3); }
+.mark { display: inline-block; padding-block: var(--s2); font: 800 1.3125rem/1 var(--display); font-stretch: 75%; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
+.top nav { margin-left: auto; }
+.top ul { display: flex; align-items: center; gap: var(--s4); list-style: none; margin: 0; padding: 0; }
+.top nav a:not(.btn) { color: var(--ink); text-decoration: none; white-space: nowrap; display: inline-block; padding-block: var(--s2); }
+.top nav a:not(.btn):hover { text-decoration: underline; }
+
+/* ---------- the sheet: the one material ---------- */
+.sheet {
+  position: relative;
+  padding-inline: var(--feed);
+  background: var(--paper);
+  border-block: 1px dashed var(--muted);
+}
+.sheet::before, .sheet::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: var(--feed);
+  background: radial-gradient(circle at center, var(--bar) 0 4.5px, var(--muted) 5px 6px, transparent 6.5px) center top / var(--feed) 24px repeat-y;
+}
+.sheet::before { left: 0; border-right: 1px dashed var(--muted); }
+.sheet::after { right: 0; border-left: 1px dashed var(--muted); }
+.sheet--left { padding-right: 0; }
+.sheet.rows { padding-block: 0; }
+.sheet--left::after { display: none; }
+
+.rows { list-style: none; margin: 0; }
+.rows:not(.sheet) { padding: 0; }
+.rows > li:nth-child(odd) { background: var(--bar); }
+
+/* a printout row: file:line gutter, then tokens that wrap only between fields */
+.row {
+  position: relative;
+  display: grid; grid-template-columns: 8.75rem minmax(0, 1fr); gap: var(--s3);
+  padding: var(--s2) var(--s3) var(--s2) var(--s4);
+  font: 400 var(--t-code)/1.6 var(--mono);
+  color: var(--muted);
+  transition: color 160ms ease;
+}
+.row::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+  background: var(--form); opacity: 0; transition: opacity 160ms ease;
+}
+.row-src { white-space: nowrap; }
+.row-text { min-width: 0; font: inherit; }
+.tk { white-space: nowrap; }
+.lv-error { color: var(--ribbon); }
+.row.is-match { color: var(--ink); }
+.row.is-match::before { opacity: 1; }
+.row.is-match .row-src { color: var(--form); font-weight: 600; }
+.row.is-match .lv-error { font-weight: 600; }
+.hit { text-decoration: underline 2px var(--form); text-underline-offset: 5px; }
+
+/* ---------- hero ---------- */
+.hero { padding-block: var(--s5) var(--s5); }
+.hero-text {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s5) var(--s6);
+  grid-template-areas: "h lead" "cmds facts";
+  align-items: start; padding-bottom: var(--s5);
+}
+.hero-text h1 { grid-area: h; }
+.hero-text .lead { grid-area: lead; }
+.hero-text .cmds { grid-area: cmds; }
+.hero-text .facts { grid-area: facts; align-self: end; padding-bottom: var(--s3); }
+.phrase { display: inline-block; }
+h1 { font: 800 var(--t-h1)/1.05 var(--display); font-stretch: 75%; letter-spacing: -0.02em; }
+.lead { font-size: var(--t-lead); line-height: 1.5; max-width: 34ch; }
+.lead code { font-size: 0.9em; white-space: nowrap; }
+.facts { font: 400 var(--t-code)/1.6 var(--mono); color: var(--muted); }
+.facts .tk { color: var(--ink); }
+
+/* install commands, built from the same row */
+.cmds .cmd {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3);
+  padding: var(--s2) var(--s2) var(--s2) var(--s4);
+  font: 600 var(--t-body)/1.5 var(--mono);
+}
+.cmd code { font: inherit; white-space: pre-wrap; }
+.ps { color: var(--form); user-select: none; -webkit-user-select: none; }
+
+/* the filter line is the command line */
+.filter { padding: var(--s3) var(--s3) var(--s3) var(--s4); border-bottom: 1px dashed var(--muted); }
+.filter label { display: block; font-weight: 600; margin-bottom: var(--s2); }
+.cmdline {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s2);
+  font: 400 var(--t-body)/1.5 var(--mono);
+}
+.cmdline .fixed { white-space: nowrap; }
+.cmdline textarea {
+  flex: 1 1 20ch; width: 20ch; min-width: 0; min-height: 44px;
+  field-sizing: content; resize: none; overflow: hidden;
+  padding: var(--s2) var(--s3);
+  font: 600 1rem/1.4 var(--mono); color: var(--ink);
+  background: var(--paper); border: 1px solid var(--muted); border-radius: var(--radius);
+}
+.cmdline textarea:focus { border-color: var(--form); box-shadow: inset 0 0 0 1px var(--form); outline: none; }
+.cmdline textarea:focus-visible { outline: 3px solid var(--form); outline-offset: 2px; }
+.cmdline textarea[aria-invalid="true"] { border-color: var(--ribbon); box-shadow: inset 0 0 0 1px var(--ribbon); }
+.filter-msg { margin-top: var(--s2); color: var(--muted); }
+.filter-msg.is-error { color: var(--ribbon); font-weight: 600; }
+.filter-msg code { color: inherit; }
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-top: var(--s3); }
+.presets > span { margin-right: var(--s1); }
+.presets .btn { font-weight: 400; min-height: 36px; padding: var(--s1) var(--s2); white-space: normal; text-align: left; line-height: 1.3; }
+.presets .btn[aria-pressed="true"] { border-color: var(--form); box-shadow: inset 0 0 0 1px var(--form); font-weight: 600; }
+.sheet-foot { padding: var(--s3) var(--s3) var(--s3) var(--s4); border-top: 1px dashed var(--muted); font-weight: 600; }
+.sheet-foot .why { display: block; font-weight: 400; color: var(--muted); }
+
+/* ---------- section rhythm ---------- */
+.sec { padding-block: var(--s8) 0; }
+h2 { font: 700 var(--t-h2)/1.15 var(--display); font-stretch: 87.5%; letter-spacing: -0.01em; }
+.side { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s6); }
+.side > div:first-child { align-self: start; display: grid; gap: var(--s3); position: sticky; top: var(--s5); }
+.side p { max-width: 38ch; }
+
+/* syntax rows */
+.syn {
+  display: grid; grid-template-columns: minmax(0, 19rem) minmax(0, 1fr) auto; gap: var(--s3);
+  align-items: center; padding: var(--s3) var(--s3) var(--s3) var(--s4);
+}
+.syn code { font: 600 var(--t-code)/1.6 var(--mono); }
+.syn code .tk { white-space: nowrap; }
+.syn .btn { min-height: 36px; }
+
+/* formats two-up */
+.formats-head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s6); align-items: end; margin-bottom: var(--s5); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); }
+.two figure { margin: 0; display: grid; gap: var(--s3); align-content: start; }
+.two .row { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+.two figcaption { max-width: 44ch; }
+.two figcaption strong { font-family: var(--mono); font-weight: 600; }
+
+/* install: the job, as one wide sheet */
+.install .banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s2) var(--s5);
+  padding: var(--s5) var(--s3) var(--s4) var(--s4); border-bottom: 1px dashed var(--muted);
+}
+.install h2 { font-size: var(--t-h1); font-stretch: 75%; font-weight: 800; line-height: 1.05; }
+.install .cmds .cmd { font-size: var(--t-lead); padding-block: var(--s3); }
+.install .step { padding: var(--s3) var(--s3) var(--s2) var(--s4); font-weight: 600; }
+
+footer { padding-block: var(--s7) var(--s6); }
+footer p { color: var(--muted); }
+
+/* ---------- widths ---------- */
+@media (max-width: 960px) {
+  .hero-text, .side, .formats-head { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .hero-text { grid-template-areas: "h" "lead" "cmds" "facts"; }
+  :root { --t-h1: clamp(2.125rem, 7vw, 4rem); }
+  .hero-text .facts { align-self: start; padding-bottom: 0; }
+  .side > div:first-child { position: static; }
+  .hero-text { padding-bottom: var(--s5); }
+  .syn { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) auto; }
+}
+@media (max-width: 720px) {
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .syn { grid-template-columns: minmax(0, 1fr) auto; }
+  .syn { row-gap: var(--s1); }
+  .syn p { grid-column: 1 / -1; grid-row: 2; }
+  .top ul li.opt { display: none; }
+}
+@media (max-width: 640px) {
+  :root { --feed: 16px; }
+  .sheet::before, .sheet::after { background-size: var(--feed) 20px; background-image: radial-gradient(circle at center, var(--bar) 0 3px, var(--muted) 3.5px 4.5px, transparent 5px); }
+  .sheet, .sheet.rows { padding-right: 0; }
+  .sheet::after { display: none; }
+  .row { grid-template-columns: minmax(0, 1fr); gap: 0; padding-left: var(--s3); padding-right: var(--s2); }
+  .cmds .cmd, .filter, .sheet-foot, .syn, .install .banner, .install .step { padding-left: var(--s3); padding-right: var(--s2); }
+  .hero { padding-block: var(--s4) var(--s4); }
+  .hero-text { gap: var(--s3); padding-bottom: var(--s4); }
+  .lead { font-size: var(--t-body); }
+  .sec { padding-block: var(--s7) 0; }
+  .install .cmds .cmd { font-size: var(--t-body); }
+}
+@media (max-width: 400px) {
+  .top { gap: var(--s3); }
+  .top ul { gap: var(--s3); }
+}
+@media (min-width: 1600px) {
+  :root { --wrap: 1440px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .row, .row::before { transition: none; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap top">
+  <a class="mark" href="#main" aria-label="grepline home">grepline</a>
+  <nav aria-label="Main">
+    <ul>
+      <li class="opt"><a href="#syntax">Filter syntax</a></li>
+      <li class="opt"><a href="#formats">Formats</a></li>
+      <li><a href="https://github.com/grepline/grepline">GitHub</a></li>
+      <li><a class="btn" href="#install">Install</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="wrap hero" aria-labelledby="hero-h">
+    <div class="hero-text">
+      <h1 id="hero-h"><span class="phrase">Search the fields,</span> <span class="phrase">not the text.</span></h1>
+        <p class="lead">grep finds <code>error</code>. It can't find errors slower than 500&nbsp;ms. grepline reads JSON and logfmt lines from every file you name and keeps the ones that match <code>level=error and latency_ms&gt;500</code>.</p>
+        <ul class="sheet sheet--left rows cmds" aria-label="Install commands">
+          <li class="cmd"><code><span class="ps" aria-hidden="true">$ </span>brew install grepline</code><button class="btn copy" type="button" data-copy="brew install grepline">Copy<span class="sr-only"> brew install grepline</span></button></li>
+          <li class="cmd"><code><span class="ps" aria-hidden="true">$ </span>cargo install grepline</code><button class="btn copy" type="button" data-copy="cargo install grepline">Copy<span class="sr-only"> cargo install grepline</span></button></li>
+        </ul>
+        <p class="facts"><span class="tk">written_in=rust</span> <span class="tk">license=MIT</span> <span class="tk">binaries=1</span></p>
+    </div>
+
+    <div class="sheet" id="sift">
+      <form class="filter" id="filter" role="search" aria-label="Try a filter on these log lines">
+        <label for="q">Filter twelve lines from four log files</label>
+        <div class="cmdline">
+          <span class="fixed" aria-hidden="true"><span class="ps">$ </span>grepline '</span>
+          <textarea id="q" name="q" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="q-msg">level=error and latency_ms&gt;500</textarea>
+          <span class="fixed" aria-hidden="true">' logs/*.log</span>
+        </div>
+        <p class="filter-msg" id="q-msg">Compare any field with <code>= != &gt; &lt; &gt;= &lt;=</code> and join conditions with <code>and</code> / <code>or</code>.</p>
+        <div class="presets">
+          <span id="try-l">Try</span>
+          <button class="btn btn--line" type="button" data-try="level=error and latency_ms>500" aria-pressed="true">level=error and latency_ms&gt;500</button>
+          <button class="btn btn--line" type="button" data-try="status>=500" aria-pressed="false">status&gt;=500</button>
+          <button class="btn btn--line" type="button" data-try="job=invoice-sync" aria-pressed="false">job=invoice-sync</button>
+          <button class="btn btn--line" type="button" data-try="level=warn or level=error" aria-pressed="false">level=warn or level=error</button>
+        </div>
+      </form>
+      <ol class="rows" id="rows" aria-label="Log lines, matches marked">
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:04.118&quot;,&quot;level&quot;:&quot;info&quot;,&quot;route&quot;:&quot;/v1/orders&quot;,&quot;status&quot;:200,&quot;latency_ms&quot;:42}"><span class="row-src"><span class="sr-only row-flag"></span>api-1.log:1</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:04.118&quot;,</span> <span class="tk lv-info" data-k="level">&quot;level&quot;:&quot;info&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/orders&quot;,</span> <span class="tk" data-k="status">&quot;status&quot;:200,</span> <span class="tk" data-k="latency_ms">&quot;latency_ms&quot;:42}</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:04.402&quot;,&quot;level&quot;:&quot;warn&quot;,&quot;job&quot;:&quot;invoice-sync&quot;,&quot;retries&quot;:2,&quot;latency_ms&quot;:880}"><span class="row-src"><span class="sr-only row-flag"></span>worker.log:1</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:04.402</span> <span class="tk lv-warn" data-k="level">level=warn</span> <span class="tk" data-k="job">job=invoice-sync</span> <span class="tk" data-k="retries">retries=2</span> <span class="tk" data-k="latency_ms">latency_ms=880</span></code></li>
+        <li class="row is-match" data-rec="{&quot;ts&quot;:&quot;03:12:04.731&quot;,&quot;level&quot;:&quot;error&quot;,&quot;route&quot;:&quot;/v1/checkout&quot;,&quot;status&quot;:502,&quot;latency_ms&quot;:1240}"><span class="row-src"><span class="sr-only row-flag">Match: </span>api-2.log:1</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:04.731&quot;,</span> <span class="tk lv-error hit" data-k="level">&quot;level&quot;:&quot;error&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/checkout&quot;,</span> <span class="tk" data-k="status">&quot;status&quot;:502,</span> <span class="tk hit" data-k="latency_ms">&quot;latency_ms&quot;:1240}</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:05.006&quot;,&quot;level&quot;:&quot;info&quot;,&quot;path&quot;:&quot;/healthz&quot;,&quot;status&quot;:200,&quot;latency_ms&quot;:3}"><span class="row-src"><span class="sr-only row-flag"></span>edge.log:1</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:05.006</span> <span class="tk lv-info" data-k="level">level=info</span> <span class="tk" data-k="path">path=/healthz</span> <span class="tk" data-k="status">status=200</span> <span class="tk" data-k="latency_ms">latency_ms=3</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:05.390&quot;,&quot;level&quot;:&quot;error&quot;,&quot;route&quot;:&quot;/v1/orders&quot;,&quot;status&quot;:500,&quot;latency_ms&quot;:96}"><span class="row-src"><span class="sr-only row-flag"></span>api-1.log:2</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:05.390&quot;,</span> <span class="tk lv-error" data-k="level">&quot;level&quot;:&quot;error&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/orders&quot;,</span> <span class="tk" data-k="status">&quot;status&quot;:500,</span> <span class="tk" data-k="latency_ms">&quot;latency_ms&quot;:96}</span></code></li>
+        <li class="row is-match" data-rec="{&quot;ts&quot;:&quot;03:12:05.877&quot;,&quot;level&quot;:&quot;error&quot;,&quot;job&quot;:&quot;invoice-sync&quot;,&quot;msg&quot;:&quot;smtp timeout&quot;,&quot;latency_ms&quot;:5003}"><span class="row-src"><span class="sr-only row-flag">Match: </span>worker.log:2</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:05.877</span> <span class="tk lv-error hit" data-k="level">level=error</span> <span class="tk" data-k="job">job=invoice-sync</span> <span class="tk" data-k="msg">msg=&quot;smtp timeout&quot;</span> <span class="tk hit" data-k="latency_ms">latency_ms=5003</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:06.214&quot;,&quot;level&quot;:&quot;info&quot;,&quot;route&quot;:&quot;/v1/checkout&quot;,&quot;status&quot;:200,&quot;latency_ms&quot;:310}"><span class="row-src"><span class="sr-only row-flag"></span>api-2.log:2</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:06.214&quot;,</span> <span class="tk lv-info" data-k="level">&quot;level&quot;:&quot;info&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/checkout&quot;,</span> <span class="tk" data-k="status">&quot;status&quot;:200,</span> <span class="tk" data-k="latency_ms">&quot;latency_ms&quot;:310}</span></code></li>
+        <li class="row is-match" data-rec="{&quot;ts&quot;:&quot;03:12:06.552&quot;,&quot;level&quot;:&quot;error&quot;,&quot;path&quot;:&quot;/v1/checkout&quot;,&quot;status&quot;:504,&quot;upstream&quot;:&quot;api-2&quot;,&quot;latency_ms&quot;:2001}"><span class="row-src"><span class="sr-only row-flag">Match: </span>edge.log:2</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:06.552</span> <span class="tk lv-error hit" data-k="level">level=error</span> <span class="tk" data-k="path">path=/v1/checkout</span> <span class="tk" data-k="status">status=504</span> <span class="tk" data-k="upstream">upstream=api-2</span> <span class="tk hit" data-k="latency_ms">latency_ms=2001</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:07.040&quot;,&quot;level&quot;:&quot;debug&quot;,&quot;route&quot;:&quot;/v1/orders&quot;,&quot;cache&quot;:&quot;miss&quot;,&quot;latency_ms&quot;:12}"><span class="row-src"><span class="sr-only row-flag"></span>api-1.log:3</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:07.040&quot;,</span> <span class="tk lv-debug" data-k="level">&quot;level&quot;:&quot;debug&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/orders&quot;,</span> <span class="tk" data-k="cache">&quot;cache&quot;:&quot;miss&quot;,</span> <span class="tk" data-k="latency_ms">&quot;latency_ms&quot;:12}</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:07.663&quot;,&quot;level&quot;:&quot;info&quot;,&quot;job&quot;:&quot;report-daily&quot;,&quot;latency_ms&quot;:640}"><span class="row-src"><span class="sr-only row-flag"></span>worker.log:3</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:07.663</span> <span class="tk lv-info" data-k="level">level=info</span> <span class="tk" data-k="job">job=report-daily</span> <span class="tk" data-k="latency_ms">latency_ms=640</span></code></li>
+        <li class="row is-match" data-rec="{&quot;ts&quot;:&quot;03:12:08.129&quot;,&quot;level&quot;:&quot;error&quot;,&quot;route&quot;:&quot;/v1/refunds&quot;,&quot;status&quot;:500,&quot;latency_ms&quot;:731}"><span class="row-src"><span class="sr-only row-flag">Match: </span>api-2.log:3</span><code class="row-text"><span class="tk" data-k="ts">{&quot;ts&quot;:&quot;03:12:08.129&quot;,</span> <span class="tk lv-error hit" data-k="level">&quot;level&quot;:&quot;error&quot;,</span> <span class="tk" data-k="route">&quot;route&quot;:&quot;/v1/refunds&quot;,</span> <span class="tk" data-k="status">&quot;status&quot;:500,</span> <span class="tk hit" data-k="latency_ms">&quot;latency_ms&quot;:731}</span></code></li>
+        <li class="row" data-rec="{&quot;ts&quot;:&quot;03:12:08.415&quot;,&quot;level&quot;:&quot;warn&quot;,&quot;path&quot;:&quot;/v1/orders&quot;,&quot;status&quot;:429,&quot;latency_ms&quot;:8}"><span class="row-src"><span class="sr-only row-flag"></span>edge.log:3</span><code class="row-text"><span class="tk" data-k="ts">ts=03:12:08.415</span> <span class="tk lv-warn" data-k="level">level=warn</span> <span class="tk" data-k="path">path=/v1/orders</span> <span class="tk" data-k="status">status=429</span> <span class="tk" data-k="latency_ms">latency_ms=8</span></code></li>
+      </ol>
+      <p class="sheet-foot" id="result" role="status">4 of 12 lines match, from 3 files.</p>
+    </div>
+  </section>
+
+  <section class="wrap sec" id="syntax" aria-labelledby="syntax-h">
+    <div class="side">
+      <div>
+        <h2 id="syntax-h">Filters read like a WHERE clause.</h2>
+        <p>If you can write the bottom half of a SQL query, you can write a grepline filter. Numbers compare as numbers, so <code>latency_ms&gt;500</code> means milliseconds, not text that sorts after "500".</p>
+      </div>
+      <ul class="sheet rows" aria-label="Filter syntax">
+        <li class="syn"><code><span class="tk">level=error</span></code><p>level is exactly <code>error</code>.</p><button class="btn btn--line" type="button" data-try="level=error">Try<span class="sr-only"> level=error</span></button></li>
+        <li class="syn"><code><span class="tk">status!=200</span></code><p>status is anything but 200.</p><button class="btn btn--line" type="button" data-try="status!=200">Try<span class="sr-only"> status!=200</span></button></li>
+        <li class="syn"><code><span class="tk">latency_ms&gt;500</span></code><p>latency_ms is a number above 500. Also <code>&gt;=</code>, <code>&lt;</code> and <code>&lt;=</code>.</p><button class="btn btn--line" type="button" data-try="latency_ms>500">Try<span class="sr-only"> latency_ms&gt;500</span></button></li>
+        <li class="syn"><code><span class="tk">level=error</span> <span class="tk">and latency_ms&gt;500</span></code><p>both are true.</p><button class="btn btn--line" type="button" data-try="level=error and latency_ms>500">Try<span class="sr-only"> level=error and latency_ms&gt;500</span></button></li>
+        <li class="syn"><code><span class="tk">level=warn</span> <span class="tk">or level=error</span></code><p>either is true.</p><button class="btn btn--line" type="button" data-try="level=warn or level=error">Try<span class="sr-only"> level=warn or level=error</span></button></li>
+        <li class="syn"><code><span class="tk">(level=warn</span> <span class="tk">or level=error)</span> <span class="tk">and status&gt;=500</span></code><p>parentheses group conditions, as in SQL.</p><button class="btn btn--line" type="button" data-try="(level=warn or level=error) and status>=500">Try<span class="sr-only"> (level=warn or level=error) and status&gt;=500</span></button></li>
+        <li class="syn"><code><span class="tk">msg="smtp timeout"</span></code><p>quote a value that contains spaces.</p><button class="btn btn--line" type="button" data-try='msg="smtp timeout"'>Try<span class="sr-only"> msg="smtp timeout"</span></button></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap sec" id="formats" aria-labelledby="formats-h">
+    <div class="formats-head">
+      <h2 id="formats-h">JSON lines and logfmt, one filter for both.</h2>
+      <p>Your API logs JSON, your workers log <code>key=value</code>. Name both kinds of file in the same run; the field names are what the filter sees.</p>
+    </div>
+    <div class="two">
+      <figure>
+        <ol class="sheet sheet--left rows" aria-label="api-2.log, JSON lines">
+          <li class="row is-match"><span class="row-src">api-2.log:1</span><code class="row-text"><span class="tk">{"ts":"03:12:04.731",</span> <span class="tk lv-error hit">"level":"error",</span> <span class="tk">"route":"/v1/checkout",</span> <span class="tk">"status":502,</span> <span class="tk hit">"latency_ms":1240}</span></code></li>
+        </ol>
+        <figcaption><strong>JSON</strong>: one object per line, the way most HTTP services and their loggers write it.</figcaption>
+      </figure>
+      <figure>
+        <ol class="sheet sheet--left rows" aria-label="worker.log, logfmt lines">
+          <li class="row is-match"><span class="row-src">worker.log:2</span><code class="row-text"><span class="tk">ts=03:12:05.877</span> <span class="tk lv-error hit">level=error</span> <span class="tk">job=invoice-sync</span> <span class="tk">msg="smtp timeout"</span> <span class="tk hit">latency_ms=5003</span></code></li>
+        </ol>
+        <figcaption><strong>logfmt</strong>: <code>key=value</code> pairs, values in quotes when they hold spaces.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="wrap sec install" id="install" aria-labelledby="install-h">
+    <div class="sheet">
+      <div class="banner">
+        <h2 id="install-h">Install grepline.</h2>
+        <p class="facts"><span class="tk">written_in=rust</span> <span class="tk">license=MIT</span> <span class="tk">binaries=1</span></p>
+      </div>
+      <ul class="rows cmds" aria-label="Install commands">
+        <li class="cmd"><code><span class="ps" aria-hidden="true">$ </span>brew install grepline</code><button class="btn copy" type="button" data-copy="brew install grepline">Copy<span class="sr-only"> brew install grepline</span></button></li>
+        <li class="cmd"><code><span class="ps" aria-hidden="true">$ </span>cargo install grepline</code><button class="btn copy" type="button" data-copy="cargo install grepline">Copy<span class="sr-only"> cargo install grepline</span></button></li>
+      </ul>
+      <p class="step">Then point it at last night's logs:</p>
+      <ul class="rows cmds" aria-label="First run">
+        <li class="cmd"><code><span class="ps" aria-hidden="true">$ </span>grepline 'level=error and latency_ms&gt;500' logs/*.log</code><button class="btn btn--line copy" type="button" data-copy="grepline 'level=error and latency_ms>500' logs/*.log">Copy<span class="sr-only"> grepline command</span></button></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>grepline is MIT licensed. Source, issues and releases are on <a href="https://github.com/grepline/grepline">GitHub</a>.</p>
+</footer>
+<p class="sr-only" id="announce" aria-live="polite"></p>
+
+<script>
+(() => {
+  const input = document.getElementById('q');
+  const msg = document.getElementById('q-msg');
+  const helpHTML = msg.innerHTML;
+  const result = document.getElementById('result');
+  const rows = [...document.querySelectorAll('#rows .row')].map((el) => ({
+    el, rec: JSON.parse(el.dataset.rec), file: el.querySelector('.row-src').lastChild.textContent.split(':')[0],
+  }));
+  const fieldNames = [...new Set(rows.flatMap((r) => Object.keys(r.rec)))];
+
+  class FilterError extends Error {}
+  const example = (field, op) => {
+    const seen = rows.map((r) => r.rec[field]).find((v) => v !== undefined && (op === '=' || op === '!=' || typeof v === 'number'));
+    if (seen === undefined) return op === '=' || op === '!=' ? 'error' : '500';
+    return /\s/.test(String(seen)) ? JSON.stringify(seen) : seen;
+  };
+
+  function lex(src) {
+    const out = [];
+    let i = 0;
+    while (i < src.length) {
+      const c = src[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === '(' || c === ')') { out.push({ t: c, v: c, at: i }); i++; continue; }
+      const op = src.slice(i).match(/^(>=|<=|!=|=|>|<)/);
+      if (op) { out.push({ t: 'op', v: op[1], at: i }); i += op[1].length; continue; }
+      if (c === '!') throw new FilterError('"!" only works as "!=", for example status!=200.');
+      if (c === '"') {
+        const m = src.slice(i).match(/^"((?:[^"\\]|\\.)*)"/);
+        if (!m) throw new FilterError('A quote is never closed. Add " after the value, for example msg="smtp timeout".');
+        out.push({ t: 'word', v: m[1].replace(/\\(.)/g, '$1'), q: true, at: i }); i += m[0].length; continue;
+      }
+      const w = src.slice(i).match(/^[^\s()=!<>"]+/)[0];
+      const lw = w.toLowerCase();
+      out.push({ t: lw === 'and' || lw === 'or' ? lw : 'word', v: w, at: i });
+      i += w.length;
+    }
+    return out;
+  }
+
+  function parse(src) {
+    const toks = lex(src);
+    let p = 0;
+    const peek = () => toks[p];
+    function orExpr() {
+      let left = andExpr();
+      while (peek() && peek().t === 'or') { p++; left = { k: 'or', a: left, b: andExpr('or') }; }
+      return left;
+    }
+    function andExpr(after) {
+      let left = atom(after);
+      while (peek() && peek().t === 'and') { p++; left = { k: 'and', a: left, b: atom('and') }; }
+      return left;
+    }
+    function atom(after) {
+      const t = peek();
+      if (!t) throw new FilterError(after ? `Add a condition after "${after}", for example level=error.` : 'Empty filter.');
+      if (t.t === '(') {
+        p++;
+        const e = orExpr();
+        if (!peek() || peek().t !== ')') throw new FilterError('A "(" is never closed. Add ")" at the end of the group.');
+        p++;
+        return e;
+      }
+      if (t.t === 'op') throw new FilterError(`Put a field name before "${t.v}", for example latency_ms${t.v}500.`);
+      if (t.t === ')') throw new FilterError('There is a ")" with no "(" before it. Remove it or open the group first.');
+      if (t.t === 'and' || t.t === 'or') throw new FilterError(`"${t.v}" needs a condition on each side, for example level=warn ${t.v} level=error.`);
+      p++;
+      const op = peek();
+      if (!op || op.t !== 'op') throw new FilterError(`Compare "${t.v}" with something, for example ${t.v}=error or ${t.v}>500.`);
+      p++;
+      const val = peek();
+      if (!val || val.t !== 'word') throw new FilterError(`Add a value after "${t.v}${op.v}", for example ${t.v}${op.v}${example(t.v, op.v)}.`);
+      p++;
+      return { k: 'cmp', f: t.v, op: op.v, v: val.v };
+    }
+    const tree = orExpr();
+    if (p < toks.length) {
+      const t = toks[p];
+      throw new FilterError(t.t === ')' ? 'There is a ")" with no "(" before it. Remove it or open the group first.' : `Join "${t.v}" to the condition before it with "and" or "or".`);
+    }
+    return tree;
+  }
+
+  const num = (x) => (typeof x === 'number' ? x : (/^-?\d+(\.\d+)?$/.test(String(x)) ? Number(x) : NaN));
+  function cmp(rec, c) {
+    if (!(c.f in rec)) return false;
+    const a = rec[c.f]; const na = num(a); const nb = num(c.v);
+    const bothNum = !Number.isNaN(na) && !Number.isNaN(nb);
+    switch (c.op) {
+      case '=': return bothNum ? na === nb : String(a) === c.v;
+      case '!=': return bothNum ? na !== nb : String(a) !== c.v;
+      case '>': return bothNum && na > nb;
+      case '<': return bothNum && na < nb;
+      case '>=': return bothNum && na >= nb;
+      case '<=': return bothNum && na <= nb;
+    }
+    return false;
+  }
+  function evalTree(node, rec, hits) {
+    if (node.k === 'cmp') { const ok = cmp(rec, node); if (ok) hits.add(node.f); return ok; }
+    if (node.k === 'and') return evalTree(node.a, rec, hits) && evalTree(node.b, rec, hits);
+    const h1 = new Set(); const h2 = new Set();
+    const a = evalTree(node.a, rec, h1); const b = evalTree(node.b, rec, h2);
+    if (a) h1.forEach((f) => hits.add(f));
+    if (b) h2.forEach((f) => hits.add(f));
+    return a || b;
+  }
+
+  function paint(match, hitsFor) {
+    let n = 0; const files = new Set();
+    rows.forEach((r) => {
+      const m = match(r);
+      const hits = m ? hitsFor(r) : new Set();
+      r.el.classList.toggle('is-match', m);
+      r.el.querySelector('.row-flag').textContent = m ? 'Match: ' : '';
+      r.el.querySelectorAll('.tk').forEach((tk) => tk.classList.toggle('hit', hits.has(tk.dataset.k)));
+      if (m) { n++; files.add(r.file); }
+    });
+    return { n, files: files.size };
+  }
+
+  function apply() {
+    const src = input.value.trim();
+    document.querySelectorAll('.presets [data-try]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.try === src)));
+    if (!src) {
+      input.removeAttribute('aria-invalid');
+      msg.classList.remove('is-error'); msg.innerHTML = helpHTML;
+      paint(() => false, () => new Set());
+      result.textContent = 'No filter yet. Type one above, or pick one under Try.';
+      return;
+    }
+    let tree;
+    try { tree = parse(src); } catch (e) {
+      if (!(e instanceof FilterError)) throw e;
+      input.setAttribute('aria-invalid', 'true');
+      msg.classList.add('is-error');
+      msg.textContent = `Can't read this filter. ${e.message}`;
+      result.textContent = 'Lines unchanged until the filter reads cleanly.';
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    msg.classList.remove('is-error'); msg.innerHTML = helpHTML;
+    const cache = new Map();
+    const run = (r) => { if (!cache.has(r)) { const h = new Set(); cache.set(r, { ok: evalTree(tree, r.rec, h), h }); } return cache.get(r); };
+    const { n, files } = paint((r) => run(r).ok, (r) => run(r).h);
+    if (n === 0) {
+      result.innerHTML = `No lines match <code></code>.<span class="why">Fields in these lines: ${fieldNames.join(', ')}.</span>`;
+      result.querySelector('code').textContent = src;
+    } else {
+      result.textContent = `${n} of ${rows.length} lines match, from ${files} file${files === 1 ? '' : 's'}.`;
+    }
+  }
+
+  document.getElementById('filter').addEventListener('submit', (e) => { e.preventDefault(); apply(); });
+  const autosize = CSS.supports('field-sizing', 'content') ? () => {} : () => { input.style.height = 'auto'; input.style.height = `${input.scrollHeight}px`; };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } });
+  input.addEventListener('input', () => {
+    if (/\n/.test(input.value)) input.value = input.value.replace(/\s*\n\s*/g, ' ');
+    autosize(); apply();
+  });
+  autosize();
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.querySelectorAll('[data-try]').forEach((b) => b.addEventListener('click', () => {
+    input.value = b.dataset.try;
+    autosize(); apply();
+    if (!b.closest('.presets')) {
+      document.getElementById('sift').scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', block: 'start' });
+      input.focus({ preventScroll: true });
+    }
+  }));
+
+  const announce = document.getElementById('announce');
+  document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {
+    const text = b.dataset.copy;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch {}
+      ta.remove();
+    }
+    const label = b.firstChild;
+    label.textContent = ok ? 'Copied' : 'Select and copy';
+    announce.textContent = ok ? `Copied: ${text}` : `Couldn't reach the clipboard. Select the command and copy it: ${text}`;
+    clearTimeout(b._t);
+    b._t = setTimeout(() => { label.textContent = 'Copy'; }, 1800);
+  }));
+})();
+</script>
+</body>
+</html>
