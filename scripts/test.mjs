@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Regression test for the checks: expected IDs must appear on the bad fixture and none on the good one.
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -131,6 +132,23 @@ else {
   const lost = run('render-check.mjs', path.join(S2, 'redesign-lost.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
   check('render --compare flags a removed field', lost.out.findings.some((f) => f.id === 'F11' && /company/.test(f.message)) && lost.code === 2);
 }
+
+const build = spawnSync(process.execPath, [path.join(ROOT, 'scripts/build.mjs')], { encoding: 'utf8' });
+check('build.mjs exits 0', build.status === 0, build.stderr || build.stdout);
+for (const rel of [
+  'dist/claude/design-nexus/design-trends/latest.md',
+  'dist/claude/design-nexus/design-trends/trends/T01-anti-ai-slop.md',
+  'dist/codex/.agents/skills/design-nexus/design-trends/latest.md',
+  'dist/cursor/.cursor/design-nexus/design-trends/latest.md',
+]) {
+  check(`build copies ${rel}`, fs.existsSync(path.join(ROOT, rel)));
+}
+const mdc = fs.readFileSync(path.join(ROOT, 'dist/cursor/.cursor/rules/design-nexus.mdc'), 'utf8');
+check('cursor rule points at the installed trends db', mdc.includes('.cursor/design-nexus/design-trends/'));
+check('cursor rule still prefers the repo source tree', mdc.includes('docs/design-trends/latest.md'));
+check('cursor rule does not inline a trend item', !mdc.includes('アンチ AI スロップ'));
+const agents = fs.readFileSync(path.join(ROOT, 'dist/codex/AGENTS.md'), 'utf8');
+check('codex AGENTS.md does not load the trend db', !agents.includes('design-trends'));
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

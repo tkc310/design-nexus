@@ -4,7 +4,7 @@
 
 [comparison.md](comparison.md) は、2026-10-30 にリポジトリページで見たスターと、README から読んだ仕組みの比較です。スターの取得日が違うので、同じリポジトリでもこの文書の数と一致しません。仕組みの長所・短所・design-nexus への取り込みは comparison.md を見てください。この文書は、X の投稿を検証できた範囲で、話題・日付・反応を記録します。
 
-手法そのもののデータベースは [design-trends.md](design-trends.md) です。必要なときだけ引く参照で、スキルが普段から読むものではありません。
+手法そのもののデータベースは [design-trends/](design-trends/README.md) です。ヒアリングで流行を取り入れたいと分かったときだけスキルが引きます。AGENTS.md と CLAUDE.md からは読み込みません。
 
 ## 調査方法と限界
 
@@ -276,7 +276,7 @@ Lauren Tan（[@poteto](https://x.com/poteto)）の個人スキル集で、Cursor
 - [2026-10-16 JST、@poteto](https://x.com/poteto/status/2110757066709356851)「try pstack!」 L4,913 / V324,320
 - [2026-10-27 JST、@0xChaseTM](https://x.com/0xChaseTM/status/2114845884890435917)「30 selected skills… 24 principle references guide design decisions…」 L265
 
-**注意。** プラグインは Cursor のモデル名やサブエージェントに依存する手順を含みます。視覚の品質チェック（コントラスト、幅、スロップ検出）はありません。UI デザインの話題ではないので、[design-trends.md](design-trends.md) とは分けています。
+**注意。** プラグインは Cursor のモデル名やサブエージェントに依存する手順を含みます。視覚の品質チェック（コントラスト、幅、スロップ検出）はありません。UI デザインの話題ではないので、[design-trends/](design-trends/README.md) とは分けています。
 
 **design-nexus との関係。** 併用して視覚の権威を二つにしないでください（[SKILL.md の優先順位](../skills/design-nexus/SKILL.md)）。読むなら `exhaust-the-design-space` が、build の 3 案と deep のヒーロー単独レビューに抜けがないかの照合材料になります。
 
@@ -425,7 +425,7 @@ frontend-design の公開告知として前回文書が挙げていた 2025-11-1
 - [2026-08-11 03:31 JST、@robj3d3](https://x.com/robj3d3/status/2086883206301925800)「I 100% vibedesign all my websites now. > Paper MCP (it's Figma for agents) > Refero to avoid AI slop feel > … skills for polishing」 L1,750 / RT69 / V204,368 / BM4,093
 - [2026-10-26、@daniildesigns](https://x.com/daniildesigns/status/2114718514581786764)。Figma、Pen、Paper の比較。L41
 
-スター数は、この検証では取っていません。手法としてのメモは [design-trends.md の T03 と T05](design-trends.md) にあります。
+スター数は、この検証では取っていません。手法としてのメモは [T03](design-trends/trends/T03-vibe-design.md) と [T05](design-trends/trends/T05-reference-driven.md) にあります。
 
 **判定。** 検証済み（ワークフローの投稿として）。
 
@@ -491,4 +491,4 @@ Taste、frontend-design、Impeccable、Hallmark、UI UX Pro Max を含む compar
 - [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)
 - [nexu-io/open-design](https://github.com/nexu-io/open-design)
 - 仕組みの比較: [comparison.md](comparison.md)（スターは 2026-10-30 にリポジトリページで見た値）
-- 手法の参照用データベース: [design-trends.md](design-trends.md)
+- 手法の参照用データベース: [design-trends/](design-trends/README.md)
