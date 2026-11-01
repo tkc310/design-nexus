@@ -9,8 +9,8 @@
 //   node eval/run.mjs compare  --base <dir>[,<dir>…] --run <dir> [--primary opus] [--rescore no]   rescore the base(s), then accept/reject;
 //                                                                several base runs of one version are averaged per case
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
-//   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03]   M-008: one PAIR_PROMPT.md per case and base run,
-//                                                                pages shown as A/B in a fixed pseudo-random order
+//   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03] [--swap]   M-008: one PAIR_PROMPT.md per case and base run,
+//                                                                pages shown as A/B in a fixed pseudo-random order; --swap adds the mirrored order
 //   node eval/run.mjs pair-score --run <dir> [--base <dir>]      candidate wins, losses, ties overall and per dimension
 import fs from 'node:fs';
 import path from 'node:path';
@@ -187,11 +187,14 @@ const commands = {
       if (only && !only.some((p) => d.startsWith(p))) continue;
       for (const b of bases) {
         if (!fs.existsSync(path.join(b, d))) continue;
-        const id = `${d}--${path.basename(b)}`;
+        const pid = `${d}--${path.basename(b)}`;
         // Fixed pseudo-random side, so re-running pair does not reshuffle a pair that was already judged.
-        const h = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-        const candIsA = h % 2 === 0;
-        keys[id] = { A: candIsA ? 'cand' : 'base', base: path.relative(ROOT, b) };
+        const h = [...pid].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+        // --swap also writes the mirrored order (id + "--swap"); pair-score keeps a verdict only when both orders agree.
+        for (const swapped of opt.swap ? [false, true] : [false]) {
+        const id = swapped ? `${pid}--swap` : pid;
+        const candIsA = (h % 2 === 0) !== swapped;
+        keys[id] = { A: candIsA ? 'cand' : 'base', base: path.relative(ROOT, b), pair: pid };
         const [aDir, bDir] = candIsA ? [path.join(cand, d), path.join(b, d)] : [path.join(b, d), path.join(cand, d)];
         const shots = (dir) => (fs.existsSync(path.join(dir, 'shots')) ? fs.readdirSync(path.join(dir, 'shots')).map((f) => `- ${path.join(dir, 'shots', f)}`) : ['(none)']);
         const caseFile = path.join(CASES, `${d}.md`);
@@ -200,6 +203,7 @@ const commands = {
         fs.mkdirSync(path.join(pairsDir, id), { recursive: true });
         fs.writeFileSync(path.join(pairsDir, id, 'PAIR_PROMPT.md'), prompt);
         n++;
+        }
       }
     }
     writeJSON(keyFile, keys);
@@ -215,6 +219,8 @@ const commands = {
     const byJudge = {}, byDim = Object.fromEntries(dims.map((k) => [k, tally()])), byCase = {};
     const side = (v, key) => (v !== 'A' && v !== 'B' ? 'tie' : (v === 'A') === (key.A === 'cand') ? 'win' : 'loss');
     const baseFilter = opt.base ? String(opt.base).split(',').map((b) => path.basename(runDir(b))) : null;
+    // Each judgement in the candidate's view; position = how often the page shown as A was chosen.
+    const seen = {}; const position = { A: 0, B: 0, tie: 0 };
     for (const [id, key] of Object.entries(keys)) {
       if (baseFilter && !baseFilter.includes(path.basename(key.base))) continue;
       const dir = path.join(pairsDir, id);
@@ -222,12 +228,21 @@ const commands = {
       for (const f of fs.readdirSync(dir).filter((x) => /^pair\..+\.json$/.test(x))) {
         const j = JSON.parse(read(path.join(dir, f)));
         const judge = f.replace(/^pair\.|\.json$/g, '');
-        const o = side(j.overall, key);
-        (byJudge[judge] = byJudge[judge] || tally())[o]++;
-        const c = id.split('--')[0];
-        (byCase[c] = byCase[c] || tally())[o]++;
-        for (const k of dims) byDim[k][side(j.dims?.[k], key)]++;
+        position[j.overall === 'A' || j.overall === 'B' ? j.overall : 'tie']++;
+        const k = `${key.pair || id}|${judge}`;
+        (seen[k] = seen[k] || { judge, pair: key.pair || id, v: [] }).v.push({ overall: side(j.overall, key), dims: Object.fromEntries(dims.map((d) => [d, side(j.dims?.[d], key)])) });
       }
+    }
+    // With both orders judged, a verdict that flips with position counts as a tie.
+    const merge = (xs) => (xs.every((x) => x === xs[0]) ? xs[0] : 'tie');
+    let pairsBoth = 0, flips = 0;
+    for (const { judge, pair, v } of Object.values(seen)) {
+      if (v.length > 1) { pairsBoth++; if (merge(v.map((x) => x.overall)) === 'tie' && v.some((x) => x.overall !== 'tie')) flips++; }
+      const o = merge(v.map((x) => x.overall));
+      (byJudge[judge] = byJudge[judge] || tally())[o]++;
+      const c = pair.split('--')[0];
+      (byCase[c] = byCase[c] || tally())[o]++;
+      for (const d of dims) byDim[d][merge(v.map((x) => x.dims[d]))]++;
     }
     const all = Object.values(byJudge).reduce((a, t) => ({ win: a.win + t.win, loss: a.loss + t.loss, tie: a.tie + t.tie }), tally());
     // Two-sided sign test on decided pairs (ties dropped).
@@ -237,12 +252,13 @@ const commands = {
     const p = nDec ? Math.min(1, 2 * tail(Math.min(all.win, all.loss))) : 1;
     const fmt = (t) => `${t.win}–${t.loss}–${t.tie}`;
     const lines = [`# Pairs: ${path.basename(cand)} (candidate) vs base`, '', `Overall (win–loss–tie, candidate's view): **${fmt(all)}**, sign test p = ${p.toFixed(3)}`, '',
+      `Position: page A chosen ${position.A}, page B ${position.B}, tie ${position.tie}.` + (pairsBoth ? ` Judged in both orders: ${pairsBoth}, of which ${flips} flipped with position (counted as tie).` : ''), '',
       '| judge | overall |', '|---|---|', ...Object.entries(byJudge).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
       '| case | overall |', '|---|---|', ...Object.entries(byCase).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
       '| dim | win–loss–tie | net |', '|---|---|---|', ...dims.map((k) => `| ${k} | ${fmt(byDim[k])} | ${byDim[k].win - byDim[k].loss >= 0 ? '+' : ''}${byDim[k].win - byDim[k].loss} |`), ''];
     const tag = baseFilter ? '-' + baseFilter.join('+') : '';
     fs.writeFileSync(path.join(cand, `pairs${tag}.md`), lines.join('\n'));
-    writeJSON(path.join(cand, `pairs${tag}.json`), { overall: all, p, byJudge, byCase, byDim });
+    writeJSON(path.join(cand, `pairs${tag}.json`), { overall: all, p, position, pairsBoth, flips, byJudge, byCase, byDim });
     console.log(lines.join('\n'));
   },
 
