@@ -25,6 +25,9 @@ check('lint is clean on good.html', good.out.findings.length === 0, JSON.stringi
 check('lint exits 0 on good.html', good.code === 0);
 const tickets = run('lint.mjs', path.join(ROOT, 'eval/fixtures/ticket-numbers.html'), '--design', path.join(ROOT, 'eval/fixtures/ticket-numbers.DESIGN.md'));
 check('R08 does not count "#221" ticket numbers in script strings as colors', !tickets.out.findings.some((f) => f.id === 'R08'), JSON.stringify(tickets.out.findings));
+const icons = run('lint.mjs', path.join(ROOT, 'eval/fixtures/icon-button.html'));
+const f10 = icons.out.findings.filter((f) => f.id === 'F10');
+check('F10 flags only the bare icon button, not a labelled one before it', f10.length === 1 && !/Approve all/.test(f10[0].snippet || f10[0].message || ''), JSON.stringify(f10));
 const goodMobile = run('lint.mjs', path.join(ROOT, 'eval/fixtures/good.html'), '--surface', 'mobile');
 check('lint accepts --surface like render-check', goodMobile.code === 0 && goodMobile.out.findings.length === 0);
 

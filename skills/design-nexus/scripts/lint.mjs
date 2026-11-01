@@ -160,7 +160,8 @@ for (const file of files) {
     });
 
     // F10 icon-only buttons/links without accessible name
-    each(/<(button|a)\b([^>]*)>\s*(<svg[\s\S]*?<\/svg>|<[A-Z]\w*(?:Icon)?\b[^>]*\/>|<i\b[^>]*><\/i>|<span[^>]*class=["'][^"']*icon[^"']*["'][^>]*><\/span>)\s*<\/\1>/g, (m) => {
+    // The svg alternative may not run past its own </svg>, or a labelled icon button would match up to a later icon-only one.
+    each(/<(button|a)\b([^>]*)>\s*(<svg(?:(?!<\/svg>)[\s\S])*<\/svg>|<[A-Z]\w*(?:Icon)?\b[^>]*\/>|<i\b[^>]*><\/i>|<span[^>]*class=["'][^"']*icon[^"']*["'][^>]*><\/span>)\s*<\/\1>/g, (m) => {
       const attrs = m[2];
       if (/\baria-label(ledby)?\s*=|\btitle\s*=/.test(attrs)) return;
       if (/<title>/.test(m[3])) return;
