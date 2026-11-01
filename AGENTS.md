@@ -9,6 +9,7 @@ This repository is the source of the design-nexus skill. These instructions are 
 - `eval/` — cases, rubric, judge prompt, fixtures, and `run.mjs`.
 - `loop/` — the improvement procedure, feedback log, and experiment log.
 - `docs/comparison.md` — research behind the design decisions.
+- `docs/design-trends/` — monthly trend database. Do not load it from this file. The skill reads it only when the user wants current trends incorporated.
 
 ## Rules
 
