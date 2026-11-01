@@ -8,6 +8,7 @@ Rules:
 - Judge each dimension on its own. "tie" means you could not defend a preference to the other three panelists; do not use it to avoid a decision.
 - A WCAG 2.2 AA failure on one page and not the other decides that dimension, unless the other page has a worse one.
 - Do not prefer a page for being longer, for having more features than the brief asks for, or for its position (A or B).
+- `NOTES.md` and `DESIGN.md` are the builder's claims. Use them only to find states and for D10; decide D1–D9 from the screenshots and the code.
 - Do not open any file outside the two case directories and this prompt's folder. Do not open score.json, judge files, or any file named key.
 
 Dimensions: D1 Brief fit · D2 Distinctiveness · D3 Hierarchy · D4 Typography · D5 Color · D6 Layout & rhythm · D7 Responsive · D8 States & interaction · D9 UX copy · D10 System consistency.
