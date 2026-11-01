@@ -20,6 +20,7 @@
   - [When systems act for users（ACM Interactions、2026年9-10月）](https://interactions.acm.org/archive/view/september-october-2026/when-systems-act-for-users)
   - [AI agent UI design patterns](https://www.setproduct.com/blog/ai-agent-ui-design-patterns)
   - [ACM 論文](https://dl.acm.org/doi/10.1145/3776591.3832499)
+  - 隣接する法的義務: [EU AI Act 第 50 条の透明性](https://digital-strategy.ec.europa.eu/en/faqs/transparency-obligations-under-article-50-ai-act)。欧州委員会の説明では、第 50 条は 2026-08-02 から適用される。2026-12-02 までの猶予は、2026-08-02 より前に市場に出たシステムについて、第 50 条 2 項（生成物を機械可読に印し、検出できるようにすること）だけである。人と直接対話する AI であることの告知（1 項）や、ディープフェイクの表示（4 項）に同じ猶予はない。生成前の内容へ遡って表示する義務は無い。これは表示の義務であって、意図のプレビューや承認ゲートが 10 月に広がった証拠ではない。確度は上げない。
 - **トレンド時期**: 2026 下期
 - **確度**: 高。根拠は Web と論文です。X 上の話題量は小さいです。
 
@@ -28,3 +29,4 @@
 ## 更新履歴
 
 - 2026-10: 初収録。2026 下期のパターンで、根拠は Web と論文。X の話題量は小さい、という留保は本文に残す。状態は rising。確度は高。
+- 2026-10（記録 2026-11-01）: この追記の X 検索でも、エージェント UX の高反応投稿は見つかっていない。EU AI Act 第 50 条は隣接する表示義務として残し、パターンの普及には数えない。状態は rising のまま、確度は高のまま。X の話題量が小さい、という留保も残す。

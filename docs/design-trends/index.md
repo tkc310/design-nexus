@@ -39,6 +39,6 @@
 | [T13](trends/T13-immersive-3d.md) | 3D／WebGL の没入型サイト | #visual #interaction | 2026 通年 | 中〜高 | steady | 2026-10 | 2026-10 |
 | [T14](trends/T14-agent-ux.md) | エージェント UX パターン（意図プレビュー・承認ゲート） | #interaction #ai-agent | 2026 下期 | 高 | rising | 2026-10 | 2026-10 |
 | [T15](trends/T15-generative-ui.md) | Generative UI | #interaction #ai-agent | 2026 下期 | 中 | rising | 2026-10 | 2026-10 |
-| [T16](trends/T16-spec-handoff.md) | Spec 駆動のデザイン受け渡し | #workflow #system | 2026-10〜 | 中 | rising | 2026-10 | 2026-10 |
+| [T16](trends/T16-spec-handoff.md) | Spec 駆動のデザイン受け渡し | #workflow #system | 2026-10〜 | 中〜高 | rising | 2026-10 | 2026-10 |
 | [T17](trends/T17-bento-grid.md) | Bento grid | #layout #mature | 2023〜（定番化） | 中 | mature | 2026-10 | 2026-10 |
 | [T18](trends/T18-vivid-retro.md) | ビビッド配色、レトロ・Y2K・レトロフューチャー | #color #visual | 2026（レポート上） | 低〜中 | steady | 2026-10 | 2026-10 |

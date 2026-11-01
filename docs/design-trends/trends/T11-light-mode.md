@@ -10,9 +10,10 @@
 - **避ける場面**: メディアや映像のビューア、夜間に使うアプリ、開発者向けツール（ダークの需要が根強い）。
 - **代表例**: 個別のプロダクト名はソースにありません。数値の根拠は Kairo のレポート（400 サイト中 58% がライト既定。2024 年は 31%）です。
 - **ソース**:
-  - [X: @jakubkrehel 2026-10-27「Light mode >>> dark mode」](https://x.com/jakubkrehel/status/2114737256044871707) L202 / V14,384
+  - [X: @jakubkrehel 2026-10-27「Light mode >>> dark mode」](https://x.com/jakubkrehel/status/2114737256044871707) L202 / V14,495 / RT0 / BM13（2026-11-01 10:07 JST）
   - [Kairo の 2026 トレンドレポート](https://www.kairocreations.com/kairo-tools/articles/2026-web-design-trends-report)
   - 反対の見方: Figma の 2026 年トレンド記事はダークモードを「標準」として挙げている（[Figma のトレンド記事](https://www.figma.com/resource-library/web-design-trends/)）。
+  - もう一つの反対: [ideapeel 2026-10-23](https://www.ideapeel.com/blogs/ui-ux-design-trends-2026-15-changes-shaping-saas) はダークを、自慢する機能ではなく OS の設定として期待されるもの、と書く。代理店ブログで、ライト既定への回帰は支持しない。確度は上げない。
 - **トレンド時期**: 2025〜2026
 - **確度**: 中。単一レポートに依存しています。反対の見方（Figma はダークを標準と書いている）も残しています。
 
@@ -21,3 +22,4 @@
 ## 更新履歴
 
 - 2026-10: 初収録。期間は 2025〜2026。反対の見方（Figma はダークを標準と書いている）は本文に残す。状態は steady。確度は中。
+- 2026-10（記録 2026-11-01）: 前の値（2026-10-31 12:45 JST 頃）は L202 / V14,384。いいねは同じ。ライトモードの新しい高反応投稿は、この追記の検索では見つかっていない。ideapeel はダークを OS 設定として書く。反対の見方は残したまま、状態は steady、確度は中。

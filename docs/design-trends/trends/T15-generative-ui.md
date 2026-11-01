@@ -12,8 +12,9 @@
 - **ソース**:
   - [X: @realWeZZard 2026-10-10](https://x.com/realWeZZard/status/2108895961171075408) L8
   - [X: @leeadkins 2026-09-20（UTC）](https://x.com/leeadkins/status/2101730129890197600) L2
-  - [X: CopilotKit のテンプレート、2026-10-04](https://x.com/ataiiam/status/2106731156691615978) L171
+  - [X: CopilotKit のテンプレート、2026-10-04](https://x.com/ataiiam/status/2106731156691615978) L171 / V12,895 / RT15 / BM158（2026-11-01 10:07 JST）
   - Kairo の Trend 2「AI-Contextual Interfaces」（[Kairo の 2026 トレンドレポート](https://www.kairocreations.com/kairo-tools/articles/2026-web-design-trends-report)）
+  - [Trend Hunter「Reply Surfaces」2026-10-19](https://www.trendhunter.com/protrends/conversational-interface-design)。要求からチャートやフォームや計算機が返る、というまとめ。掲載記事は 2026-05-07〜10-09 の 18 本から 6 本。スコアは 10-05 の週が 6.5 で、10-19 の週は 4.3、その後 3 週は横ばい（±0.0）、とページ自身が書く。ユーザー調査ではなく、記事クラスタの採点。確度は上げない。この追記の X 検索でも、Generative UI の高反応投稿は見つかっていない。
 - **トレンド時期**: 2026 下期
 - **確度**: 中
 
@@ -22,3 +23,4 @@
 ## 更新履歴
 
 - 2026-10: 初収録。2026 下期に入った流れなので、状態は rising。確度は中。
+- 2026-10（記録 2026-11-01）: 前の値（2026-10-31 12:45 JST 頃）は CopilotKit の投稿 L171。いいねは同じ。Trend Hunter は 10 月上旬のピークのあと横ばいと書くが、採点サイトなので状態は変えない。急増の新しい根拠は無い。状態は rising のまま、確度は中のまま。
