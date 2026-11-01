@@ -12,6 +12,8 @@
 //   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03] [--swap]   M-008: one PAIR_PROMPT.md per case and base run,
 //                                                                pages shown as A/B in a fixed pseudo-random order; --swap adds the mirrored order
 //   node eval/run.mjs pair-score --run <dir> [--base <dir>]      candidate wins, losses, ties overall and per dimension
+//   node eval/run.mjs plateau                                    M-009: has the loop stalled since the last plan review?
+//                                                                (exit 3 = run the plan review in loop/plan-review.md)
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
@@ -208,6 +210,32 @@ const commands = {
     }
     writeJSON(keyFile, keys);
     console.log(`wrote ${n} PAIR_PROMPT.md under ${path.relative(ROOT, pairsDir)}/. Give each to a fresh-context judge and save its JSON as pair.<model>.json next to the prompt, then run \`pair-score\`.`);
+  },
+
+  // M-009: a stalled loop gets its plan reviewed by a fresh, maximum-effort agent instead of more of the same hypotheses.
+  plateau() {
+    const log = read(path.join(ROOT, 'loop/experiments.md'));
+    const planFile = path.join(ROOT, 'loop/plan.md');
+    const since = fs.existsSync(planFile) ? Number((read(planFile).match(/reviewed-after:\s*EXP-(\d+)/) || [])[1] || 0) : 0;
+    const exps = [];
+    for (const sec of log.split(/^### /m).slice(1)) {
+      const id = Number((sec.match(/^EXP-(\d+)/) || [])[1]);
+      const v = (sec.match(/^- verdict:\s*(.*)$/m) || [])[1];
+      if (!id || !v) continue;
+      const head = v.split('。')[0];
+      const last = [...head.matchAll(/ACCEPT|REJECT/g)].pop();
+      if (last) exps.push({ id, ok: last[0] === 'ACCEPT' });
+    }
+    const recent = exps.filter((e) => e.id > since);
+    let streak = 0;
+    for (let i = recent.length - 1; i >= 0 && !recent[i].ok; i--) streak++;
+    const last4 = recent.slice(-4);
+    const stalled = streak >= 3 || (last4.length === 4 && !last4.some((e) => e.ok));
+    console.log(`experiments since the last plan review (EXP-${String(since).padStart(3, '0')}): ${recent.map((e) => `EXP-${String(e.id).padStart(3, "0")} ${e.ok ? 'ACCEPT' : 'REJECT'}`).join(', ') || 'none'}`);
+    console.log(stalled
+      ? `STALLED: ${streak >= 3 ? `${streak} rejects in a row` : 'no accept in the last 4'}. Run the plan review in loop/plan-review.md (fresh context, Opus at max effort) before the next hypothesis.`
+      : `not stalled (${streak} reject(s) in a row; the review runs at 3 in a row or no accept in 4).`);
+    if (stalled) process.exitCode = 3;
   },
 
   'pair-score'() {
