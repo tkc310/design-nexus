@@ -3,7 +3,7 @@
 ## Unreleased(評価の作り直し、スキルの版は 0.10.0 のまま)
 
 - render-check: `--first-screen`(到着したときの画面)と `--tiles`(fixed・sticky の要素を流れに戻し、900px の高さで切る)を追加した。既定の動きと検出結果は変わらない。fixture `fixed-bars.html` と test.mjs の確認を追加。
-- 評価(M-017〜M-022): 尺度 v2(40個の観察できる基準から計算する0〜100点、`eval/judge-prompt-v2.md`)、較正セットの凍結と検証(`calib-archive`・`calib`・`validate`・`restore`、`eval/calib/`)、参照ページ(`ref`・`ref-compare`、`eval/reference/`)、`compare --scale v2`、score.json と history.jsonl の `scale`。v1 の run と判定はそのまま読める。`eval/rubric.md` に95点の意味、モデルが変わったときの読み方、対比較と v2 の役割、採用の手順を書いた。
+- 評価(M-017〜M-022): 尺度 v2(40個の観察できる基準から計算する0〜100点、`eval/judge-prompt-v2.md`)、較正セットの凍結と検証(`calib-archive`・`calib`・`validate`・`restore`、`eval/calib/`)、参照ページ(`ref`・`ref-compare`、`eval/reference/`)、`compare --scale v2`、score.json と history.jsonl の `scale`。v1 の run と判定はそのまま読める。`eval/rubric.md` に95点の意味、ループの目標を v2 の 92(旧尺度の95点相当)に置くこと(M-023、`at_92` と旧尺度の目安の表示)、モデルが変わったときの読み方、対比較と v2 の役割、採用の手順を書いた。
 - ケース 06 に `hero.png`(製品のボード画面)を足し、`prepare` がケースの `assets:` をコピーする(M-019)。
 
 ## 0.10.0 — 2026-11-01

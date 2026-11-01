@@ -537,7 +537,7 @@ const commands = {
     if (meta.kind === 'calib' || meta.kind === 'ref') { console.log(read(path.join(run, 'summary.md'))); return; }
     const line = { run: summary.run, version: summary.version, commit: summary.commit, at: summary.scored_at, ...(meta.generator ? { generator: meta.generator } : {}) };
     fs.appendFileSync(HISTORY, JSON.stringify({ ...line, scale: 'v1', mean_auto: summary.mean_auto, mean_judge: summary.mean_judge, mean_total: summary.mean_total, gate_failures: summary.gate_failures.length }) + '\n');
-    if (summary.v2) fs.appendFileSync(HISTORY, JSON.stringify({ ...line, scale: 'v2', judge: summary.v2.primary, judge_models: summary.v2.judge_models, prompts: summary.v2.prompts, cases: summary.v2.cases, mean_total: summary.v2.mean_total, mean_sub: summary.v2.mean_sub, at_95: summary.v2.at_95, gate_failures: summary.gate_failures.length }) + '\n');
+    if (summary.v2) fs.appendFileSync(HISTORY, JSON.stringify({ ...line, scale: 'v2', judge: summary.v2.primary, judge_models: summary.v2.judge_models, prompts: summary.v2.prompts, cases: summary.v2.cases, mean_total: summary.v2.mean_total, mean_sub: summary.v2.mean_sub, at_92: summary.v2.at_92, at_95: summary.v2.at_95, gate_failures: summary.gate_failures.length }) + '\n');
     console.log(read(path.join(run, 'summary.md')));
   },
 
@@ -1038,12 +1038,17 @@ function v2RunSummary(rows) {
     dims: meanDims(v.map((r) => ({ scores: r.v2.dims }))),
     models: Object.fromEntries(Object.entries(models).map(([m, xs]) => [m, { cases: xs.length, mean_total: r1(mean(xs)) }])),
     failed_most: Object.entries(met).sort((a, b) => a[1] - b[1]).slice(0, 8).map(([id, x]) => ({ id, met: x })),
-    // The share of pages at 95 or more, the number the loop's goal is stated in (eval/rubric.md, 尺度 v2).
+    // Pages at the loop's goal, v2 92 (the old 95, judge 55/60; M-023), and at 95 (eval/rubric.md, 尺度 v2).
+    at_92: v.filter((r) => r.v2.total >= 92).length,
     at_95: v.filter((r) => r.v2.total >= 95).length,
     prompts: [...new Set(v.map((r) => r.v2.prompt).filter(Boolean))],
     judge_models: [...new Set(v.flatMap((r) => Object.values(r.v2.models || {}).flatMap((x) => x.judge_models || [])))],
   };
 }
+
+// A rough reading of a v2 number on the old scale, for comparing with the old goal of 95 only (M-023):
+// it assumes the old automatic 40 points were full and the judge share equals v2. Never used for decisions.
+function oldScale(v2) { return v2 === null || v2 === undefined ? '-' : `≈${r1(40 + 0.6 * v2)}`; }
 
 function judgeMeans(rows) {
   const acc = {};
@@ -1166,7 +1171,7 @@ function summaryMd(s) {
   // Scale v2 is a separate series (M-017): its numbers are never added to, averaged with, or compared against v1.
   if (s.v2) {
     lines.push('', `## Scale v2 (${s.v2.primary}; a separate series, not comparable with the v1 total)`, '',
-      `Mean v2 ${s.v2.mean_total} / 100 over ${s.v2.cases} case(s) · D2–D7+D9 subtotal ${s.v2.mean_sub ?? '-'} · pages at 95 or more: ${s.v2.at_95}/${s.v2.cases}` + (s.v2.missing.length ? ` · not judged on v2: ${s.v2.missing.join(', ')}` : ''),
+      `Mean v2 ${s.v2.mean_total} / 100 over ${s.v2.cases} case(s) (old-scale estimate ${oldScale(s.v2.mean_total)}) · D2–D7+D9 subtotal ${s.v2.mean_sub ?? '-'} · pages at the goal, 92 or more: ${s.v2.at_92 ?? '-'}/${s.v2.cases} · at 95 or more: ${s.v2.at_95}/${s.v2.cases}` + (s.v2.missing.length ? ` · not judged on v2: ${s.v2.missing.join(', ')}` : ''),
       ...(s.v2.prompts.length > 1 ? [`warning: pages were judged with ${s.v2.prompts.length} different versions of judge-prompt-v2.md (${s.v2.prompts.join(', ')}); they are not one series`] : []),
       ...(Object.keys(s.v2.models).length > 1 ? [`By model: ${Object.entries(s.v2.models).map(([m, x]) => `${m} ${x.mean_total} (${x.cases})`).join(' · ')}`] : []),
       '', '| case | v2 | sub | samples | spread | vetoes |', '|---|---|---|---|---|---|');
