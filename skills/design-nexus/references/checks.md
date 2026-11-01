@@ -51,6 +51,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R19 | The page talks about itself: a note to the owner or reviewer in visible copy or `alt` text ("sample data", "placeholder name", "before publishing", "draft note", TODO;「サンプルデータ」「ダミー」「表示見本」「実際の画面ではありません」「公開前に確認」). Move it to NOTES.md | lint |
 | R20 | Informative text below 14px at 1280: three or more blocks of hints, metadata, captions, table cells, or errors set at 12–13px | render |
 | R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
+| R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
 
 ## Finish
 

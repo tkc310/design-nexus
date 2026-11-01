@@ -122,7 +122,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -284,6 +284,31 @@ function measure(minTap) {
       if ([...r.getClientRects()].some((x) => x.width > 0 && (x.right > er.right + 2 || x.left < er.left - 2))) cut = t.textContent.trim().slice(0, 30);
     }
     if (cut) out.breaks.push(`${sel(el)} clips its text "${cut}" (${el.scrollWidth}px in ${el.clientWidth}px)`);
+  }
+  // R24: content parked in a sideways scroll. A scroll box is the fallback for wide tables and code, but a reader at a
+  // narrow width who has to swipe to see a command's end or a table's deciding column often never finds it.
+  if (vw <= 768) {
+    for (const el of document.querySelectorAll('body *')) {
+      if (out.sidescroll.length >= 3) break;
+      const cs = getComputedStyle(el);
+      if (!/auto|scroll/.test(cs.overflowX) || !visible(el) || el.clientWidth < 40) continue;
+      if (el.closest('nav, [role="tablist"], [role="toolbar"], [aria-hidden="true"]')) continue; // swipeable tab and chip strips are a known pattern
+      if (el.scrollWidth < el.clientWidth * 1.25) continue;
+      const er = el.getBoundingClientRect();
+      const tx = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let hidden = null;
+      for (let n = 0; tx.nextNode() && n < 400 && !hidden; n++) {
+        const t = tx.currentNode;
+        if (!t.textContent.trim() || !t.parentElement || !visible(t.parentElement)) continue;
+        const r = document.createRange();
+        r.selectNodeContents(t);
+        if ([...r.getClientRects()].some((x) => x.width > 0 && x.right > er.right + 8)) hidden = t.textContent.trim().slice(-30);
+      }
+      if (!hidden) continue;
+      if ([...out.sidescroll].some((x) => el.contains(x.el) || x.el.contains(el))) continue;
+      out.sidescroll.push({ el, sel: sel(el), pct: Math.round((1 - el.clientWidth / el.scrollWidth) * 100), kind: el.querySelector('table') || el.tagName === 'TABLE' ? 'table' : el.matches('pre, code') || el.querySelector('pre, code') ? 'code' : 'content', text: hidden });
+    }
+    out.sidescroll = out.sidescroll.map(({ el, ...x }) => x);
   }
   // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
   for (const table of document.querySelectorAll('table')) {
@@ -563,6 +588,7 @@ try {
     }
     if (width <= 768) for (const t of m.tap) add('F09', `@${width}px ${t.sel}`, `tap target ${t.w}×${t.h}px < ${minTap}px`);
     for (const b of m.breaks) add('R17', `@${width}px`, b);
+    for (const x of m.sidescroll) add('R24', `@${width}px ${x.sel}`, `${x.kind} hides ${x.pct}% of its width in a sideways scroll, e.g. "${x.text}"; ${x.kind === 'table' ? 'reflow rows into labelled blocks below about 640px, or keep the deciding column next to the first' : x.kind === 'code' ? 'wrap commands (white-space: pre-wrap; overflow-wrap: anywhere) or break them at flags' : 'reflow it to the width'}`);
     if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
     if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;
     if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {

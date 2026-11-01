@@ -53,7 +53,11 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet 
 - **Short labels stay whole.** Buttons, tags, and nav items get `white-space: nowrap` and a layout that has room for them. In Japanese, wrap phrases in `word-break: auto-phrase` (or `keep-all` with `<wbr>` at phrase boundaries) so words like 今日は／こちら don't split; check the largest text setting too.
 - **Headings beside a taller column use `align-self: start`**, so the kicker, heading, and paragraph stay together instead of stretching apart.
 - **Illustrations and diagrams get a max size per breakpoint.** In a single column, keep a decorative or explanatory graphic under about half the viewport height. Text inside an SVG must stay at least 12px when rendered at 320px; otherwise switch to an HTML version or a simplified graphic.
-- **Wide tables** scroll inside a container with a visible edge, or reflow to stacked rows below about 640px. A table never escapes its panel (R17).
+- **A sideways scroll box is a last resort, not the fix.** At 320 and 768, a reader rarely swipes inside a box, so whatever sits past its edge is lost: the end of an install command, the net-pay column, the last days of a calendar strip. Before reaching for `overflow-x: auto`, reflow:
+  - Commands and short code wrap (`white-space: pre-wrap; overflow-wrap: anywhere`), or break at flags with a continuation `\`; keep the copy button copying the one-line form.
+  - Tables below about 640px become labelled blocks (each row a card, each cell with its header as a label), with the figure the reader acts on first in each block. A dense reference table may keep a scroll only if the identifying column stays fixed and the deciding column sits right after it.
+  - Date strips and timelines become a grid that wraps (a month grid, a two-row week), not a strip that runs off the screen.
+  - Log or sample output may scroll, but shorten its lines so the meaningful part (level, message) shows first. The render check flags content a scroll box hides as R24. A table never escapes its panel (R17).
 - **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
 - **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
 

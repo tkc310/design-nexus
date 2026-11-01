@@ -101,6 +101,10 @@ else {
   check('render flags R21 when a value is drawn over its label, not when rows scroll under a fixed bar', r21.length === 1 && /Total for 21 staff/.test(r21[0].message) && /5,764,200/.test(r21[0].message), JSON.stringify(r21));
   const okOv = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320');
   check('R21 ignores visually-hidden text and scroll containers', !okOv.out.findings.some((f) => f.id === 'R21'));
+  const ss = run('render-check.mjs', path.join(S2, 'sidescroll.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320');
+  const r24 = ss.out.findings.filter((f) => f.id === 'R24');
+  check('render flags R24 for a command and a table hidden in a sideways scroll', r24.length === 2 && r24.some((f) => /#cmd/.test(f.where)) && r24.some((f) => /#tbl/.test(f.where)), JSON.stringify(r24));
+  check('R24 ignores a wrapped command, a nav strip, and a slight overflow', !r24.some((f) => /#wrapped|#tabs|#slight/.test(f.where)), JSON.stringify(r24));
   const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
   check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));
