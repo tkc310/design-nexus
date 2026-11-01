@@ -220,7 +220,9 @@ const commands = {
     const side = (v, key) => (v !== 'A' && v !== 'B' ? 'tie' : (v === 'A') === (key.A === 'cand') ? 'win' : 'loss');
     const baseFilter = opt.base ? String(opt.base).split(',').map((b) => path.basename(runDir(b))) : null;
     // Each judgement in the candidate's view; position = how often the page shown as A was chosen.
-    const seen = {}; const position = { A: 0, B: 0, tie: 0 };
+    // clear = only verdicts with margin clear or large count; in the M-008 validation every slight verdict that was
+    // re-judged in the mirrored order flipped about half the time, and no clear verdict ever flipped.
+    const seen = {}; const position = { A: 0, B: 0, tie: 0 }; const clearByJudge = {};
     for (const [id, key] of Object.entries(keys)) {
       if (baseFilter && !baseFilter.includes(path.basename(key.base))) continue;
       const dir = path.join(pairsDir, id);
@@ -230,7 +232,7 @@ const commands = {
         const judge = f.replace(/^pair\.|\.json$/g, '');
         position[j.overall === 'A' || j.overall === 'B' ? j.overall : 'tie']++;
         const k = `${key.pair || id}|${judge}`;
-        (seen[k] = seen[k] || { judge, pair: key.pair || id, v: [] }).v.push({ overall: side(j.overall, key), dims: Object.fromEntries(dims.map((d) => [d, side(j.dims?.[d], key)])) });
+        (seen[k] = seen[k] || { judge, pair: key.pair || id, v: [] }).v.push({ overall: side(j.overall, key), clear: j.margin === 'slight' ? 'tie' : side(j.overall, key), dims: Object.fromEntries(dims.map((d) => [d, side(j.dims?.[d], key)])) });
       }
     }
     // With both orders judged, a verdict that flips with position counts as a tie.
@@ -240,6 +242,7 @@ const commands = {
       if (v.length > 1) { pairsBoth++; if (merge(v.map((x) => x.overall)) === 'tie' && v.some((x) => x.overall !== 'tie')) flips++; }
       const o = merge(v.map((x) => x.overall));
       (byJudge[judge] = byJudge[judge] || tally())[o]++;
+      (clearByJudge[judge] = clearByJudge[judge] || tally())[merge(v.map((x) => x.clear))]++;
       const c = pair.split('--')[0];
       (byCase[c] = byCase[c] || tally())[o]++;
       for (const d of dims) byDim[d][merge(v.map((x) => x.dims[d]))]++;
@@ -253,12 +256,12 @@ const commands = {
     const fmt = (t) => `${t.win}–${t.loss}–${t.tie}`;
     const lines = [`# Pairs: ${path.basename(cand)} (candidate) vs base`, '', `Overall (win–loss–tie, candidate's view): **${fmt(all)}**, sign test p = ${p.toFixed(3)}`, '',
       `Position: page A chosen ${position.A}, page B ${position.B}, tie ${position.tie}.` + (pairsBoth ? ` Judged in both orders: ${pairsBoth}, of which ${flips} flipped with position (counted as tie).` : ''), '',
-      '| judge | overall |', '|---|---|', ...Object.entries(byJudge).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
+      '| judge | overall | clear only (slight = tie) |', '|---|---|---|', ...Object.entries(byJudge).map(([k, t]) => `| ${k} | ${fmt(t)} | ${fmt(clearByJudge[k])} |`), '',
       '| case | overall |', '|---|---|', ...Object.entries(byCase).map(([k, t]) => `| ${k} | ${fmt(t)} |`), '',
       '| dim | win–loss–tie | net |', '|---|---|---|', ...dims.map((k) => `| ${k} | ${fmt(byDim[k])} | ${byDim[k].win - byDim[k].loss >= 0 ? '+' : ''}${byDim[k].win - byDim[k].loss} |`), ''];
     const tag = baseFilter ? '-' + baseFilter.join('+') : '';
     fs.writeFileSync(path.join(cand, `pairs${tag}.md`), lines.join('\n'));
-    writeJSON(path.join(cand, `pairs${tag}.json`), { overall: all, p, position, pairsBoth, flips, byJudge, byCase, byDim });
+    writeJSON(path.join(cand, `pairs${tag}.json`), { overall: all, p, position, pairsBoth, flips, byJudge, clearByJudge, byCase, byDim });
     console.log(lines.join('\n'));
   },
 
