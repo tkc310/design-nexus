@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Primary action fold fixture</title>
+<meta name="description" content="Fixture for the first-screen primary action check">
+<style>
+body{margin:0;font:18px/1.6 system-ui;background:#fff;color:#111}
+.skip{position:absolute;top:-60px;left:8px;background:#1a4fd6;color:#fff;padding:8px 12px}
+.skip:focus{top:8px}
+main{max-width:720px;margin:0 auto;padding:24px}
+.intro{height:1100px;border-bottom:1px solid #999}
+.btn{display:inline-block;background:#1a4fd6;color:#fff;padding:12px 20px;border:0;border-radius:6px;font:inherit}
+.btn[disabled]{background:#5c6b8a}
+.ghost{background:transparent;color:#1a4fd6;border:1px solid #1a4fd6;padding:12px 20px;border-radius:6px;font:inherit}
+</style></head><body>
+<a class="skip" href="#main">Skip to content</a>
+<main id="main">
+<h1>Send the report</h1>
+<!-- not counted: a disabled filled button and an outlined one on the first screen -->
+<p><button class="btn" type="button" disabled>Submit (fill the form first)</button> <button class="ghost" type="button">Preview</button></p>
+<div class="intro"><p>Long introduction that pushes the real action down.</p></div>
+<!-- flagged: the first enabled filled action starts below 900px -->
+<p><button class="btn" type="button" id="late">Send report</button></p>
+</main></body></html>

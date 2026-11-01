@@ -8,7 +8,7 @@ Read whenever the interface contains Japanese text.
 - **Measure**: 30–40 full-width characters per line for body.
 - **Letter-spacing**: body 0.02–0.05em; headings may use `font-feature-settings: "palt"` (proportional kana) with 0–0.02em. Never negative tracking on Japanese.
 - **No italic.** Japanese fonts have no true italic; synthetic slanting looks broken. Emphasize with weight, color, or 圏点 (`text-emphasis`).
-- **Line breaking**: `line-break: strict; word-break: normal; overflow-wrap: anywhere;` and `word-break: auto-phrase` (where supported) for headings so phrases don't split awkwardly. Use `text-wrap: balance` for short headings.
+- **Line breaking**: for running text, `line-break: strict; word-break: normal; overflow-wrap: anywhere;`. For headings, buttons, and short labels, `word-break: auto-phrase` (where supported) so phrases don't split awkwardly, and `text-wrap: balance` for short headings. Code, commands, and figures follow `craft.md` *Responsive* instead: never `overflow-wrap: anywhere` on them.
 - **Punctuation**: full-width 「」、。 in Japanese text; consider `text-spacing-trim` / `font-feature-settings: "halt"` for tight punctuation in headings.
 - **Mixed scripts**: put half-width spaces between Japanese and Latin only if the brand style does; be consistent.
 - **Loading**: Japanese fonts are large. Use a subset or a CDN that serves unicode-range slices, limit to 2 weights, `font-display: swap`.

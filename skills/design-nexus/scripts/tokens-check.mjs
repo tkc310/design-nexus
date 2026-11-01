@@ -33,9 +33,10 @@ if (!tokens) {
       if (!a || !b) continue;
       const ratio = contrast(a, b);
       const min = needs(fg);
-      if (ratio < min) add('F01', `${scheme}${fg}/${bg}`, `contrast ${ratio.toFixed(2)}:1 < ${min}:1 (${get(fg)} on ${get(bg)})`);
+      const label = tokens[`label.${fg.replace(/-fg$/, '')}`];
+      if (ratio < min) add('F01', label ? `component ${label}` : `${scheme}${fg}/${bg}`, `contrast ${ratio.toFixed(2)}:1 < ${min}:1 (${get(fg)} on ${get(bg)})`);
     }
-    const roles = Object.keys(tokens).filter((k) => k.startsWith(`${scheme}color.`) && (scheme || !k.startsWith('dark.')));
+    const roles = Object.keys(tokens).filter((k) => k.startsWith(`${scheme}color.`) && !k.includes('component-') && (scheme || !k.startsWith('dark.')));
     if (roles.length > 10) add('R08', `${scheme || 'light '}palette`, `${roles.length} color tokens; most interfaces need 4–8 plus status colors`);
   }
 

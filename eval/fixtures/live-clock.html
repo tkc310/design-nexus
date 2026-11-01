@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>t</title><meta name="description" content="t">
+<style>body{margin:0;font:16px/1.5 Georgia,serif;padding:0 16px}</style></head>
+<body><main><h1>Next bus</h1>
+<p id="clock">Updated live from the depot feed, the next bus leaves in 0 seconds and the board was refreshed at tick 0.</p>
+<script>let n = 0; setInterval(() => { n += 7; document.getElementById('clock').textContent = `Updated live from the depot feed, the next bus leaves in ${n % 60} seconds and the board was refreshed at tick ${n}.`; }, 50);</script>
+</main></body></html>

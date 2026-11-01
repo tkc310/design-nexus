@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sideways scroll fixture</title>
+<style>
+body{margin:0;padding:16px;font:16px/1.5 system-ui;background:#fff;color:#111}
+.scroll{overflow-x:auto;border:1px solid #888}
+pre{margin:0;white-space:pre}
+table{border-collapse:collapse}td,th{padding:4px 12px;white-space:nowrap;border:1px solid #ccc}
+.wrap pre{white-space:pre-wrap;overflow-wrap:anywhere}
+nav{display:flex;gap:16px;overflow-x:auto}nav a{white-space:nowrap}
+.small{overflow-x:auto}.small span{display:inline-block;width:110%;white-space:nowrap}
+</style></head><body>
+<h1>Sideways scroll</h1>
+<!-- flagged: a command that runs past its scroll box at 320 -->
+<div class="scroll" id="cmd"><pre>cargo install grepline --locked --features json,color,pager --root ~/.local</pre></div>
+<!-- flagged: a table whose last columns sit off-screen at 320 -->
+<div class="scroll" id="tbl"><table><thead><tr><th>Name</th><th>Base pay</th><th>Overtime</th><th>Deductions</th><th>Net pay</th></tr></thead>
+<tbody><tr><td>Sato Hanako</td><td>¥280,000</td><td>¥32,000</td><td>¥48,200</td><td>¥263,800</td></tr></tbody></table></div>
+<!-- not flagged: the same command wrapped -->
+<div class="scroll wrap" id="wrapped"><pre>cargo install grepline --locked --features json,color,pager --root ~/.local</pre></div>
+<!-- not flagged: a swipeable nav strip -->
+<nav id="tabs"><a href="#a">Overview</a><a href="#b">Install</a><a href="#c">Syntax</a><a href="#d">Examples</a><a href="#e">Changelog</a><a href="#f">License</a></nav>
+<!-- not flagged: overflows by under 20% -->
+<div class="small" id="slight"><span>Short line that barely overflows</span></div>
+</body></html>

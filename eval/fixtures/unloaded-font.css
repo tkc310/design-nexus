@@ -1,0 +1,5 @@
+@import url("https://fonts.googleapis.com/css?family=Inter+Tight:400,600|Zen+Kaku+Gothic+New");
+:root { --font-size-h1: clamp(2rem, 5vw, 4rem); --display-tracking: -0.02em; --serif-features: "palt"; --display-color: white; --font-body: "Zen Kaku Gothic New", sans-serif; }
+.a { font-family: "Fraunces", serif; }
+.b { font-family: "Hiragino Sans", sans-serif; }
+.c { font-family: 'Inter Tight', 'Zen Kaku Gothic New', sans-serif; }
