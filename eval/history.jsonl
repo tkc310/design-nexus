@@ -87,3 +87,4 @@
 {"run":"20261101-0712-v0.10.0-base100b","version":"0.10.0","commit":"ee5682b","at":"2026-11-01T07:45:19.507Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261101-0711-v0.10.0-exp027a","version":"0.10.0","commit":"ee5682b","at":"2026-11-01T07:45:53.333Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261101-0712-v0.10.0-exp027b","version":"0.10.0","commit":"ee5682b","at":"2026-11-01T07:46:28.533Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261101-0753-v0.10.0-exp027c","version":"0.10.0","commit":"ee5682b","at":"2026-11-01T08:07:56.576Z","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
