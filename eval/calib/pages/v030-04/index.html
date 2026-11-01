@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Settings · Meridian Studio</title>
+<meta name="description" content="Choose which project events notify you by email, push, or Slack, set quiet hours, and send a test notification.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    /* Colors: see DESIGN.md for sources */
+    --ground: #F3F3F3;   /* app chrome, true neutral */
+    --surface: #FFFFFF;  /* panels, inputs */
+    --ink: #1C1D1F;      /* text */
+    --muted: #595D63;    /* helper text */
+    --line: #D9D9D9;     /* hairlines, decorative only */
+    --control: #6B7077;  /* control borders, off switches */
+    --lamp: #B45309;     /* lit-lamp amber: "on" switches, primary action */
+    --night: #232A3D;    /* the quiet-hours band */
+    --danger: #B42318;
+    --ok: #26683A;
+
+    --font-display: "Bricolage Grotesque", "Hanken Grotesk", ui-sans-serif, sans-serif;
+    --font-body: "Hanken Grotesk", ui-sans-serif, sans-serif;
+
+    /* Scale 1.2 from 16px: 13 / 16 / 19 / 23 / 28 */
+    --fs-s: 0.8125rem;
+    --fs-m: 1rem;
+    --fs-l: 1.1875rem;
+    --fs-xl: 1.4375rem;
+    --fs-xxl: 1.75rem;
+
+    /* Spacing base 4px */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+
+    --r-control: 6px;
+    --r-panel: 10px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 var(--fs-m)/1.55 var(--font-body);
+    text-wrap: pretty;
+  }
+  h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+  h1, h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: var(--fs-xxl); }
+  h2 { font-size: var(--fs-xl); }
+  h3 { font-size: var(--fs-m); font-weight: 600; }
+  p { margin: 0; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .muted { color: var(--muted); }
+  .small { font-size: var(--fs-s); line-height: 1.45; }
+  .nowrap { white-space: nowrap; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Shell ---------- */
+  .shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+  .side {
+    border-right: 1px solid var(--line);
+    padding: var(--s5) var(--s4);
+    display: flex; flex-direction: column; gap: var(--s5);
+  }
+  .ws { display: flex; align-items: center; gap: var(--s2); font-weight: 600; }
+  .ws-mark {
+    width: 28px; height: 28px; border-radius: var(--r-control);
+    background: var(--night); color: var(--surface);
+    display: grid; place-items: center; font-size: var(--fs-s); font-weight: 600;
+  }
+  .side-nav h2 {
+    font: 600 var(--fs-s)/1.4 var(--font-body); letter-spacing: 0;
+    color: var(--muted); margin: 0 0 var(--s2) var(--s2);
+  }
+  .side-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .side-nav a {
+    display: block; padding: var(--s2) var(--s2); border-radius: var(--r-control);
+    text-decoration: none; color: var(--ink); white-space: nowrap;
+  }
+  .side-nav a[aria-current="page"] { background: var(--surface); font-weight: 600; box-shadow: inset 3px 0 0 var(--lamp); }
+  @media (hover: hover) and (pointer: fine) {
+    .side-nav a:not([aria-current]):hover { background: var(--line); }
+  }
+  .side-foot { margin-top: auto; }
+
+  main { padding: var(--s6) var(--s6) var(--s7); min-width: 0; }
+  .page { max-width: 960px; }
+
+  .page-head {
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+    gap: var(--s4); margin: var(--s4) 0 var(--s6);
+  }
+  .page-head .lede { max-width: 60ch; color: var(--muted); }
+  .test-wrap { display: grid; justify-items: end; gap: var(--s2); }
+  .test-result { max-width: 40ch; text-align: right; }
+  .test-result:empty { display: none; }
+  .test-result.is-ok { color: var(--ok); }
+  .test-result.is-err { color: var(--danger); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    font: 600 var(--fs-m)/1 var(--font-body);
+    min-height: 40px; padding: 0 var(--s4);
+    border-radius: var(--r-control); border: 1px solid transparent;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    cursor: pointer; white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease, transform 0.12s var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--lamp); color: var(--surface); }
+  .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--control); }
+  .btn-quiet { background: transparent; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; padding: 0 var(--s2); min-height: 32px; font-weight: 500; }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover { filter: brightness(0.86); }
+    .btn-secondary:hover { border-color: var(--ink); }
+  }
+  .btn[aria-disabled="true"] { cursor: progress; }
+  .btn-sm { min-height: 32px; font-size: var(--fs-s); padding: 0 var(--s3); }
+
+  /* ---------- Panels ---------- */
+  .panels { display: grid; gap: var(--s5); }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel);
+    padding: var(--s5); min-width: 0;
+  }
+  .panel-head { margin-bottom: var(--s4); }
+  .panel-head p { margin-top: var(--s1); }
+
+  /* ---------- Matrix ---------- */
+  .matrix { width: 100%; border-collapse: collapse; }
+  .matrix th, .matrix td { text-align: left; vertical-align: top; padding: var(--s3) var(--s2); }
+  .matrix thead th { border-bottom: 1px solid var(--line); vertical-align: bottom; padding-bottom: var(--s3); }
+  .matrix tbody tr + tr th, .matrix tbody tr + tr td { border-top: 1px solid var(--line); }
+  .matrix .ch-col { width: 22%; }
+  .ch-name { display: block; font-weight: 600; }
+  .ch-dest { display: block; font-size: var(--fs-s); color: var(--muted); line-height: 1.4; }
+  .ch-dest.is-off { color: var(--danger); font-weight: 500; }
+  .ch-head .btn { margin-top: var(--s2); }
+  .ev-name { display: block; font-weight: 600; }
+  .ev-desc { display: block; font-size: var(--fs-s); color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .ev-extra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-top: var(--s2); font-size: var(--fs-s); font-weight: 400; }
+  .ev-extra select { font-size: var(--fs-s); min-height: 32px; width: auto; }
+
+  .cell { display: inline-flex; align-items: center; gap: var(--s2); cursor: pointer; min-height: 32px; }
+  .cell-ch { display: none; font-size: var(--fs-s); }
+  .cell-off { display: inline-flex; align-items: center; min-height: 32px; color: var(--muted); font-size: var(--fs-s); }
+  .cell-off .why { display: none; }
+
+  .switch {
+    appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+    width: 40px; height: 24px; border-radius: 999px;
+    background: var(--surface); border: 1.5px solid var(--control);
+    position: relative; cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .switch::before {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--control);
+    transition: transform 0.16s var(--ease-out), background-color 0.15s ease;
+  }
+  .switch:checked { background: var(--lamp); border-color: var(--lamp); }
+  .switch:checked::before { transform: translateX(16px); background: var(--surface); }
+  .switch:disabled { cursor: not-allowed; opacity: 0.55; }
+
+  /* ---------- Fields ---------- */
+  .field { display: grid; gap: var(--s1); align-content: start; min-width: 0; }
+  .field label, .field .label { font-weight: 600; font-size: var(--fs-s); }
+  input[type="time"], select {
+    font: 400 var(--fs-m)/1.2 var(--font-body); color: var(--ink);
+    background: var(--surface); border: 1px solid var(--control); border-radius: var(--r-control);
+    min-height: 40px; padding: 0 var(--s3); width: 100%; min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="time"]:disabled, select:disabled { color: var(--muted); border-color: var(--line); background: var(--ground); }
+  input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+  .err { color: var(--danger); font-size: var(--fs-s); line-height: 1.45; font-weight: 500; }
+  .err:empty { display: none; }
+  .help { color: var(--muted); font-size: var(--fs-s); line-height: 1.45; }
+
+  .quiet-toggle { display: flex; align-items: center; gap: var(--s3); cursor: pointer; font-weight: 600; margin-bottom: var(--s4); }
+  .quiet-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); gap: var(--s4); }
+
+  /* ---------- Signature: the 24-hour day strip ---------- */
+  .day { margin-top: var(--s5); }
+  .day-read { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); margin-bottom: var(--s2); }
+  .day-read strong { font-family: var(--font-display); font-size: var(--fs-l); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .strip {
+    position: relative; height: 48px; border-radius: var(--r-control);
+    border: 1px solid var(--control); overflow: hidden;
+    background-color: var(--surface);
+    background-image: repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 24));
+  }
+  .strip.is-error { border-color: var(--danger); border-style: dashed; }
+  .strip.is-off { border-style: dashed; }
+  .band {
+    position: absolute; top: 0; bottom: 0; background: var(--night);
+    transition: left 0.2s var(--ease-out), width 0.2s var(--ease-out);
+  }
+  .deliver {
+    position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: var(--lamp);
+    transition: left 0.2s var(--ease-out);
+  }
+  .strip-note {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: var(--fs-s); font-weight: 500; color: var(--muted); padding: 0 var(--s2); text-align: center;
+  }
+  .strip.is-error .strip-note { color: var(--danger); }
+  .ticks { position: relative; height: 20px; margin-top: var(--s1); font-size: var(--fs-s); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ticks span { position: absolute; top: 0; transform: translateX(-50%); line-height: 20px; }
+  .ticks span:first-child { transform: none; }
+  .ticks span:last-child { transform: translateX(-100%); }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+  .legend span { display: inline-flex; align-items: center; gap: var(--s2); }
+  .sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+  .sw-night { background: var(--night); }
+  .sw-lamp { background: var(--lamp); width: 4px; }
+
+  /* ---------- Top bar: title, save state, primary action ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    margin: calc(-1 * var(--s6)) calc(-1 * var(--s6)) 0; padding: var(--s4) var(--s6);
+    background: var(--ground); border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s2) var(--s4);
+  }
+  .topbar .state { display: flex; align-items: center; gap: var(--s2); min-width: 0; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--control); flex: none; }
+  .topbar[data-state="dirty"] .dot { background: var(--lamp); }
+  .topbar[data-state="invalid"] .dot { background: var(--danger); }
+  .topbar[data-state="invalid"] .state { color: var(--danger); }
+  .topbar[data-state="clean"] .dot { background: var(--ok); }
+  .topbar .actions { display: flex; gap: var(--s2); }
+  .topbar .btn-quiet[hidden] { display: none; }
+
+  /* ---------- Toasts ---------- */
+  .toasts {
+    position: fixed; right: var(--s5); bottom: var(--s5); z-index: 20;
+    display: grid; gap: var(--s2); width: min(400px, calc(100vw - 2 * var(--s4)));
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: var(--r-control);
+    box-shadow: 0 8px 24px -8px var(--night);
+    padding: var(--s3) var(--s4);
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1) var(--s3); align-items: start;
+    animation: toast-in 0.22s var(--ease-out);
+  }
+  .toast.is-err { border-left-color: var(--danger); }
+  .toast .t-title { font-weight: 600; }
+  .toast .t-body { grid-column: 1 / -1; font-size: var(--fs-s); color: var(--muted); }
+  .toast .t-actions { grid-column: 1 / -1; display: flex; gap: var(--s2); margin-top: var(--s1); }
+  .toast .x { min-height: 24px; min-width: 24px; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Specimens ---------- */
+  .specimens { margin-top: var(--s7); padding: var(--s6) 0 var(--s5); border-top: 1px dashed var(--control); }
+  .specimens > header { margin-bottom: var(--s5); max-width: 64ch; }
+  .specimens > header p { margin-top: var(--s1); }
+  .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--s5); }
+  .spec { display: grid; gap: var(--s2); align-content: start; min-width: 0; }
+  .spec > h3 { font-size: var(--fs-s); color: var(--muted); }
+  .spec .toast { animation: none; box-shadow: none; }
+  .spec .panel { padding: var(--s4); }
+  .quiet-fields.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .spec .strip { height: auto; min-height: 40px; }
+  .spec .strip .strip-note { position: static; padding: var(--s2); }
+
+  /* ---------- Wide: matrix and quiet hours side by side ---------- */
+  @media (min-width: 1500px) {
+    .page { max-width: 1480px; }
+    .panels { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+    .quiet-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .quiet-fields .tz { grid-column: 1 / -1; }
+    .page-head .lede { max-width: 72ch; }
+  }
+
+  /* ---------- Tablet and below ---------- */
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .side { border-right: 0; border-bottom: 1px solid var(--line); padding: var(--s4); gap: var(--s3); flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .side-nav { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+    .side-nav h2 { margin: 0; }
+    .side-nav ul { display: flex; flex-wrap: wrap; gap: var(--s1); }
+    .side-foot { margin-top: 0; width: 100%; }
+    main { padding: var(--s5) var(--s5) var(--s6); }
+    .topbar { margin: calc(-1 * var(--s5)) calc(-1 * var(--s5)) 0; padding: var(--s3) var(--s5); }
+  }
+
+  /* ---------- Narrow: matrix reflows into one block per event ---------- */
+  @media (max-width: 640px) {
+    main { padding: var(--s4) var(--s4) var(--s6); }
+    .page-head { margin-bottom: var(--s5); }
+    .test-wrap { justify-items: start; width: 100%; }
+    .test-result { text-align: left; }
+    .panel { padding: var(--s4); }
+    .matrix, .matrix thead, .matrix tbody, .matrix tr, .matrix th, .matrix td { display: block; width: auto; }
+    .matrix thead tr { display: grid; gap: var(--s2); padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+    .matrix thead th { border: 0; padding: 0; }
+    .matrix thead th:first-child { display: none; }
+    .ch-head { display: grid !important; grid-template-columns: 56px minmax(0, 1fr); column-gap: var(--s2); align-items: baseline; }
+    .ch-head .ch-dest { grid-column: 2; }
+    .ch-head .btn { grid-column: 2; justify-self: start; }
+    .matrix tbody tr { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: var(--s4); row-gap: var(--s1); padding: var(--s3) 0; }
+    .matrix tbody tr + tr { border-top: 1px solid var(--line); }
+    .matrix tbody th { grid-column: 1 / -1; padding: 0 0 var(--s1); }
+    .matrix tbody tr + tr th, .matrix tbody tr + tr td { border-top: 0; }
+    .matrix tbody td { padding: 0; }
+    .cell-ch { display: inline; }
+    .cell-off .why { display: inline; }
+    .cell-off .dash { display: none; }
+    .quiet-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .quiet-fields .tz { grid-column: 1 / -1; }
+    .topbar { margin: calc(-1 * var(--s4)) calc(-1 * var(--s4)) 0; padding: var(--s3) var(--s4); grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; }
+    .topbar h1 { font-size: var(--fs-xl); }
+    .topbar .state { grid-row: 2; grid-column: 1 / -1; }
+    .matrix .ch-col { width: auto; }
+    .toasts { right: var(--s4); bottom: var(--s4); }
+  }
+
+  @media (max-width: 400px) {
+    .quiet-fields, .quiet-fields.two { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch, .switch::before, .band, .deliver, .btn { transition-property: background-color, border-color, opacity; }
+    .btn:active { transform: none; }
+    .toast { animation: toast-fade 0.2s linear; }
+    @keyframes toast-fade { from { opacity: 0; } to { opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="Settings navigation">
+    <div class="ws"><span class="ws-mark" aria-hidden="true">MS</span><span>Meridian Studio</span></div>
+    <nav class="side-nav" aria-labelledby="acct-h">
+      <h2 id="acct-h">Your account</h2>
+      <ul>
+        <li><a href="#">Profile</a></li>
+        <li><a href="#" aria-current="page">Notifications</a></li>
+        <li><a href="#">Security</a></li>
+        <li><a href="#">Connected apps</a></li>
+      </ul>
+    </nav>
+    <p class="side-foot small muted">Signed in as Ren Takeda (sample account and data)</p>
+  </aside>
+
+  <main id="main">
+    <div class="page">
+      <div class="topbar" id="savebar" data-state="clean">
+        <h1>Notifications</h1>
+        <p class="state small" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="save-state">All changes saved</span></p>
+        <div class="actions">
+          <button type="button" class="btn btn-quiet" id="discard" hidden>Discard</button>
+          <button type="submit" form="prefs" class="btn btn-primary" id="save-btn">Save changes</button>
+        </div>
+      </div>
+      <header class="page-head">
+        <p class="lede">Choose which project events reach you, and where. These settings apply to every project in Meridian Studio.</p>
+        <div class="test-wrap">
+          <button type="button" class="btn btn-secondary" id="test-btn">Send test notification</button>
+          <p class="test-result small" id="test-result" role="status" aria-live="polite"></p>
+        </div>
+      </header>
+
+      <form id="prefs" novalidate>
+        <div class="panels">
+          <section class="panel" aria-labelledby="events-h">
+            <div class="panel-head">
+              <h2 id="events-h">Events and channels</h2>
+              <p class="help">Turn on a channel for each event you want to hear about.</p>
+            </div>
+            <table class="matrix">
+              <caption class="sr">Which events notify you on each channel</caption>
+              <thead>
+                <tr>
+                  <th scope="col"><span class="sr">Event</span></th>
+                  <th scope="col" class="ch-col"><span class="ch-head"><span class="ch-name">Email</span><span class="ch-dest">ren.takeda@<wbr>meridian.studio</span></span></th>
+                  <th scope="col" class="ch-col"><span class="ch-head"><span class="ch-name">Push</span><span class="ch-dest">iPhone 15, Chrome on Mac</span></span></th>
+                  <th scope="col" class="ch-col" id="slack-th"><span class="ch-head"><span class="ch-name">Slack</span><span class="ch-dest is-off" id="slack-dest">Not connected</span><button type="button" class="btn btn-secondary btn-sm" id="slack-connect">Connect Slack</button></span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-event="mentions">
+                  <th scope="row"><span class="ev-name">Mentions</span><span class="ev-desc">Someone @mentions you in a comment, task, or doc.</span></th>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="mentions.email" checked><span class="cell-ch" aria-hidden="true">Email</span><span class="sr">Mentions by email</span></label></td>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="mentions.push" checked><span class="cell-ch" aria-hidden="true">Push</span><span class="sr">Mentions by push</span></label></td>
+                  <td class="slack-cell"><span class="cell-off"><span class="dash" aria-hidden="true">–</span><span class="why" aria-hidden="true">Slack: not connected</span><span class="sr">Mentions by Slack: connect Slack first</span></span></td>
+                </tr>
+                <tr data-event="assigned">
+                  <th scope="row"><span class="ev-name">Assigned tasks</span><span class="ev-desc">A task is assigned or reassigned to you.</span></th>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="assigned.email" checked><span class="cell-ch" aria-hidden="true">Email</span><span class="sr">Assigned tasks by email</span></label></td>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="assigned.push"><span class="cell-ch" aria-hidden="true">Push</span><span class="sr">Assigned tasks by push</span></label></td>
+                  <td class="slack-cell"><span class="cell-off"><span class="dash" aria-hidden="true">–</span><span class="why" aria-hidden="true">Slack: not connected</span><span class="sr">Assigned tasks by Slack: connect Slack first</span></span></td>
+                </tr>
+                <tr data-event="due">
+                  <th scope="row">
+                    <span class="ev-name">Due-date reminders</span>
+                    <span class="ev-desc">Tasks assigned to you that are coming due.</span>
+                    <span class="ev-extra"><label for="due-lead">Remind me</label>
+                      <select id="due-lead" name="due.lead">
+                        <option value="2h">2 hours before</option>
+                        <option value="1d" selected>1 day before</option>
+                        <option value="2d">2 days before</option>
+                        <option value="1w">1 week before</option>
+                      </select>
+                    </span>
+                  </th>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="due.email"><span class="cell-ch" aria-hidden="true">Email</span><span class="sr">Due-date reminders by email</span></label></td>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="due.push" checked><span class="cell-ch" aria-hidden="true">Push</span><span class="sr">Due-date reminders by push</span></label></td>
+                  <td class="slack-cell"><span class="cell-off"><span class="dash" aria-hidden="true">–</span><span class="why" aria-hidden="true">Slack: not connected</span><span class="sr">Due-date reminders by Slack: connect Slack first</span></span></td>
+                </tr>
+                <tr data-event="digest">
+                  <th scope="row"><span class="ev-name">Weekly digest</span><span class="ev-desc">Monday morning summary of what moved in your projects.</span></th>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="digest.email" checked><span class="cell-ch" aria-hidden="true">Email</span><span class="sr">Weekly digest by email</span></label></td>
+                  <td><label class="cell"><input class="switch" type="checkbox" role="switch" name="digest.push"><span class="cell-ch" aria-hidden="true">Push</span><span class="sr">Weekly digest by push</span></label></td>
+                  <td class="slack-cell"><span class="cell-off"><span class="dash" aria-hidden="true">–</span><span class="why" aria-hidden="true">Slack: not connected</span><span class="sr">Weekly digest by Slack: connect Slack first</span></span></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel" aria-labelledby="quiet-h">
+            <div class="panel-head">
+              <h2 id="quiet-h">Quiet hours</h2>
+              <p class="help">Email, push, and Slack wait until quiet hours end. Nothing is lost; held notifications arrive together.</p>
+            </div>
+            <label class="quiet-toggle"><input class="switch" type="checkbox" role="switch" id="quiet-on" name="quiet.on" checked> Pause notifications during quiet hours</label>
+            <div class="quiet-fields">
+              <div class="field">
+                <label for="q-start">Start</label>
+                <input type="time" id="q-start" name="quiet.start" value="22:00" step="900" aria-describedby="q-start-help">
+                <span class="help" id="q-start-help">Evening</span>
+              </div>
+              <div class="field">
+                <label for="q-end">End</label>
+                <input type="time" id="q-end" name="quiet.end" value="07:30" step="900" aria-describedby="q-end-err q-end-help">
+                <span class="err" id="q-end-err"></span>
+                <span class="help" id="q-end-help">Next morning</span>
+              </div>
+              <div class="field tz">
+                <label for="q-tz">Timezone</label>
+                <select id="q-tz" name="quiet.tz" aria-describedby="q-tz-help">
+                  <option value="America/Los_Angeles">Los Angeles (UTC−07:00)</option>
+                  <option value="America/New_York">New York (UTC−04:00)</option>
+                  <option value="Europe/London">London (UTC+00:00)</option>
+                  <option value="Europe/Berlin">Berlin (UTC+01:00)</option>
+                  <option value="Asia/Kolkata">Kolkata (UTC+05:30)</option>
+                  <option value="Asia/Tokyo" selected>Tokyo (UTC+09:00)</option>
+                  <option value="Australia/Sydney">Sydney (UTC+11:00)</option>
+                </select>
+                <span class="help" id="q-tz-help">Quiet hours follow this clock, even when you travel.</span>
+              </div>
+            </div>
+
+            <div class="day" aria-labelledby="day-h">
+              <h3 class="sr" id="day-h">Your day at a glance</h3>
+              <p class="day-read" id="day-read" aria-live="polite"><strong id="day-span">22:00 – 07:30</strong><span class="muted small" id="day-detail">9 h 30 min quiet · held notifications arrive at 07:30 Tokyo time</span></p>
+              <div class="strip" id="strip" aria-hidden="true">
+                <div class="band" id="band-a"></div>
+                <div class="band" id="band-b"></div>
+                <div class="deliver" id="deliver"></div>
+                <div class="strip-note" id="strip-note" hidden></div>
+              </div>
+              <div class="ticks" aria-hidden="true" id="ticks"></div>
+              <div class="legend small muted" aria-hidden="true">
+                <span><i class="sw sw-night"></i>Quiet, notifications held</span>
+                <span><i class="sw sw-lamp"></i>Held notifications delivered</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </form>
+
+      <!-- Required states that otherwise appear only after an action -->
+      <section class="specimens" aria-labelledby="spec-h" inert>
+        <header>
+          <h2 id="spec-h">State specimens</h2>
+          <p class="help">Static examples of states that only appear after an action. They are copies for review and do not respond to input.</p>
+        </header>
+        <div class="spec-grid">
+          <div class="spec">
+            <h3>Save succeeded</h3>
+            <div class="toast"><p class="t-title">Notification settings saved</p><span></span><p class="t-body">Changes apply to new notifications right away.</p></div>
+          </div>
+          <div class="spec">
+            <h3>Save failed</h3>
+            <div class="toast is-err"><p class="t-title">Couldn’t save your settings</p><span></span><p class="t-body">The server didn’t respond within 10 seconds. Your changes are still on this page. Check your connection, then try again.</p><div class="t-actions"><button type="button" class="btn btn-secondary btn-sm">Try again</button></div></div>
+          </div>
+          <div class="spec">
+            <h3>Quiet hours: end equals start</h3>
+            <div class="panel">
+              <div class="quiet-fields two">
+                <div class="field"><label for="sp-start">Start</label><input type="time" id="sp-start" value="22:00" readonly></div>
+                <div class="field"><label for="sp-end">End</label><input type="time" id="sp-end" value="22:00" readonly aria-invalid="true" aria-describedby="sp-end-err"><span class="err" id="sp-end-err">End time must differ from start. Pick an end like 07:00.</span></div>
+              </div>
+              <div class="day"><div class="strip is-error"><div class="strip-note">No quiet window: start and end are the same</div></div></div>
+            </div>
+          </div>
+          <div class="spec">
+            <h3>Slack connected</h3>
+            <div class="panel">
+              <span class="ch-head"><span class="ch-name">Slack</span><span class="ch-dest">Direct messages in meridian-studio.slack.com</span></span>
+              <p class="small" style="margin-top:8px"><label class="cell"><input class="switch" type="checkbox" role="switch" checked> Mentions by Slack</label></p>
+            </div>
+          </div>
+          <div class="spec">
+            <h3>Test notification sent</h3>
+            <div class="panel"><p class="small" style="color:var(--ok)">Test sent to email and push at 14:32. Slack skipped: not connected.</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const form = $('#prefs');
+  const events = { mentions: 'Mentions', assigned: 'Assigned tasks', due: 'Due-date reminders', digest: 'Weekly digest' };
+  const slackDefaults = { mentions: true, assigned: true, due: false, digest: false };
+  let slackConnected = false;
+
+  /* ---------- State and dirty tracking ---------- */
+  const readState = () => {
+    const s = {};
+    $$('input, select', form).forEach((el) => {
+      if (!el.name) return;
+      s[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return s;
+  };
+  let saved = readState();
+  const diffCount = () => {
+    const now = readState();
+    const keys = new Set([...Object.keys(now), ...Object.keys(saved)]);
+    let n = 0; keys.forEach((k) => { if (now[k] !== saved[k]) n++; });
+    return n;
+  };
+
+  const bar = $('#savebar'), stateEl = $('#save-state'), discard = $('#discard'), saveBtn = $('#save-btn');
+  let saving = false;
+  const refreshBar = () => {
+    if (saving) return;
+    const invalid = !validate(false);
+    const n = diffCount();
+    if (invalid) { bar.dataset.state = 'invalid'; stateEl.textContent = 'Fix the quiet-hours end time to save'; }
+    else if (n) { bar.dataset.state = 'dirty'; stateEl.textContent = n === 1 ? '1 unsaved change' : `${n} unsaved changes`; }
+    else { bar.dataset.state = 'clean'; stateEl.textContent = 'All changes saved'; }
+    discard.hidden = n === 0;
+  };
+
+  /* ---------- Quiet hours ---------- */
+  const qOn = $('#quiet-on'), qStart = $('#q-start'), qEnd = $('#q-end'), qTz = $('#q-tz'), qErr = $('#q-end-err');
+  const toMin = (v) => { const [h, m] = (v || '0:0').split(':').map(Number); return h * 60 + m; };
+  const fmt = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  const dur = (min) => { const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${m} min` : `${h} h`; };
+  const tzName = () => qTz.options[qTz.selectedIndex].text.replace(/\s*\(.*\)/, '');
+
+  function validate(show) {
+    if (!qOn.checked) { setErr(''); return true; }
+    if (!qStart.value || !qEnd.value) {
+      if (show) setErr(`Enter a ${!qStart.value ? 'start' : 'end'} time, like 07:00.`);
+      return false;
+    }
+    if (qStart.value === qEnd.value) {
+      if (show) setErr(`End time must differ from start. ${qStart.value} to ${qEnd.value} leaves no quiet window; pick an end like ${fmt((toMin(qStart.value) + 540) % 1440)}.`);
+      return false;
+    }
+    setErr('');
+    return true;
+  }
+  function setErr(msg) {
+    qErr.textContent = msg;
+    if (msg) qEnd.setAttribute('aria-invalid', 'true'); else qEnd.removeAttribute('aria-invalid');
+  }
+
+  const ticks = $('#ticks');
+  const drawTicks = () => {
+    const step = window.innerWidth < 641 ? 6 : 3;
+    ticks.innerHTML = '';
+    for (let h = 0; h <= 24; h += step) {
+      const s = document.createElement('span');
+      s.style.left = `${(h / 24) * 100}%`;
+      s.textContent = String(h).padStart(2, '0');
+      ticks.appendChild(s);
+    }
+  };
+
+  const strip = $('#strip'), bandA = $('#band-a'), bandB = $('#band-b'), deliver = $('#deliver'), note = $('#strip-note');
+  const spanEl = $('#day-span'), detailEl = $('#day-detail');
+  function drawDay() {
+    const on = qOn.checked;
+    [qStart, qEnd, qTz].forEach((el) => { el.disabled = !on; });
+    const ok = on && qStart.value && qEnd.value && qStart.value !== qEnd.value;
+    strip.classList.toggle('is-off', !on);
+    strip.classList.toggle('is-error', on && !ok);
+    [bandA, bandB, deliver].forEach((el) => { el.hidden = !ok; });
+    note.hidden = !!ok;
+    if (!on) {
+      note.textContent = 'Quiet hours are off';
+      spanEl.textContent = 'Off';
+      detailEl.textContent = 'Notifications arrive at any hour.';
+      return;
+    }
+    if (!ok) {
+      note.textContent = 'No quiet window: start and end are the same';
+      spanEl.textContent = `${qStart.value || '--:--'} – ${qEnd.value || '--:--'}`;
+      detailEl.textContent = 'Choose an end time that differs from the start.';
+      return;
+    }
+    const a = toMin(qStart.value), b = toMin(qEnd.value);
+    const pct = (m) => `${(m / 1440) * 100}%`;
+    if (a < b) {
+      bandA.style.left = pct(a); bandA.style.width = pct(b - a); bandB.hidden = true;
+    } else {
+      bandA.style.left = '0%'; bandA.style.width = pct(b);
+      bandB.style.left = pct(a); bandB.style.width = pct(1440 - a);
+    }
+    deliver.style.left = pct(b);
+    const length = (b - a + 1440) % 1440;
+    spanEl.textContent = `${qStart.value} – ${qEnd.value}`;
+    detailEl.textContent = `${dur(length)} quiet · held notifications arrive at ${qEnd.value} ${tzName()} time`;
+    $('#q-end-help').textContent = b < a ? 'Next morning' : 'Same day';
+    $('#q-start-help').textContent = a >= 17 * 60 || a < 4 * 60 ? 'Evening' : a < 12 * 60 ? 'Morning' : 'Afternoon';
+  }
+
+  [qStart, qEnd].forEach((el) => {
+    el.addEventListener('blur', () => { validate(true); drawDay(); refreshBar(); });
+    el.addEventListener('change', () => {
+      // Re-check immediately once an error is showing; otherwise wait for blur.
+      if (qErr.textContent) validate(true);
+      drawDay(); refreshBar();
+    });
+  });
+  qOn.addEventListener('change', () => { validate(true); drawDay(); refreshBar(); });
+  qTz.addEventListener('change', () => { drawDay(); refreshBar(); });
+  form.addEventListener('change', refreshBar);
+
+  /* ---------- Slack ---------- */
+  const slackBtn = $('#slack-connect'), slackDest = $('#slack-dest');
+  function buildSlackCells() {
+    $$('tbody tr[data-event]').forEach((tr) => {
+      const ev = tr.dataset.event;
+      const td = $('.slack-cell', tr);
+      td.textContent = '';
+      const label = document.createElement('label');
+      label.className = 'cell';
+      const input = document.createElement('input');
+      input.className = 'switch'; input.type = 'checkbox'; input.setAttribute('role', 'switch');
+      input.name = `${ev}.slack`; input.checked = slackDefaults[ev];
+      const vis = document.createElement('span');
+      vis.className = 'cell-ch'; vis.setAttribute('aria-hidden', 'true'); vis.textContent = 'Slack';
+      const sr = document.createElement('span');
+      sr.className = 'sr'; sr.textContent = `${events[ev]} by Slack`;
+      label.append(input, vis, sr);
+      td.appendChild(label);
+    });
+  }
+  slackBtn.addEventListener('click', () => {
+    if (slackBtn.getAttribute('aria-disabled') === 'true') return;
+    slackBtn.setAttribute('aria-disabled', 'true');
+    slackBtn.textContent = 'Connecting…';
+    setTimeout(() => {
+      slackConnected = true;
+      buildSlackCells();
+      // The connection is saved by the integration itself, so its defaults are not unsaved changes.
+      Object.keys(events).forEach((ev) => { saved[`${ev}.slack`] = slackDefaults[ev]; });
+      slackDest.textContent = 'Direct messages in meridian-studio.slack.com';
+      slackDest.classList.remove('is-off');
+      slackBtn.remove();
+      toast({ title: 'Slack connected', body: 'Mentions and assigned tasks will also arrive as Slack direct messages. Adjust them in the Slack column.' });
+      refreshBar();
+      const first = $('input[name="mentions.slack"]');
+      if (first) first.focus();
+    }, 1100);
+  });
+
+  /* ---------- Test notification ---------- */
+  const testBtn = $('#test-btn'), testRes = $('#test-result');
+  testBtn.addEventListener('click', () => {
+    if (testBtn.getAttribute('aria-disabled') === 'true') return;
+    const s = readState();
+    const used = ['email', 'push', 'slack'].filter((ch) => Object.keys(events).some((ev) => s[`${ev}.${ch}`]));
+    testRes.className = 'test-result small';
+    if (!used.length) {
+      testRes.classList.add('is-err');
+      testRes.textContent = 'No channel is on. Turn on at least one channel above, then send a test.';
+      return;
+    }
+    testBtn.setAttribute('aria-disabled', 'true');
+    testBtn.textContent = 'Sending test…';
+    testRes.textContent = '';
+    setTimeout(() => {
+      testBtn.removeAttribute('aria-disabled');
+      testBtn.textContent = 'Send test notification';
+      const names = { email: 'email', push: 'push', slack: 'Slack' };
+      const list = used.map((c) => names[c]);
+      const joined = list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list.at(-1)}` : list[0];
+      const now = new Date();
+      const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      testRes.classList.add('is-ok');
+      testRes.textContent = `Test sent to ${joined} at ${t}.${slackConnected ? '' : ' Slack skipped: not connected.'} Tests ignore quiet hours.`;
+    }, 900);
+  });
+
+  /* ---------- Save ---------- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (saving) return;
+    if (!validate(true)) { drawDay(); refreshBar(); qEnd.focus(); return; }
+    if (!diffCount()) { toast({ title: 'Nothing to save', body: 'No changes since your last save.' }); return; }
+    saving = true;
+    saveBtn.setAttribute('aria-disabled', 'true');
+    saveBtn.textContent = 'Saving…';
+    stateEl.textContent = 'Saving your changes…';
+    // Demo: append #simulate-failure to the URL, or go offline, to see the failure path.
+    const fail = location.hash === '#simulate-failure' || navigator.onLine === false;
+    setTimeout(() => {
+      saving = false;
+      saveBtn.removeAttribute('aria-disabled');
+      saveBtn.textContent = 'Save changes';
+      if (fail) {
+        clearToasts();
+        toast({
+          title: 'Couldn’t save your settings', err: true, sticky: true,
+          body: 'The server didn’t respond within 10 seconds. Your changes are still on this page. Check your connection, then try again.',
+          action: { label: 'Try again', run: () => form.requestSubmit() }
+        });
+        refreshBar();
+        stateEl.textContent = 'Not saved: try again';
+      } else {
+        saved = readState();
+        clearToasts();
+        toast({ title: 'Notification settings saved', body: 'Changes apply to new notifications right away.' });
+        refreshBar();
+      }
+    }, 900);
+  });
+
+  discard.addEventListener('click', () => {
+    $$('input, select', form).forEach((el) => {
+      if (!(el.name in saved)) return;
+      if (el.type === 'checkbox') el.checked = saved[el.name]; else el.value = saved[el.name];
+    });
+    validate(true); drawDay(); refreshBar();
+    toast({ title: 'Changes discarded', body: 'Settings are back to your last save.' });
+  });
+
+  window.addEventListener('beforeunload', (e) => { if (diffCount()) { e.preventDefault(); e.returnValue = ''; } });
+
+  /* ---------- Toasts ---------- */
+  const region = $('#toasts');
+  function clearToasts() { region.textContent = ''; }
+  function toast({ title, body, err = false, sticky = false, action }) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (err ? ' is-err' : '');
+    if (err) el.setAttribute('role', 'alert');
+    const t = document.createElement('p'); t.className = 't-title'; t.textContent = title;
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'btn btn-quiet x'; x.setAttribute('aria-label', 'Dismiss'); x.textContent = '×';
+    x.addEventListener('click', () => el.remove());
+    const b = document.createElement('p'); b.className = 't-body'; b.textContent = body;
+    el.append(t, x, b);
+    if (action) {
+      const row = document.createElement('div'); row.className = 't-actions';
+      const a = document.createElement('button'); a.type = 'button'; a.className = 'btn btn-secondary btn-sm'; a.textContent = action.label;
+      a.addEventListener('click', () => { el.remove(); action.run(); });
+      row.appendChild(a); el.appendChild(row);
+    }
+    region.appendChild(el);
+    if (!sticky) setTimeout(() => el.remove(), 5000);
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') clearToasts(); });
+
+  drawTicks();
+  window.addEventListener('resize', drawTicks);
+  drawDay();
+  refreshBar();
+})();
+</script>
+</body>
+</html>

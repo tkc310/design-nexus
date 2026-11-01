@@ -1,0 +1,3458 @@
+{
+  "set": "v2-validation",
+  "archived_at": "2026-11-01T15:26:33.652Z",
+  "pages": {
+    "v030-01": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "01-lp-devtool",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 4,
+            "D5": 4,
+            "D6": 3,
+            "D7": 2,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 2,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v030-02": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "02-lp-ja-craft",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 4,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "opus": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 2,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 2,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v030-03": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "03-dash-clinic",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "opus": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 45,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v030-04": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "04-settings-form",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 49.1,
+          "dims": {
+            "D1": 4,
+            "D2": 2,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "opus": {
+          "judge60": 46.4,
+          "dims": {
+            "D1": 4,
+            "D2": 2,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 43,
+          "dims": {
+            "D1": 3,
+            "D2": 2,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v030-05": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "05-mobile-transit",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 55.2,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 4,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "opus": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v030-06": {
+      "run": "20261031-0330-v0.3.0-base-opus",
+      "case": "06-redesign",
+      "group": "v030",
+      "v1": {
+        "fable": {
+          "judge60": 51.8,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v071a-01": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "01-lp-devtool",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v071a-02": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "02-lp-ja-craft",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 4,
+            "D8": 2,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 51.8,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071a-03": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "03-dash-clinic",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 45.7,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 2,
+            "D5": 2,
+            "D6": 3,
+            "D7": 2,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v071a-04": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "04-settings-form",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 49.1,
+          "dims": {
+            "D1": 4,
+            "D2": 2,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v071a-05": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "05-mobile-transit",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 53.9,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 4,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "v071a-06": {
+      "run": "20261031-1854-v0.7.1-base-v071a",
+      "case": "06-redesign",
+      "group": "v071a",
+      "v1": {
+        "opus": {
+          "judge60": 53.2,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 4,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 53.2,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-01": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "01-lp-devtool",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 45.7,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 2,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-02": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "02-lp-ja-craft",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 53.2,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-03": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "03-dash-clinic",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 2,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-04": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "04-settings-form",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 43.6,
+          "dims": {
+            "D1": 4,
+            "D2": 2,
+            "D3": 3,
+            "D4": 3,
+            "D5": 2,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-05": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "05-mobile-transit",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 4,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 56.6,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 4,
+            "D5": 4,
+            "D6": 3,
+            "D7": 4,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "v071b-06": {
+      "run": "20261031-1919-v0.7.1-base-v071b",
+      "case": "06-redesign",
+      "group": "v071b",
+      "v1": {
+        "opus": {
+          "judge60": 50.5,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 55.9,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 4,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "e022a-01": {
+      "run": "20261101-0028-v0.8.1-v0.8.1-exp022a",
+      "case": "01-lp-devtool",
+      "group": "e022a",
+      "v1": {
+        "opus": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 53.2,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "e022a-03": {
+      "run": "20261101-0028-v0.8.1-v0.8.1-exp022a",
+      "case": "03-dash-clinic",
+      "group": "e022a",
+      "v1": {
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 2,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        }
+      }
+    },
+    "e023-01": {
+      "run": "20261101-0101-v0.9.0-exp023",
+      "case": "01-lp-devtool",
+      "group": "e023",
+      "v1": {
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e023-03": {
+      "run": "20261101-0101-v0.9.0-exp023",
+      "case": "03-dash-clinic",
+      "group": "e023",
+      "v1": {
+        "opus": {
+          "judge60": 53.2,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 4,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e023-04": {
+      "run": "20261101-0101-v0.9.0-exp023",
+      "case": "04-settings-form",
+      "group": "e023",
+      "v1": {
+        "opus": {
+          "judge60": 45,
+          "dims": {
+            "D1": 4,
+            "D2": 2,
+            "D3": 3,
+            "D4": 2,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 47,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e023-06": {
+      "run": "20261101-0101-v0.9.0-exp023",
+      "case": "06-redesign",
+      "group": "e023",
+      "v1": {
+        "opus": {
+          "judge60": 51.8,
+          "dims": {
+            "D1": 4,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 3,
+            "D2": 4,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "b100a-01": {
+      "run": "20261101-0711-v0.10.0-base100a",
+      "case": "01-lp-devtool",
+      "group": "b100a",
+      "v1": {}
+    },
+    "b100a-03": {
+      "run": "20261101-0711-v0.10.0-base100a",
+      "case": "03-dash-clinic",
+      "group": "b100a",
+      "v1": {}
+    },
+    "b100a-04": {
+      "run": "20261101-0711-v0.10.0-base100a",
+      "case": "04-settings-form",
+      "group": "b100a",
+      "v1": {}
+    },
+    "b100b-01": {
+      "run": "20261101-0712-v0.10.0-base100b",
+      "case": "01-lp-devtool",
+      "group": "b100b",
+      "v1": {}
+    },
+    "b100b-03": {
+      "run": "20261101-0712-v0.10.0-base100b",
+      "case": "03-dash-clinic",
+      "group": "b100b",
+      "v1": {}
+    },
+    "b100b-04": {
+      "run": "20261101-0712-v0.10.0-base100b",
+      "case": "04-settings-form",
+      "group": "b100b",
+      "v1": {}
+    },
+    "e027a-01": {
+      "run": "20261101-0711-v0.10.0-exp027a",
+      "case": "01-lp-devtool",
+      "group": "e027a",
+      "v1": {}
+    },
+    "e027a-03": {
+      "run": "20261101-0711-v0.10.0-exp027a",
+      "case": "03-dash-clinic",
+      "group": "e027a",
+      "v1": {}
+    },
+    "e027a-04": {
+      "run": "20261101-0711-v0.10.0-exp027a",
+      "case": "04-settings-form",
+      "group": "e027a",
+      "v1": {}
+    },
+    "e027b-01": {
+      "run": "20261101-0712-v0.10.0-exp027b",
+      "case": "01-lp-devtool",
+      "group": "e027b",
+      "v1": {}
+    },
+    "e027b-03": {
+      "run": "20261101-0712-v0.10.0-exp027b",
+      "case": "03-dash-clinic",
+      "group": "e027b",
+      "v1": {}
+    },
+    "e027b-04": {
+      "run": "20261101-0712-v0.10.0-exp027b",
+      "case": "04-settings-form",
+      "group": "e027b",
+      "v1": {}
+    },
+    "e021-01": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "01-lp-devtool",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 42.3,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 2,
+            "D7": 2,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 43.6,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 2,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e021-02": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "02-lp-ja-craft",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 2,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 45,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e021-03": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "03-dash-clinic",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 48.4,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        },
+        "sonnet": {
+          "judge60": 45,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e021-04": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "04-settings-form",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 52.5,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 45,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 2,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e021-05": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "05-mobile-transit",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 51.1,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 2,
+            "D5": 4,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 4,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 4,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e021-06": {
+      "run": "20261031-2111-v0.8.0-exp021",
+      "case": "06-redesign",
+      "group": "e021",
+      "v1": {
+        "opus": {
+          "judge60": 49.8,
+          "dims": {
+            "D1": 4,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 4,
+            "D10": 4
+          }
+        },
+        "sonnet": {
+          "judge60": 45,
+          "dims": {
+            "D1": 3,
+            "D2": 3,
+            "D3": 3,
+            "D4": 3,
+            "D5": 3,
+            "D6": 3,
+            "D7": 3,
+            "D8": 3,
+            "D9": 3,
+            "D10": 3
+          }
+        }
+      }
+    },
+    "e028a-01": {
+      "run": "20261101-0823-v0.10.0-exp028a",
+      "case": "01-lp-devtool",
+      "group": "e028a",
+      "v1": {}
+    },
+    "e028a-03": {
+      "run": "20261101-0823-v0.10.0-exp028a",
+      "case": "03-dash-clinic",
+      "group": "e028a",
+      "v1": {}
+    },
+    "e028a-04": {
+      "run": "20261101-0823-v0.10.0-exp028a",
+      "case": "04-settings-form",
+      "group": "e028a",
+      "v1": {}
+    }
+  },
+  "pairs": [
+    {
+      "cand": "v071a-01",
+      "base": "v071b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v071b-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v030-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v030-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v071b-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v071b-02",
+      "model": "sonnet",
+      "pair": "02-lp-ja-craft--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v030-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v030-02",
+      "model": "sonnet",
+      "pair": "02-lp-ja-craft--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v071b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "tie",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v071b-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "tie",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v030-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v030-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v071b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v071b-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v030-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v030-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v071b-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v071b-05",
+      "model": "sonnet",
+      "pair": "05-mobile-transit--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v030-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v030-05",
+      "model": "sonnet",
+      "pair": "05-mobile-transit--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v071b-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v071b-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "tie",
+        "D4": "base",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v030-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v030-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-0330-v0.3.0-base-opus",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "tie",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v071b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v071b-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v030-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-01",
+      "base": "v030-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v071b-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v071b-02",
+      "model": "sonnet",
+      "pair": "02-lp-ja-craft--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v030-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-02",
+      "base": "v030-02",
+      "model": "sonnet",
+      "pair": "02-lp-ja-craft--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v071b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "tie",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v071b-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "tie",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "base",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v030-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-03",
+      "base": "v030-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v071b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v071b-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v030-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-04",
+      "base": "v030-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v071b-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v071b-05",
+      "model": "sonnet",
+      "pair": "05-mobile-transit--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v030-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-05",
+      "base": "v030-05",
+      "model": "sonnet",
+      "pair": "05-mobile-transit--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v071b-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v071b-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "tie",
+        "D4": "base",
+        "D5": "base",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v030-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "v071a-06",
+      "base": "v030-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-0330-v0.3.0-base-opus",
+      "swap": true,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "tie",
+        "D5": "base",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-01",
+      "base": "v071a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "tie",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-01",
+      "base": "v071b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e021-02",
+      "base": "v071a-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-02",
+      "base": "v071b-02",
+      "model": "opus",
+      "pair": "02-lp-ja-craft--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-03",
+      "base": "v071a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "tie",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-03",
+      "base": "v071b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "tie",
+        "D4": "cand",
+        "D5": "base",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-04",
+      "base": "v071a-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e021-04",
+      "base": "v071b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e021-05",
+      "base": "v071a-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-05",
+      "base": "v071b-05",
+      "model": "opus",
+      "pair": "05-mobile-transit--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-06",
+      "base": "v071a-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e021-06",
+      "base": "v071b-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e022a-01",
+      "base": "v071a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e022a-01",
+      "base": "v071b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e022a-03",
+      "base": "v071a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e022a-03",
+      "base": "v071b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "base",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-01",
+      "base": "v071a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e023-01",
+      "base": "v071a-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "tie",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-01",
+      "base": "v071b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-01",
+      "base": "v071b-01",
+      "model": "sonnet",
+      "pair": "01-lp-devtool--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-03",
+      "base": "v071a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-03",
+      "base": "v071a-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "base",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-03",
+      "base": "v071b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e023-03",
+      "base": "v071b-03",
+      "model": "sonnet",
+      "pair": "03-dash-clinic--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-04",
+      "base": "v071a-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e023-04",
+      "base": "v071a-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "tie",
+        "D3": "base",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-04",
+      "base": "v071b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e023-04",
+      "base": "v071b-04",
+      "model": "sonnet",
+      "pair": "04-settings-form--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-06",
+      "base": "v071a-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e023-06",
+      "base": "v071a-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-1854-v0.7.1-base-v071a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-06",
+      "base": "v071b-06",
+      "model": "opus",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "tie",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e023-06",
+      "base": "v071b-06",
+      "model": "sonnet",
+      "pair": "06-redesign--20261031-1919-v0.7.1-base-v071b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "tie",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "tie",
+        "D8": "tie",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027a-01",
+      "base": "b100a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027a-01",
+      "base": "b100b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027a-03",
+      "base": "b100a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e027a-03",
+      "base": "b100b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027a-04",
+      "base": "b100a-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "cand",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027a-04",
+      "base": "b100b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "cand",
+        "D5": "tie",
+        "D6": "tie",
+        "D7": "cand",
+        "D8": "cand",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027b-01",
+      "base": "b100a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "base"
+      }
+    },
+    {
+      "cand": "e027b-01",
+      "base": "b100b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027b-03",
+      "base": "b100a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027b-03",
+      "base": "b100b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "tie",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027b-04",
+      "base": "b100a-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e027b-04",
+      "base": "b100b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "base",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "cand",
+        "D5": "base",
+        "D6": "base",
+        "D7": "cand",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e028a-01",
+      "base": "b100a-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "cand",
+        "D4": "tie",
+        "D5": "base",
+        "D6": "base",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e028a-01",
+      "base": "b100b-01",
+      "model": "opus",
+      "pair": "01-lp-devtool--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "base",
+        "D6": "tie",
+        "D7": "base",
+        "D8": "base",
+        "D9": "base",
+        "D10": "cand"
+      }
+    },
+    {
+      "cand": "e028a-03",
+      "base": "b100a-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "base",
+      "margin": "clear",
+      "dims": {
+        "D1": "cand",
+        "D2": "base",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "base",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e028a-03",
+      "base": "b100b-03",
+      "model": "opus",
+      "pair": "03-dash-clinic--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "base",
+      "margin": "slight",
+      "dims": {
+        "D1": "cand",
+        "D2": "cand",
+        "D3": "base",
+        "D4": "base",
+        "D5": "cand",
+        "D6": "base",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e028a-04",
+      "base": "b100a-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0711-v0.10.0-base100a",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "cand",
+        "D4": "cand",
+        "D5": "cand",
+        "D6": "cand",
+        "D7": "base",
+        "D8": "tie",
+        "D9": "tie",
+        "D10": "tie"
+      }
+    },
+    {
+      "cand": "e028a-04",
+      "base": "b100b-04",
+      "model": "opus",
+      "pair": "04-settings-form--20261101-0712-v0.10.0-base100b",
+      "swap": false,
+      "overall": "cand",
+      "margin": "clear",
+      "dims": {
+        "D1": "tie",
+        "D2": "cand",
+        "D3": "tie",
+        "D4": "tie",
+        "D5": "cand",
+        "D6": "tie",
+        "D7": "tie",
+        "D8": "base",
+        "D9": "cand",
+        "D10": "cand"
+      }
+    }
+  ],
+  "briefs": {
+    "01-lp-devtool": "5368e3e846ec",
+    "02-lp-ja-craft": "535bafcdcca7",
+    "03-dash-clinic": "3aa4a672ed87",
+    "04-settings-form": "57a7a74f24e2",
+    "05-mobile-transit": "6b485e361e3e",
+    "06-redesign": "1f7ab164059a"
+  },
+  "runs": {
+    "20261031-0330-v0.3.0-base-opus": {
+      "id": "20261031-0330-v0.3.0-base-opus",
+      "version": "0.3.0",
+      "commit": "53c6f38",
+      "skill": "skills/design-nexus",
+      "created": "2026-10-31T03:30:43.529Z",
+      "split": "all",
+      "generator": "opus"
+    },
+    "20261031-1854-v0.7.1-base-v071a": {
+      "id": "20261031-1854-v0.7.1-base-v071a",
+      "version": "0.7.1",
+      "commit": "e475f9d",
+      "skill": "skills/design-nexus",
+      "created": "2026-10-31T18:54:00.187Z",
+      "split": "all",
+      "generator": "opus"
+    },
+    "20261031-1919-v0.7.1-base-v071b": {
+      "id": "20261031-1919-v0.7.1-base-v071b",
+      "version": "0.7.1",
+      "commit": "e475f9d",
+      "skill": "skills/design-nexus",
+      "created": "2026-10-31T19:19:02.462Z",
+      "split": "all",
+      "generator": "opus"
+    },
+    "20261101-0028-v0.8.1-v0.8.1-exp022a": {
+      "id": "20261101-0028-v0.8.1-v0.8.1-exp022a",
+      "version": "0.8.1",
+      "commit": "512c121",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp022",
+      "created": "2026-11-01T00:28:28.560Z",
+      "generator": "opus"
+    },
+    "20261101-0101-v0.9.0-exp023": {
+      "id": "20261101-0101-v0.9.0-exp023",
+      "version": "0.9.0",
+      "commit": "ade4e2b",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp023",
+      "created": "2026-11-01T01:01:56.038Z",
+      "generator": "opus"
+    },
+    "20261101-0711-v0.10.0-base100a": {
+      "id": "20261101-0711-v0.10.0-base100a",
+      "version": "0.10.0",
+      "commit": "ee5682b",
+      "skill": "skills/design-nexus",
+      "created": "2026-11-01T07:11:01.356Z",
+      "generator": "opus"
+    },
+    "20261101-0712-v0.10.0-base100b": {
+      "id": "20261101-0712-v0.10.0-base100b",
+      "version": "0.10.0",
+      "commit": "ee5682b",
+      "skill": "skills/design-nexus",
+      "created": "2026-11-01T07:12:02.506Z",
+      "generator": "opus"
+    },
+    "20261101-0711-v0.10.0-exp027a": {
+      "id": "20261101-0711-v0.10.0-exp027a",
+      "version": "0.10.0",
+      "commit": "ee5682b",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp026",
+      "created": "2026-11-01T07:11:01.427Z",
+      "generator": "opus"
+    },
+    "20261101-0712-v0.10.0-exp027b": {
+      "id": "20261101-0712-v0.10.0-exp027b",
+      "version": "0.10.0",
+      "commit": "ee5682b",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp026",
+      "created": "2026-11-01T07:12:02.564Z",
+      "generator": "opus"
+    },
+    "20261031-2111-v0.8.0-exp021": {
+      "id": "20261031-2111-v0.8.0-exp021",
+      "version": "0.8.0",
+      "commit": "aae243b",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp021",
+      "created": "2026-10-31T21:11:14.771Z",
+      "split": "train",
+      "generator": "opus"
+    },
+    "20261101-0823-v0.10.0-exp028a": {
+      "id": "20261101-0823-v0.10.0-exp028a",
+      "version": "0.10.0",
+      "commit": "9563f80",
+      "skill": "../../../tmp/claude-0/-home-claude-design-nexus/596134c1-9bb8-502b-bb5c-72cbea56b782/scratchpad/variants/exp028",
+      "created": "2026-11-01T08:23:28.013Z",
+      "generator": "opus"
+    }
+  }
+}

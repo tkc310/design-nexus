@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slotboard — one card per job, one column per person</title>
+<meta name="description" content="Slotboard is a planning board for teams of 3 to 30: every job is a card, every person has a column, and every handoff is written on the card.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Kalam&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Colors: each sampled from a T-card planning board */
+    --board: #46525E;      /* painted steel panel */
+    --rail: #2C343D;       /* shadowed slot channel */
+    --stock: #F3EEE2;      /* ivory T-card stock */
+    --chalk: #E8ECEF;      /* board lettering */
+    --ink: #1E2329;        /* marker on cardstock */
+    --yellow: #F2C230;     /* yellow T-card stock */
+    --danger: #A3261B;     /* red marker, errors only */
+
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "Public Sans", system-ui, sans-serif;
+    --font-hand: "Kalam", "Comic Sans MS", cursive;
+
+    /* Type scale: 17px base, ratio 1.25 */
+    --t-label: 14px;
+    --t-body: 17px;
+    --t-lead: 21px;
+    --t-h3: 27px;
+    --t-h2: clamp(34px, 4.6vw, 53px);
+    --t-hero: clamp(44px, 7.4vw, 92px);
+
+    /* Spacing: 8px base */
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+
+    --radius: 2px;
+    --card-shadow: 0 1px 0 rgb(0 0 0 / 0.25), 0 3px 6px rgb(0 0 0 / 0.22);
+    --lift-shadow: 0 2px 0 rgb(0 0 0 / 0.2), 0 14px 24px rgb(0 0 0 / 0.32);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --gutter: clamp(16px, 4vw, 56px);
+    --max: 1320px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--board);
+    color: var(--chalk);
+    font: 400 var(--t-body)/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: 0.005em; }
+  p { margin: 0; text-wrap: pretty; }
+  a { color: inherit; }
+  img { max-width: 100%; height: auto; display: block; }
+
+  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+  .on-stock :focus-visible { outline-color: var(--ink); }
+
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* Header */
+  .site-head { background: var(--rail); }
+  .site-head .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s3); padding-block: var(--s2); }
+  .mark { display: inline-flex; align-items: center; gap: var(--s1); font: 700 var(--t-lead)/1 var(--font-display); letter-spacing: 0.02em; text-decoration: none; min-height: 44px; }
+  .mark svg { flex: none; }
+  .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 var(--s3); }
+  .site-nav a { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-label); font-weight: 600; text-decoration: none; white-space: nowrap; border-bottom: 2px solid transparent; }
+  @media (hover: hover) and (pointer: fine) { .site-nav a:hover { border-bottom-color: var(--yellow); } }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3);
+    font: 600 var(--t-body)/1 var(--font-body);
+    border-radius: var(--radius); border: 2px solid transparent;
+    cursor: pointer; white-space: nowrap;
+    transition: transform 120ms var(--ease-out), background-color 160ms ease, border-color 160ms ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--yellow); color: var(--ink); border-color: var(--yellow); box-shadow: var(--card-shadow); }
+  .btn-secondary { background: transparent; color: var(--chalk); border-color: var(--chalk); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover { background: var(--stock); border-color: var(--stock); }
+    .btn-secondary:hover { background: var(--rail); }
+  }
+
+  /* Hero */
+  .hero { padding-block: var(--s8) var(--s12); }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); align-items: start; }
+  .hero-copy { display: grid; gap: var(--s3); align-self: start; padding-top: var(--s2); }
+  .hero h1 { font-size: var(--t-hero); line-height: 0.98; text-transform: uppercase; }
+  .hero h1 em { font-style: normal; color: var(--yellow); }
+  .lead { font-size: var(--t-lead); line-height: 1.5; max-width: 34ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s2); padding-top: var(--s1); }
+
+  /* The rack: signature */
+  .rack {
+    min-width: 0;
+    background: var(--rail);
+    padding: var(--s2);
+    border-radius: var(--radius);
+    box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.3);
+  }
+  .rack-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--s1) var(--s2); padding: 0 var(--s1) var(--s2); }
+  .rack-title { font: 700 var(--t-lead)/1.1 var(--font-display); letter-spacing: 0.02em; }
+  .rack-note { font-size: var(--t-label); }
+  .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s1); }
+  .column {
+    min-width: 0;
+    background: var(--board);
+    /* slot channels every 44px, like the louvres of a T-card panel */
+    background-image: repeating-linear-gradient(to bottom, transparent 0 40px, rgb(0 0 0 / 0.22) 40px 44px);
+    padding: var(--s1) var(--s1) var(--s3);
+    border-radius: var(--radius);
+  }
+  .column h3 {
+    font-size: var(--t-lead); text-transform: uppercase; letter-spacing: 0.04em;
+    padding: var(--s1) var(--s1) var(--s2);
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--s1);
+  }
+  .column h3 span { font: 600 var(--t-label)/1 var(--font-body); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  .slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+
+  .tcard { position: relative; }
+  .tcard-top {
+    display: block; width: 100%; min-height: 40px;
+    padding: 6px var(--s1) 4px;
+    text-align: left;
+    font: 400 var(--t-body)/1.25 var(--font-hand);
+    color: var(--ink); background: var(--stock);
+    border: 0; border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  }
+  .tcard[data-stock="yellow"] .tcard-top, .tcard[data-stock="yellow"] .tcard-body { background: var(--yellow); }
+  @media (hover: hover) and (pointer: fine) { .tcard:not(.is-open) .tcard-top:hover { transform: translateY(-3px); } }
+  .tcard-body { display: none; }
+  .tcard.is-open { z-index: 1; }
+  .tcard.is-open .tcard-top { transform: translateY(-6px); box-shadow: var(--lift-shadow); }
+  .tcard.is-open .tcard-body {
+    display: grid; gap: var(--s1);
+    margin: -6px var(--s1) var(--s1);   /* inset body: the stem of the T */
+    padding: var(--s2) var(--s2) var(--s2);
+    background: var(--stock); color: var(--ink);
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: var(--lift-shadow);
+    font-size: var(--t-label); line-height: 1.5;
+    animation: pull 180ms var(--ease-out);
+  }
+  .tcard-body .meta { font-weight: 600; }
+  .tcard-body .hand { font: 400 var(--t-body)/1.35 var(--font-hand); }
+  .tcard-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .tcard-body li::before { content: "\2610\00a0"; }
+  .tcard-body li.done::before { content: "\2611\00a0"; }
+  @keyframes pull { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+  .rack-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: var(--s2) var(--s1) 0; }
+  .rack-foot p { font-size: var(--t-label); }
+
+  /* A card's week */
+  .week-story { background: var(--stock); color: var(--ink); padding-block: var(--s12); }
+  .week-story .intro { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); align-items: end; margin-bottom: var(--s8); }
+  .week-story h2 { font-size: var(--t-h2); text-transform: uppercase; }
+  .week-story .intro p { font-size: var(--t-lead); max-width: 40ch; }
+  .days { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: var(--s6); }
+  .days li { border-top: 4px solid var(--ink); padding: var(--s3) var(--s3) 0 0; display: grid; gap: var(--s1); align-content: start; position: relative; }
+  .days li::before { content: ""; position: absolute; top: -10px; left: 0; width: 16px; height: 16px; background: var(--ink); border-radius: 50%; }
+  .days li:last-child::before { background: var(--yellow); box-shadow: 0 0 0 3px var(--ink); }
+  .days .day { font: 700 var(--t-h3)/1 var(--font-display); text-transform: uppercase; }
+  .days .who { font: 400 var(--t-lead)/1.3 var(--font-hand); }
+
+  /* Week view figure */
+  .week-view { padding-block: var(--s12); }
+  .week-view .wrap { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--s6); align-items: start; }
+  .week-view figure { margin: 0; min-width: 0; }
+  .week-view img { border-radius: var(--radius); box-shadow: var(--lift-shadow); background: var(--rail); }
+  .week-view figcaption { margin-top: var(--s2); font-size: var(--t-label); }
+  .week-view h2 { font-size: var(--t-h2); text-transform: uppercase; margin-bottom: var(--s4); }
+  .rules { margin: 0; display: grid; gap: var(--s3); }
+  .rules dt { font: 700 var(--t-h3)/1.1 var(--font-display); text-transform: uppercase; color: var(--yellow); }
+  .rules dd { margin: var(--s1) 0 0; max-width: 38ch; }
+
+  /* Start a board */
+  .start { padding-bottom: var(--s12); }
+  .signup {
+    max-width: 760px; margin: 0 auto;
+    background: var(--yellow); color: var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--lift-shadow);
+  }
+  .signup-top { padding: var(--s3) var(--s4); border-bottom: 2px dashed rgb(30 35 41 / 0.45); }
+  .signup-top h2 { font-size: var(--t-h2); text-transform: uppercase; }
+  .signup form { margin: 0 var(--s3) var(--s3); padding: var(--s4) var(--s3) var(--s4); background: var(--stock); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+  .signup label { font-weight: 600; }
+  .field-row { display: flex; gap: var(--s1); }
+  .signup input {
+    flex: 1; width: 100%; min-width: 0; min-height: 48px; padding: 0 var(--s2);
+    font: 400 var(--t-body)/1 var(--font-body); color: var(--ink);
+    background: var(--stock); border: 2px solid var(--ink); border-radius: var(--radius);
+  }
+  .signup input[aria-invalid="true"] { border-color: var(--danger); }
+  .icon-btn {
+    flex: none; width: 48px; min-height: 48px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--ink); color: var(--stock); border: 0; border-radius: var(--radius); cursor: pointer;
+    transition: transform 120ms var(--ease-out);
+  }
+  .icon-btn:active { transform: scale(0.97); }
+  .hint { font-size: var(--t-label); }
+  .error { font-size: var(--t-label); font-weight: 600; color: var(--danger); }
+  .error:empty { display: none; }
+  .done-msg { font: 400 var(--t-lead)/1.35 var(--font-hand); }
+
+  .site-foot { background: var(--rail); }
+  .site-foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s1) var(--s3); padding-block: var(--s3); font-size: var(--t-label); }
+
+  /* Widths */
+  @media (max-width: 1080px) {
+    .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+    .lead { max-width: 52ch; }
+    .week-view .wrap { grid-template-columns: minmax(0, 1fr); }
+    .rules { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+    .days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .hero { padding-block: var(--s4) var(--s8); }
+    .week-story .intro { grid-template-columns: minmax(0, 1fr); gap: var(--s3); margin-bottom: var(--s6); }
+    .days { grid-template-columns: minmax(0, 1fr); row-gap: 0; border-left: 4px solid var(--ink); }
+    .days li { border-top: 0; padding: 0 0 var(--s4) var(--s3); }
+    .days li::before { top: 4px; left: -10px; }
+    .rules { grid-template-columns: minmax(0, 1fr); }
+    .signup-top { padding: var(--s3); }
+    .signup form { margin: 0 var(--s2) var(--s2); padding: var(--s3) var(--s2); }
+  }
+  @media (max-width: 560px) {
+    .rack { padding: var(--s1); }
+    .columns { grid-template-columns: minmax(0, 1fr); }
+    .column { padding: 4px var(--s1) var(--s2); }
+    .column h3 { padding: var(--s1) 4px; }
+    .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    .tcard.is-open { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    .site-nav ul { gap: 0 var(--s2); }
+    .actions .btn { flex: 1 1 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .icon-btn, .tcard-top { transition: background-color 160ms ease, border-color 160ms ease; }
+    .btn:active, .icon-btn:active { transform: none; }
+    .tcard .tcard-top, .tcard.is-open .tcard-top, .tcard:not(.is-open) .tcard-top:hover { transform: none; }
+    .tcard.is-open .tcard-body { animation: fade 180ms ease; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="mark" href="#top" aria-label="Slotboard, back to top">
+        <svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true" focusable="false"><path d="M1 1h20v6h-5v18H6V7H1z" fill="var(--yellow)" stroke="var(--ink)" stroke-width="1.5"/></svg>
+        Slotboard
+      </a>
+      <nav class="site-nav" aria-label="Page">
+        <ul>
+          <li><a href="#how">A card's week</a></li>
+          <li><a href="#week">Week view</a></li>
+          <li><a href="#start">Start a board</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div class="hero-copy">
+          <h1 id="hero-title">Every job gets a card. Every card gets <em>a&nbsp;slot.</em></h1>
+          <p class="lead">Slotboard is the planning board for teams of 3 to 30. One column per person, one card per job, and every handoff written on the card, so nobody asks who has it.</p>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="cta-start">Start a board</button>
+            <button type="button" class="btn btn-secondary" id="cta-how">See a card's week</button>
+          </div>
+        </div>
+
+        <div class="rack" aria-labelledby="rack-title">
+          <div class="rack-head">
+            <p class="rack-title" id="rack-title">Northside Print · week 44</p>
+            <p class="rack-note">Sample board: pick any card to pull it</p>
+          </div>
+          <div class="columns">
+            <section class="column" aria-label="Aiko's cards">
+              <h3>Aiko <span>3 cards</span></h3>
+              <ul class="slots">
+                <li class="tcard is-open" data-stock="yellow">
+                  <button type="button" class="tcard-top" aria-expanded="true" aria-controls="c1">Menu proofs, Café Lune</button>
+                  <div class="tcard-body" id="c1">
+                    <p class="meta">Due Thu · passed on by Ben, Mon</p>
+                    <p class="hand">"Proof 2 needs the new price list. Lune approves by phone, not email."</p>
+                    <ul><li class="done">Proof 1 sent</li><li class="done">Prices from Marta</li><li>Proof 2 approved</li></ul>
+                  </div>
+                </li>
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c2">Reprint flyers</button>
+                  <div class="tcard-body" id="c2">
+                    <p class="meta">Due Fri · written by Aiko, Tue</p>
+                    <p class="hand">"Same file as March. 500 on the silk stock."</p>
+                  </div>
+                </li>
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c3">Quote: wedding set</button>
+                  <div class="tcard-body" id="c3">
+                    <p class="meta">Due next Mon · from the shop counter</p>
+                    <p class="hand">"Invites, menus, place cards. Ask about foil."</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="column" aria-label="Ben's cards">
+              <h3>Ben <span>2 cards</span></h3>
+              <ul class="slots">
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c4">Order paper stock</button>
+                  <div class="tcard-body" id="c4">
+                    <p class="meta">Due Wed · written by Ben, Mon</p>
+                    <p class="hand">"Silk 170gsm is down to two reams."</p>
+                  </div>
+                </li>
+                <li class="tcard" data-stock="yellow">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c5">Press 2 service</button>
+                  <div class="tcard-body" id="c5">
+                    <p class="meta">Thu morning · engineer booked</p>
+                    <p class="hand">"Press 2 is out from 8 until noon. Move rush jobs to Press 1."</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="column" aria-label="Marta's cards">
+              <h3>Marta <span>3 cards</span></h3>
+              <ul class="slots">
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c6">October invoices</button>
+                  <div class="tcard-body" id="c6">
+                    <p class="meta">Due Fri · recurring, monthly</p>
+                    <p class="hand">"Twelve to send. Lune's waits for the proof."</p>
+                  </div>
+                </li>
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c7">Chase Lune deposit</button>
+                  <div class="tcard-body" id="c7">
+                    <p class="meta">Due Wed · passed on by Aiko, Tue</p>
+                    <p class="hand">"They said Tuesday. Call before 11."</p>
+                  </div>
+                </li>
+                <li class="tcard">
+                  <button type="button" class="tcard-top" aria-expanded="false" aria-controls="c8">Payroll</button>
+                  <div class="tcard-body" id="c8">
+                    <p class="meta">Due the 28th · recurring, monthly</p>
+                    <p class="hand">"Ben's overtime from the Saturday run."</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="rack-foot">
+            <button type="button" class="btn btn-primary" onclick="go()">Open the next card</button>
+            <p id="rack-status" aria-live="polite">Open: Menu proofs, Café Lune, in Aiko's column.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="week-story on-stock" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="intro">
+          <h2 id="how-title">A card's week</h2>
+          <p>A job moves the way it would on the wall: someone writes it, it sits in one person's slot, and when it moves on, the note moves with it.</p>
+        </div>
+        <ol class="days">
+          <li>
+            <span class="day">Mon</span>
+            <span class="who">Ben takes the call</span>
+            <p>He writes "Menu proofs, Café Lune" and slots it under Aiko, with the client's quirks on the back.</p>
+          </li>
+          <li>
+            <span class="day">Tue</span>
+            <span class="who">Aiko pulls it</span>
+            <p>Proof 1 goes out. She ticks it off and adds a line asking Marta for the new prices.</p>
+          </li>
+          <li>
+            <span class="day">Thu</span>
+            <span class="who">Approved by phone</span>
+            <p>Aiko passes the card to Marta with one note: "Approved, invoice it." No thread to dig through.</p>
+          </li>
+          <li>
+            <span class="day">Fri</span>
+            <span class="who">Marta drops it in Done</span>
+            <p>The invoice goes out. The card leaves the board on Monday and stays searchable in the drawer.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="week-view" id="week" aria-labelledby="week-title">
+      <div class="wrap">
+        <figure>
+          <img src="hero.png" width="1600" height="900" loading="lazy" alt="Slotboard week view: six team members' columns of cream and yellow cards on a slate board, with the Done column filling up on the right.">
+          <figcaption>The week view of the sample board. Illustrative screenshot.</figcaption>
+        </figure>
+        <div>
+          <h2 id="week-title">The whole week on one screen</h2>
+          <dl class="rules">
+            <div>
+              <dt>One column per person</dt>
+              <dd>Who is overloaded shows as a tall column, before anyone has to say it in standup.</dd>
+            </div>
+            <div>
+              <dt>One card per job</dt>
+              <dd>No subtasks of subtasks. If it needs another card, write another card.</dd>
+            </div>
+            <div>
+              <dt>Handoffs leave a note</dt>
+              <dd>Moving a card asks for one line. The next person reads it on the card, not in a chat.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="start" id="start" aria-labelledby="start-title">
+      <div class="wrap">
+        <div class="signup on-stock">
+          <div class="signup-top">
+            <h2 id="start-title">Start a board</h2>
+          </div>
+          <form id="signup" novalidate>
+            <label for="email">Work email</label>
+            <div class="field-row">
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="you@yourteam.com" aria-describedby="email-hint email-error" required>
+              <button type="submit" class="icon-btn" aria-label="Start my board">
+                <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10h13M11 4.5 16.5 10 11 15.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square"/></svg>
+              </button>
+            </div>
+            <p class="hint" id="email-hint">We send one email: the link to your empty board, with your column already on it.</p>
+            <p class="error" id="email-error" role="alert"></p>
+            <p class="done-msg" id="signup-done" role="status" hidden></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <p>© 2026 Slotboard</p>
+      <p>Made for teams who miss the whiteboard but not the photos of it.</p>
+    </div>
+  </footer>
+
+<script>
+  // Pulls the next card out of its slot, in reading order, and announces it.
+  function go() {
+    const cards = Array.from(document.querySelectorAll('.tcard'));
+    const current = cards.findIndex((c) => c.classList.contains('is-open'));
+    openCard(cards[(current + 1) % cards.length]);
+  }
+
+  function openCard(card) {
+    document.querySelectorAll('.tcard.is-open').forEach((c) => {
+      c.classList.remove('is-open');
+      c.querySelector('.tcard-top').setAttribute('aria-expanded', 'false');
+    });
+    card.classList.add('is-open');
+    const top = card.querySelector('.tcard-top');
+    top.setAttribute('aria-expanded', 'true');
+    const owner = card.closest('.column').querySelector('h3').firstChild.textContent.trim();
+    document.getElementById('rack-status').textContent = 'Open: ' + top.textContent + ', in ' + owner + "'s column.";
+  }
+
+  document.querySelectorAll('.tcard-top').forEach((top) => {
+    top.addEventListener('click', () => openCard(top.closest('.tcard')));
+  });
+
+  document.getElementById('cta-start').addEventListener('click', () => {
+    document.getElementById('start').scrollIntoView();
+    document.getElementById('email').focus({ preventScroll: true });
+  });
+  document.getElementById('cta-how').addEventListener('click', () => {
+    document.getElementById('how').scrollIntoView();
+  });
+
+  const form = document.getElementById('signup');
+  const email = document.getElementById('email');
+  const error = document.getElementById('email-error');
+  const done = document.getElementById('signup-done');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = email.value.trim();
+    if (!value) {
+      error.textContent = 'Enter your work email so we can send the link to your board.';
+    } else if (!email.checkValidity()) {
+      error.textContent = 'That address is missing something, like the @ or the part after it. Check it and try again.';
+    } else {
+      error.textContent = '';
+      email.removeAttribute('aria-invalid');
+      done.textContent = 'Board started. The link is on its way to ' + value + '.';
+      done.hidden = false;
+      return;
+    }
+    email.setAttribute('aria-invalid', 'true');
+    done.hidden = true;
+    email.focus();
+  });
+</script>
+</body>
+</html>

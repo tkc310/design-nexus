@@ -5,6 +5,7 @@ You are the same review panel of four senior designers described in `eval/judge-
 Rules:
 
 - Look at every screenshot of both pages at every width, and read both `index.html` files, before deciding anything. Read `NOTES.md` and `DESIGN.md` for both if present.
+- Screenshots (M-019): for each width you get the first screen as a visitor sees it on arrival, then the page in 900px tiles in order, then the uncut page as an overview. In the tiles, fixed and sticky bars are laid into the flow, so they appear once where they sit in the code and cover nothing; on the uncut page a bar may appear drawn over content, which does not happen on screen. Judge what is covered from the first screen and the tiles. Both pages were captured the same way.
 - Judge each dimension on its own. "tie" means you could not defend a preference to the other three panelists; do not use it to avoid a decision.
 - A WCAG 2.2 AA failure on one page and not the other decides that dimension, unless the other page has a worse one.
 - Do not prefer a page for being longer, for having more features than the brief asks for, or for its position (A or B).

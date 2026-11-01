@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- Source of hero.png for case 06 (M-019): a plain screenshot of the product's board view, neutral in colour so it
+     does not steer the redesign's palette. Render: node eval/cases/assets/06-redesign/render.mjs (1600×800) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Board</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1600px; height: 800px; font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #24272b; background: #f4f4f2; display: grid; grid-template-columns: 232px 1fr; }
+  aside { background: #ebebe8; border-right: 1px solid #d9d9d5; padding: 20px 14px; }
+  .ws { font-weight: 650; font-size: 15px; padding: 0 8px 18px; border-bottom: 1px solid #d9d9d5; margin-bottom: 14px; }
+  .ws small { display: block; font-weight: 400; color: #6b6f75; font-size: 13px; }
+  nav a { display: flex; justify-content: space-between; padding: 7px 8px; border-radius: 5px; color: #3b3f45; text-decoration: none; font-size: 14px; }
+  nav a.on { background: #dcdcd7; color: #17191c; font-weight: 600; }
+  nav a span { color: #80858b; }
+  .label { margin: 22px 8px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #80858b; }
+  main { padding: 22px 28px; overflow: hidden; }
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 650; }
+  .crumb { color: #6b6f75; font-size: 14px; }
+  .tools { margin-left: auto; display: flex; gap: 8px; }
+  .tools span { border: 1px solid #cfcfca; background: #fff; border-radius: 5px; padding: 6px 12px; font-size: 13px; color: #3b3f45; }
+  .tools span.primary { background: #2f3a45; border-color: #2f3a45; color: #fff; }
+  .filters { display: flex; gap: 8px; margin-bottom: 18px; font-size: 13px; color: #555a60; }
+  .filters span { border: 1px dashed #c4c4be; border-radius: 999px; padding: 3px 10px; }
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .col h2 { font-size: 13px; margin: 0 0 10px; display: flex; justify-content: space-between; color: #4a4f55; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .card { background: #fff; border: 1px solid #deded9; border-radius: 6px; padding: 12px 12px 10px; margin-bottom: 10px; }
+  .card p { margin: 0 0 10px; font-size: 14.5px; }
+  .meta { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #6b6f75; }
+  .tag { border-radius: 4px; padding: 1px 7px; background: #efefec; color: #4a4f55; }
+  .who { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: #d5d9dd; color: #2f3a45; font-size: 11px; font-weight: 650; display: grid; place-items: center; }
+  .due { color: #8a5a00; }
+  .bar { height: 4px; background: #e6e6e2; border-radius: 2px; margin: 0 0 10px; }
+  .bar i { display: block; height: 4px; border-radius: 2px; background: #6b7c8c; }
+</style>
+</head>
+<body>
+  <aside>
+    <div class="ws">Studio team <small>6 people</small></div>
+    <nav>
+      <a href="#">Inbox <span>4</span></a>
+      <a href="#">My work <span>7</span></a>
+      <a class="on" href="#">Board</a>
+      <a href="#">Calendar</a>
+      <a href="#">Docs</a>
+    </nav>
+    <div class="label">Projects</div>
+    <nav>
+      <a href="#">Website refresh <span>12</span></a>
+      <a href="#">Client onboarding <span>5</span></a>
+      <a href="#">Q4 planning <span>3</span></a>
+    </nav>
+  </aside>
+  <main>
+    <header>
+      <div><div class="crumb">Website refresh</div><h1>Board</h1></div>
+      <div class="tools"><span>Filter</span><span>Group: Status</span><span class="primary">New task</span></div>
+    </header>
+    <div class="filters"><span>Assignee: anyone</span><span>Due: this month</span><span>Label: any</span></div>
+    <div class="board">
+      <section class="col">
+        <h2>To do <span>5</span></h2>
+        <div class="card"><p>Write copy for the pricing page</p><div class="meta"><span class="tag">Content</span><span>Nov 12</span><span class="who">AK</span></div></div>
+        <div class="card"><p>Collect logos from three pilot clients</p><div class="meta"><span class="tag">Sales</span><span>Nov 14</span><span class="who">MR</span></div></div>
+        <div class="card"><p>Decide on the help-center search tool</p><div class="meta"><span class="tag">Ops</span><span class="who">JL</span></div></div>
+        <div class="card"><p>Draft the November newsletter</p><div class="meta"><span class="tag">Content</span><span>Nov 20</span><span class="who">AK</span></div></div>
+        <div class="card"><p>Book the venue for the team offsite</p><div class="meta"><span class="tag">Ops</span><span>Dec 1</span><span class="who">MR</span></div></div>
+      </section>
+      <section class="col">
+        <h2>In progress <span>4</span></h2>
+        <div class="card"><p>Rebuild the signup form</p><div class="bar"><i style="width: 60%"></i></div><div class="meta"><span class="tag">Design</span><span class="due">Due tomorrow</span><span class="who">SO</span></div></div>
+        <div class="card"><p>Fix CSV export for time reports</p><div class="bar"><i style="width: 35%"></i></div><div class="meta"><span class="tag">Bug</span><span>Nov 9</span><span class="who">TD</span></div></div>
+        <div class="card"><p>Interview two customers about approvals</p><div class="bar"><i style="width: 50%"></i></div><div class="meta"><span class="tag">Research</span><span>Nov 11</span><span class="who">JL</span></div></div>
+        <div class="card"><p>Price the annual plan</p><div class="bar"><i style="width: 20%"></i></div><div class="meta"><span class="tag">Product</span><span>Nov 15</span><span class="who">PN</span></div></div>
+      </section>
+      <section class="col">
+        <h2>Review <span>3</span></h2>
+        <div class="card"><p>New onboarding checklist</p><div class="meta"><span class="tag">Design</span><span>2 comments</span><span class="who">SO</span></div></div>
+        <div class="card"><p>Holiday schedule for support</p><div class="meta"><span class="tag">Ops</span><span>1 comment</span><span class="who">MR</span></div></div>
+        <div class="card"><p>Proposal for the Brightline account</p><div class="meta"><span class="tag">Sales</span><span>Nov 10</span><span class="who">PN</span></div></div>
+      </section>
+      <section class="col">
+        <h2>Done <span>5</span></h2>
+        <div class="card"><p>Move the blog to the new domain</p><div class="meta"><span class="tag">Ops</span><span>Nov 3</span><span class="who">TD</span></div></div>
+        <div class="card"><p>Photo shoot for the team page</p><div class="meta"><span class="tag">Content</span><span>Nov 2</span><span class="who">AK</span></div></div>
+        <div class="card"><p>Set up weekly digest emails</p><div class="meta"><span class="tag">Product</span><span>Oct 30</span><span class="who">PN</span></div></div>
+        <div class="card"><p>Archive the old style guide</p><div class="meta"><span class="tag">Design</span><span>Oct 28</span><span class="who">SO</span></div></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

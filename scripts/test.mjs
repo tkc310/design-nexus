@@ -112,6 +112,20 @@ else {
   const fold = run('render-check.mjs', path.join(S2, 'fold.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const r25 = fold.out.findings.filter((f) => f.id === 'R25');
   check('render flags R25 when the first enabled filled action is below the first screen, ignoring a skip link and a disabled button', r25.length === 1 && /#late/.test(r25[0].where) && /Send report/.test(r25[0].message), JSON.stringify(r25));
+  // Evaluation captures (eval/run.mjs score): first screen as a visitor sees it, and 900px tiles with bars laid out in flow.
+  const fbOut = path.join(ROOT, '.design-nexus/test-shots/fixed-bars');
+  fs.rmSync(fbOut, { recursive: true, force: true });
+  const fb = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', fbOut, '--widths', '320,1280', '--first-screen', '--tiles');
+  const fbPlain = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const pngSize = (f) => { const b = fs.readFileSync(f); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+  const fbCap = fb.out.capture?.widths?.['1280'];
+  check('render --tiles lays out the sticky header and the fixed save bar in flow, not the off-canvas drawer or the empty layer', JSON.stringify(fbCap?.flattened) === JSON.stringify(['header', '#save']), JSON.stringify(fbCap));
+  const fbTiles = fs.readdirSync(fbOut).filter((f) => /^w1280-\d{2}\.png$/.test(f)).sort();
+  check('render --tiles cuts the page into overlapping 900px tiles that cover it', fbTiles.length === fbCap?.tiles && fbTiles.length >= 3 && !fbCap.truncated && fbTiles.every((f) => { const [w, h] = pngSize(path.join(fbOut, f)); return w === 1280 && h <= 900; }), JSON.stringify({ fbTiles, fbCap }));
+  check('render --first-screen saves the 1280×900 first screen', fs.existsSync(path.join(fbOut, 'w1280-first.png')) && JSON.stringify(pngSize(path.join(fbOut, 'w1280-first.png'))) === '[1280,900]');
+  const ids = (o) => JSON.stringify(o.out.findings.map((f) => `${f.id} ${f.where}`).sort());
+  check('render findings are the same with and without the evaluation captures', ids(fb) === ids(fbPlain), `${ids(fb)} vs ${ids(fbPlain)}`);
+  check('render without capture flags writes one full-page shot per width', fbPlain.out.shots.length === 2 && !fbPlain.out.capture, JSON.stringify(fbPlain.out.shots));
   const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
   check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));

@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline: search structured logs by field</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches JSON and logfmt logs across many files with filters like level=error and latency_ms>500. MIT licensed, one binary.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --stock: #ECE2C8;   /* buff card stock: ground */
+  --face: #F8F3E5;    /* fresh card face: panels, text on red */
+  --ink: #1E1A14;     /* black print: text */
+  --muted: #594F40;   /* faded print: secondary text, non-matching lines */
+  --ruling: #8A7C62;  /* printed field ruling: borders, rings */
+  --red: #A3162A;     /* red hole-row print: matches and the copy action */
+  --shadow: 0 1px 0 var(--ruling), 0 8px 24px rgba(30, 26, 20, .10);
+
+  --display: "Archivo", "Arial Narrow", sans-serif;
+  --body: "Archivo", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* scale 1.25 from 17px */
+  --t-small: 0.875rem;  /* 14 */
+  --t-body: 1.0625rem;  /* 17 */
+  --t-h3: 1.328rem;     /* 21 */
+  --t-h2: 2.075rem;     /* 33 */
+  --t-h1: clamp(2.6rem, 1.6rem + 3.6vw, 4.05rem);
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+  --radius: 6px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --measure: 1240px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--stock);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: var(--t-body);
+  line-height: 1.6;
+  font-stretch: 100%;
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { text-wrap: pretty; margin: 0; }
+code, kbd, samp { font-family: var(--mono); }
+a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.wrap { max-width: var(--measure); margin: 0 auto; padding: 0 var(--s2); }
+@media (min-width: 720px) { .wrap { padding: 0 var(--s4); } }
+@media (min-width: 1600px) { :root { --measure: 1480px; } .hero { padding-top: var(--s8); } }
+
+/* caption lettering: the card's printed field captions */
+.caps {
+  font-family: var(--display);
+  font-stretch: 62%;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* field ruling: double rule */
+.ruled { border-bottom: 3px double var(--ruling); }
+
+/* ---------- header ---------- */
+.site-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 64px; }
+.mark {
+  font-family: var(--display); font-stretch: 62%; font-weight: 800;
+  font-size: var(--t-h3); letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none;
+}
+.site-head nav ul { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; }
+.site-head nav a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .site-head nav a:hover { text-decoration: underline; } }
+@media (max-width: 479px) { .site-head nav .opt { display: none; } }
+
+/* ---------- hero ---------- */
+.hero { padding: var(--s6) 0 var(--s8); }
+.hero .wrap { display: grid; gap: var(--s6); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1040px) {
+  .hero .wrap { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s8); align-items: start; }
+}
+.hero h1 {
+  font-family: var(--display); font-stretch: 62%; font-weight: 800;
+  font-size: var(--t-h1); line-height: 1.02; text-transform: uppercase; letter-spacing: 0.01em;
+}
+.lede { margin-top: var(--s3); max-width: 34rem; }
+.lede code { font-size: 0.94em; white-space: nowrap; }
+
+.install { margin-top: var(--s4); max-width: 34rem; }
+.install fieldset { border: 0; margin: 0 0 var(--s1); padding: 0; display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.install legend { float: left; margin-right: var(--s1); font-size: var(--t-small); }
+.seg { display: inline-flex; border: 1.5px solid var(--ruling); border-radius: var(--radius); overflow: hidden; }
+.seg label { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--s2); font-family: var(--mono); font-size: var(--t-small); cursor: pointer; white-space: nowrap; }
+.seg label + label { border-left: 1.5px solid var(--ruling); }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg label:has(input:checked) { background: var(--ink); color: var(--face); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; z-index: 1; }
+
+.cmdline {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 0;
+  background: var(--face); border: 1.5px solid var(--ruling); border-radius: var(--radius);
+}
+.cmdline code {
+  flex: 1 1 13rem; min-width: 0; display: flex; align-items: center;
+  padding: var(--s2); font-size: var(--t-body); font-weight: 500;
+  white-space: pre-wrap; word-break: normal;
+}
+.cmdline code::before { content: "$ "; color: var(--muted); white-space: pre; }
+.btn {
+  font: 600 var(--t-body)/1 var(--body);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+  min-height: 48px; padding: 0 var(--s3); border-radius: var(--radius);
+  cursor: pointer; white-space: nowrap;
+  transition: transform 120ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-fill { background: var(--red); color: var(--face); border: 0; }
+.btn-line { background: transparent; color: var(--ink); border: 1.5px solid var(--ruling); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-fill:hover { background: var(--ink); }
+  .btn-line:hover { background: var(--face); }
+}
+.cmdline .btn { margin: 4px; flex: 0 0 auto; }
+.copy-note { min-height: 1.6em; margin-top: var(--s1); font-size: var(--t-small); }
+
+.facts { margin: var(--s4) 0 0; padding: var(--s2) 0 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); max-width: 34rem; }
+.facts li { white-space: nowrap; }
+.facts .caps { font-size: var(--t-body); }
+
+/* ---------- record panel: the signature ---------- */
+.panel {
+  background: var(--face); border: 1px solid var(--ruling); border-radius: var(--radius);
+  box-shadow: var(--shadow); min-width: 0;
+}
+.query { padding: var(--s2) var(--s2) var(--s2) var(--s3); border-bottom: 3px double var(--ruling); }
+.query label { display: block; margin-bottom: var(--s1); font-size: var(--t-small); }
+.query-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); font-family: var(--mono); font-size: var(--t-body); }
+.query-row .bin { white-space: nowrap; font-weight: 600; }
+.query-row .path { white-space: nowrap; color: var(--muted); }
+.query textarea {
+  flex: 1 1 16rem; min-width: 0; min-height: 44px; resize: none; overflow: hidden;
+  field-sizing: content; line-height: 1.5; padding-top: 9px; padding-bottom: 9px;
+  font: 500 var(--t-body) var(--mono); color: var(--ink);
+  background: var(--stock); border: 1.5px solid var(--ruling); border-radius: var(--radius);
+  padding-left: var(--s2); padding-right: var(--s2);
+}
+@media (max-width: 639px) { .query textarea { min-height: 4.6em; } }
+.query textarea[aria-invalid="true"] { border-color: var(--red); }
+
+.recs { list-style: none; margin: 0; padding: var(--s1) 0 var(--s1) var(--s1); counter-reset: none; }
+.rec {
+  display: grid;
+  grid-template-columns: 32px 6ch 7.5ch minmax(0, 1fr) auto;
+  align-items: baseline; column-gap: var(--s2);
+  padding: 7px var(--s2) 7px 0;
+  font-family: var(--mono); font-size: var(--t-small); line-height: 1.5;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(138, 124, 98, .35);
+  transition: transform 160ms var(--ease-out);
+}
+.rec:last-child { border-bottom: 0; }
+.rec > span { white-space: nowrap; }
+.rec .msg { white-space: normal; min-width: 0; }
+.rec .lat { text-align: right; font-variant-numeric: tabular-nums; }
+.rec .src { font-size: var(--t-small); }
+.hole { position: relative; align-self: stretch; }
+.hole::before {
+  content: ""; position: absolute; left: 13px; top: 50%;
+  width: 11px; height: 11px; margin-top: -5.5px;
+  border: 1.5px solid var(--ruling); border-radius: 50%;
+}
+/* match: slot cut from the row edge to its hole, row steps out of line */
+.rec.is-match { color: var(--ink); transform: translateX(calc(-1 * var(--s1))); }
+.rec.is-match .lvl, .rec.is-match .lat { font-weight: 600; }
+.rec.is-match .hole::before { background: var(--red); border-color: var(--red); }
+.rec.is-match .hole::after {
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 18px; height: 11px; margin-top: -5.5px; background: var(--red);
+}
+@media (max-width: 639px) {
+  .rec {
+    grid-template-columns: 32px 6ch 7.5ch minmax(0, 1fr);
+    grid-template-areas: "h lvl lat msg" "h src src src";
+    row-gap: 2px;
+  }
+  .rec .hole { grid-area: h; }
+  .rec .lvl { grid-area: lvl; } .rec .lat { grid-area: lat; } .rec .msg { grid-area: msg; }
+  .rec .src { grid-area: src; white-space: normal; }
+}
+@media (max-width: 399px) {
+  .rec { grid-template-columns: 28px auto auto minmax(0, 1fr); grid-template-areas: "h lvl lat ." "h msg msg msg" "h src src src"; column-gap: var(--s1); }
+  .hole::before { left: 10px; top: 0.75em; }
+  .rec.is-match .hole::after { width: 15px; top: 0.75em; }
+}
+.result {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s1) var(--s2);
+  padding: var(--s2) var(--s3); border-top: 3px double var(--ruling); font-size: var(--t-small);
+}
+.result strong { font-variant-numeric: tabular-nums; }
+.result .hint { color: var(--ink); }
+.result.is-error #result-count { color: var(--red); font-weight: 600; }
+
+/* ---------- syntax table ---------- */
+.band { padding: var(--s12) 0; border-top: 3px double var(--ruling); }
+.syntax table { width: 100%; border-collapse: collapse; }
+.syntax caption { text-align: left; padding-bottom: var(--s4); }
+.syntax caption h2, .formats h2, .get h2 {
+  font-family: var(--display); font-stretch: 62%; font-weight: 800; text-transform: uppercase;
+  font-size: var(--t-h2); line-height: 1.1; letter-spacing: 0.02em;
+}
+.syntax caption p { margin-top: var(--s1); max-width: 40rem; }
+.syntax th { text-align: left; font-weight: 700; padding: 0 var(--s2) var(--s1) 0; border-bottom: 3px double var(--ruling); font-size: var(--t-body); }
+.syntax td { padding: var(--s2) var(--s2) var(--s2) 0; border-bottom: 1px solid var(--ruling); vertical-align: middle; }
+.syntax td:first-child code { font-size: var(--t-body); font-weight: 500; white-space: nowrap; }
+.syntax td:nth-child(2) { min-width: 12rem; }
+@media (max-width: 1039px) { .syntax td:first-child code { white-space: normal; } }
+.syntax td.n { white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: var(--t-small); }
+.strip { display: inline-flex; gap: 5px; vertical-align: middle; margin-right: var(--s2); }
+.strip i { position: relative; display: block; width: 11px; height: 22px; }
+.strip i::before { content: ""; position: absolute; left: 0; bottom: 0; width: 11px; height: 11px; border: 1.5px solid var(--ruling); border-radius: 50%; }
+.strip i.m::before { background: var(--red); border-color: var(--red); }
+.strip i.m::after { content: ""; position: absolute; left: 0; top: 0; width: 11px; height: 16px; background: var(--red); }
+@media (max-width: 639px) {
+  .syntax thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .syntax table, .syntax caption, .syntax tbody, .syntax tr, .syntax td { display: block; }
+  .syntax tr { padding: var(--s2) 0; border-bottom: 1px solid var(--ruling); }
+  .syntax td { border: 0; padding: 2px 0; }
+  .syntax td:first-child code { white-space: normal; }
+  .syntax td[data-label]::before { content: attr(data-label); display: block; font-family: var(--display); font-stretch: 62%; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--t-small); color: var(--muted); margin-top: var(--s1); }
+}
+
+/* ---------- formats ---------- */
+.formats .wrap > h2 { margin-bottom: var(--s1); }
+.formats .intro { max-width: 40rem; margin-bottom: var(--s6); }
+.two-up { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+@media (min-width: 880px) { .two-up { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: var(--t-small); margin-left: var(--s1); }
+.line { margin: 0; background: var(--face); border: 1px solid var(--ruling); border-radius: var(--radius); }
+.line h3 { padding: var(--s2) var(--s3) 0; font-size: var(--t-body); }
+.line pre { margin: 0; padding: var(--s1) var(--s3) var(--s2); font-size: var(--t-small); line-height: 1.6; white-space: pre-wrap; word-break: normal; overflow-wrap: normal; }
+.fields { display: grid; grid-template-columns: repeat(4, minmax(0, auto)); justify-content: start; gap: 0; margin: 0; border-top: 3px double var(--ruling); }
+.fields div { padding: var(--s1) var(--s3) var(--s2); border-right: 1px solid var(--ruling); min-width: 0; }
+.fields div:last-child { border-right: 0; }
+.fields dt { font-size: var(--t-small); color: var(--muted); }
+.fields dd { margin: 0; font-family: var(--mono); font-size: var(--t-small); font-weight: 500; white-space: nowrap; }
+@media (max-width: 479px) {
+  .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fields div:nth-child(2n) { border-right: 0; }
+  .fields div:nth-child(-n+2) { border-bottom: 1px solid var(--ruling); }
+}
+
+/* ---------- get it ---------- */
+.get .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+@media (min-width: 880px) { .get .wrap { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s8); align-items: start; } }
+.get p { margin-top: var(--s2); max-width: 30rem; }
+.get .copy-note { grid-column: -2 / -1; margin-top: calc(-1 * var(--s3)); }
+.steps { list-style: none; margin: 0; padding: 0; border-top: 3px double var(--ruling); }
+.steps li { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1); padding: var(--s3) 0; border-bottom: 1px solid var(--ruling); }
+.steps .caps { font-size: var(--t-small); color: var(--muted); }
+.steps .cmdline { background: var(--face); }
+.steps .alt { font-size: var(--t-small); }
+.steps .alt code { white-space: nowrap; }
+
+.site-foot { padding: var(--s4) 0 var(--s6); border-top: 3px double var(--ruling); font-size: var(--t-small); }
+.site-foot .wrap { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); justify-content: space-between; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rec, .btn { transition: none; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="site-head ruled">
+  <div class="wrap">
+    <a class="mark" href="#top" aria-label="grepline home">grepline</a>
+    <nav aria-label="Page">
+      <ul>
+        <li><a href="#syntax">Syntax</a></li>
+        <li class="opt"><a href="#formats">Formats</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div>
+        <h1 id="hero-title">Search logs by field, not by regex</h1>
+        <p class="lede">grepline reads JSON and logfmt lines across many files at once and keeps only the ones that match a filter like <code>level=error and latency_ms&gt;500</code>.</p>
+
+        <div class="install" id="install-hero">
+          <fieldset>
+            <legend>Install with</legend>
+            <div class="seg">
+              <label><input type="radio" name="pm" value="cargo" checked>cargo</label>
+              <label><input type="radio" name="pm" value="brew">brew</label>
+            </div>
+          </fieldset>
+          <div class="cmdline">
+            <code id="cmd">cargo install grepline</code>
+            <button class="btn btn-fill" type="button" data-copy="#cmd" aria-describedby="copy-note">Copy command</button>
+          </div>
+          <p class="copy-note" id="copy-note" role="status" aria-live="polite"></p>
+        </div>
+
+        <ul class="facts" aria-label="Facts">
+          <li><span class="caps">Written in Rust</span></li>
+          <li><span class="caps">MIT licensed</span></li>
+          <li><span class="caps">One binary</span></li>
+        </ul>
+      </div>
+
+      <div class="panel" id="demo">
+        <form class="query" id="query" action="#" onsubmit="return false">
+          <label for="filter" class="caps">Filter</label>
+          <div class="query-row">
+            <span class="bin">grepline</span>
+            <textarea id="filter" name="filter" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off"
+                   aria-describedby="result-count result-hint">level=error and latency_ms&gt;500</textarea>
+            <span class="path">logs/</span>
+          </div>
+        </form>
+        <ol class="recs" id="recs" aria-label="Log lines in logs/">
+          <li class="rec" data-f="api-1.jsonl" data-ts="09:14:02" data-level="info" data-service="api" data-route="GET /v1/orders" data-latency_ms="38"><span class="hole"></span><span class="lvl">info</span><span class="lat">38ms</span><span class="msg">ok</span><span class="src">api-1.jsonl 09:14:02</span></li>
+          <li class="rec is-match" data-f="api-1.jsonl" data-ts="09:14:05" data-level="error" data-service="api" data-route="POST /v1/orders" data-latency_ms="812"><span class="hole"></span><span class="lvl">error</span><span class="lat">812ms</span><span class="msg">upstream timeout: inventory</span><span class="src">api-1.jsonl 09:14:05</span></li>
+          <li class="rec" data-f="api-2.jsonl" data-ts="09:14:05" data-level="warn" data-service="api" data-route="GET /v1/carts" data-latency_ms="640"><span class="hole"></span><span class="lvl">warn</span><span class="lat">640ms</span><span class="msg">slow query: carts_by_user</span><span class="src">api-2.jsonl 09:14:05</span></li>
+          <li class="rec is-match" data-f="worker.log" data-ts="09:14:07" data-level="error" data-service="billing" data-route="job/invoice" data-latency_ms="1290"><span class="hole"></span><span class="lvl">error</span><span class="lat">1290ms</span><span class="msg">invoice job failed after 3 retries</span><span class="src">worker.log 09:14:07</span></li>
+          <li class="rec" data-f="worker.log" data-ts="09:14:09" data-level="info" data-service="billing" data-route="job/invoice" data-latency_ms="220"><span class="hole"></span><span class="lvl">info</span><span class="lat">220ms</span><span class="msg">invoice queued</span><span class="src">worker.log 09:14:09</span></li>
+          <li class="rec" data-f="auth.log" data-ts="09:14:11" data-level="error" data-service="auth" data-route="POST /login" data-latency_ms="95"><span class="hole"></span><span class="lvl">error</span><span class="lat">95ms</span><span class="msg">bad token signature</span><span class="src">auth.log 09:14:11</span></li>
+          <li class="rec" data-f="api-2.jsonl" data-ts="09:14:12" data-level="info" data-service="api" data-route="GET /healthz" data-latency_ms="2"><span class="hole"></span><span class="lvl">info</span><span class="lat">2ms</span><span class="msg">ok</span><span class="src">api-2.jsonl 09:14:12</span></li>
+          <li class="rec is-match" data-f="api-1.jsonl" data-ts="09:14:15" data-level="error" data-service="api" data-route="GET /v1/orders/:id" data-latency_ms="1504"><span class="hole"></span><span class="lvl">error</span><span class="lat">1504ms</span><span class="msg">db pool exhausted</span><span class="src">api-1.jsonl 09:14:15</span></li>
+          <li class="rec" data-f="auth.log" data-ts="09:14:18" data-level="warn" data-service="auth" data-route="POST /login" data-latency_ms="510"><span class="hole"></span><span class="lvl">warn</span><span class="lat">510ms</span><span class="msg">rate limit at 90%</span><span class="src">auth.log 09:14:18</span></li>
+          <li class="rec" data-f="worker.log" data-ts="09:14:20" data-level="info" data-service="billing" data-route="job/refund" data-latency_ms="480"><span class="hole"></span><span class="lvl">info</span><span class="lat">480ms</span><span class="msg">refund sent</span><span class="src">worker.log 09:14:20</span></li>
+          <li class="rec" data-f="api-2.jsonl" data-ts="09:14:22" data-level="error" data-service="api" data-route="PUT /v1/carts" data-latency_ms="61"><span class="hole"></span><span class="lvl">error</span><span class="lat">61ms</span><span class="msg">validation: qty must be 1 or more</span><span class="src">api-2.jsonl 09:14:22</span></li>
+          <li class="rec" data-f="auth.log" data-ts="09:14:25" data-level="info" data-service="auth" data-route="POST /logout" data-latency_ms="12"><span class="hole"></span><span class="lvl">info</span><span class="lat">12ms</span><span class="msg">ok</span><span class="src">auth.log 09:14:25</span></li>
+        </ol>
+        <div class="result" id="result">
+          <p id="result-count" role="status" aria-live="polite"><strong>3 of 12</strong> lines match, from 2 of 4 files</p>
+          <p class="hint" id="result-hint">Edit the filter to try it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band syntax" id="syntax">
+    <div class="wrap">
+      <table>
+        <caption>
+          <h2>The filter reads like a where clause</h2>
+          <p>Name a field, compare it, join conditions with <code>and</code> and <code>or</code>. Numbers compare as numbers. Each row below runs against the 12 lines above.</p>
+        </caption>
+        <thead>
+          <tr><th scope="col" class="caps">Filter</th><th scope="col" class="caps">Keeps lines where</th><th scope="col" class="caps">Matches above</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>level=error</code></td>
+            <td data-label="Keeps lines where">the field equals a value</td>
+            <td class="n" data-label="Matches above"><span class="strip" role="img" aria-label="Lines 2, 4, 6, 8 and 11 match"><i></i><i class="m"></i><i></i><i class="m"></i><i></i><i class="m"></i><i></i><i class="m"></i><i></i><i></i><i class="m"></i><i></i></span>5 of 12</td>
+          </tr>
+          <tr>
+            <td><code>latency_ms&gt;500</code></td>
+            <td data-label="Keeps lines where">a number is above a threshold (also <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>)</td>
+            <td class="n" data-label="Matches above"><span class="strip" role="img" aria-label="Lines 2, 3, 4, 8 and 9 match"><i></i><i class="m"></i><i class="m"></i><i class="m"></i><i></i><i></i><i></i><i class="m"></i><i class="m"></i><i></i><i></i><i></i></span>5 of 12</td>
+          </tr>
+          <tr>
+            <td><code>level=error and latency_ms&gt;500</code></td>
+            <td data-label="Keeps lines where">both conditions hold</td>
+            <td class="n" data-label="Matches above"><span class="strip" role="img" aria-label="Lines 2, 4 and 8 match"><i></i><i class="m"></i><i></i><i class="m"></i><i></i><i></i><i></i><i class="m"></i><i></i><i></i><i></i><i></i></span>3 of 12</td>
+          </tr>
+          <tr>
+            <td><code>service=auth or service=billing</code></td>
+            <td data-label="Keeps lines where">either condition holds</td>
+            <td class="n" data-label="Matches above"><span class="strip" role="img" aria-label="Lines 4, 5, 6, 9, 10 and 12 match"><i></i><i></i><i></i><i class="m"></i><i class="m"></i><i class="m"></i><i></i><i></i><i class="m"></i><i class="m"></i><i></i><i class="m"></i></span>6 of 12</td>
+          </tr>
+          <tr>
+            <td><code>level!=info</code></td>
+            <td data-label="Keeps lines where">the field is anything but a value</td>
+            <td class="n" data-label="Matches above"><span class="strip" role="img" aria-label="Lines 2, 3, 4, 6, 8, 9 and 11 match"><i></i><i class="m"></i><i class="m"></i><i class="m"></i><i></i><i class="m"></i><i></i><i class="m"></i><i class="m"></i><i></i><i class="m"></i><i></i></span>7 of 12</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="band formats" id="formats" aria-labelledby="formats-title">
+    <div class="wrap">
+      <h2 id="formats-title">JSON and logfmt, same fields</h2>
+      <p class="intro">Point it at a folder that mixes both. Each line is parsed into fields first, so one filter covers every file.</p>
+      <div class="two-up">
+        <figure class="line">
+          <h3 class="caps">api-1.jsonl</h3>
+          <pre><code>{"ts": "09:14:05", "level": "error", "service": "api", "latency_ms": 812, "msg": "upstream timeout: inventory"}</code></pre>
+          <dl class="fields">
+            <div><dt class="caps">level</dt><dd>error</dd></div>
+            <div><dt class="caps">latency_ms</dt><dd>812</dd></div>
+            <div><dt class="caps">service</dt><dd>api</dd></div>
+            <div><dt class="caps">ts</dt><dd>09:14:05</dd></div>
+          </dl>
+        </figure>
+        <figure class="line">
+          <h3 class="caps">worker.log</h3>
+          <pre><code>ts=09:14:07 level=error service=billing latency_ms=1290 msg="invoice job failed after 3 retries"</code></pre>
+          <dl class="fields">
+            <div><dt class="caps">level</dt><dd>error</dd></div>
+            <div><dt class="caps">latency_ms</dt><dd>1290</dd></div>
+            <div><dt class="caps">service</dt><dd>billing</dd></div>
+            <div><dt class="caps">ts</dt><dd>09:14:07</dd></div>
+          </dl>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band get" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <div>
+        <h2 id="install-title">Install, then run your first filter</h2>
+        <p>One binary, MIT licensed. Install it with cargo on any platform Rust builds for, or with Homebrew.</p>
+      </div>
+      <ol class="steps">
+        <li>
+          <span class="caps">Install</span>
+          <div class="cmdline">
+            <code id="cmd-cargo">cargo install grepline</code>
+            <button class="btn btn-line" type="button" data-copy="#cmd-cargo" aria-describedby="copy-note-2">Copy cargo command</button>
+          </div>
+          <p class="alt">Or with Homebrew: <code>brew install grepline</code> <button class="btn btn-line btn-sm" type="button" data-copy="#cmd-brew" aria-describedby="copy-note-2">Copy brew command</button><code id="cmd-brew" hidden>brew install grepline</code></p>
+        </li>
+        <li>
+          <span class="caps">Run</span>
+          <div class="cmdline">
+            <code id="cmd-run">grepline 'level=error and latency_ms&gt;500' logs/</code>
+            <button class="btn btn-line" type="button" data-copy="#cmd-run" aria-describedby="copy-note-2">Copy run command</button>
+          </div>
+        </li>
+      </ol>
+      <p class="copy-note" id="copy-note-2" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span><span class="caps">grepline</span> is open source under the MIT license.</span>
+    <span>Written in Rust.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  /* install method switch */
+  const cmd = document.getElementById('cmd');
+  const cmds = { cargo: 'cargo install grepline', brew: 'brew install grepline' };
+  document.querySelectorAll('input[name="pm"]').forEach(r => r.addEventListener('change', () => {
+    if (r.checked) { cmd.textContent = cmds[r.value]; document.getElementById('copy-note').textContent = ''; }
+  }));
+
+  /* copy buttons */
+  document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', async () => {
+    const src = document.querySelector(btn.dataset.copy);
+    const text = src.textContent.trim();
+    const note = document.getElementById(btn.getAttribute('aria-describedby'));
+    try {
+      await navigator.clipboard.writeText(text);
+      note.textContent = `Copied "${text}". Paste it into your terminal.`;
+    } catch (e) {
+      const range = document.createRange(); range.selectNodeContents(src);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      note.textContent = 'Your browser blocked copying. The command is selected: press Ctrl+C (Cmd+C on macOS).';
+    }
+  }));
+
+  /* filter demo */
+  const FIELDS = ['ts', 'level', 'service', 'route', 'latency_ms'];
+  const input = document.getElementById('filter');
+  const rows = [...document.querySelectorAll('#recs .rec')];
+  const count = document.getElementById('result-count');
+  const hint = document.getElementById('result-hint');
+  const result = document.getElementById('result');
+
+  function tokenize(s) {
+    const out = []; let i = 0;
+    const re = /\s*(?:(\(|\))|(!=|>=|<=|=|>|<)|"([^"]*)"|'([^']*)'|([A-Za-z_][\w.]*|-?\d+(?:\.\d+)?|[^\s()=<>!"']+))/y;
+    while (i < s.length) {
+      re.lastIndex = i;
+      const m = re.exec(s);
+      if (!m) { if (/^\s*$/.test(s.slice(i))) break; throw new Error(`Couldn't read "${s.slice(i).trim()}". Check for a stray character.`); }
+      i = re.lastIndex;
+      if (m[1]) out.push({ t: m[1] });
+      else if (m[2]) out.push({ t: 'op', v: m[2] });
+      else if (m[3] !== undefined || m[4] !== undefined) out.push({ t: 'val', v: m[3] ?? m[4] });
+      else if (m[5]) {
+        const w = m[5].toLowerCase();
+        out.push(w === 'and' || w === 'or' ? { t: w } : { t: 'val', v: m[5] });
+      }
+    }
+    return out;
+  }
+  function parse(tokens) {
+    let p = 0;
+    const peek = () => tokens[p];
+    function expr() { let l = term(); while (peek() && peek().t === 'or') { p++; const r = term(); const a = l; l = x => a(x) || r(x); } return l; }
+    function term() { let l = factor(); while (peek() && peek().t === 'and') { p++; const r = factor(); const a = l; l = x => a(x) && r(x); } return l; }
+    function factor() {
+      const t = peek();
+      if (!t) throw new Error('The filter ends early. Add a condition such as level=error.');
+      if (t.t === '(') { p++; const e = expr(); if (!peek() || peek().t !== ')') throw new Error('A "(" is never closed. Add the matching ")".'); p++; return e; }
+      if (t.t !== 'val') throw new Error(`Expected a field name before "${t.v || t.t}".`);
+      p++;
+      const field = t.v;
+      if (!FIELDS.includes(field)) throw new Error(`No line has a field named "${field}". Try ${FIELDS.join(', ')}.`);
+      const op = peek();
+      if (!op || op.t !== 'op') throw new Error(`Add a comparison after "${field}", such as ${field}=value.`);
+      p++;
+      const v = peek();
+      if (!v || v.t !== 'val') throw new Error(`Add a value after "${field}${op.v}".`);
+      p++;
+      const want = v.v;
+      return x => {
+        const have = x[field];
+        const nh = Number(have), nw = Number(want);
+        const num = have !== '' && want !== '' && !isNaN(nh) && !isNaN(nw);
+        const a = num ? nh : have, b = num ? nw : want;
+        switch (op.v) {
+          case '=': return a == b; case '!=': return a != b;
+          case '>': return a > b; case '<': return a < b;
+          case '>=': return a >= b; case '<=': return a <= b;
+        }
+      };
+    }
+    const fn = expr();
+    if (p < tokens.length) { const t = tokens[p]; throw new Error(`Unexpected "${t.v || t.t}". Join conditions with "and" or "or".`); }
+    return fn;
+  }
+  const data = rows.map(r => ({ el: r, rec: { ts: r.dataset.ts, level: r.dataset.level, service: r.dataset.service, route: r.dataset.route, latency_ms: r.dataset.latency_ms, f: r.dataset.f } }));
+  const files = new Set(data.map(d => d.rec.f)).size;
+
+  function run() {
+    const q = input.value.trim();
+    if (!q) {
+      data.forEach(d => d.el.classList.remove('is-match'));
+      result.classList.remove('is-error'); input.removeAttribute('aria-invalid');
+      count.innerHTML = '<strong>0 of 12</strong> lines match';
+      hint.textContent = 'Type a filter, for example level=error.';
+      return;
+    }
+    let fn;
+    try { fn = parse(tokenize(q)); }
+    catch (e) {
+      result.classList.add('is-error'); input.setAttribute('aria-invalid', 'true');
+      count.textContent = e.message;
+      hint.textContent = '';
+      return;
+    }
+    result.classList.remove('is-error'); input.removeAttribute('aria-invalid');
+    let n = 0; const hit = new Set();
+    data.forEach(d => { const m = !!fn(d.rec); d.el.classList.toggle('is-match', m); if (m) { n++; hit.add(d.rec.f); } });
+    count.innerHTML = `<strong>${n} of 12</strong> lines match` + (n ? `, from ${hit.size} of ${files} files` : '');
+    hint.textContent = n ? 'Edit the filter to try it.' : 'No line matches. Loosen a condition, or join with "or".';
+  }
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+  input.addEventListener('input', () => { if (/\n/.test(input.value)) input.value = input.value.replace(/\n/g, ' '); run(); });
+  run();
+})();
+</script>
+</body>
+</html>

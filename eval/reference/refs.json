@@ -1,0 +1,17 @@
+{
+  "note": "V4 reference pages (M-020). Candidates are fixed in this order before judging; per case, the first two that load without a login wall or a blocking consent dialog are used. Write each brief from the live page before running `ref` (same form as eval/cases: what the page is for, the audience, the one job, the facts on it). Entries with an empty brief are refused.",
+  "refs": [
+    { "id": "r01-astral", "like": "01-lp-devtool", "url": "https://astral.sh/uv", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r01-bun", "like": "01-lp-devtool", "url": "https://bun.sh/", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r01-starship", "like": "01-lp-devtool", "url": "https://starship.rs/", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r01-zed", "like": "01-lp-devtool", "url": "https://zed.dev/", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r02-kaikado", "like": "02-lp-ja-craft", "url": "https://www.kaikado.jp/", "surface": "marketing", "language": "ja", "brief": "" },
+    { "id": "r02-asahiyaki", "like": "02-lp-ja-craft", "url": "https://asahiyaki.com/", "surface": "marketing", "language": "ja", "brief": "" },
+    { "id": "r02-nousaku", "like": "02-lp-ja-craft", "url": "https://www.nousaku.co.jp/", "surface": "marketing", "language": "ja", "brief": "" },
+    { "id": "r04-govuk-ero", "like": "04-settings-form", "url": "https://www.gov.uk/contact-electoral-registration-office", "surface": "product", "language": "en", "brief": "" },
+    { "id": "r04-govuk-pattern", "like": "04-settings-form", "url": "https://design-system.service.gov.uk/patterns/question-pages/", "surface": "product", "language": "en", "brief": "" },
+    { "id": "r06-basecamp", "like": "06-redesign", "url": "https://basecamp.com/", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r06-linear", "like": "06-redesign", "url": "https://linear.app/", "surface": "marketing", "language": "en", "brief": "" },
+    { "id": "r06-plane", "like": "06-redesign", "url": "https://plane.so/", "surface": "marketing", "language": "en", "brief": "" }
+  ]
+}

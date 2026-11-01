@@ -70,6 +70,8 @@ node eval/run.mjs feedback --run <run>       # 多発チェック・弱い次元
 node eval/run.mjs compare --base baseline --run <run>   # 採用/不採用を判定
 ```
 
+尺度 v2(40個の観察できる基準から計算する0〜100点、M-017)を使うときは `judge --scale v2` で審査し、採否は対比較(`pair`・`pair-score`)で決めます。95点の意味、較正セットでの検証(`calib`・`validate`)、採用の手順は [eval/rubric.md](eval/rubric.md) にあります。
+
 Claude Code では、このリポジトリで `/improve-design-nexus` を実行すると1イテレーションを通しで回します。手順と判定基準は [loop/IMPROVEMENT.md](loop/IMPROVEMENT.md) と [eval/rubric.md](eval/rubric.md)、利用中に気づいたことは [loop/feedback.md](loop/feedback.md) に書きます。
 
 ## 構成

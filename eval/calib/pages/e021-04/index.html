@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Settings · Plotboard</title>
+<meta name="description" content="Choose which Plotboard events reach you by email, push, and Slack, and set quiet hours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=Public+Sans:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #F2F2F2;
+    --surface: #FFFFFF;
+    --text: #1C1F24;
+    --muted: #565C66;
+    --accent: #F2A516;
+    --accent-ink: #8A5A00;
+    --border: #7C818B;
+    --rule: #D5D7DB;
+    --night: #27303F;
+    --danger: #B3261E;
+    --success: #1E7A46;
+
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "Public Sans", system-ui, sans-serif;
+
+    /* scale 1.25 from 16 */
+    --fs-sm: 0.875rem;  /* 14 */
+    --fs-base: 1rem;    /* 16 */
+    --fs-md: 1.25rem;   /* 20 */
+    --fs-lg: 1.5625rem; /* 25 */
+    --fs-xl: 1.9375rem; /* 31 */
+
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+
+    --r-key: 6px;
+    --r-panel: 8px;
+    --key: 40px;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --press: 120ms;
+    --flash: 240ms;
+    --stagger: 60ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 var(--fs-base)/1.5 var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+  h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.15; }
+  p { margin: 0; text-wrap: pretty; }
+  button, input, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  :focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+  /* ---------- App shell ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: var(--s4);
+    padding: var(--s3) var(--s6);
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    font: 600 var(--fs-md)/1 var(--font-display);
+    letter-spacing: 0.02em; text-transform: uppercase;
+    color: var(--text); text-decoration: none;
+    min-height: 32px;
+  }
+  .brand-mark { display: grid; grid-template-columns: repeat(2, 8px); gap: 2px; }
+  .brand-mark i { width: 8px; height: 8px; border-radius: 2px; border: 1.5px solid var(--text); }
+  .brand-mark i:nth-child(2) { background: var(--accent); border-color: var(--accent-ink); }
+  .workspace { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .account {
+    margin-left: auto; display: inline-flex; align-items: center; gap: var(--s2);
+    white-space: nowrap;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--night); color: var(--surface);
+    font-size: var(--fs-sm); font-weight: 600;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    max-width: 1600px;
+    margin: 0 auto;
+    min-height: calc(100vh - 57px);
+  }
+  .sidenav { padding: var(--s8) var(--s4) var(--s8) var(--s6); }
+  .sidenav h2 {
+    font: 600 var(--fs-sm)/1.2 var(--font-display);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text);
+    padding: 0 var(--s3) var(--s2);
+  }
+  .sidenav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .sidenav a {
+    display: flex; align-items: center; min-height: 36px;
+    padding: var(--s2) var(--s3);
+    border-radius: var(--r-key);
+    color: var(--text); text-decoration: none;
+    white-space: nowrap;
+  }
+  .sidenav a[aria-current="page"] {
+    background: var(--surface);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--accent-ink), 0 0 0 1px var(--rule);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .sidenav a:not([aria-current]):hover { background: var(--surface); }
+  }
+
+  main { padding: var(--s8) var(--s6) var(--s12); min-width: 0; }
+  .page { max-width: 1240px; margin: 0 auto; }
+
+  .page-head {
+    display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+    gap: var(--s2) var(--s6);
+    margin-bottom: var(--s6);
+  }
+  .page-head h1 {
+    font: 600 var(--fs-xl)/1.1 var(--font-display);
+    letter-spacing: 0.01em; text-transform: uppercase;
+  }
+  .page-head p { color: var(--muted); max-width: 60ch; margin-top: var(--s1); }
+
+  .board {
+    display: grid;
+    gap: var(--s6);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  @media (min-width: 1200px) {
+    .board { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+    .board > .routing { grid-row: span 2; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    min-width: 0;
+  }
+  .panel-head {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--s3);
+    padding: var(--s5) var(--s6) 0;
+  }
+  .panel-head h2 {
+    font: 600 var(--fs-lg)/1.1 var(--font-display);
+    text-transform: uppercase; letter-spacing: 0.01em;
+  }
+  .panel-body { padding: var(--s4) var(--s6) var(--s6); }
+  .lede { margin-top: var(--s1); }
+
+  /* ---------- Lamp key (signature unit) ---------- */
+  .key {
+    appearance: none; -webkit-appearance: none;
+    margin: 0;
+    width: var(--key); height: var(--key);
+    display: inline-grid; place-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-key);
+    background: var(--surface);
+    box-shadow: inset 0 -3px 0 var(--rule);
+    cursor: pointer;
+    transition: background-color var(--press) ease, border-color var(--press) ease, transform var(--press) var(--ease-out), box-shadow var(--press) ease;
+    position: relative;
+  }
+  .key::after {
+    content: "";
+    width: 14px; height: 8px;
+    border-left: 2.5px solid var(--text);
+    border-bottom: 2.5px solid var(--text);
+    transform: translateY(-2px) rotate(-45deg);
+    opacity: 0;
+  }
+  .key:checked {
+    background: var(--accent);
+    border-color: var(--accent-ink);
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--accent-ink) 35%, transparent);
+  }
+  .key:checked::after { opacity: 1; }
+  .key:active:not(:disabled) { transform: scale(0.94); }
+  @media (hover: hover) and (pointer: fine) {
+    .key:not(:disabled):not(:checked):hover { border-color: var(--text); }
+  }
+  .key:disabled {
+    cursor: not-allowed;
+    border-style: dashed;
+    background: var(--bg);
+    box-shadow: none;
+  }
+  .key:disabled:checked { background: var(--bg); border-color: var(--border); }
+  .key:disabled:checked::after { opacity: 0.45; }
+
+  /* ---------- Routing matrix ---------- */
+  .matrix-wrap { padding: var(--s2) var(--s6) 0; }
+  .matrix { width: 100%; border-collapse: collapse; }
+  .matrix th, .matrix td { text-align: left; vertical-align: middle; }
+  .matrix thead th {
+    font: 600 var(--fs-sm)/1.2 var(--font-display);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: var(--s3) 0 var(--s2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .matrix thead th.ch { text-align: center; width: 92px; }
+  .ch-name { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .lamp {
+    width: 10px; height: 10px; border-radius: 3px;
+    border: 1.5px solid var(--accent-ink); background: var(--accent);
+    flex: none;
+  }
+  .lamp.off { background: transparent; border: 1.5px dashed var(--border); }
+  .matrix tbody th { padding: var(--s3) var(--s4) var(--s3) 0; font-weight: 400; }
+  .matrix tbody td { text-align: center; padding: var(--s2) 0; }
+  .matrix tbody tr + tr > * { border-top: 1px solid var(--rule); }
+  .ev-name { display: block; font-weight: 600; }
+  .ev-desc { display: block; font-size: var(--fs-sm); line-height: 1.45; margin-top: 2px; }
+
+  .slack-strip {
+    margin: var(--s4) var(--s6) 0;
+    padding: var(--s4);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--r-panel);
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4);
+  }
+  .slack-strip.is-connected { border-style: solid; border-color: var(--rule); background: var(--bg); }
+  .slack-strip .msg { flex: 1 1 260px; min-width: 0; }
+  .slack-strip strong { font-weight: 600; }
+  .routes {
+    margin: 0; padding: var(--s4) var(--s6) var(--s6);
+    display: grid; gap: var(--s1);
+    font-size: var(--fs-sm);
+  }
+  .routes div { display: flex; flex-wrap: wrap; gap: 0 var(--s2); }
+  .routes dt { font-weight: 600; min-width: 48px; }
+  .routes dd { margin: 0; overflow-wrap: anywhere; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    min-height: 40px; padding: 0 var(--s4);
+    border-radius: var(--r-key);
+    border: 1.5px solid var(--text);
+    background: var(--surface); color: var(--text);
+    font-weight: 600; white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--press) ease, transform var(--press) var(--ease-out), box-shadow var(--press) ease;
+    box-shadow: inset 0 -2px 0 var(--rule);
+  }
+  .btn:active:not([aria-disabled="true"]):not(:disabled) { transform: scale(0.97); }
+  .btn-primary { background: var(--text); color: var(--surface); box-shadow: inset 0 -2px 0 var(--night); }
+  .btn-quiet { border-color: transparent; background: transparent; box-shadow: none; text-decoration: underline; text-underline-offset: 3px; padding: 0 var(--s3); }
+  .btn[aria-disabled="true"], .btn:disabled { cursor: not-allowed; }
+  .btn-primary[aria-disabled="true"] { background: var(--rule); color: var(--text); border-color: var(--rule); box-shadow: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:not(.btn-primary):not(.btn-quiet):not(:disabled):hover { background: var(--bg); }
+    .btn-primary:not([aria-disabled="true"]):hover { background: var(--night); }
+  }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    animation: spin 700ms linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Quiet hours ---------- */
+  .switch {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: 40px; padding: 0 var(--s1);
+    background: none; border: 0; cursor: pointer; font-weight: 600;
+    border-radius: var(--r-key);
+  }
+  .switch-track {
+    width: 44px; height: 24px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    position: relative; flex: none;
+    transition: background-color var(--press) ease, border-color var(--press) ease;
+  }
+  .switch-track::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--border);
+    transition: transform var(--press) var(--ease-out), background-color var(--press) ease;
+  }
+  .switch[aria-checked="true"] .switch-track { background: var(--night); border-color: var(--night); }
+  .switch[aria-checked="true"] .switch-track::after { transform: translateX(20px); background: var(--surface); }
+
+  .fields {
+    display: grid; gap: var(--s4);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: var(--s4);
+  }
+  .fields .tz { grid-column: 1 / -1; }
+  @media (min-width: 640px) and (max-width: 1199px) {
+    .fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }
+    .fields .tz { grid-column: auto; }
+  }
+  .field label { display: block; font-weight: 600; margin-bottom: var(--s1); }
+  .control {
+    width: 100%; min-height: 44px;
+    padding: var(--s2) var(--s3);
+    border: 1.5px solid var(--border); border-radius: var(--r-key);
+    background: var(--surface);
+  }
+  select.control { padding-right: var(--s8); }
+  .control:disabled { background: var(--bg); border-style: dashed; cursor: not-allowed; }
+  .control[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+  .error {
+    display: flex; gap: var(--s2); align-items: flex-start;
+    margin-top: var(--s2);
+    color: var(--danger); font-size: var(--fs-sm); font-weight: 600;
+  }
+  .error svg { flex: none; margin-top: 2px; }
+  .error[hidden] { display: none; }
+
+  .ribbon { margin-top: var(--s6); display: grid; gap: var(--s3); }
+  .ribbon-half { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
+  .hour {
+    height: 28px;
+    border-radius: 4px;
+    border: 1.5px solid var(--accent-ink);
+    background: color-mix(in srgb, var(--accent) 30%, var(--surface));
+    position: relative;
+  }
+  .hour.quiet { background: var(--night); border-color: var(--night); }
+  .hour.now { outline: 2px solid var(--text); outline-offset: 2px; }
+  .ribbon-labels {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    font-size: var(--fs-sm); margin-top: var(--s1);
+  }
+  .ribbon-labels span { white-space: nowrap; }
+  .ribbon-key { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); font-size: var(--fs-sm); }
+  .ribbon-key span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--accent-ink); background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
+  .swatch.quiet { background: var(--night); border-color: var(--night); }
+  .swatch.now { background: var(--surface); border: 2px solid var(--text); }
+  .quiet-summary { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+
+  /* ---------- Test ---------- */
+  .test-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); margin-top: var(--s4); }
+  .results { list-style: none; margin: var(--s4) 0 0; padding: 0; display: grid; gap: var(--s2); }
+  .results:empty { display: none; }
+  .results li { display: flex; align-items: flex-start; gap: var(--s3); }
+  .results .lamp { margin-top: 6px; }
+  .results .lamp.flash { animation: flash var(--flash) var(--ease-out) 2; }
+  .results b { font-weight: 600; }
+  .key.flash { animation: flash var(--flash) var(--ease-out) 2; }
+  @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.35; } 100% { opacity: 1; } }
+
+  /* ---------- Save bar ---------- */
+  .savebar {
+    margin-top: var(--s6);
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s4);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+  }
+  .save-status { flex: 1 1 200px; min-width: 0; display: flex; align-items: flex-start; gap: var(--s2); }
+  .save-status svg { flex: none; margin-top: 3px; }
+  .save-status.is-error { color: var(--danger); font-weight: 600; }
+  .save-status.is-ok { color: var(--success); font-weight: 600; }
+  .save-actions { display: flex; gap: var(--s2); margin-left: auto; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 899px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidenav { padding: var(--s4) var(--s4) 0; }
+    .sidenav h2 { padding: 0 0 var(--s2); }
+    .sidenav ul { display: flex; flex-wrap: wrap; gap: var(--s1); }
+    .sidenav a[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--accent-ink), 0 0 0 1px var(--rule); }
+    main { padding: var(--s5) var(--s4) var(--s10); }
+  }
+  @media (max-width: 559px) {
+    .matrix, .matrix thead, .matrix tbody { display: block; }
+    .matrix tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .matrix thead th:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; border: 0; }
+    .matrix thead th.ch { width: auto; }
+    .matrix tbody th { grid-column: 1 / -1; padding: var(--s3) 0 var(--s1); }
+    .matrix tbody td { padding: var(--s1) 0 var(--s3); }
+    .matrix tbody tr + tr > * { border-top: 0; }
+    .matrix tbody tr + tr { border-top: 1px solid var(--rule); }
+  }
+  @media (max-width: 419px) {
+    .fields { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 639px) {
+    :root { --key: 44px; }
+    .topbar { padding: var(--s3) var(--s4); gap: var(--s3); }
+    .account .name { display: none; }
+    .panel-head { padding: var(--s4) var(--s4) 0; }
+    .panel-body { padding: var(--s3) var(--s4) var(--s5); }
+    .matrix-wrap { padding: var(--s2) var(--s4) 0; }
+    .slack-strip { margin: var(--s4) var(--s4) 0; }
+    .routes { padding: var(--s4) var(--s4) var(--s5); }
+    .save-actions { width: 100%; }
+    .save-actions .btn-primary { flex: 1; }
+  }
+  @media (min-width: 640px) and (max-width: 1199px) {
+    .ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 3px; }
+    .ribbon-key { grid-column: 1 / -1; }
+    .hour { height: 36px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .key, .btn, .switch-track, .switch-track::after { transition: background-color var(--press) ease, border-color var(--press) ease; }
+    .key:active:not(:disabled), .btn:active { transform: none; }
+    .key.flash, .results .lamp.flash { animation: none; }
+    .spinner { animation: none; border-right-color: currentColor; opacity: 0.6; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="Plotboard home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Plotboard</a>
+  <span class="workspace">Fernhill Studio</span>
+  <span class="account"><span class="name">Dana Okafor</span><span class="avatar" aria-hidden="true">DO</span></span>
+</header>
+
+<div class="shell">
+  <nav class="sidenav" aria-labelledby="settings-nav">
+    <h2 id="settings-nav">Settings</h2>
+    <ul>
+      <li><a href="#">Profile</a></li>
+      <li><a href="#" aria-current="page">Notifications</a></li>
+      <li><a href="#">Integrations</a></li>
+      <li><a href="#">Sign-in &amp; security</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <form class="page" id="prefs" novalidate>
+      <div class="page-head">
+        <div>
+          <h1>Notifications</h1>
+          <p>Light a key to have that event reach you on that channel. Unlit keys stay silent.</p>
+        </div>
+      </div>
+
+      <div class="board">
+        <!-- Signature: the lamp-key matrix -->
+        <section class="panel routing" aria-labelledby="routing-h">
+          <div class="panel-head">
+            <h2 id="routing-h">What reaches you, where</h2>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th role="columnheader" scope="col"><span class="sr-only">Event</span></th>
+                  <th role="columnheader" scope="col" class="ch"><span class="ch-name"><span class="lamp" aria-hidden="true"></span>Email</span></th>
+                  <th role="columnheader" scope="col" class="ch"><span class="ch-name"><span class="lamp" aria-hidden="true"></span>Push</span></th>
+                  <th role="columnheader" scope="col" class="ch"><span class="ch-name"><span class="lamp off" id="slack-lamp" aria-hidden="true"></span>Slack</span></th>
+                </tr>
+              </thead>
+              <tbody role="rowgroup">
+                <tr role="row">
+                  <th role="rowheader" scope="row"><span class="ev-name">Mentions</span><span class="ev-desc">Someone @mentions you in a task, comment, or doc.</span></th>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="email" data-ev="mentions" aria-label="Mentions by email"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="push" data-ev="mentions" aria-label="Mentions by push"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="slack" data-ev="mentions" aria-label="Mentions in Slack" aria-describedby="slack-msg"></td>
+                </tr>
+                <tr role="row">
+                  <th role="rowheader" scope="row"><span class="ev-name">Assigned tasks</span><span class="ev-desc">A task is assigned to you or handed back to you.</span></th>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="email" data-ev="assigned" aria-label="Assigned tasks by email"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="push" data-ev="assigned" aria-label="Assigned tasks by push"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="slack" data-ev="assigned" aria-label="Assigned tasks in Slack" aria-describedby="slack-msg"></td>
+                </tr>
+                <tr role="row">
+                  <th role="rowheader" scope="row"><span class="ev-name">Due-date reminders</span><span class="ev-desc">The day before and the morning a task of yours is due.</span></th>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="email" data-ev="due" aria-label="Due-date reminders by email"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="push" data-ev="due" aria-label="Due-date reminders by push"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="slack" data-ev="due" aria-label="Due-date reminders in Slack" aria-describedby="slack-msg"></td>
+                </tr>
+                <tr role="row">
+                  <th role="rowheader" scope="row"><span class="ev-name">Weekly digest</span><span class="ev-desc">Mondays at 09:00: what moved, what is overdue, what is next.</span></th>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="email" data-ev="digest" aria-label="Weekly digest by email"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="push" data-ev="digest" aria-label="Weekly digest by push"></td>
+                  <td role="cell"><input class="key" type="checkbox" data-ch="slack" data-ev="digest" aria-label="Weekly digest in Slack" aria-describedby="slack-msg"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="slack-strip" id="slack-strip">
+            <p class="msg" id="slack-msg"><strong>Slack isn't connected.</strong> Connect your workspace to get these as direct messages. Keys you've set for Slack are kept and start working once you connect.</p>
+            <button type="button" class="btn" id="slack-btn">Connect Slack</button>
+          </div>
+
+          <dl class="routes">
+            <div><dt>Email</dt><dd>dana.okafor@fernhill.studio</dd></div>
+            <div><dt>Push</dt><dd>Plotboard on Pixel 8 and on MacBook Air</dd></div>
+            <div><dt>Slack</dt><dd id="slack-route">Not connected</dd></div>
+          </dl>
+        </section>
+
+        <!-- Quiet hours -->
+        <section class="panel" aria-labelledby="quiet-h">
+          <div class="panel-head">
+            <h2 id="quiet-h">Quiet hours</h2>
+            <button type="button" class="switch" role="switch" aria-checked="true" id="quiet-switch" aria-labelledby="quiet-switch-label">
+              <span class="switch-track" aria-hidden="true"></span><span id="quiet-switch-label">Quiet hours</span>
+            </button>
+          </div>
+          <div class="panel-body">
+            <p class="lede">Push and Slack hold everything until quiet hours end. Email still arrives.</p>
+            <div class="fields">
+              <div class="field">
+                <label for="q-start">From</label>
+                <input class="control" type="time" id="q-start" step="900" aria-describedby="q-err">
+              </div>
+              <div class="field">
+                <label for="q-end">Until</label>
+                <input class="control" type="time" id="q-end" step="900" aria-describedby="q-err">
+              </div>
+              <div class="field tz">
+                <label for="q-tz">Time zone</label>
+                <select class="control" id="q-tz"></select>
+              </div>
+            </div>
+            <p class="error" id="q-err" hidden>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.2v4.6M8 10.8v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span id="q-err-text"></span>
+            </p>
+
+            <div class="ribbon" id="ribbon" role="img" aria-labelledby="quiet-summary">
+              <div>
+                <div class="ribbon-half" data-from="0"></div>
+                <div class="ribbon-labels" aria-hidden="true"><span>00:00</span><span>03:00</span><span>06:00</span><span>09:00</span></div>
+              </div>
+              <div>
+                <div class="ribbon-half" data-from="12"></div>
+                <div class="ribbon-labels" aria-hidden="true"><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span></div>
+              </div>
+              <div class="ribbon-key" aria-hidden="true">
+                <span><i class="swatch"></i>Notifications ring</span>
+                <span><i class="swatch quiet"></i>Quiet</span>
+                <span><i class="swatch now"></i>Now</span>
+              </div>
+            </div>
+            <p class="quiet-summary" id="quiet-summary" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <!-- Test -->
+        <section class="panel" aria-labelledby="test-h">
+          <div class="panel-head">
+            <h2 id="test-h">Test notification</h2>
+          </div>
+          <div class="panel-body">
+            <p>Sends one test to every connected channel with at least one lit key. Tests ignore quiet hours.</p>
+            <div class="test-row">
+              <button type="button" class="btn" id="test-btn">Send test notification</button>
+            </div>
+            <ul class="results" id="test-results" role="status" aria-live="polite"></ul>
+          </div>
+        </section>
+      </div>
+
+      <div class="savebar" id="savebar">
+        <p class="save-status" id="save-status" role="status" aria-live="polite">No unsaved changes.</p>
+        <div class="save-actions">
+          <button type="button" class="btn btn-quiet" id="discard-btn" hidden>Discard</button>
+          <button type="submit" class="btn btn-primary" id="save-btn" aria-disabled="true">Save changes</button>
+        </div>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const stagger = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stagger')) || 60;
+
+  const CHANNELS = { email: 'Email', push: 'Push', slack: 'Slack' };
+  const EVENTS = { mentions: 'Mentions', assigned: 'Assigned tasks', due: 'Due-date reminders', digest: 'Weekly digest' };
+  const ZONES = [
+    ['Europe/Lisbon', 'Lisbon'], ['Europe/London', 'London'], ['Europe/Berlin', 'Berlin'],
+    ['America/New_York', 'New York'], ['America/Chicago', 'Chicago'], ['America/Denver', 'Denver'],
+    ['America/Los_Angeles', 'Los Angeles'], ['America/Sao_Paulo', 'São Paulo'], ['Asia/Kolkata', 'Kolkata'],
+    ['Asia/Singapore', 'Singapore'], ['Asia/Tokyo', 'Tokyo'], ['Australia/Sydney', 'Sydney'],
+  ];
+
+  // What the server last confirmed.
+  let saved = {
+    prefs: {
+      email: { mentions: true, assigned: true, due: true, digest: true },
+      push:  { mentions: true, assigned: true, due: true, digest: false },
+      slack: { mentions: true, assigned: false, due: false, digest: false },
+    },
+    quiet: { on: true, start: '22:00', end: '07:00', tz: 'Europe/Lisbon' },
+  };
+  let state = structuredClone(saved);
+  let slackConnected = false;
+  let saving = false;
+  let saveAttempts = 0;
+  let saveFailed = false;
+  let lastSavedAt = null;
+
+  // ---------- Mock API (stands in for the real endpoints) ----------
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const api = {
+    async save(payload) {
+      await wait(900);
+      saveAttempts += 1;
+      if (!navigator.onLine) throw new Error('offline');
+      if (saveAttempts === 1) throw new Error('timeout'); // the first request in a session times out
+      if (payload.quiet.on && payload.quiet.start === payload.quiet.end) throw new Error('invalid');
+      return { ok: true };
+    },
+    async connectSlack() { await wait(1200); return { workspace: 'Fernhill Studio', handle: '@dana' }; },
+    async sendTest(channels) { await wait(700); return channels; },
+  };
+
+  // ---------- Helpers ----------
+  const offsetLabel = (tz) => {
+    try {
+      const part = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' })
+        .formatToParts(new Date()).find((p) => p.type === 'timeZoneName');
+      return part ? part.value.replace('GMT', 'UTC') : '';
+    } catch { return ''; }
+  };
+  const nowIn = (tz) => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+      const h = +parts.find((p) => p.type === 'hour').value;
+      const m = parts.find((p) => p.type === 'minute').value;
+      return { h, label: fmt(`${h}:${m}`) };
+    } catch { const d = new Date(); return { h: d.getHours(), label: clock() }; }
+  };
+  const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const isQuietHour = (h, q) => {
+    if (!q.on || q.start === q.end) return false;
+    const s = toMin(q.start), e = toMin(q.end), mid = h * 60 + 30;
+    return s < e ? mid >= s && mid < e : mid >= s || mid < e;
+  };
+  const duration = (q) => {
+    let d = toMin(q.end) - toMin(q.start);
+    if (d <= 0) d += 1440;
+    const h = Math.floor(d / 60), m = d % 60;
+    return m ? `${h} h ${m} min` : `${h} hours`;
+  };
+  const zoneName = (tz) => (ZONES.find((z) => z[0] === tz) || [tz, tz])[1];
+  const changeCount = () => {
+    let n = 0;
+    for (const ch in state.prefs) for (const ev in state.prefs[ch]) if (state.prefs[ch][ev] !== saved.prefs[ch][ev]) n++;
+    for (const k in state.quiet) if (state.quiet[k] !== saved.quiet[k]) n++;
+    return n;
+  };
+  // Times follow the viewer's locale, matching what the native time fields show.
+  const fmt = (t) => { const [h, m] = t.split(':').map(Number); const d = new Date(2026, 0, 1, h, m); return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+  const clock = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const icon = {
+    ok: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.8 8.2l2.1 2.1 4.3-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    err: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.2v4.6M8 10.8v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  };
+
+  // ---------- Elements ----------
+  const keys = $$('.key');
+  const start = $('#q-start'), end = $('#q-end'), tzSel = $('#q-tz');
+  const qSwitch = $('#quiet-switch');
+  const qErr = $('#q-err'), qErrText = $('#q-err-text');
+  const saveBtn = $('#save-btn'), discardBtn = $('#discard-btn'), status = $('#save-status');
+
+  $$('.ribbon-labels span').forEach((el) => { const h = parseInt(el.textContent, 10); el.textContent = new Date(2026, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' }); });
+  tzSel.innerHTML = ZONES.map(([id, name]) => `<option value="${id}">${name} (${offsetLabel(id)})</option>`).join('');
+
+  // Build the 24 hour keys.
+  $$('.ribbon-half').forEach((half) => {
+    const from = +half.dataset.from;
+    for (let h = from; h < from + 12; h++) {
+      const cell = document.createElement('span');
+      cell.className = 'hour';
+      cell.dataset.h = h;
+      half.appendChild(cell);
+    }
+  });
+
+  // ---------- Render ----------
+  function renderKeys() {
+    keys.forEach((k) => {
+      k.checked = state.prefs[k.dataset.ch][k.dataset.ev];
+      if (k.dataset.ch === 'slack') {
+        k.disabled = !slackConnected;
+        const base = `${EVENTS[k.dataset.ev]} in Slack`;
+        k.setAttribute('aria-label', base);
+      }
+    });
+  }
+
+  function renderSlack() {
+    const strip = $('#slack-strip');
+    $('#slack-lamp').classList.toggle('off', !slackConnected);
+    if (slackConnected) {
+      strip.classList.add('is-connected');
+      strip.innerHTML = '<p class="msg" id="slack-msg"><strong>Slack is connected</strong> to the Fernhill Studio workspace. Lit Slack keys arrive as direct messages from the Plotboard app.</p><a class="btn" href="#" id="slack-manage">Manage in Integrations</a>';
+      $('#slack-route').textContent = 'Direct messages to @dana in Fernhill Studio';
+    } else {
+      strip.classList.remove('is-connected');
+      strip.innerHTML = '<p class="msg" id="slack-msg"><strong>Slack isn\'t connected.</strong> Connect your workspace to get these as direct messages. Keys you\'ve set for Slack are kept and start working once you connect.</p><button type="button" class="btn" id="slack-btn">Connect Slack</button>';
+      $('#slack-route').textContent = 'Not connected';
+    }
+    const sb = $('#slack-btn');
+    if (sb) sb.addEventListener('click', onSlack);
+    renderKeys();
+  }
+
+  function validateQuiet() {
+    const q = state.quiet;
+    const bad = q.on && q.start && q.end && q.start === q.end;
+    const empty = q.on && (!q.start || !q.end);
+    let msg = '';
+    if (bad) msg = `Quiet hours can't start and end at ${fmt(q.start)}. Pick a different "Until" time, or turn quiet hours off.`;
+    else if (empty) msg = 'Enter both a "From" and an "Until" time, or turn quiet hours off.';
+    qErr.hidden = !msg;
+    qErrText.textContent = msg;
+    [start, end].forEach((el) => el.setAttribute('aria-invalid', msg ? 'true' : 'false'));
+    if (!msg) [start, end].forEach((el) => el.removeAttribute('aria-invalid'));
+    return !msg;
+  }
+
+  function renderQuiet() {
+    const q = state.quiet;
+    qSwitch.setAttribute('aria-checked', String(q.on));
+    start.value = q.start; end.value = q.end; tzSel.value = q.tz;
+    [start, end, tzSel].forEach((el) => (el.disabled = !q.on));
+    const now = nowIn(q.tz);
+    $$('.hour').forEach((c) => {
+      const h = +c.dataset.h;
+      c.classList.toggle('quiet', isQuietHour(h, q));
+      c.classList.toggle('now', h === now.h);
+    });
+    const place = zoneName(q.tz);
+    let text;
+    if (!q.on) text = `Quiet hours are off. Notifications ring at any hour. It's ${now.label} in ${place}.`;
+    else if (!q.start || !q.end || q.start === q.end) text = `Quiet hours need a start and an end that differ. It's ${now.label} in ${place}.`;
+    else {
+      const quietNow = isQuietHour(now.h, q);
+      text = `Quiet from ${fmt(q.start)} until ${fmt(q.end)} ${place} time, ${duration(q)} a day. It's ${now.label} there now, so notifications ${quietNow ? `are on hold until ${fmt(q.end)}` : 'ring as usual'}.`;
+    }
+    $('#quiet-summary').textContent = text;
+  }
+
+  function renderSave() {
+    const n = changeCount();
+    discardBtn.hidden = n === 0 || saving;
+    if (saving) {
+      saveBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Saving changes';
+      saveBtn.setAttribute('aria-disabled', 'true');
+      status.className = 'save-status';
+      status.textContent = 'Saving…';
+      return;
+    }
+    saveBtn.textContent = saveFailed && n ? 'Try saving again' : 'Save changes';
+    saveBtn.setAttribute('aria-disabled', n === 0 ? 'true' : 'false');
+    if (saveFailed && n) return; // keep the failure message visible
+    if (n === 0) {
+      if (lastSavedAt) { status.className = 'save-status is-ok'; status.innerHTML = `${icon.ok}<span>Saved at ${lastSavedAt}. Changes apply to the next notification.</span>`; }
+      else { status.className = 'save-status'; status.textContent = 'No unsaved changes.'; }
+    } else {
+      status.className = 'save-status';
+      status.textContent = `${n} unsaved ${n === 1 ? 'change' : 'changes'}.`;
+    }
+  }
+
+  function renderAll() { renderKeys(); renderQuiet(); renderSave(); }
+
+  // ---------- Events ----------
+  keys.forEach((k) => k.addEventListener('change', () => {
+    state.prefs[k.dataset.ch][k.dataset.ev] = k.checked;
+    saveFailed = false;
+    renderSave();
+  }));
+
+  qSwitch.addEventListener('click', () => {
+    state.quiet.on = !state.quiet.on;
+    saveFailed = false;
+    validateQuiet(); renderQuiet(); renderSave();
+  });
+  [start, end].forEach((el) => {
+    el.addEventListener('input', () => {
+      state.quiet[el === start ? 'start' : 'end'] = el.value;
+      saveFailed = false;
+      // Clear an existing error as soon as it is fixed; show new errors on change/blur.
+      if (!qErr.hidden) validateQuiet();
+      renderQuiet(); renderSave();
+    });
+    el.addEventListener('change', () => { validateQuiet(); renderQuiet(); });
+    el.addEventListener('blur', validateQuiet);
+  });
+  tzSel.addEventListener('change', () => { state.quiet.tz = tzSel.value; saveFailed = false; renderQuiet(); renderSave(); });
+
+  async function onSlack(e) {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Connecting Slack';
+    await api.connectSlack();
+    slackConnected = true;
+    renderSlack();
+    $('#slack-manage').focus();
+  }
+  $('#slack-btn').addEventListener('click', onSlack);
+
+  $('#test-btn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    const list = $('#test-results');
+    const targets = Object.keys(CHANNELS).filter((ch) => Object.values(state.prefs[ch]).some(Boolean) && (ch !== 'slack' || slackConnected));
+    if (!targets.length) {
+      list.innerHTML = `<li>${icon.err}<span>Nothing to send. Light at least one key for email${slackConnected ? ', push, or Slack' : ' or push'} first.</span></li>`;
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Sending test';
+    await api.sendTest(targets);
+    const t = clock();
+    const where = { email: 'dana.okafor@fernhill.studio', push: 'Pixel 8 and MacBook Air', slack: '@dana in Fernhill Studio' };
+    list.innerHTML = Object.keys(CHANNELS).map((ch) => {
+      if (targets.includes(ch)) return `<li><span class="lamp flash" aria-hidden="true"></span><span><b>${CHANNELS[ch]}:</b> sent at ${t} to ${where[ch]}.</span></li>`;
+      const why = ch === 'slack' && !slackConnected ? 'skipped, Slack isn\'t connected.' : 'skipped, no lit keys.';
+      return `<li><span class="lamp off" aria-hidden="true"></span><span><b>${CHANNELS[ch]}:</b> ${why}</span></li>`;
+    }).join('');
+    // One orchestrated moment: the lit keys of each channel that received the test flash once, row by row.
+    keys.filter((k) => targets.includes(k.dataset.ch) && k.checked).forEach((k, i) => {
+      k.classList.remove('flash');
+      setTimeout(() => { k.classList.add('flash'); }, i * stagger);
+      k.addEventListener('animationend', () => k.classList.remove('flash'), { once: true });
+    });
+    btn.disabled = false;
+    btn.textContent = 'Send test notification';
+  });
+
+  discardBtn.addEventListener('click', () => {
+    state = structuredClone(saved);
+    saveFailed = false;
+    validateQuiet(); renderAll();
+    saveBtn.focus();
+  });
+
+  $('#prefs').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (saving || saveBtn.getAttribute('aria-disabled') === 'true') return;
+    if (!validateQuiet()) {
+      status.className = 'save-status is-error';
+      status.innerHTML = `${icon.err}<span>Not saved. Fix the quiet-hours time first.</span>`;
+      saveFailed = true;
+      end.focus();
+      return;
+    }
+    saving = true; saveFailed = false; renderSave();
+    try {
+      await api.save(structuredClone(state));
+      saved = structuredClone(state);
+      lastSavedAt = clock();
+      saving = false;
+      renderSave();
+    } catch (err) {
+      saving = false;
+      saveFailed = true;
+      renderSave();
+      status.className = 'save-status is-error';
+      const why = err.message === 'offline'
+        ? 'You appear to be offline. Reconnect, then try again.'
+        : 'Plotboard didn\'t respond in time. Your changes are still here; try again.';
+      status.innerHTML = `${icon.err}<span>Couldn't save. ${why}</span>`;
+    }
+  });
+
+  renderAll();
+  // Keep the "now" marker honest if the page stays open.
+  setInterval(renderQuiet, 60000);
+})();
+</script>
+</body>
+</html>

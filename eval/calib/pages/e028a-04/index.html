@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Settings · Kestrel</title>
+<meta name="description" content="Choose which Kestrel events reach you by email, push, and Slack, and set quiet hours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Tokens: see DESIGN.md */
+    --bg: #F1F1F1;              /* app chrome, true neutral */
+    --surface: #FFFFFF;         /* settings panels */
+    --text: #1C1E22;            /* graphite ink; also the groove between faceplate rows */
+    --muted: #565B63;           /* secondary ink, 15px and up */
+    --faceplate: #24272C;       /* switchboard panel */
+    --faceplate-muted: #A9AEB6; /* engraved labels, unlit jack rings */
+    --accent: #F2A516;          /* indicator lamp of a live route; never a button fill */
+    --border: #84898F;          /* field edges, 3:1 on white */
+    --danger: #B3261E;
+    --success: #1C7A43;
+
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+
+    /* scale 1.2 from 16 */
+    --fs-sm: 0.875rem;   /* 14 */
+    --fs-base: 1rem;     /* 16 */
+    --fs-md: 1.1875rem;  /* 19 */
+    --fs-lg: 1.4375rem;  /* 23 */
+    --fs-xl: 1.75rem;    /* 28 */
+
+    /* 4px base */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+
+    --radius: 6px;
+    --radius-panel: 10px;
+    --jack: 40px;
+    --lamp: 16px;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --glow: color-mix(in srgb, var(--accent) 28%, transparent);
+    --hair: color-mix(in srgb, var(--border) 35%, var(--surface));
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+  }
+  h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: inherit; }
+
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  .vh {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- App bar ---------- */
+  .appbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s6);
+    padding: var(--s3) var(--s6);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hair);
+  }
+  .wordmark {
+    font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg);
+    letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none;
+  }
+  .appnav { display: flex; gap: var(--s1); flex-wrap: wrap; order: 3; flex-basis: 100%; margin-left: calc(-1 * var(--s3)); }
+  .appnav a {
+    text-decoration: none; font-size: var(--fs-sm); font-weight: 500;
+    padding: var(--s2) var(--s3); border-radius: var(--radius); white-space: nowrap;
+  }
+  .avatar {
+    order: 2; margin-left: auto; width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+  }
+
+  /* ---------- Shell ---------- */
+  .shell {
+    max-width: 1440px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr;
+    padding: 0 var(--s4);
+  }
+  .subnav { padding: var(--s4) 0 0; }
+  .subnav h2 {
+    font-family: var(--font-display); font-size: var(--fs-md); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: var(--s2);
+  }
+  .subnav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s1); }
+  .subnav a {
+    display: block; text-decoration: none; font-size: var(--fs-sm); font-weight: 500;
+    padding: var(--s2) var(--s3); border-radius: var(--radius); white-space: nowrap;
+  }
+  .subnav a[aria-current="page"] { background: var(--surface); box-shadow: inset 3px 0 0 var(--text); font-weight: 600; }
+
+  main { min-width: 0; padding: var(--s6) 0 0; }
+  #prefs { display: flex; flex-direction: column; }
+  #prefs > * { min-width: 0; }
+
+  .titlebar { margin-bottom: var(--s6); }
+  .titlebar h1 { font-family: var(--font-display); font-size: var(--fs-xl); letter-spacing: 0.02em; text-transform: uppercase; }
+  .titlebar p { margin-top: var(--s2); max-width: 62ch; }
+
+  /* ---------- Faceplate (signature) ---------- */
+  .faceplate {
+    background: var(--faceplate); color: var(--bg);
+    border-radius: var(--radius-panel);
+    padding: var(--s4) var(--s3) var(--s2);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg) 10%, transparent), 0 10px 24px -14px var(--text);
+  }
+  .plate-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: var(--s2) var(--s6); padding: 0 var(--s1) var(--s3);
+  }
+  .plate-head h2 {
+    font-family: var(--font-display); font-size: var(--fs-md); text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .legend { display: flex; gap: var(--s4); font-size: var(--fs-sm); list-style: none; margin: 0; padding: 0; }
+  .legend li { display: flex; align-items: center; gap: var(--s2); }
+
+  .lamp {
+    display: block; width: var(--lamp); height: var(--lamp); border-radius: 50%;
+    border: 2px solid var(--faceplate-muted); background: transparent;
+    transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  }
+  .lamp.is-lit, .jack input:checked + .lamp {
+    background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 4px var(--glow);
+  }
+
+  .routes { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .routes th, .routes td { padding: 0; }
+  .routes thead th {
+    font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base);
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--faceplate-muted);
+    padding: var(--s2) var(--s1); text-align: center; white-space: nowrap;
+  }
+  .routes thead th:first-child { text-align: left; }
+  .routes tbody tr { border-top: 2px solid var(--text); }
+  .routes tbody th { text-align: left; font-weight: 400; padding: var(--s3) var(--s2) var(--s3) var(--s1); vertical-align: middle; }
+  .ev-name { display: block; font-weight: 600; }
+  .ev-desc { display: block; font-size: var(--fs-sm); margin-top: 2px; }
+  .routes td { text-align: center; vertical-align: middle; }
+
+  .jack {
+    position: relative; display: inline-grid; place-items: center;
+    width: var(--jack); height: var(--jack); border-radius: 8px;
+    background: var(--text);
+    box-shadow: inset 0 2px 3px color-mix(in srgb, var(--text) 80%, black);
+    cursor: pointer;
+  }
+  .jack input {
+    position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+    opacity: 0; cursor: pointer;
+  }
+  .jack input:focus-visible + .lamp { outline: 2px solid var(--accent); outline-offset: 8px; }
+  .jack input:disabled { cursor: not-allowed; }
+  .jack:has(input:disabled) { cursor: not-allowed; }
+  .jack input:disabled + .lamp { border-style: dashed; background: transparent; box-shadow: none; opacity: 0.55; }
+  @media (hover: hover) and (pointer: fine) {
+    .jack:hover input:not(:disabled):not(:checked) + .lamp { border-color: var(--bg); }
+  }
+
+  .connect-row td { text-align: left; padding: var(--s3) var(--s1) var(--s2); }
+  .connect {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4);
+  }
+  .connect p { flex: 1 1 260px; font-size: var(--fs-sm); }
+  .connect strong { font-weight: 600; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    min-height: 40px; padding: 0 var(--s4); border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font-weight: 500; white-space: nowrap; cursor: pointer;
+    transition: background-color 120ms ease, transform 100ms var(--ease-out);
+  }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn:disabled, .btn[aria-busy="true"] { cursor: progress; }
+  .btn-primary { background: var(--text); border-color: var(--text); color: var(--surface); font-weight: 600; }
+  .btn-text { border-color: transparent; background: transparent; padding: 0 var(--s3); text-decoration: underline; text-underline-offset: 3px; }
+  .btn-plate { background: transparent; border-color: var(--faceplate-muted); color: var(--bg); }
+  .btn-plate:focus-visible { outline-color: var(--accent); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { background: var(--bg); }
+    .btn-primary:hover { background: var(--muted); border-color: var(--muted); }
+    .btn-text:hover { background: var(--bg); }
+    .btn-plate:hover { background: var(--text); }
+  }
+
+  /* ---------- Panels below the faceplate ---------- */
+  .lower { display: grid; grid-template-columns: 1fr; gap: var(--s4); margin-top: var(--s4); }
+  .panel { background: var(--surface); border-radius: var(--radius-panel); padding: var(--s5) var(--s4); min-width: 0; }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s4); }
+  .panel h2 { font-family: var(--font-display); font-size: var(--fs-md); text-transform: uppercase; letter-spacing: 0.08em; }
+  .panel .lede { margin-bottom: var(--s4); }
+
+  /* Switch */
+  .switch { display: inline-flex; align-items: center; gap: var(--s3); cursor: pointer; font-weight: 500; }
+  .switch input {
+    appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+    width: 44px; height: 26px; border-radius: 13px; border: 1px solid var(--border);
+    background: var(--bg); position: relative; cursor: pointer;
+    transition: background-color 120ms ease;
+  }
+  .switch input::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--border); transition: transform 160ms var(--ease-out), background-color 120ms ease;
+  }
+  .switch input:checked { background: var(--text); border-color: var(--text); }
+  .switch input:checked::after { transform: translateX(18px); background: var(--accent); }
+
+  /* Fields */
+  .fields { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; grid-template-columns: 1fr; gap: var(--s4); }
+  .fields:disabled { opacity: 0.6; }
+  .field { display: flex; flex-direction: column; gap: var(--s1); min-width: 0; }
+  .field.tz { grid-column: 1 / -1; }
+  .field label { font-weight: 500; }
+  .field input, .field select {
+    width: 100%; min-width: 0; min-height: 40px; padding: var(--s2) var(--s3);
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    font-variant-numeric: tabular-nums;
+  }
+  .field input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+  .field-error { display: flex; gap: var(--s2); align-items: flex-start; color: var(--danger); font-size: var(--fs-sm); font-weight: 500; }
+  .field-error svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  .field-error[hidden] { display: none; }
+
+  /* Quiet-hours rail: 24 of the faceplate's jack cells */
+  .rail-wrap { margin-top: var(--s6); }
+  .rail {
+    display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 2px;
+    background: var(--faceplate); padding: 4px; border-radius: 8px;
+  }
+  .hour {
+    height: 28px; border-radius: 3px; background: var(--text);
+    display: grid; place-items: center;
+  }
+  .hour::after {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    border: 1.5px solid var(--faceplate-muted); transition: background-color 120ms ease, border-color 120ms ease;
+  }
+  .hour.is-lit::after { background: var(--accent); border-color: var(--accent); }
+  .hour.is-now { box-shadow: inset 0 0 0 2px var(--bg); }
+  .rail-axis { position: relative; height: 22px; margin: var(--s1) 4px 0; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .rail-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .rail-axis span:first-child { transform: none; }
+  .rail-axis span:last-child { transform: translateX(-100%); }
+  .rail-summary { margin-top: var(--s3); }
+  .rail-summary strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rail-now { margin-top: var(--s1); font-size: var(--fs-sm); }
+
+  /* Test destinations: miniature jacks */
+  .dests { list-style: none; margin: 0 0 var(--s4); padding: 0; }
+  .dest { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s1) var(--s3); padding: var(--s2) 0; border-top: 1px solid var(--hair); }
+  .dest:first-child { border-top: 0; }
+  .mini { width: 32px; height: 32px; border-radius: 6px; background: var(--faceplate); display: grid; place-items: center; }
+  .mini .lamp { width: 12px; height: 12px; }
+  .mini .lamp.is-lit { box-shadow: 0 0 0 3px var(--glow); }
+  .dest-name { font-weight: 600; }
+  .dest-detail { display: block; font-size: var(--fs-sm); overflow-wrap: anywhere; }
+  .dest-result { grid-column: 2; font-size: var(--fs-sm); font-weight: 500; }
+  .dest-result:empty { display: none; }
+  .dest-result.ok { color: var(--success); }
+  .test-status { margin-top: var(--s3); font-size: var(--fs-sm); font-weight: 500; }
+  .test-status:empty { display: none; }
+  .test-status.is-error { color: var(--danger); }
+
+  /* ---------- Save bar ---------- */
+  .savebar {
+    position: sticky; bottom: 0; z-index: 10; order: 5;
+    margin: var(--s6) calc(-1 * var(--s4)) 0;
+    background: var(--surface); border-top: 1px solid var(--hair);
+    padding: var(--s3) var(--s4);
+  }
+  .savebar-error {
+    display: flex; gap: var(--s2); align-items: flex-start;
+    color: var(--danger); font-size: var(--fs-sm); font-weight: 500; margin-bottom: var(--s3);
+  }
+  .savebar-error[hidden] { display: none; }
+  .savebar-error svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  .savebar-row { display: flex; align-items: center; gap: var(--s2); }
+  .save-status { flex: 1 1 auto; min-width: 0; font-size: var(--fs-sm); font-weight: 500; display: flex; align-items: center; gap: var(--s2); }
+  .save-status svg { flex: none; width: 16px; height: 16px; }
+  .save-status.is-ok { color: var(--success); }
+  .save-status.is-error { color: var(--danger); }
+  .save-status .count { font-variant-numeric: tabular-nums; }
+  .btn-text[hidden] { display: none; }
+
+  /* ---------- Widths ---------- */
+  .routes col.ch { width: 48px; }
+  @media (min-width: 420px) {
+    .fields { grid-template-columns: 1fr 1fr; }
+    .routes col.ch { width: 56px; }
+  }
+  @media (min-width: 560px) {
+    .fields { grid-template-columns: minmax(9.5rem, 1fr) minmax(9.5rem, 1fr) minmax(0, 2fr); }
+    .field.tz { grid-column: auto; }
+    .titlebar { margin-bottom: var(--s4); }
+    .savebar {
+      order: 0; top: 0; bottom: auto;
+      margin: 0 0 var(--s4); border-top: 0;
+      border-radius: var(--radius-panel);
+      box-shadow: 0 6px 12px -10px var(--text);
+      padding: var(--s3) var(--s3) var(--s3) var(--s5);
+    }
+    .appnav { order: 0; flex-basis: auto; margin-left: 0; }
+    .faceplate { padding: var(--s5) var(--s5) var(--s3); }
+    .panel { padding: var(--s6); }
+    .routes col.ch { width: 88px; }
+  }
+  @media (min-width: 768px) {
+    .shell { padding: 0 var(--s6); }
+    .routes col.ch { width: 120px; }
+    .ev-desc { display: inline; margin: 0 0 0 var(--s2); }
+    .ev-name { display: inline; }
+  }
+  @media (min-width: 960px) {
+    .shell { grid-template-columns: 200px minmax(0, 1fr); column-gap: var(--s8); }
+    .subnav { padding-top: var(--s8); }
+    .subnav ul { flex-direction: column; }
+    main { padding-top: var(--s8); }
+  }
+  @media (min-width: 1120px) {
+    .lower { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+    .routes col.ch { width: 136px; }
+  }
+  @media (min-width: 1600px) {
+    .shell { grid-template-columns: 240px minmax(0, 1fr); column-gap: var(--s12); }
+    .routes col.ch { width: 168px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn { transition: background-color 120ms ease; }
+    .btn:active:not(:disabled) { transform: none; }
+    .switch input::after { transition: background-color 120ms ease; }
+  }
+</style>
+</head>
+<body>
+<header class="appbar">
+  <a class="wordmark" href="#">Kestrel</a>
+  <nav class="appnav" aria-label="Main">
+    <a href="#">Projects</a>
+    <a href="#">My work</a>
+    <a href="#">Inbox</a>
+  </nav>
+  <button class="avatar" type="button" aria-label="MO, account menu for Maya Ortiz">MO</button>
+</header>
+
+<div class="shell">
+  <nav class="subnav" aria-label="Settings">
+    <h2>Settings</h2>
+    <ul>
+      <li><a href="#">Profile</a></li>
+      <li><a href="#" aria-current="page">Notifications</a></li>
+      <li><a href="#">Security</a></li>
+      <li><a href="#">Connected apps</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <form id="prefs" novalidate>
+      <div class="titlebar">
+        <h1>Notifications</h1>
+        <p>Choose which events reach you on each channel. Nothing changes until you save.</p>
+      </div>
+
+      <div class="savebar">
+        <div class="savebar-error" id="save-error" role="alert" hidden></div>
+        <div class="savebar-row">
+          <p class="save-status" id="save-status" role="status"></p>
+          <button type="button" class="btn btn-text" id="discard-btn" hidden>Discard</button>
+          <button type="submit" class="btn btn-primary" id="save-btn">Save changes</button>
+        </div>
+      </div>
+
+      <section class="faceplate" aria-labelledby="routes-title">
+        <div class="plate-head">
+          <h2 id="routes-title">Routing</h2>
+          <ul class="legend" aria-hidden="true">
+            <li><span class="lamp is-lit"></span>Notifies you</li>
+            <li><span class="lamp"></span>Off</li>
+          </ul>
+        </div>
+        <table class="routes">
+          <caption class="vh">Which events notify you on each channel</caption>
+          <colgroup><col><col class="ch"><col class="ch"><col class="ch"></colgroup>
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Email</th>
+              <th scope="col">Push</th>
+              <th scope="col">Slack</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row"><span class="ev-name">Mentions</span><span class="ev-desc">Someone @mentions you in a task or comment</span></th>
+              <td><label class="jack"><input type="checkbox" data-ev="mentions" data-ch="email" aria-label="Mentions by email"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="mentions" data-ch="push" aria-label="Mentions by push"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="mentions" data-ch="slack" aria-label="Mentions in Slack" aria-describedby="slack-note"><span class="lamp"></span></label></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="ev-name">Assigned tasks</span><span class="ev-desc">A task is assigned to you, or handed to someone else</span></th>
+              <td><label class="jack"><input type="checkbox" data-ev="assigned" data-ch="email" aria-label="Assigned tasks by email"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="assigned" data-ch="push" aria-label="Assigned tasks by push"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="assigned" data-ch="slack" aria-label="Assigned tasks in Slack" aria-describedby="slack-note"><span class="lamp"></span></label></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="ev-name">Due-date reminders</span><span class="ev-desc">The day before, and the morning a task of yours is due</span></th>
+              <td><label class="jack"><input type="checkbox" data-ev="due" data-ch="email" aria-label="Due-date reminders by email"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="due" data-ch="push" aria-label="Due-date reminders by push"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="due" data-ch="slack" aria-label="Due-date reminders in Slack" aria-describedby="slack-note"><span class="lamp"></span></label></td>
+            </tr>
+            <tr>
+              <th scope="row"><span class="ev-name">Weekly digest</span><span class="ev-desc">Monday morning summary of your projects</span></th>
+              <td><label class="jack"><input type="checkbox" data-ev="digest" data-ch="email" aria-label="Weekly digest by email"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="digest" data-ch="push" aria-label="Weekly digest by push"><span class="lamp"></span></label></td>
+              <td><label class="jack"><input type="checkbox" data-ev="digest" data-ch="slack" aria-label="Weekly digest in Slack" aria-describedby="slack-note"><span class="lamp"></span></label></td>
+            </tr>
+            <tr class="connect-row">
+              <td colspan="4">
+                <div class="connect">
+                  <p id="slack-note"><strong>Slack isn't connected.</strong> Connect your workspace to get these as direct messages from Kestrel.</p>
+                  <button type="button" class="btn btn-plate" id="slack-btn">Connect Slack</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="lower">
+        <section class="panel" aria-labelledby="quiet-title">
+          <div class="panel-head">
+            <h2 id="quiet-title">Quiet hours</h2>
+            <label class="switch"><input type="checkbox" role="switch" id="quiet-on">Hold notifications</label>
+          </div>
+          <fieldset class="fields" id="quiet-fields">
+            <legend class="vh">Quiet-hours time range</legend>
+            <div class="field">
+              <label for="quiet-start">From</label>
+              <input type="time" id="quiet-start" step="900">
+            </div>
+            <div class="field">
+              <label for="quiet-end">Until</label>
+              <input type="time" id="quiet-end" step="900" aria-describedby="quiet-end-error">
+            </div>
+            <div class="field tz">
+              <label for="quiet-tz">Time zone</label>
+              <select id="quiet-tz"></select>
+            </div>
+            <p class="field-error" id="quiet-end-error" hidden style="grid-column: 1 / -1"></p>
+          </fieldset>
+          <div class="rail-wrap">
+            <div class="rail" id="rail" aria-hidden="true"></div>
+            <div class="rail-axis" aria-hidden="true"><span style="left:0">00:00</span><span style="left:25%">06:00</span><span style="left:50%">12:00</span><span style="left:75%">18:00</span><span style="left:100%">24:00</span></div>
+            <p class="rail-summary" id="rail-summary"></p>
+            <p class="rail-now" id="rail-now"></p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="test-title">
+          <div class="panel-head">
+            <h2 id="test-title">Test</h2>
+          </div>
+          <p class="lede">Sends a sample mention to each channel with a route on, using the routing above, saved or not.</p>
+          <ul class="dests">
+            <li class="dest" data-ch="email"><span class="mini"><span class="lamp"></span></span><span><span class="dest-name">Email</span><span class="dest-detail">maya.ortiz@tallgrass.studio</span></span><span class="dest-result"></span></li>
+            <li class="dest" data-ch="push"><span class="mini"><span class="lamp"></span></span><span><span class="dest-name">Push</span><span class="dest-detail">Pixel 8 and MacBook Air</span></span><span class="dest-result"></span></li>
+            <li class="dest" data-ch="slack"><span class="mini"><span class="lamp"></span></span><span><span class="dest-name">Slack</span><span class="dest-detail" id="slack-detail">Not connected</span></span><span class="dest-result"></span></li>
+          </ul>
+          <button type="button" class="btn" id="test-btn">Send test notification</button>
+          <p class="test-status" id="test-status" role="status"></p>
+        </section>
+      </div>
+
+    </form>
+  </main>
+</div>
+
+<script>
+(() => {
+  const EVENTS = ['mentions', 'assigned', 'due', 'digest'];
+  const CHANNELS = ['email', 'push', 'slack'];
+  const CH_NAME = { email: 'email', push: 'push', slack: 'Slack' };
+  const ZONES = [
+    ['America/Los_Angeles', 'Los Angeles'], ['America/Chicago', 'Chicago'], ['America/New_York', 'New York'],
+    ['America/Sao_Paulo', 'São Paulo'], ['Europe/London', 'London'], ['Europe/Berlin', 'Berlin'],
+    ['Africa/Lagos', 'Lagos'], ['Asia/Kolkata', 'Kolkata'], ['Asia/Singapore', 'Singapore'],
+    ['Asia/Tokyo', 'Tokyo'], ['Australia/Sydney', 'Sydney'],
+  ];
+  const ICON_ALERT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4M8 11h.01"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>';
+
+  // Last saved settings, as the server would return them.
+  let saved = {
+    routes: {
+      email: { mentions: true, assigned: true, due: true, digest: true },
+      push: { mentions: true, assigned: true, due: true, digest: false },
+      slack: { mentions: true, assigned: true, due: false, digest: false },
+    },
+    quiet: { on: true, start: '22:00', end: '07:00', tz: 'America/Chicago' },
+  };
+  let savedAt = new Date(2026, 9, 28, 16, 12);
+  let current = structuredClone(saved);
+  let slackConnected = false;
+  let saving = false;
+
+  const $ = (id) => document.getElementById(id);
+  const jacks = [...document.querySelectorAll('.jack input')];
+  const form = $('prefs');
+  const quietOn = $('quiet-on'), qStart = $('quiet-start'), qEnd = $('quiet-end'), qTz = $('quiet-tz');
+  const endError = $('quiet-end-error');
+  const saveBtn = $('save-btn'), discardBtn = $('discard-btn'), saveStatus = $('save-status'), saveError = $('save-error');
+  const testBtn = $('test-btn'), testStatus = $('test-status');
+  const slackBtn = $('slack-btn');
+
+  // Fake API: the same failure paths a real request has. Offline (or #fail-save / #fail-test) rejects.
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const api = {
+    async save(body) {
+      await wait(700);
+      if (!navigator.onLine) throw Object.assign(new Error('offline'), { kind: 'offline' });
+      if (location.hash === '#fail-save') throw Object.assign(new Error('503'), { kind: 'server' });
+      return structuredClone(body);
+    },
+    async test(channels) {
+      await wait(600);
+      if (!navigator.onLine) throw Object.assign(new Error('offline'), { kind: 'offline' });
+      if (location.hash === '#fail-test') throw Object.assign(new Error('503'), { kind: 'server' });
+      return channels;
+    },
+    async connectSlack() { await wait(900); return { workspace: 'Tallgrass Studio' }; },
+  };
+
+  // Time zones
+  const offsetOf = (tz) => {
+    try {
+      const part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' })
+        .formatToParts(new Date()).find((p) => p.type === 'timeZoneName');
+      return part ? part.value.replace('GMT', 'UTC') : '';
+    } catch { return ''; }
+  };
+  qTz.innerHTML = ZONES.map(([id, city]) => {
+    const off = offsetOf(id);
+    return `<option value="${id}">${city}${off ? ` (${off === 'UTC' ? 'UTC' : off})` : ''}</option>`;
+  }).join('');
+  const cityOf = (tz) => (ZONES.find(([id]) => id === tz) || [tz, tz])[1];
+
+  // Rail of 24 hour cells
+  const rail = $('rail');
+  rail.innerHTML = Array.from({ length: 24 }, (_, h) => `<span class="hour" data-h="${h}"></span>`).join('');
+  const hours = [...rail.children];
+
+  const toMin = (t) => { const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m; };
+  const fmtDur = (min) => { const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${m} min` : `${h} h`; };
+  const inQuiet = (minute, q) => {
+    const s = toMin(q.start), e = toMin(q.end);
+    if (s === e) return false;
+    return s < e ? minute >= s && minute < e : minute >= s || minute < e;
+  };
+  const nowIn = (tz) => {
+    try {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+      const h = +parts.find((p) => p.type === 'hour').value, m = +parts.find((p) => p.type === 'minute').value;
+      return { h, m, label: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` };
+    } catch { const d = new Date(); return { h: d.getHours(), m: d.getMinutes(), label: d.toTimeString().slice(0, 5) }; }
+  };
+
+  const quietInvalid = () => current.quiet.on && current.quiet.start === current.quiet.end;
+
+  function renderRail() {
+    const q = current.quiet;
+    const now = nowIn(q.tz);
+    hours.forEach((cell, h) => {
+      const held = q.on && inQuiet(h * 60 + 30, q);
+      cell.classList.toggle('is-lit', !held);
+      cell.classList.toggle('is-now', h === now.h);
+    });
+    const summary = $('rail-summary'), nowEl = $('rail-now');
+    if (!q.on) {
+      summary.textContent = 'Quiet hours are off. Notifications arrive at any time of day.';
+    } else if (quietInvalid()) {
+      summary.textContent = 'Nothing is held until the start and end times differ.';
+    } else {
+      const dur = (toMin(q.end) - toMin(q.start) + 1440) % 1440;
+      summary.innerHTML = `Held from <strong>${q.start}</strong> until <strong>${q.end}</strong> (${fmtDur(dur)}). Anything held arrives at ${q.end} as one bundle.`;
+    }
+    const held = q.on && !quietInvalid() && inQuiet(now.h * 60 + now.m, q);
+    nowEl.textContent = `It's ${now.label} in ${cityOf(q.tz)} now: ${held ? 'notifications are being held' : 'notifications are being delivered'}.`;
+  }
+
+  function channelLive(ch) {
+    if (ch === 'slack' && !slackConnected) return false;
+    return EVENTS.some((ev) => current.routes[ch][ev]);
+  }
+
+  function renderDests() {
+    document.querySelectorAll('.dest').forEach((li) => {
+      li.querySelector('.lamp').classList.toggle('is-lit', channelLive(li.dataset.ch));
+    });
+    $('slack-detail').textContent = slackConnected ? 'Direct messages in Tallgrass Studio' : 'Not connected';
+  }
+
+  function renderJacks() {
+    jacks.forEach((el) => {
+      const { ev, ch } = el.dataset;
+      const off = ch === 'slack' && !slackConnected;
+      el.disabled = off;
+      el.checked = !off && current.routes[ch][ev];
+    });
+  }
+
+  function renderQuiet() {
+    const q = current.quiet;
+    quietOn.checked = q.on;
+    $('quiet-fields').disabled = !q.on;
+    qStart.value = q.start; qEnd.value = q.end; qTz.value = q.tz;
+  }
+
+  function showEndError(show) {
+    if (show) {
+      endError.innerHTML = `${ICON_ALERT}<span>Quiet hours start and end at ${current.quiet.start}. Choose a different “Until” time, or turn quiet hours off.</span>`;
+      endError.hidden = false;
+      qEnd.setAttribute('aria-invalid', 'true');
+    } else {
+      endError.hidden = true;
+      endError.textContent = '';
+      qEnd.removeAttribute('aria-invalid');
+    }
+  }
+
+  function changeCount() {
+    let n = 0;
+    for (const ch of CHANNELS) for (const ev of EVENTS) if (current.routes[ch][ev] !== saved.routes[ch][ev]) n++;
+    for (const k of ['on', 'start', 'end', 'tz']) if (current.quiet[k] !== saved.quiet[k]) n++;
+    return n;
+  }
+
+  const fmtSaved = (d) => {
+    const today = new Date();
+    const sameDay = d.toDateString() === today.toDateString();
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return sameDay ? `today at ${time}` : `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`;
+  };
+
+  function setStatus(kind, html) {
+    saveStatus.className = 'save-status' + (kind ? ` is-${kind}` : '');
+    saveStatus.innerHTML = html;
+  }
+
+  function renderBar() {
+    if (saving) return;
+    const n = changeCount();
+    discardBtn.hidden = n === 0;
+    if (n === 0) setStatus('', `All changes saved ${fmtSaved(savedAt)}`);
+    else setStatus('', `<span class="count">${n}</span>&nbsp;unsaved ${n === 1 ? 'change' : 'changes'}`);
+  }
+
+  function renderAll() { renderJacks(); renderQuiet(); renderRail(); renderDests(); renderBar(); }
+
+  // ---- Events ----
+  jacks.forEach((el) => el.addEventListener('change', () => {
+    current.routes[el.dataset.ch][el.dataset.ev] = el.checked;
+    saveError.hidden = true;
+    renderDests(); renderBar();
+  }));
+
+  quietOn.addEventListener('change', () => {
+    current.quiet.on = quietOn.checked;
+    $('quiet-fields').disabled = !quietOn.checked;
+    showEndError(quietInvalid() && !endError.hidden);
+    renderRail(); renderBar();
+  });
+
+  const onTime = (validateNow) => () => {
+    current.quiet.start = qStart.value || current.quiet.start;
+    current.quiet.end = qEnd.value || current.quiet.end;
+    // Show the error on commit (change/blur); clear it as soon as the times differ.
+    if (validateNow) showEndError(quietInvalid());
+    else if (!quietInvalid()) showEndError(false);
+    else if (!endError.hidden) showEndError(true);
+    renderRail(); renderBar();
+  };
+  [qStart, qEnd].forEach((el) => {
+    el.addEventListener('input', onTime(false));
+    el.addEventListener('change', onTime(true));
+    el.addEventListener('blur', onTime(true));
+  });
+  qTz.addEventListener('change', () => { current.quiet.tz = qTz.value; renderRail(); renderBar(); });
+
+  discardBtn.addEventListener('click', () => {
+    current = structuredClone(saved);
+    showEndError(false);
+    saveError.hidden = true;
+    renderAll();
+    setStatus('', 'Changes discarded');
+    discardBtn.hidden = true;
+  });
+
+  async function save() {
+    if (saving) return;
+    saveError.hidden = true;
+    if (quietInvalid()) {
+      showEndError(true);
+      setStatus('error', `${ICON_ALERT}<span>Fix the quiet-hours time to save</span>`);
+      qEnd.focus();
+      return;
+    }
+    if (changeCount() === 0) { setStatus('', 'No changes to save'); return; }
+    saving = true;
+    saveBtn.setAttribute('aria-busy', 'true');
+    saveBtn.textContent = 'Saving…';
+    discardBtn.disabled = true;
+    setStatus('', 'Saving your changes…');
+    try {
+      saved = await api.save(current);
+      savedAt = new Date();
+      saving = false;
+      setStatus('ok', `${ICON_CHECK}<span>Changes saved</span>`);
+      discardBtn.hidden = true;
+    } catch (err) {
+      saving = false;
+      const why = err.kind === 'offline'
+        ? 'Couldn’t save: you appear to be offline. Your changes are still here; reconnect and press Save changes again.'
+        : 'Couldn’t save: Kestrel didn’t respond (error 503). Your changes are still here; press Save changes to try again.';
+      saveError.innerHTML = `${ICON_ALERT}<span>${why}</span>`;
+      saveError.hidden = false;
+      const n = changeCount();
+      setStatus('error', `<span><span class="count">${n}</span>&nbsp;${n === 1 ? 'change' : 'changes'} not saved</span>`);
+      discardBtn.hidden = false;
+    } finally {
+      saveBtn.removeAttribute('aria-busy');
+      saveBtn.textContent = 'Save changes';
+      discardBtn.disabled = false;
+    }
+  }
+  form.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
+  });
+  window.addEventListener('beforeunload', (e) => { if (changeCount() > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+  // Send test notification
+  testBtn.addEventListener('click', async () => {
+    const targets = CHANNELS.filter(channelLive);
+    document.querySelectorAll('.dest-result').forEach((r) => { r.textContent = ''; r.className = 'dest-result'; });
+    testStatus.className = 'test-status';
+    if (!targets.length) {
+      testStatus.classList.add('is-error');
+      testStatus.textContent = 'Nothing to send: every route is off. Turn on at least one lamp under Routing, then send again.';
+      return;
+    }
+    testBtn.setAttribute('aria-busy', 'true');
+    testBtn.textContent = 'Sending…';
+    testStatus.textContent = '';
+    try {
+      await api.test(targets);
+      const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      document.querySelectorAll('.dest').forEach((li) => {
+        const r = li.querySelector('.dest-result'), ch = li.dataset.ch;
+        if (targets.includes(ch)) { r.textContent = `Sent at ${t}`; r.classList.add('ok'); }
+        else if (ch === 'slack' && !slackConnected) r.textContent = 'Skipped: Slack isn’t connected';
+        else r.textContent = 'Skipped: no routes on';
+      });
+      const names = targets.map((c) => CH_NAME[c]);
+      const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+      testStatus.textContent = `Test sent to ${list}. It can take up to a minute to arrive.`;
+    } catch (err) {
+      testStatus.classList.add('is-error');
+      testStatus.textContent = err.kind === 'offline'
+        ? 'Couldn’t send the test: you appear to be offline. Reconnect and send again.'
+        : 'Couldn’t send the test: Kestrel didn’t respond (error 503). Try again in a minute.';
+    } finally {
+      testBtn.removeAttribute('aria-busy');
+      testBtn.textContent = 'Send test notification';
+    }
+  });
+
+  // Slack connect / disconnect (takes effect immediately, like an OAuth grant)
+  slackBtn.addEventListener('click', async () => {
+    const note = $('slack-note');
+    if (slackConnected) {
+      slackConnected = false;
+      note.innerHTML = '<strong>Slack isn’t connected.</strong> Connect your workspace to get these as direct messages from Kestrel.';
+      slackBtn.textContent = 'Connect Slack';
+      renderJacks(); renderDests();
+      return;
+    }
+    slackBtn.setAttribute('aria-busy', 'true');
+    slackBtn.textContent = 'Connecting…';
+    const { workspace } = await api.connectSlack();
+    slackConnected = true;
+    slackBtn.removeAttribute('aria-busy');
+    slackBtn.textContent = 'Disconnect Slack';
+    note.innerHTML = `<strong>Connected to ${workspace}.</strong> Kestrel sends these as direct messages; your earlier Slack routes are back on.`;
+    renderJacks(); renderDests();
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

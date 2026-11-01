@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circulate: routing slips for small teams</title>
+<meta name="description" content="Circulate turns each piece of team work into a routing slip: one holder at a time, a route everyone can see, and a name crossed off at every handover.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Caveat:wght@600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Interoffice envelope palette (see DESIGN.md) */
+    --kraft: #C9A272;     /* envelope stock: page ground */
+    --slip: #F4EFE3;      /* routing-slip card stock: surface */
+    --ink: #21180E;       /* printed envelope ink: text */
+    --ink-soft: #43321D;  /* muted text */
+    --pen: #193389;       /* ballpoint: crossing off, circling, the user's action */
+    --fold: #6E5130;      /* creased kraft: rules and borders */
+    --stamp: #A3222A;     /* stamp pad: status only (due, error) */
+
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Public Sans", system-ui, sans-serif;
+    --hand: "Caveat", cursive;
+
+    --fs-s: 0.875rem;   /* 14 */
+    --fs-0: 1.0625rem;  /* 17 */
+    --fs-1: 1.3125rem;  /* 21 */
+    --fs-2: 1.75rem;    /* 28 */
+    --fs-3: 2.75rem;    /* 44 */
+    --fs-4: clamp(3rem, 4.2vw + 1.6rem, 5.25rem);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px; --s8: 128px;
+    --radius: 3px;
+    --shadow: 0 1px 0 var(--fold), 0 10px 24px color-mix(in srgb, var(--ink) 18%, transparent);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --wrap: 1240px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background-color: var(--kraft);
+    color: var(--ink);
+    font: 400 var(--fs-0)/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--pen); text-underline-offset: 0.2em; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: var(--radius); }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--s2); }
+  @media (min-width: 720px) { .wrap { padding: 0 var(--s5); } }
+
+  .caps { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .hand { font-family: var(--hand); font-weight: 600; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3);
+    border: 2px solid var(--pen); border-radius: var(--radius);
+    background: var(--pen); color: var(--slip);
+    font: 600 var(--fs-0)/1 var(--body); white-space: nowrap; text-decoration: none; cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { background: var(--ink); border-color: var(--ink); }
+  }
+  .btn-quiet { background: transparent; color: var(--pen); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-quiet:hover { background: var(--pen); border-color: var(--pen); color: var(--slip); }
+  }
+
+  /* Header */
+  .top { padding: var(--s3) 0; }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+  .mark { font: 700 var(--fs-2)/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); text-decoration: none; }
+  .top nav { display: flex; align-items: center; gap: var(--s4); }
+  .top nav a:not(.btn) { color: var(--ink); font-weight: 600; text-decoration: none; padding: var(--s1) 0; white-space: nowrap; }
+  @media (hover: hover) and (pointer: fine) { .top nav a:not(.btn):hover { text-decoration: underline; } }
+  .top nav .btn { min-height: 44px; padding: 0 var(--s2); }
+  @media (max-width: 719px) { .top nav a:not(.btn) { display: none; } }
+
+  /* Hero */
+  .hero { padding: var(--s4) 0 var(--s7); }
+  .hero .wrap { display: grid; gap: var(--s4); grid-template-areas: "title" "lead" "slip" "act"; }
+  .hero h1 { grid-area: title; font: 700 var(--fs-4)/0.98 var(--display); letter-spacing: -0.005em; }
+  .hero .lead { grid-area: lead; font-size: var(--fs-1); line-height: 1.5; max-width: 34ch; }
+  .hero .slip { grid-area: slip; }
+  .hero .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); }
+  .hero .act a:not(.btn) { font-weight: 600; white-space: nowrap; padding: var(--s1) 0; }
+  .hero .fine { flex-basis: 100%; color: var(--ink-soft); }
+  @media (min-width: 960px) {
+    .hero { padding-top: var(--s6); }
+    .hero .wrap {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 33rem);
+      grid-template-areas: "title slip" "lead slip" "act slip";
+      grid-template-rows: auto auto 1fr;
+      column-gap: var(--s6); row-gap: var(--s4);
+    }
+    .hero .act { align-self: start; }
+  }
+
+  /* The routing slip: the page's unit */
+  .slip {
+    position: relative; margin: 0;
+    background: var(--slip); color: var(--ink);
+    border: 1px solid var(--fold); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: var(--s3);
+  }
+  .slip-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); padding-bottom: var(--s1); border-bottom: 2px solid var(--ink); }
+  .slip-head .caps { font-size: var(--fs-1); font-weight: 700; }
+  .slip-no { font: 700 var(--fs-1)/1 var(--display); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .slip-re { display: flex; align-items: baseline; gap: var(--s2); padding: var(--s2) 0 var(--s1); border-bottom: 1px solid var(--fold); }
+  .slip-re .caps { font-size: var(--fs-s); color: var(--ink-soft); }
+  .slip-re .hand { font-size: var(--fs-2); line-height: 1.2; }
+
+  .route { width: 100%; border-collapse: collapse; }
+  .route th { font: 600 var(--fs-s)/1 var(--display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); text-align: left; padding: var(--s2) 0 var(--s1); }
+  .route th:last-child, .route td.when { text-align: right; }
+  .route td { border-bottom: 1px solid var(--fold); padding: var(--s1) 0; vertical-align: middle; }
+  .route td.n { width: 2rem; font: 700 var(--fs-1)/1 var(--display); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .route td.when { font-size: var(--fs-s); line-height: 1.3; white-space: nowrap; padding-left: var(--s2); }
+  .who { display: flex; flex-direction: column; align-items: flex-start; }
+  .name { position: relative; display: inline-block; font: 600 var(--fs-2)/1.15 var(--hand); padding: 2px var(--s1); margin-left: calc(-1 * var(--s1)); }
+  .dept { font-size: var(--fs-s); line-height: 1.3; color: var(--ink); }
+  @media (max-width: 479px) {
+    .slip { padding: var(--s2); }
+    .name { font-size: var(--fs-1); white-space: nowrap; }
+    .route td.n { width: 1.5rem; }
+  }
+
+  /* crossed off */
+  .done .name::after {
+    content: ""; position: absolute; left: 2px; right: 2px; top: 54%; height: 2.5px;
+    background: var(--pen); border-radius: 2px; transform: rotate(-3deg); transform-origin: left center;
+  }
+  /* holding: circled in ballpoint */
+  .holding .name::before {
+    content: ""; position: absolute; inset: -3px -6px -4px -4px;
+    border: 2px solid var(--pen); border-radius: 50%; transform: rotate(-3deg);
+  }
+  .holding .when { color: var(--pen); font-weight: 600; }
+  .waiting .when { color: var(--ink-soft); }
+
+  .just.done .name::after { animation: strike 260ms var(--ease-out) both; }
+  .just.holding .name::before { animation: ring 260ms var(--ease-out) 120ms both; }
+  @keyframes strike { from { transform: rotate(-3deg) scaleX(0); } to { transform: rotate(-3deg) scaleX(1); } }
+  @keyframes ring { from { opacity: 0; transform: rotate(-3deg) scale(0.95); } to { opacity: 1; transform: rotate(-3deg) scale(1); } }
+
+  .slip-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); padding-top: var(--s3); }
+  .stamp {
+    display: inline-block; padding: 4px var(--s1);
+    border: 2px solid var(--stamp); border-radius: var(--radius); color: var(--stamp);
+    font: 700 var(--fs-0)/1.1 var(--display); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+    transform: rotate(-4deg);
+  }
+  .stamp.signed { border-color: var(--pen); color: var(--pen); }
+
+  /* Sections */
+  section { padding: var(--s7) 0; }
+  h2 { font: 700 var(--fs-3)/1.05 var(--display); }
+  .intro { max-width: 60ch; margin-top: var(--s2); }
+
+  /* How a slip travels: a route with three stops */
+  .travel { border-top: 2px solid var(--ink); }
+  .stops { list-style: none; margin: var(--s5) 0 0; padding: 0; display: grid; gap: var(--s5); }
+  .stop { position: relative; padding-left: var(--s6); }
+  .stop::before { /* the route line */
+    content: ""; position: absolute; left: 22px; top: 52px; bottom: calc(-1 * var(--s5)); width: 2px; background: var(--fold);
+  }
+  .stop:last-child::before { display: none; }
+  .marker { position: absolute; left: 0; top: 0; width: 46px; height: 46px; display: grid; place-items: center; font: 700 var(--fs-1)/1 var(--display); }
+  .stop:nth-child(1) .marker { color: var(--ink-soft); }
+  .stop:nth-child(1) .marker::after { content: ""; position: absolute; left: 10px; right: 10px; top: 50%; height: 2.5px; background: var(--pen); transform: rotate(-20deg); }
+  .stop:nth-child(2) .marker::after { content: ""; position: absolute; inset: 2px; border: 2px solid var(--pen); border-radius: 50%; transform: rotate(-6deg); }
+  .stop:nth-child(3) .marker { border-bottom: 2px solid var(--ink); }
+  .stop h3 { font: 700 var(--fs-2)/1.1 var(--display); margin-bottom: var(--s1); }
+  .stop p { max-width: 38ch; }
+  @media (min-width: 840px) {
+    .stops { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+    .stop { padding: var(--s7) 0 0; }
+    .stop::before { left: 54px; right: calc(-1 * var(--s4)); top: 22px; bottom: auto; width: auto; height: 2px; }
+  }
+
+  /* Ledger: what's on every slip */
+  .ledger .wrap { display: grid; gap: var(--s5); }
+  .ledger .slip { padding: var(--s1) var(--s3); }
+  .ledger dl { margin: 0; }
+  .ledger .row { display: grid; gap: var(--s1); padding: var(--s3) 0; border-bottom: 1px solid var(--fold); }
+  .ledger .row:last-child { border-bottom: 0; }
+  .ledger dt { font: 700 var(--fs-1)/1.2 var(--display); text-transform: uppercase; letter-spacing: 0.06em; }
+  .ledger dd { margin: 0; max-width: 56ch; }
+  @media (min-width: 960px) {
+    .ledger .wrap { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s6); }
+    .ledger .head { align-self: start; position: sticky; top: var(--s4); }
+    .ledger .row { grid-template-columns: 13rem minmax(0, 1fr); gap: var(--s3); }
+  }
+
+  /* The list: the product screen */
+  .list { border-top: 2px solid var(--ink); }
+  .list .wrap { display: grid; gap: var(--s4); }
+  .list figure { margin: 0; }
+  .list .screen { border: 1px solid var(--fold); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--slip); }
+  .list figcaption { margin-top: var(--s2); max-width: 60ch; }
+  @media (min-width: 960px) {
+    .list .wrap { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: var(--s6); align-items: start; }
+  }
+
+  /* Join: a fresh slip with your name on line one */
+  .join .slip { max-width: 46rem; margin: var(--s5) auto 0; }
+  .join h2 { text-align: center; }
+  .join .intro { margin-left: auto; margin-right: auto; text-align: center; }
+  .join form { margin: 0; }
+  .join label { display: block; padding-top: var(--s3); font: 600 var(--fs-s)/1 var(--display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+  .line { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: end; gap: var(--s1); border-bottom: 1px solid var(--fold); padding: var(--s1) 0 var(--s2); }
+  .line .n { font: 700 var(--fs-1)/1 var(--display); color: var(--ink-soft); padding-bottom: 12px; }
+  .line input {
+    width: 100%; min-width: 0; min-height: 48px; padding: var(--s1) var(--s1) 4px;
+    border: 0; border-bottom: 2px solid var(--ink); border-radius: 0;
+    background: transparent; color: var(--ink); font: 400 var(--fs-1)/1.2 var(--body);
+  }
+  .line input:focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+  .line input[aria-invalid="true"] { border-bottom-color: var(--stamp); }
+  .send { width: 48px; padding: 0; }
+  .send svg { width: 22px; height: 22px; }
+  .blank { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: var(--s1); height: 56px; align-items: end; border-bottom: 1px solid var(--fold); padding-bottom: var(--s1); }
+  .blank .n { font: 700 var(--fs-1)/1 var(--display); color: var(--ink-soft); }
+  .blank .hand { font-size: var(--fs-2); line-height: 1; color: var(--ink-soft); }
+  .msg { padding: var(--s2) 0 var(--s1); min-height: 3.5rem; }
+  .error { color: var(--stamp); font-weight: 600; }
+  .error:empty, .ok:empty { display: none; }
+  .ok { color: var(--pen); font-weight: 600; }
+
+  footer { border-top: 2px solid var(--ink); padding: var(--s4) 0 var(--s5); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s1) var(--s4); color: var(--ink-soft); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .just.done .name::after, .just.holding .name::before { animation: none; }
+    .btn { transition: background-color 160ms ease, color 160ms ease; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="mark" href="#top" id="top">Circulate</a>
+      <nav aria-label="Main">
+        <a href="#how">How it travels</a>
+        <a href="#list">The list</a>
+        <a class="btn" href="#join">Start a slip</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <h1 id="hero-title">Always know who’s holding it.</h1>
+        <p class="lead">Circulate turns each job into a routing slip. It sits with one person, travels down a list of names, and every handover crosses a name off.</p>
+
+        <figure class="slip" aria-labelledby="slip-title">
+          <div class="slip-head">
+            <span class="caps" id="slip-title">Routing slip</span>
+            <span class="slip-no">No. 214</span>
+          </div>
+          <p class="slip-re"><span class="caps">Re</span> <span class="hand">Spring catalogue proofs</span></p>
+          <table class="route">
+            <thead><tr><th scope="col"><span class="vh">Stop</span></th><th scope="col">To</th><th scope="col">Passed on</th></tr></thead>
+            <tbody id="route">
+              <tr class="done"><td class="n">1</td><td><span class="who"><span class="name">Maya Okafor</span><span class="dept">Copy</span></span></td><td class="when">Tue 27 Oct</td></tr>
+              <tr class="done"><td class="n">2</td><td><span class="who"><span class="name">Theo Brandt</span><span class="dept">Layout</span></span></td><td class="when">Thu 29 Oct</td></tr>
+              <tr class="holding"><td class="n">3</td><td><span class="who"><span class="name">Ines Duarte</span><span class="dept">Photo retouch</span></span></td><td class="when">Holding<br>since Fri 30 Oct</td></tr>
+              <tr class="waiting"><td class="n">4</td><td><span class="who"><span class="name">Sam Whitlock</span><span class="dept">Print check</span></span></td><td class="when">Next</td></tr>
+              <tr class="waiting"><td class="n">5</td><td><span class="who"><span class="name">Priya Nair</span><span class="dept">Sign-off</span></span></td><td class="when">Waiting</td></tr>
+            </tbody>
+          </table>
+          <div class="slip-foot">
+            <span class="stamp" id="stamp">Due Wed 4 Nov</span>
+            <button class="btn" type="button" id="pass" onclick="go()">Pass it to Sam</button>
+          </div>
+          <p class="vh" aria-live="polite" id="slip-status"></p>
+        </figure>
+
+        <div class="act">
+          <button class="btn" type="button" id="start">Start a slip</button>
+          <a href="#how">See how a slip travels</a>
+          <p class="fine">For teams of 3 to 30 who hand work to each other.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="travel" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title">How a slip travels</h2>
+        <p class="intro">Three moves, in this order, for every job your team passes around.</p>
+        <ol class="stops">
+          <li class="stop">
+            <span class="marker" aria-hidden="true">1</span>
+            <h3>Write the slip</h3>
+            <p>Name the job, list the people it has to pass through, and give each one a day. That list is the route.</p>
+          </li>
+          <li class="stop">
+            <span class="marker" aria-hidden="true">2</span>
+            <h3>Hold it</h3>
+            <p>The slip sits with one person at a time. Their name is circled, so nobody has to ask whose desk it’s on.</p>
+          </li>
+          <li class="stop">
+            <span class="marker" aria-hidden="true">3</span>
+            <h3>Pass it on</h3>
+            <p>Done with your part? Cross yourself off. The next name is circled, they get one email, and your dates stay on the trail.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="ledger" aria-labelledby="ledger-title">
+      <div class="wrap">
+        <div class="head">
+          <h2 id="ledger-title">What every slip keeps</h2>
+          <p class="intro">No boards to groom and no status meetings. The slip itself answers the three questions a small team asks most.</p>
+        </div>
+        <div class="slip">
+          <dl>
+            <div class="row">
+              <dt>One holder</dt>
+              <dd>A slip is never “with the team”. It is with Ines, since Friday, and it moves the moment she crosses herself off.</dd>
+            </div>
+            <div class="row">
+              <dt>A trail that stays</dt>
+              <dd>Crossed-off names stay on the slip with the day they passed it on. Changing the route is written on the trail too.</dd>
+            </div>
+            <div class="row">
+              <dt>Small-team sized</dt>
+              <dd>Made for 3 to 30 people. Every slip fits on one screen, and every route fits on one slip.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="list" id="list" aria-labelledby="list-title">
+      <div class="wrap">
+        <div>
+          <h2 id="list-title">The list</h2>
+          <p class="intro">Every open slip, whose name is circled on it, and which one is overdue. Open it on Monday instead of asking around.</p>
+        </div>
+        <figure>
+          <img class="screen" src="hero.png" width="1200" height="720" decoding="async"
+               alt="The Circulate list of open slips: six jobs, each with its holder’s name circled, the trail of crossed-off names, and a due date; the client invoice is stamped due yesterday.">
+          <figcaption>Northfold Studio’s open slips on a Saturday morning: six jobs, nine people, one overdue.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="join" id="join" aria-labelledby="join-title">
+      <div class="wrap">
+        <h2 id="join-title">Put your name on the first line</h2>
+        <p class="intro">Leave your work email. We’ll write once, when your team’s space is ready.</p>
+        <div class="slip">
+          <div class="slip-head">
+            <span class="caps">Routing slip</span>
+            <span class="slip-no">No. 1</span>
+          </div>
+          <form id="join-form" novalidate>
+            <label for="email">To: your work email</label>
+            <div class="line">
+              <span class="n" aria-hidden="true">1</span>
+              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required
+                     placeholder="ines@northfold.studio" aria-describedby="email-hint email-error">
+              <button class="btn send" type="submit" aria-label="Add me to the list">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+            <div class="blank" aria-hidden="true"><span class="n">2</span><span class="hand">your team</span></div>
+            <div class="msg">
+              <p id="email-hint">One email from us, no newsletter.</p>
+              <p id="email-error" class="error"></p>
+              <p id="join-status" class="ok" role="status"></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>© 2026 Circulate</p>
+      <p>Routing slips for small teams.</p>
+    </div>
+  </footer>
+
+<script>
+  // The hero slip: "Pass it to …" crosses off the holder and circles the next name.
+  var TODAY = 'Sat 31 Oct';
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#route tr'));
+  var START = rows.map(function (r) { return { cls: r.className, when: r.querySelector('.when').innerHTML }; });
+  var holder = 2;
+  var passBtn = document.getElementById('pass');
+  var stamp = document.getElementById('stamp');
+  var slipStatus = document.getElementById('slip-status');
+
+  function first(r) { return r.querySelector('.name').textContent.split(' ')[0]; }
+
+  function go() {
+    if (holder >= rows.length) { // signed off: send it round again
+      rows.forEach(function (r, i) { r.className = START[i].cls; r.querySelector('.when').innerHTML = START[i].when; });
+      holder = 2;
+      stamp.textContent = 'Due Wed 4 Nov';
+      stamp.classList.remove('signed');
+      passBtn.textContent = 'Pass it to ' + first(rows[3]);
+      slipStatus.textContent = 'Slip reset. ' + first(rows[2]) + ' is holding it.';
+      return;
+    }
+    var cur = rows[holder];
+    cur.className = 'done just';
+    cur.querySelector('.when').textContent = TODAY;
+    holder++;
+    if (holder < rows.length) {
+      var nxt = rows[holder];
+      nxt.className = 'holding just';
+      nxt.querySelector('.when').innerHTML = 'Holding<br>since ' + TODAY;
+      if (rows[holder + 1]) rows[holder + 1].querySelector('.when').textContent = 'Next';
+      passBtn.textContent = rows[holder + 1] ? 'Pass it to ' + first(rows[holder + 1]) : 'Sign it off';
+      slipStatus.textContent = first(cur) + ' crossed off. ' + first(nxt) + ' is holding it.';
+    } else {
+      stamp.textContent = 'Signed off ' + TODAY;
+      stamp.classList.add('signed');
+      passBtn.textContent = 'Send it round again';
+      slipStatus.textContent = 'Signed off by ' + first(cur) + '. Every name is crossed off.';
+    }
+  }
+
+  // "Start a slip": take the visitor to the first line of a fresh slip.
+  document.getElementById('start').addEventListener('click', function () {
+    var email = document.getElementById('email');
+    document.getElementById('join').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    email.focus({ preventScroll: true });
+  });
+
+  // Join form: say what went wrong and how to fix it.
+  var form = document.getElementById('join-form');
+  var input = document.getElementById('email');
+  var err = document.getElementById('email-error');
+  var ok = document.getElementById('join-status');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = input.value.trim();
+    var problem = '';
+    if (!v) problem = 'Enter your work email so we know where to send the invite.';
+    else if (v.indexOf('@') < 1) problem = 'That address is missing an @. Check it and try again.';
+    else if (!input.checkValidity()) problem = 'That address looks incomplete. It should look like name@company.com.';
+    if (problem) {
+      err.textContent = problem;
+      ok.textContent = '';
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      return;
+    }
+    err.textContent = '';
+    input.removeAttribute('aria-invalid');
+    ok.textContent = 'You’re on the list. We’ll write to ' + v + ' when your team’s space is ready.';
+  });
+  input.addEventListener('input', function () {
+    if (input.getAttribute('aria-invalid') === 'true') { err.textContent = ''; input.removeAttribute('aria-invalid'); }
+  });
+</script>
+</body>
+</html>

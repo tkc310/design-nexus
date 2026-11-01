@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traveler: every task knows who has it</title>
+<meta name="description" content="Traveler gives each piece of your team's work a ticket. Hand it on with a note, the next person signs for it, and everyone can see who has what.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Ground: the steel ticket rail and job board frame */
+    --steel: #343B43;
+    --steel-2: #3F474F;
+    --steel-edge: #59616A;
+    /* Tickets: buff card stock, carbon ink, graphite pencil */
+    --buff: #F1E6C8;
+    --buff-rule: #D9CCA8;
+    --carbon: #1E1F1D;
+    --graphite: #5A5A55;
+    --mist: #AEB5BC;
+    /* Accent: rubber-stamp ink, the mark of a signed handoff */
+    --stamp: #B3261E;
+    /* Status: the yellow hold tag, work waiting on someone */
+    --hold: #F2C12E;
+    --shadow: rgba(16, 18, 20, 0.42);
+
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+    --t-sm: 0.875rem;   /* 14px tags, times */
+    --t-body: 1.0625rem;/* 17px */
+    --t-md: 1.375rem;   /* 22px */
+    --t-lg: 1.875rem;   /* 30px */
+    --t-xl: 2.5rem;     /* 40px */
+    --t-hero: clamp(2.75rem, 1.6rem + 4.6vw, 5rem);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+    --r-ticket: 2px;
+    --r-control: 4px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --wrap: 1280px;
+    --focus: var(--hold);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--steel);
+    color: var(--buff);
+    font: 400 var(--t-body)/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: 0.005em; }
+  p { margin: 0; text-wrap: pretty; }
+  img { max-width: 100%; height: auto; display: block; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--gutter); }
+
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .on-buff { --focus: var(--carbon); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3);
+    font: 600 var(--t-body)/1 var(--font-body);
+    white-space: nowrap; cursor: pointer;
+    border: 2px solid transparent; border-radius: var(--r-control);
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, filter 150ms ease, transform 120ms var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .btn-stamp { background: var(--stamp); color: var(--buff); }
+  .btn-line { background: transparent; color: var(--buff); border-color: var(--buff); }
+  .btn-ink { background: transparent; color: var(--carbon); border-color: var(--carbon); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-stamp:hover { filter: brightness(0.88); }
+    .btn-line:hover { background: var(--steel-2); }
+    .btn-ink:hover { background: var(--buff-rule); }
+  }
+
+  /* ---------- header ---------- */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 72px; }
+  .mark { display: inline-flex; align-items: center; gap: 10px; color: var(--buff); text-decoration: none; font: 600 var(--t-lg)/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; }
+  .mark-hole { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--buff); }
+  .top nav ul { display: flex; gap: var(--s1); list-style: none; margin: 0; padding: 0; }
+  .top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--buff); text-decoration: none; white-space: nowrap; border-radius: var(--r-control); }
+  .top nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  @media (max-width: 700px) { .top nav .wide-only { display: none; } }
+
+  /* ---------- hero with the rail ---------- */
+  .hero { position: relative; padding-bottom: var(--s7); }
+  .rail { position: relative; height: 14px; margin-top: var(--s3); background: var(--steel-edge); border-top: 3px solid var(--mist); box-shadow: 0 4px 0 var(--carbon); }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 34rem); gap: var(--s6); align-items: start; }
+  .hero-copy { padding-top: var(--s6); }
+  .hero h1 { font-size: var(--t-hero); text-transform: uppercase; max-width: 16ch; text-wrap: wrap; }
+  .nw { white-space: nowrap; }
+  .lede { margin-top: var(--s3); max-width: 34rem; font-size: var(--t-md); line-height: 1.45; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s5); }
+
+  /* ---------- the traveler ticket (signature unit) ---------- */
+  .ticket {
+    position: relative;
+    margin-top: var(--s5);
+    padding: var(--s5) var(--s4) var(--s4);
+    background: var(--buff); color: var(--carbon);
+    border-radius: var(--r-ticket);
+    box-shadow: 0 18px 32px var(--shadow);
+    transform: rotate(-1deg); transform-origin: 50% 0;
+  }
+  /* hanging wire from the rail, and the punched hole */
+  .ticket::before { content: ""; position: absolute; left: 50%; top: calc(-1 * var(--s5) - 4px); width: 4px; height: calc(var(--s5) + 26px); margin-left: -2px; background: var(--mist); border-radius: 2px; }
+  .ticket::after { content: ""; position: absolute; left: 50%; top: 14px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--steel); box-shadow: inset 0 2px 0 var(--carbon); }
+  .t-head { display: flex; justify-content: space-between; gap: var(--s2); font: 500 var(--t-sm)/1.4 var(--font-mono); color: var(--carbon); }
+  .ticket h2 { margin-top: var(--s1); font-size: var(--t-xl); text-transform: uppercase; }
+  .t-with { margin-top: var(--s1); color: var(--carbon); }
+  .t-with strong { font-weight: 600; }
+
+  .route { list-style: none; margin: var(--s3) 0 0; padding: 0; border-top: 2px solid var(--carbon); }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: center; padding: 12px 0; border-bottom: 1px solid var(--buff-rule); }
+  .row[hidden] { display: none; }
+  .r-station { display: block; font: 600 var(--t-md)/1.1 var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+  .r-who { display: block; font-weight: 600; }
+  .r-note { display: block; color: var(--graphite); }
+  .row.current { box-shadow: inset 4px 0 0 var(--carbon); padding-left: var(--s2); }
+  .row.pending .r-station, .row.pending .r-who { color: var(--graphite); }
+
+  .stamp {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 2px 10px 4px; border: 2px solid var(--stamp); border-radius: 3px;
+    color: var(--stamp); text-transform: uppercase; white-space: nowrap;
+    font: 600 var(--t-body)/1.15 var(--font-display); letter-spacing: 0.08em;
+    transform: rotate(-4deg);
+  }
+  .stamp time { font: 500 var(--t-sm)/1.2 var(--font-mono); letter-spacing: 0; text-transform: none; }
+  .stamp.fresh { animation: press 220ms var(--ease-out) both; }
+  @keyframes press { from { opacity: 0; transform: rotate(-4deg) scale(1.35); } to { opacity: 1; transform: rotate(-4deg) scale(1); } }
+  .hold { display: inline-block; padding: 3px 10px; background: var(--hold); color: var(--carbon); font: 600 var(--t-body)/1.2 var(--font-display); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .not-yet { color: var(--graphite); white-space: nowrap; }
+
+  .filed { position: absolute; right: var(--s3); top: var(--s5); font-size: var(--t-lg); padding: 4px 14px 6px; border-width: 3px; transform: rotate(-9deg); background: var(--buff); }
+  .filed.fresh { animation-name: press-filed; }
+  @keyframes press-filed { from { opacity: 0; transform: rotate(-9deg) scale(1.35); } to { opacity: 1; transform: rotate(-9deg) scale(1); } }
+
+  .t-actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+  .t-live { margin-top: var(--s1); min-height: 1.6em; color: var(--carbon); }
+
+  /* ---------- how a handoff works: the same route row, enlarged ---------- */
+  .how { padding-block: var(--s7); border-top: 1px solid var(--steel-edge); }
+  .how h2, .rail-copy h2, .stub h2 { font-size: var(--t-xl); text-transform: uppercase; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps-head, .step { display: grid; grid-template-columns: 4rem minmax(0, 13rem) minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--s4); align-items: center; }
+  .steps-head { margin-top: var(--s5); padding-bottom: var(--s2); color: var(--mist); font-size: var(--t-body); border-bottom: 2px solid var(--buff); }
+  .step { padding-block: var(--s3); border-bottom: 1px solid var(--steel-edge); }
+  .step-no { font: 600 var(--t-lg)/1 var(--font-display); color: var(--mist); font-variant-numeric: tabular-nums; }
+  .step h3 { font-size: var(--t-lg); text-transform: uppercase; }
+  .step .gets { color: var(--mist); }
+  .step .stamp { color: var(--buff); border-color: var(--buff); }
+  .step .hold { justify-self: end; }
+  .step-mark { justify-self: end; }
+  .gets-label { display: none; }
+
+  /* ---------- the rail overview ---------- */
+  .overview { padding-block: var(--s7); background: var(--steel-2); }
+  .rail-copy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s3) var(--s6); align-items: end; }
+  .rail-copy p { margin-top: var(--s2); max-width: 36rem; }
+  .key { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+  .key li { display: grid; gap: var(--s1); justify-items: start; }
+  .key .stamp { color: var(--buff); border-color: var(--buff); }
+  .shot { margin: var(--s5) 0 0; overflow-x: auto; border: 1px solid var(--steel-edge); box-shadow: 0 18px 32px var(--shadow); }
+  .shot img { width: 100%; }
+
+  /* ---------- back of the ticket ---------- */
+  .back-wrap { padding-block: var(--s7); }
+  .back { background: var(--buff); color: var(--carbon); border-radius: var(--r-ticket); padding: var(--s5) var(--s5); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); box-shadow: 0 18px 32px var(--shadow); }
+  .back h2 { grid-column: 1 / -1; font-size: var(--t-lg); text-transform: uppercase; padding-bottom: var(--s2); border-bottom: 2px solid var(--carbon); }
+  .back h3 { font-size: var(--t-md); text-transform: uppercase; letter-spacing: 0.02em; }
+  .back p { margin-top: var(--s1); }
+
+  /* ---------- the stub: sign-up ---------- */
+  .stub-wrap { padding-bottom: var(--s7); }
+  .stub {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s5); align-items: start;
+    background: var(--buff); color: var(--carbon); border-radius: var(--r-ticket);
+    padding: var(--s5); border-top: 3px dashed var(--steel);
+    box-shadow: 0 18px 32px var(--shadow);
+  }
+  .stub::before, .stub::after { content: ""; position: absolute; top: -14px; width: 26px; height: 26px; border-radius: 50%; background: var(--steel); }
+  .stub::before { left: -13px; } .stub::after { right: -13px; }
+  .stub p { margin-top: var(--s2); }
+  .field label { display: block; font-weight: 600; }
+  .field .hint { display: block; color: var(--carbon); font-size: var(--t-body); margin-top: 2px; }
+  .field-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+  .field input {
+    flex: 1 1 16rem; min-width: 0; min-height: 52px; padding: 0 var(--s2);
+    font: 400 var(--t-body) var(--font-body); color: var(--carbon); background: var(--buff);
+    border: 2px solid var(--carbon); border-radius: var(--r-control);
+  }
+  .field input:focus-visible { outline: 3px solid var(--carbon); outline-offset: 2px; }
+  .field input[aria-invalid="true"] { border-width: 3px; box-shadow: inset 6px 0 0 var(--hold); }
+  .msg { margin-top: var(--s2); min-height: 1.6em; }
+  .msg .hold { margin-right: var(--s1); font-size: var(--t-sm); }
+  .msg.ok .stamp { margin-right: var(--s1); }
+
+  footer { border-top: 1px solid var(--steel-edge); padding-block: var(--s4); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2); color: var(--mist); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1100px) {
+    .steps-head { display: none; }
+    .step { grid-template-columns: 3rem minmax(0, 1fr) auto; grid-template-areas: "no title mark" "no does does" "no gets gets"; gap: var(--s1) var(--s3); align-items: start; }
+    .step-no { grid-area: no; } .step h3 { grid-area: title; } .step .does { grid-area: does; } .step .gets { grid-area: gets; } .step-mark { grid-area: mark; }
+    .gets-label { display: inline; font-weight: 600; color: var(--buff); }
+  }
+  @media (max-width: 960px) {
+    .hero-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+    .rail-copy { grid-template-columns: minmax(0, 1fr); align-items: start; }
+    .hero-copy { padding-top: var(--s5); }
+    .ticket { transform: none; }
+    .ticket::before { display: none; }
+    .back { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+    .stub { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+  }
+  @media (max-width: 560px) {
+    .hero { padding-bottom: var(--s6); }
+    .hero-copy { padding-top: var(--s4); }
+    .lede { font-size: var(--t-body); line-height: 1.6; margin-top: var(--s2); }
+    .actions { margin-top: var(--s3); }
+    .actions .btn { flex: 1 1 100%; }
+    .ticket { padding: var(--s5) var(--s3) var(--s3); }
+    .ticket h2 { font-size: var(--t-lg); }
+    .filed { right: var(--s2); top: var(--s4); }
+    .back, .stub { padding: var(--s4) var(--s3); }
+    .how, .overview, .back-wrap { padding-block: var(--s6); }
+    .step-mark { display: none; }
+    .row { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+    .row > :last-child { justify-self: start; }
+    .row .stamp { transform: rotate(-2deg); }
+    .key { grid-template-columns: minmax(0, 1fr); }
+    .shot img { width: 760px; max-width: none; }
+  }
+  @media (min-width: 1600px) {
+    :root { --wrap: 1440px; }
+    .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 38rem); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn:active { transform: none; }
+    .stamp.fresh, .filed.fresh { animation: fade 160ms ease both; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="mark" href="#top" id="top" aria-label="Traveler, back to top"><span class="mark-hole" aria-hidden="true"></span>Traveler</a>
+  <nav aria-label="Page">
+    <ul>
+      <li class="wide-only"><a href="#how">How a handoff works</a></li>
+      <li class="wide-only"><a href="#rail">The rail</a></li>
+      <li><a href="#start">Start a board</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="rail" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 id="hero-title">Every task knows <span class="nw">who has it</span></h1>
+        <p class="lede">Traveler gives each piece of your team's work a ticket. Hand it on with one line of notes, the next person signs for it, and nothing sits in someone's inbox without anyone knowing.</p>
+        <div class="actions">
+          <button class="btn btn-stamp" type="button" id="hero-start">Start a board</button>
+          <button class="btn btn-line" type="button" id="hero-how">See how a handoff works</button>
+        </div>
+      </div>
+
+      <article class="ticket on-buff" aria-labelledby="t-title">
+        <div class="t-head"><span>No. 0418</span><span id="t-progress">Station 5 of 6</span></div>
+        <h2 id="t-title">Spring catalog photos</h2>
+        <p class="t-with">Now with <strong id="now-with">Sam, Layout</strong></p>
+        <ol class="route" id="route">
+          <li class="row signed earlier" hidden>
+            <span><span class="r-station">Request</span><span class="r-who">Lee, Marketing</span><span class="r-note">Forty product shots for the spring catalog</span></span>
+            <span class="stamp">Opened<time>Fri 16:20</time></span>
+          </li>
+          <li class="row signed earlier" hidden>
+            <span><span class="r-station">Scope</span><span class="r-who">Mara, Ops</span><span class="r-note">Shot list and studio booked for Tuesday</span></span>
+            <span class="stamp">Signed MO<time>Mon 09:12</time></span>
+          </li>
+          <li class="row signed">
+            <span><span class="r-station">Shoot</span><span class="r-who">Dev, Photo</span><span class="r-note">62 frames, 4 reshoots marked</span></span>
+            <span class="stamp">Signed DK<time>Tue 14:40</time></span>
+          </li>
+          <li class="row signed">
+            <span><span class="r-station">Retouch</span><span class="r-who">Ines, Studio</span><span class="r-note">Done except crops: need final page sizes</span></span>
+            <span class="stamp">Signed IA<time>Wed 11:05</time></span>
+          </li>
+          <li class="row current" data-initials="SA" data-time="Thu 09:30" data-who="Sam" data-where="Layout">
+            <span><span class="r-station">Layout</span><span class="r-who">Sam, Design</span><span class="r-note">Picks up when crop sizes arrive</span></span>
+            <span class="hold">Waiting on crop sizes</span>
+          </li>
+          <li class="row pending" data-initials="MO" data-time="Thu 15:10" data-who="Mara" data-where="Proof">
+            <span><span class="r-station">Proof</span><span class="r-who">Mara, Ops</span><span class="r-note">Final check before print</span></span>
+            <span class="not-yet">Not yet</span>
+          </li>
+        </ol>
+        <div class="t-actions">
+          <button class="btn btn-stamp" type="button" id="sign"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3"/><path d="M10 8v4h4V8"/><path d="M5 12h14v4H5z"/><path d="M4 20h16"/></svg><span id="sign-label">Sign for it as Sam</span></button>
+          <button class="btn btn-ink" type="button" onclick="go()" aria-expanded="false" aria-controls="route" id="history">Open full history</button>
+        </div>
+        <p class="t-live" id="t-live" aria-live="polite"></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="how" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <h2 id="how-title">A handoff, start to finish</h2>
+      <div class="steps-head" aria-hidden="true"><span></span><span>Station</span><span>What you do</span><span>What the next person gets</span><span></span></div>
+      <ol class="steps">
+        <li class="step">
+          <span class="step-no" aria-hidden="true">1</span>
+          <h3>Open</h3>
+          <p class="does">Write what the work is and whose station it goes to first.</p>
+          <p class="gets"><span class="gets-label">They get: </span>A ticket on the rail with their name on it.</p>
+          <span class="step-mark stamp" aria-hidden="true">Opened</span>
+        </li>
+        <li class="step">
+          <span class="step-no" aria-hidden="true">2</span>
+          <h3>Hand on</h3>
+          <p class="does">Add one line: what you did, and what is left.</p>
+          <p class="gets"><span class="gets-label">They get: </span>Your note at the top of the ticket, not buried in a thread.</p>
+          <span class="step-mark hold" aria-hidden="true">Waiting</span>
+        </li>
+        <li class="step">
+          <span class="step-no" aria-hidden="true">3</span>
+          <h3>Sign for it</h3>
+          <p class="does">The next person stamps the ticket when they pick it up.</p>
+          <p class="gets"><span class="gets-label">They get: </span>You see it was received, by whom, and when.</p>
+          <span class="step-mark stamp" aria-hidden="true">Signed</span>
+        </li>
+        <li class="step">
+          <span class="step-no" aria-hidden="true">4</span>
+          <h3>File</h3>
+          <p class="does">The last station closes the ticket.</p>
+          <p class="gets"><span class="gets-label">They get: </span>The whole route, kept with the ticket for the next time you do this.</p>
+          <span class="step-mark stamp" aria-hidden="true">Filed</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="overview" id="rail" aria-labelledby="rail-title">
+    <div class="wrap">
+      <div class="rail-copy">
+        <div>
+          <h2 id="rail-title">The rail</h2>
+          <p>Every open ticket hangs in one line, oldest on the left. Monday's standup is reading it left to right.</p>
+        </div>
+        <ul class="key">
+          <li><span class="stamp" aria-hidden="true">Signed</span><span>Someone has picked it up.</span></li>
+          <li><span class="hold" aria-hidden="true">Waiting on</span><span>It is stuck, and the tag says on what.</span></li>
+        </ul>
+      </div>
+      <figure class="shot" tabindex="0" aria-label="Screenshot of the rail; scrolls sideways on small screens">
+        <img src="hero.png" width="1200" height="470" loading="lazy" alt="The Traveler rail with six open tickets hanging oldest to newest. Two carry yellow tags, waiting on a supplier and on crop sizes; the others are stamped as signed or opened.">
+      </figure>
+    </div>
+  </section>
+
+  <section class="back-wrap" aria-labelledby="back-title">
+    <div class="wrap">
+      <div class="back on-buff">
+        <h2 id="back-title">Small print, on the back of every ticket</h2>
+        <div>
+          <h3>Two clicks to hand on</h3>
+          <p>A handoff is a name and a note. There are no status fields to keep current, so the rail stays true without anyone tending it.</p>
+        </div>
+        <div>
+          <h3>Only your team sees the rail</h3>
+          <p>Tickets are visible to the people you invite. A guest you add to one ticket sees that ticket and nothing else.</p>
+        </div>
+        <div>
+          <h3>Same rail at 3 people or 30</h3>
+          <p>When your process gains a step, add a station. Tickets already on the rail pick it up on their next handoff.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stub-wrap" id="start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="stub on-buff">
+        <div>
+          <h2 id="start-title">Start a board</h2>
+          <p>One email sets it up. You will name your stations and open the first ticket once you are in.</p>
+        </div>
+        <form id="start-form" novalidate>
+          <div class="field">
+            <label for="email">Work email</label>
+            <span class="hint" id="email-hint">We send a sign-in link, so there is no password to set.</span>
+            <div class="field-row">
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="name@yourteam.com" required aria-describedby="email-hint email-msg">
+              <button class="btn btn-stamp" type="submit">Start a board</button>
+            </div>
+          </div>
+          <p class="msg" id="email-msg" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 Traveler</p>
+  </div>
+</footer>
+
+<script>
+  // The ticket: earlier handoffs are folded away until asked for.
+  function go() {
+    const btn = document.getElementById('history');
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('#route .earlier').forEach((row) => { row.hidden = open; });
+    btn.setAttribute('aria-expanded', String(!open));
+    btn.textContent = open ? 'Open full history' : 'Hide earlier handoffs';
+  }
+
+  (function () {
+    const route = document.getElementById('route');
+    const sign = document.getElementById('sign');
+    const signLabel = document.getElementById('sign-label');
+    const nowWith = document.getElementById('now-with');
+    const progress = document.getElementById('t-progress');
+    const live = document.getElementById('t-live');
+    const ticket = route.closest('.ticket');
+    const initial = route.innerHTML;
+    const total = () => route.querySelectorAll('.row').length;
+
+    function stamp(text, time, extra) {
+      const s = document.createElement('span');
+      s.className = 'stamp fresh' + (extra ? ' ' + extra : '');
+      s.append(text);
+      const t = document.createElement('time');
+      t.textContent = time;
+      s.append(t);
+      return s;
+    }
+
+    function refresh() {
+      const current = route.querySelector('.row.current');
+      const rows = [...route.querySelectorAll('.row')];
+      if (current) {
+        signLabel.textContent = 'Sign for it as ' + current.dataset.who;
+        nowWith.textContent = current.dataset.who + ', ' + current.dataset.where;
+        progress.textContent = 'Station ' + (rows.indexOf(current) + 1) + ' of ' + total();
+      } else {
+        signLabel.textContent = 'Put it back on the rail';
+        nowWith.textContent = 'nobody, it is filed';
+        progress.textContent = 'Filed';
+      }
+    }
+
+    sign.addEventListener('click', () => {
+      const current = route.querySelector('.row.current');
+      if (!current) {
+        route.innerHTML = initial;
+        const f = ticket.querySelector('.filed');
+        if (f) f.remove();
+        const hist = document.getElementById('history');
+        if (hist.getAttribute('aria-expanded') === 'true') route.querySelectorAll('.earlier').forEach((r) => { r.hidden = false; });
+        refresh();
+        live.textContent = 'Back on the rail, waiting on crop sizes with Sam.';
+        return;
+      }
+      current.lastElementChild.replaceWith(stamp('Signed ' + current.dataset.initials, current.dataset.time));
+      current.classList.replace('current', 'signed');
+      const next = route.querySelector('.row.pending');
+      if (next) {
+        next.classList.replace('pending', 'current');
+        const tag = document.createElement('span');
+        tag.className = 'hold';
+        tag.textContent = 'With ' + next.dataset.who + ' now';
+        next.lastElementChild.replaceWith(tag);
+        live.textContent = current.dataset.who + ' signed for it. It is with ' + next.dataset.who + ' now.';
+      } else {
+        ticket.append(stamp('Filed', current.dataset.time, 'filed'));
+        live.textContent = current.dataset.who + ' signed the last station. The ticket is filed.';
+      }
+      refresh();
+    });
+
+    // Hero actions
+    document.getElementById('hero-start').addEventListener('click', () => {
+      document.getElementById('start').scrollIntoView({ block: 'center' });
+      document.getElementById('email').focus({ preventScroll: true });
+    });
+    document.getElementById('hero-how').addEventListener('click', () => {
+      document.getElementById('how').scrollIntoView();
+      document.getElementById('how-title').setAttribute('tabindex', '-1');
+      document.getElementById('how-title').focus({ preventScroll: true });
+    });
+
+    // Sign-up stub
+    const form = document.getElementById('start-form');
+    const email = document.getElementById('email');
+    const msg = document.getElementById('email-msg');
+    function say(kind, text) {
+      msg.className = 'msg ' + kind;
+      msg.textContent = '';
+      const mark = document.createElement('span');
+      if (kind === 'err') { mark.className = 'hold'; mark.textContent = 'Not sent'; }
+      else { mark.className = 'stamp'; mark.textContent = 'Started'; }
+      msg.append(mark, ' ' + text);
+    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = email.value.trim();
+      let problem = '';
+      if (!v) problem = 'Enter your work email so we can send your sign-in link.';
+      else if (!v.includes('@')) problem = 'That address is missing an @. Try something like name@yourteam.com.';
+      else if (!email.checkValidity()) problem = 'That address looks incomplete. Check the part after the @, like yourteam.com.';
+      if (problem) {
+        email.setAttribute('aria-invalid', 'true');
+        say('err', problem);
+        email.focus();
+        return;
+      }
+      email.removeAttribute('aria-invalid');
+      say('ok', 'Board started. Check ' + v + ' for your sign-in link.');
+    });
+    email.addEventListener('input', () => { if (email.getAttribute('aria-invalid')) { email.removeAttribute('aria-invalid'); msg.textContent = ''; msg.className = 'msg'; } });
+  })();
+</script>
+</body>
+</html>
