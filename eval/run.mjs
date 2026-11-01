@@ -197,7 +197,14 @@ const commands = {
         const id = swapped ? `${pid}--swap` : pid;
         const candIsA = (h % 2 === 0) !== swapped;
         keys[id] = { A: candIsA ? 'cand' : 'base', base: path.relative(ROOT, b), pair: pid };
-        const [aDir, bDir] = candIsA ? [path.join(cand, d), path.join(b, d)] : [path.join(b, d), path.join(cand, d)];
+        const [srcA, srcB] = candIsA ? [path.join(cand, d), path.join(b, d)] : [path.join(b, d), path.join(cand, d)];
+        // M-012: the judge sees copies named A and B, so run labels (dates, versions, "exp") never tell it which page is new.
+        const [aDir, bDir] = [['A', srcA], ['B', srcB]].map(([side, src]) => {
+          const dst = path.join(pairsDir, id, side);
+          fs.rmSync(dst, { recursive: true, force: true });
+          fs.cpSync(src, dst, { recursive: true, dereference: true, filter: (f) => !/(^|\/)(score|judge\.[^/]*|summary[^/]*)\.json$|JUDGE_PROMPT\.md$|PROMPT\.md$/.test(path.relative(src, f)) });
+          return dst;
+        });
         const shots = (dir) => (fs.existsSync(path.join(dir, 'shots')) ? fs.readdirSync(path.join(dir, 'shots')).map((f) => `- ${path.join(dir, 'shots', f)}`) : ['(none)']);
         const caseFile = path.join(CASES, `${d}.md`);
         const brief = fs.existsSync(caseFile) ? parseCase(caseFile).brief : '(brief missing)';
