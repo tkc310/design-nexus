@@ -122,7 +122,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -309,6 +309,23 @@ function measure(minTap) {
       out.sidescroll.push({ el, sel: sel(el), pct: Math.round((1 - el.clientWidth / el.scrollWidth) * 100), kind: el.querySelector('table') || el.tagName === 'TABLE' ? 'table' : el.matches('pre, code') || el.querySelector('pre, code') ? 'code' : 'content', text: hidden });
     }
     out.sidescroll = out.sidescroll.map(({ el, ...x }) => x);
+  }
+  // R25: the strongest-looking action should be on the first screen. Find the first enabled control with a solid fill
+  // that stands out (2:1) from what is behind it; skip links and other off-screen helpers are ignored.
+  if (vw >= 768) {
+    const fill = (el) => { const c = parse(getComputedStyle(el).backgroundColor); return c && c.a >= 0.6 ? c : null; };
+    const behind = (el) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = fill(e); if (c) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
+    let first = null;
+    for (const el of document.querySelectorAll('a[href], button, [role="button"], input[type="submit"]')) {
+      if (!visible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+      const r = el.getBoundingClientRect();
+      const top = r.top + scrollY;
+      if (r.width < 40 || r.height < 24 || top < 0 || r.right <= 0 || r.left >= vw) continue;
+      const c = fill(el);
+      if (!c || ratioOf(c, behind(el)) < 2) continue;
+      if (!first || top < first.top) first = { top: Math.round(top), text: (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30), sel: sel(el) };
+    }
+    if (first && first.top > innerHeight) out.fold = first;
   }
   // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
   for (const table of document.querySelectorAll('table')) {
@@ -588,6 +605,7 @@ try {
     }
     if (width <= 768) for (const t of m.tap) add('F09', `@${width}px ${t.sel}`, `tap target ${t.w}×${t.h}px < ${minTap}px`);
     for (const b of m.breaks) add('R17', `@${width}px`, b);
+    if (m.fold && (width === 1280 || width === 768)) add('R25', `@${width}px ${m.fold.sel}`, `the first filled action "${m.fold.text}" starts at ${m.fold.top}px, below the first screen; put the brief's primary action on the first screen (or in a sticky bar) and keep it the only filled control there`);
     for (const x of m.sidescroll) add('R24', `@${width}px ${x.sel}`, `${x.kind} hides ${x.pct}% of its width in a sideways scroll, e.g. "${x.text}"; ${x.kind === 'table' ? 'reflow rows into labelled blocks below about 640px, or keep the deciding column next to the first' : x.kind === 'code' ? 'wrap commands (white-space: pre-wrap; overflow-wrap: anywhere) or break them at flags' : 'reflow it to the width'}`);
     if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
     if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;

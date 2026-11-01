@@ -108,6 +108,9 @@ else {
   const r24 = ss.out.findings.filter((f) => f.id === 'R24');
   check('render flags R24 for a command and a table hidden in a sideways scroll', r24.length === 2 && r24.some((f) => /#cmd/.test(f.where)) && r24.some((f) => /#tbl/.test(f.where)), JSON.stringify(r24));
   check('R24 ignores a wrapped command, a nav strip, and a slight overflow', !r24.some((f) => /#wrapped|#tabs|#slight/.test(f.where)), JSON.stringify(r24));
+  const fold = run('render-check.mjs', path.join(S2, 'fold.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
+  const r25 = fold.out.findings.filter((f) => f.id === 'R25');
+  check('render flags R25 when the first enabled filled action is below the first screen, ignoring a skip link and a disabled button', r25.length === 1 && /#late/.test(r25[0].where) && /Send report/.test(r25[0].message), JSON.stringify(r25));
   const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
   check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));

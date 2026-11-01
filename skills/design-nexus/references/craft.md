@@ -3,7 +3,7 @@
 Use these while building. They are defaults; the brief and DESIGN.md override them.
 
 ## Hierarchy
-- One primary action per view. Secondary actions look secondary.
+- **One primary action per view, and it is on the first screen.** Name it before building: the brief's verb (install, book, approve, save, sign up), or "none" for a view that is only read, said in NOTES.md. At 1280 and 768 it is the only filled, accent-colored control on the first screen (about 900px); at 320 it is on the first screen or in a one-line sticky bar. A long form keeps its save in a sticky footer. Secondary actions (copy a second command, run a demo, learn more) are outlined or text links, never the same weight. If the primary action cannot be used yet, it stays in place, visibly disabled, with the reason beside it, and the step that unblocks it carries the filled style. The render check flags a first filled action below the first screen as R25.
 - Size, weight, and space carry hierarchy before color does. If you need color to show what's important, the hierarchy is weak.
 - The hero is a thesis: open with the most characteristic thing in the subject's world (a real product screen, the actual data, the object itself), not "big headline + two buttons + gradient blob" by reflex.
 
