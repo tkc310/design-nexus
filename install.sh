@@ -6,7 +6,7 @@
 #   ./install.sh all     <project-dir>                -> all three into one project
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-command -v node >/dev/null || { echo "Node 18+ is required (the skill's checks run on Node)."; exit 1; }
+command -v node >/dev/null || { echo "Node 26.13.0+ is required (the skill's checks run on Node)."; exit 1; }
 node "$HERE/scripts/build.mjs" >/dev/null
 DIST="$HERE/dist"
 

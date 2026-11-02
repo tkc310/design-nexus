@@ -12,7 +12,7 @@
 
 ## インストール
 
-Node 18 以上が必要です(チェックスクリプトに使います)。
+Node 26.13.0 以上が必要です(チェックスクリプトに使います)。
 
 ```bash
 git clone https://github.com/tkc310/design-nexus && cd design-nexus

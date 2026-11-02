@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// design-nexus static lint. Node 18+, no dependencies.
+// design-nexus static lint. Node 26.13.0+, no dependencies.
 // Usage: node lint.mjs <file-or-dir>... [--design DESIGN.md] [--json]
 // (--surface is accepted and ignored, so the same flags work for lint and render-check.)
 // Exit: 0 clean, 2 floor findings, 1 usage error.
