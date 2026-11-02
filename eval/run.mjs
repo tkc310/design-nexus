@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// design-nexus evaluation runner. Node 18+, no dependencies (render step uses Playwright if present).
+// design-nexus evaluation runner. Node 26.13.0+, no dependencies (render step uses Playwright if present).
 //
 //   node eval/run.mjs prepare  [--label name] [--cases 01,03] [--split train|holdout|all] [--skill dir]   snapshot the skill, one PROMPT.md per case
 //   node eval/run.mjs generate --run <dir> --cmd "<agent cli>"   optional: pipe each PROMPT.md to an agent CLI

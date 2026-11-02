@@ -1,4 +1,4 @@
-// Shared helpers for design-nexus scripts. Node 18+, no dependencies.
+// Shared helpers for design-nexus scripts. Node 26.13.0+, no dependencies.
 import fs from 'node:fs';
 
 export const TIERS = { F: 'floor', R: 'reflex', N: 'finish' };

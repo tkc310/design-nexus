@@ -60,7 +60,7 @@ Report at the end: the direction, the signature, the lint and render results (co
 
 ## Tools
 
-Scripts live in this skill's `scripts/` folder. They need only Node 18+. Paths below are relative to the skill folder; resolve them from wherever the skill is installed.
+Scripts live in this skill's `scripts/` folder. They need only Node 26.13.0+. Paths below are relative to the skill folder; resolve them from wherever the skill is installed.
 
 ```bash
 node scripts/lint.mjs <file-or-dir> [--design DESIGN.md] [--json]   # static checks, no dependencies
