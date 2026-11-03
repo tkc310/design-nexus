@@ -34,7 +34,7 @@ The lead persona decides each criterion of their dimensions. Any other persona m
   - prominent: on the first screen at any width, or in a heading, button, label, navigation item, table header, or the page's main data;
   - repeated: the same defect in two or more places.
   A single defect that is neither is **minor**: record it in `defects` with severity `minor`. It does not fail the criterion.
-- **Veto.** A defect that fails WCAG 2.2 AA (contrast, visible focus, target size, keyboard access, name and role, reflow at 320px, reduced motion) or makes content unreadable or misleading has severity `veto`. Its criterion is not met, and its dimension counts at most 2 criteria.
+- **Veto.** A defect that fails WCAG 2.2 AA (contrast, visible focus, target size, keyboard access, name and role, reflow at 320px, reduced motion) or makes content unreadable or likely to be misread has severity `veto`. Its criterion is not met, and its dimension counts at most 2 criteria. A wrong or invented fact is not a veto; it belongs to D1.2.
 - **One owner per defect.** Charge each defect to the one criterion that owns it (below), and do not fail other criteria for the same defect.
   - clipped, hidden, or sideways-scrolled content at a narrow width; a mark, label, or legend whose meaning changes between widths → D7
   - a word or figure broken across lines, a figure split from its unit, text too small to read → D4
@@ -53,7 +53,7 @@ Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* 
 
 ### D1 Brief fit
 - **D1.1 Complete.** Every element, field, and state the brief names is on the page and works through a real control, not a sample panel, a demo toggle, or a note.
-- **D1.2 Faithful.** Nothing contradicts the brief, and nothing is invented that the brief does not give (logos, testimonials, ratings, user counts, prices, features, awards, links that lead nowhere). The page carries no note to the reviewer beyond what the brief asks for (a brief may ask for labelled placeholders).
+- **D1.2 Faithful.** Nothing contradicts the brief, and nothing is invented that the brief does not give (logos, testimonials, ratings, user counts, prices, features, awards). Sample content that fills what the brief leaves open (names, dates, times, rows of data and their figures, current settings) is not invented, and placeholder links to pages the brief does not ask for (navigation, sidebar, footer, a next step) are one minor defect wherever they sit. The page carries no note to the reviewer beyond what the brief asks for (a brief may ask for labelled placeholders).
 - **D1.3 Audience.** The needs of the audience the brief names or plainly implies are served in the content and the flow: language and region (visitors from abroad), age (older riders), expertise (engineers who copy commands), situation (a manager working to a deadline).
 - **D1.4 Reasoned.** The signature, the way the main data is shown, and the tone each trace to a fact in the brief or a need of its users that you can name, and none contradicts the subject (a pottery wheel for a class that does not use one fails).
 
@@ -65,7 +65,7 @@ Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* 
 
 ### D3 Hierarchy
 - **D3.1 First read.** At 1280 and at 320 the eye lands first on the answer to the page's job or on its primary action, and one element clearly wins by size or weight.
-- **D3.2 One primary.** At every width the first screen has one filled primary action, and secondary actions look secondary. On a page with nothing to act on, the key figure or answer is the single strongest element instead.
+- **D3.2 One primary.** At every width the first screen has one filled primary action, and secondary actions look secondary. Repeats of the same action (a header shortcut to it, the same button on each item it applies to) count as one, and a primary that is disabled only because nothing has been entered or changed yet still counts. A demo or sample control as strong as the primary is charged to D3.4, not here. On a page with nothing to act on, the key figure or answer is the single strongest element instead.
 - **D3.3 Every section has a focus.** Below the first screen each section has one clear entry point (a heading or a figure), and no three or more sections in a row carry the same visual weight.
 - **D3.4 Emphasis follows priority.** Nothing less important outshines what needs attention or action: approved rows louder than pending ones, nine identical filled "On" cells louder than the actions, or a demo button as strong as the primary all fail.
 
@@ -73,7 +73,7 @@ Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* 
 - **D4.1 Pairing with reasons.** Each face has one job; the display face comes from the subject's lettering or voice and the body face from the readers' needs; no two faces of the same kind share a job (two monospace families, for example).
 - **D4.2 Scale and size.** At most six text sizes, on a consistent ratio. Text people read to decide (body, hints, table cells, errors, labels) is 14px or more at every width, and 16px or more for older or tired readers.
 - **D4.3 Figures.** Figures compared in columns or lists use tabular figures; no figure is split from its unit or counter; thousands separators are narrow (a full-width comma gap such as "920, 000" fails); no slashed zero in running text.
-- **D4.4 Breaks.** Headings, buttons, labels, navigation, and first-screen text never break inside a word or phrase at any width (Japanese: by JLReq and phrase); no heading or display line ends with a last line of one or two characters.
+- **D4.4 Breaks.** Headings, buttons, labels, navigation, and other text of one or two lines never break inside a word at any width: in Latin text and code a break at a space is correct, and in Japanese a break inside a phrase counts as inside a word (JLReq). No heading or display line ends with a last line of one or two characters.
 
 ### D5 Color
 - **D5.1 Roles.** Four to six color roles, one meaning per color: the action color is not also a status or decoration color, and status colors mark status only.
@@ -89,7 +89,7 @@ Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* 
 - **D6.4 Alignment.** Columns, edges, and baselines line up across sections; side and sticky columns are not stretched or misaligned; there are no stepped rules or ragged edges.
 
 ### D7 Responsive
-- **D7.1 Nothing lost when narrow.** At 320 and 768, everything people read, copy, or act on (commands, input values, amounts and totals, labels, navigation items) is fully visible, with no hidden sideways scroll and no clipping, and the primary action or the answer is on the 320 first screen.
+- **D7.1 Nothing lost when narrow.** At 320 and 768, everything people read, copy, or act on (commands, input values, amounts and totals, labels, navigation items) is fully visible, with no hidden sideways scroll and no clipping, and the primary action or the answer is on the 320 first screen. A navigation, tab, or chip strip may scroll sideways when an item cut at its edge shows there is more, and a secondary link may leave a narrow header when what it leads to stays reachable (a menu, the footer, the section itself).
 - **D7.2 768 is composed.** 768 has its own arrangement, neither a stretched phone layout nor a squeezed desktop one; tables stay tables while they fit.
 - **D7.3 1920 is composed.** The widest width uses its space on purpose (more columns, a side panel, a larger figure) rather than showing 1280 centred in empty margins, and lines of text stay under about 80 characters.
 - **D7.4 Same meaning at every width.** Marks, legends, labels, and column meanings survive reflow: stacked rows keep their labels, no mark or color changes meaning, and stacked cells still say which column they came from.
@@ -108,7 +108,7 @@ Judge Japanese line breaking by the W3C *Requirements for Japanese Text Layout* 
 
 ### D10 System consistency
 - **D10.1 Token-derived.** Colors, sizes, radii, and spacing come from custom properties or a stated scale, with no stray one-off values in the CSS.
-- **D10.2 The record matches the code.** DESIGN.md's token values match the CSS: colors, font stacks and their order, sizes, and motion durations. Without a DESIGN.md, this is not met.
+- **D10.2 The record matches the code.** DESIGN.md's token values match the CSS: colors, the first family of each font stack (fallbacks the record leaves out are not a mismatch), sizes, and motion durations. Without a DESIGN.md, this is not met.
 - **D10.3 Patterns match.** The patterns DESIGN.md describes exist in the code, and no removed pattern is still described. Without a DESIGN.md, this is not met.
 - **D10.4 One implementation.** Repeated parts (buttons, rows, badges, fields) share one implementation and one look; no control has two styles.
 
