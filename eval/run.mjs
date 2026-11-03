@@ -23,6 +23,7 @@
 //   node eval/run.mjs restore  --set <name> --groups b100a,b100b   put archived pages back as their original runs (a fresh clone)
 //   node eval/run.mjs validate --run <calib run> [--against <calib run>]   V1 known differences, V2 re-judging, V3 agreement with
 //                                                                clear pair verdicts; --against: drift of the same pages between two runs
+//   node eval/run.mjs validate --run <run>,<run>…                M-024: V2 only, on ordinary runs whose pages were judged twice
 //   node eval/run.mjs ref      --list eval/reference/refs.json [--only id,…]   live reference pages as a run (V4)
 //   node eval/run.mjs ref-compare --ref <run> --base <dir>[,<dir>…]   reference pages vs our pages on the dimensions both can be judged on
 //   node eval/run.mjs v2-template                                a blank v2 judge file, for a human judge (V5)
@@ -728,17 +729,20 @@ const commands = {
   },
 
   // V1–V3 (and V5 when a person judged too): is scale v2 measuring what the pairs see, and how much does it move between judgements?
+  // Ordinary runs (`--run a,b,…`, no _calib/key.json) give V2 only, from their pages judged twice, against the set's targets (M-024).
   validate() {
-    const run = runDir(opt.run);
-    const key = JSON.parse(read(path.join(run, '_calib', 'key.json')));
-    const meta = JSON.parse(read(path.join(run, 'run.json')));
-    const set = calibSet(meta.set);
+    const runs = (opt.run && opt.run !== true ? String(opt.run).split(',') : [opt.run]).map(runDir);
+    const run = runs[0];
+    const calibRun = runs.length === 1 && fs.existsSync(path.join(run, '_calib', 'key.json'));
+    const key = calibRun ? JSON.parse(read(path.join(run, '_calib', 'key.json')))
+      : Object.fromEntries(runs.flatMap((r) => caseDirs(r).map((c) => [path.join(r, c), { id: `${path.basename(r)}/${c}`, case: c, group: path.basename(r) }])));
+    const set = calibRun ? calibSet(JSON.parse(read(path.join(run, 'run.json'))).set) : { ...calibSet('v2-validation'), checks: {} };
     const evFile = path.join(CALIB, `${set.set}.evidence.json`);
-    const ev = fs.existsSync(evFile) ? JSON.parse(read(evFile)) : { pages: {}, pairs: [] };
+    const ev = calibRun && fs.existsSync(evFile) ? JSON.parse(read(evFile)) : { pages: {}, pairs: [] };
     const T = set.targets || {};
     const page = {};
     for (const [d, k] of Object.entries(key)) {
-      const dir = path.join(run, d);
+      const dir = path.resolve(run, d);
       if (!fs.existsSync(dir)) continue;
       const samples = Object.entries(readJudgesV2(dir)).map(([name, j]) => ({ name, model: name.split('.')[0], s: v2Score(j) })).filter((x) => x.s && x.s.total !== null);
       page[k.id] = { dir: d, ...k, samples };
@@ -749,12 +753,13 @@ const commands = {
     const sd = (xs) => (xs.length > 1 ? Math.sqrt(xs.reduce((a, x) => a + (x - mean(xs)) ** 2, 0) / (xs.length - 1)) : null);
     const corr = (xs, ys) => { const mx = mean(xs), my = mean(ys); const sxy = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0); const sx = Math.sqrt(xs.reduce((a, x) => a + (x - mx) ** 2, 0)), sy = Math.sqrt(ys.reduce((a, y) => a + (y - my) ** 2, 0)); return sx && sy ? sxy / (sx * sy) : null; };
     const judged = Object.keys(page).filter((id) => score(id) !== null);
-    const lines = [`# Validation of scale v2: ${path.basename(run)}`, '', `Set ${set.set}, ${judged.length} of ${Object.keys(key).length} page(s) judged by ${PRIMARY}. Targets were fixed in eval/calib/${set.set}.json before judging.`, ''];
-    const out = { run: path.basename(run), set: set.set, judged: judged.length, checks: {} };
+    const names = runs.map((r) => path.basename(r)).join(', ');
+    const lines = [`# Validation of scale v2: ${names}`, '', `${calibRun ? `Set ${set.set}` : 'Ordinary runs, V2 only'}, ${judged.length} of ${Object.keys(key).length} page(s) judged by ${PRIMARY}. Targets were fixed in eval/calib/${set.set}.json before judging.`, ''];
+    const out = { run: names, set: calibRun ? set.set : null, judged: judged.length, checks: {} };
     const verdict = (name, ok, text) => { out.checks[name] = { ok, text }; lines.push(`- **${ok === null ? 'n/a' : ok ? 'PASS' : 'FAIL'}** ${text}`); };
 
     // V1: differences the pairs already established, read per case (several pages of a group in a case are averaged).
-    lines.push('## V1 Known differences', '');
+    lines.push('## V1 Known differences', '', ...(calibRun ? [] : ['Not read on ordinary runs: the known differences are between groups of a calibration set.', '']));
     for (const k of set.checks?.known || []) {
       const diffs = [];
       for (const c of [...new Set(judged.map((id) => page[id].case))].sort()) {
@@ -797,9 +802,10 @@ const commands = {
         `Criteria flipped most: ${Object.entries(flips).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([i, n]) => `${i} ×${n}`).join(' · ') || 'none'}`);
       verdict('V2 agreement', mean(agree) >= (T.v2_agreement_min ?? 0.85), `criteria agree in ${r1(mean(agree) * 100)}% of decisions (target ≥ ${(T.v2_agreement_min ?? 0.85) * 100}%)`);
       verdict('V2 error', se <= (T.v2_sd_max ?? 3.5), `one judgement's SD ${r1(se)} points (target ≤ ${T.v2_sd_max ?? 3.5})`);
-      verdict('V2 reliability', rel !== null && rel >= (T.v2_reliability_min ?? 0.6), `reliability within a case, 1 − error²/spread² = ${r1(rel, 2)} (target ≥ ${T.v2_reliability_min ?? 0.6}; v1's retest r was 0.27)`);
+      // Ordinary runs hold one version per case, so their spread is generation noise only: reliability is shown, not decided.
+      verdict('V2 reliability', calibRun ? rel !== null && rel >= (T.v2_reliability_min ?? 0.6) : null, `reliability within a case, 1 − error²/spread² = ${r1(rel, 2)} (target ≥ ${T.v2_reliability_min ?? 0.6}; v1's retest r was 0.27)${calibRun ? '' : '; not decided on ordinary runs, whose pages within a case share one version'}`);
       out.retest = { pages: re.length, diffs: diffs.map((x) => r1(x)), sd_one: r1(se), spread: r1(spread), reliability: r1(rel, 2), r: r1(r, 2), flips };
-    } else lines.push(`Only ${re.length} page(s) have two ${PRIMARY} judgements; judge the pages in _calib/retest.txt a second time (judge-v2.${PRIMARY}.2.json).`);
+    } else lines.push(`Only ${re.length} page(s) have two ${PRIMARY} judgements; judge ${calibRun ? 'the pages in _calib/retest.txt' : 'each page'} a second time (judge-v2.${PRIMARY}.2.json).`);
     // V5 and cross-model: any other judge on the same pages, criterion by criterion against the primary's first judgement.
     const others = [...new Set(judged.flatMap((id) => page[id].samples.filter((x) => x.model !== PRIMARY).map((x) => x.model)))];
     for (const m of others) {
@@ -835,7 +841,7 @@ const commands = {
       lines.push('', `v2: ${cnt(v2s)} over ${rows.length} clear page pair(s).` + (both.length ? ` On the ${both.length} pair(s) v1 also scored: v2 ${cnt(both.map((r) => r.v2))}; v1 ${cnt(both.map((r) => r.v1))}.` : ''));
       verdict('V3 agreement', rate(v2s) >= (T.v3_agree_min ?? 0.75) && (!both.length || rate(both.map((r) => r.v2)) >= rate(both.map((r) => r.v1))), `agreement ${r1(rate(v2s) * 100)}% (a tie counts half; target ≥ ${(T.v3_agree_min ?? 0.75) * 100}% and not below v1 on the pairs both scored${both.length ? `: v2 ${r1(rate(both.map((r) => r.v2)) * 100)}% vs v1 ${r1(rate(both.map((r) => r.v1)) * 100)}%` : ''})`);
       out.pairs = rows;
-    } else lines.push('No clear pair verdict among the judged pages (judge the extra tier too: --tier all).');
+    } else lines.push(calibRun ? 'No clear pair verdict among the judged pages (judge the extra tier too: --tier all).' : 'Not read on ordinary runs: V3 uses the pair verdicts of a calibration set.');
     // Per dimension, over every pair verdict (slight ones too): does the v2 dimension move toward the side the pair judge chose?
     const dimRows = Object.keys(DIMS).map((dm) => {
       let a = 0, n = 0;
@@ -863,9 +869,9 @@ const commands = {
     const fails = Object.entries(out.checks).filter(([, c]) => c.ok === false).map(([n]) => n);
     // PASS needs every check of the set decided: V1 for each known difference judged, V2 (three of them) and V3.
     const decided = Object.values(out.checks).filter((c) => c.ok !== null).length;
-    const needed = ['V2 agreement', 'V2 error', 'V2 reliability', 'V3 agreement'].every((n) => out.checks[n]);
+    const needed = (calibRun ? ['V2 agreement', 'V2 error', 'V2 reliability', 'V3 agreement'] : ['V2 agreement', 'V2 error']).every((n) => out.checks[n]);
     out.result = fails.length ? 'FAIL' : decided && needed ? 'PASS' : 'incomplete';
-    lines.push(`**Result: ${out.result === 'FAIL' ? 'FAIL (' + fails.join(', ') + ')' : out.result === 'PASS' ? 'PASS' : 'incomplete (judge the retest pages twice and the pages that carry clear pair verdicts)'}**`, '', 'On PASS, v2 tracks the level (eval/rubric.md). On FAIL, revise judge-prompt-v2.md once for the failing part, then validate on pages it was not revised on (loop/plan.md).');
+    lines.push(`**Result: ${out.result === 'FAIL' ? 'FAIL (' + fails.join(', ') + ')' : out.result === 'PASS' ? 'PASS' : `incomplete (${calibRun ? 'judge the retest pages twice and the pages that carry clear pair verdicts' : 'judge at least three pages twice'})`}**`, '', 'On PASS, v2 tracks the level (eval/rubric.md). On FAIL, revise judge-prompt-v2.md once for the failing part, then validate on pages it was not revised on (loop/plan.md).');
     fs.writeFileSync(path.join(run, 'validate.md'), lines.join('\n') + '\n');
     writeJSON(path.join(run, 'validate.json'), out);
     console.log(lines.join('\n'));
