@@ -340,3 +340,62 @@
 - candidate run: 20261103-0910-v0.10.0-exp029(Opus 生成、学習用 01〜06)
 - result: Floor なし(自動点は6件とも 40/40)。妥当性: 6ページすべての NOTES.md・DESIGN.md に 320 の形の記述がある。盲検の Opus 12対は 5勝7敗、clear only 2–2(net 0、残り8対は slight)。clear の勝ちは 04(vs base100b: 320 で base が表を押し込み説明が4〜5行に折れ、候補は各行を3つのラベル付きキーに組み替えた)と 06(vs base100c: 待ち時間の板をヒーローそのものにし、1920〜320 で保った)。clear の負けは 02(vs base100d: base の座席棚の凡例と日程ごとの予約リンク。候補は 320 の流れが窮屈)と 05(vs base100c: 候補は「時」を帯に分けて次の便を1つの時刻で読ませず、撮影時の状態で運休の表示が出ない)。次元別 net: D4 +9、D7 +5、D2 +4、D5 +3、D10 +1、D3 0、D1 −4、D6 −4、D9 −4、D8 −5。ケース別: 06 2–0、01・02・04 1–1、03・05 0–2。v2(M-024 の版、1回審査): 候補の平均は base より +1.2(SE 2.3、HOLD なし、新しい拒否権なし)。ケース別 Δ は 01 −2.3、02 −2.0、03 +5.4、04 +9.9、05 −5.1、06 +1.7。動いた基準: D2.2 0.42→1、D5.4 0.71→1、D5.3 0.58→0.83、D6.3 0.83→0.33、D7.3 0.33→0。
 - verdict: REJECT(採用の手順 d: clear only の net が 0)。狙った D7 は対比較で +5 と負け越しを解消し、D2 +4・D4 +9 も出典表の利得どおりだったが、clear の勝ちが増えなかった。守りの D8 は −5(12対で −6 に1届かず、要観察)。負けの決め手は 320 の崩れではなく、ブリーフの主な仕事(02 の予約への導線、05 の次の便の読みやすさと運休の表示)を個性のために弱めたこと(D1 −4、D9 −4)。v2 では D7.3 が 0.33→0 に下がり、v2 と対比較で D7 の向きが食い違った(M-024 の V3 を測るときの材料)。出典表は、EXP-026・027・029 の42対で D2・D4 を毎回上げるが、clear の勝ち越しは 12–3、+1(12対)、0 と細っている。次は plateau の手順(3件続けて却下)で計画を見直す。
+
+### EXP-031 色は役割を先に決め、色相をあとで選ぶ(計画の見直しの仮説2、経路 C)
+- date: 2026-11-13
+- base run / version: v0.10.0。base は EXP-029 と同じ4つの run(M-014)。01・03・04 は 20261101-0711-v0.10.0-base100a と 20261101-0712-v0.10.0-base100b、02・05・06 は 20261103-0740-v0.10.0-base100c と 20261103-0740-v0.10.0-base100d。各ページの v2 は3回の審査(盲検前の2回と、盲検の1回。M-026 の result により同じ系列として平均する)。変種は、現行のスキルに `loop/variants/exp031-colour-roles.patch` を当てたもの。`cp -r skills/design-nexus <scratch>/exp031/ && patch -p3 -d <scratch>/exp031/design-nexus < loop/variants/exp031-colour-roles.patch` で作れる。今回書き換えた3ファイルは、base100a・b の生成時のスキル(ee5682b)でも、base100c・d の `_skill` でも、現行と同じ(確かめた)。
+- 経路: C(M-025)。ツールなし。チェックは足さない。
+- hypothesis: アクセントの選び方の文を「行動の色を選ぶ」に書き換え、トークン計画で色の役割(行動、状態、データの印、シグネチャ、文字、面、フォーカス)を先に並べてから色を当てさせると、行動の色が状態や飾りを兼ねなくなり、D5.1 と D5.4 を満たすページが増える。
+  - 根拠(base の12ページ、36判定): D5.1 は 12/36(0.33)、D5.4 は 26/36(0.72)。ケース別の D5.1 は、01 が 0/6、03 が 0/6、06 が 1/6、02 が 3/6、04 が 3/6、05 が 5/6。
+  - D5.1 の不合格24件のうち23件は、アクセント(主ボタンの塗りの色)がほかの仕事を兼ねていた。状態やデータの印を兼ねたものが20件(一致の印と件数、承認済みと未承認の印、空席、オンの設定、未保存の印、エラーの枠、DONE のレーン)、飾りを兼ねたものが14件(見出しの下の罫、ロゴ、見出しの1語、ワードマーク)。重複あり。残る1件(base100c の 05)は、車体の黄色がヘッダーの帯と「つぎのバス」の印を兼ねた。
+  - D5.4 の不合格10件のうち8件は、利用者が手を打たなくてよい状態を行動の色で強く塗っていた(base100a の 03: 承認済みの印14個が朱の塗りで、未承認の3個は薄い灰の破線。base100c の 06: DONE のレーンだけが行動の色。base100b の 04: オンの設定が主ボタンと同じ塗り)。残る2件(base100d の 02)は、埋まった席が黒の塗りで、空席は細い線だった。
+  - 生成役の NOTES に、原因の文がそのまま出ている。base100a の 03 は「It marks what the user acts on and what is done.」、base100b の 04 は「I chose magenta because it means only "this route is live".」、base100a の 01 は「it fills the one install button because that command is the match the visitor came for」。アクセントを行動だけに使ったページは通っている(base100c の 02 は「呉須の青を予約にだけ使う」で、D5.1・D5.4 とも 3/3)。
+  - 原因の文は3つ。(1) direction.md §3 Accent の "Choose the one that carries meaning here (what the user acts on, what the subject owns, what the status means)" は、1つの色に3つの意味を許す。(2) craft.md *Color* の "Accent is rare enough to mean something" は、どこに使うかを言わない。(3) 同じ *Color* の "Build from roles (ink, surface, accent, status)" は、シグネチャとデータの印の色の置き場がなく、アクセントに寄せるしかない(今回見つけた)。
+  - M-024 は D5.1 を「厳しいが反転がない」として直さなかった。審査の側ではなく、ページの側の欠陥。対比較の D5 は clear の決め手にならないので、経路 P では通らない。
+- change: 書き換えが中心。SKILL.md、スクリプト、checks.md は変えない(SKILL.md の手順3は direction.md §3 を参照していて、新しい規則と食い違う文はない)。行数は direction.md 95 → 96、craft.md 78 → 79、templates/DESIGN.md 64 → 66、SKILL.md は 85 のまま(11行を足し、7行を消した。差し引き +4行)。審査プロンプトの文言は写していない。例は、どの UI にもある部品(タブ、選択肢、罫、帯、見出しの語、ロゴ)と状態だけで、評価ケースの題材は書いていない。
+  - (1) references/direction.md §3 Accent。"Choose the one that carries meaning here (what the user acts on, what the subject owns, what the status means), and write one line on why not the other two." を、次の3文に替えた。"The accent is the action color: it marks only what the user presses and the item currently selected, so choose the candidate that is free to mean just "press this". Status colors and the signature's color are separate roles with their own lines in the plan (§4): a hue that already means a state in the subject, or that the signature is made of, stays in that role, however neatly a metaphor ties it to the button. Write one line on why not the other two."
+  - (2) references/direction.md §4 の導入の行に、1文を足した。"For colors, list the roles this page needs first and choose a hue for each after; no color is used outside its role."
+  - (3) references/direction.md §4 の雛形の色の3行を、4行に替えた。見出しは "Colors (4–6), by role: action · each status the page shows (quiet unless the user must act on it) · data marks (highlighted values, series, meters) · signature · text and rules · ground and surface · focus"。役割の行は "<role>  <name in the subject's vocabulary>  #RRGGBB — source: where in the subject's world it comes from (status colors too, not a stock red/amber/green)"。共有の行は "<role>  = <another role>'s color — why the two meanings cannot be confused on this page (only focus may share the action color)"。候補の行は "accent candidates (for the action role): …" で、中身は前のまま。
+  - (4) references/craft.md *Color*。"Accent is rare enough to mean something." を、"The accent is the action color: it goes only on things you press and on the item currently selected in a set (the open tab, the one chosen option). It never marks data or a state (switched on, done, pending, available, failed), and never decorates (a rule, a band, a highlighted word, the logo)." に替えた。フォーカスの箇条を1つ足した。"The focus ring is a color that reaches 3:1 on every surface it lands on; it may be the action color if that holds." 最初の箇条の役割の並びを "(ink, surface, accent, status)" から "the token plan's roles (action, status, data marks, signature, text, surface, focus)" に替えた。"Status colors (success, warning, danger) are reserved for status." はそのまま。
+  - (5) templates/DESIGN.md の Tokens の節に、役割を記録する段落を1つ足した。"Color roles: one line per color token with its role (action, a status, data marks, signature, text or rules, ground or surface, focus) and its source. `accent` is the action color; a role with no token of its own names the token it uses." tokens のブロックは変えていない。
+  - 一覧にない語句(plan.md の変更の一覧にはない。外すなら個別に外せる): (a) (3) の status に付けた "(quiet unless the user must act on it)"。D5.4 の不合格10件のうち5件(03 の承認済みの印、02 の埋まった席)は「済みが未済より強い」型で、行動の色を分けるだけでは残りうる。色数を増やさない(静かな状態は文字の色を使える)ことと、「済み=緑」の反射を止めることにも効く。(b) (4) の役割の並び。craft.md だけを読むと、シグネチャの色の置き場がなくなる(予想される失敗3)。
+- 両方の計器の予想:
+  - v2: D5.1 は 0.33 → 0.75 前後(6ページ中 4〜5)。D5.4 は 0.72 → 0.85〜0.9(6ページ中5前後)。合わせた満たす率は 0.53 → 0.80 前後で、ゲートの近く。v2 の平均は +1.0〜1.6(重み1の基準1つが 2.27 点)。D5.3 は横ばいか少し上(フォーカスリングの 3:1。記録だけ)。D5.2 は 1.0 のまま。
+  - 対比較: D5 の net は正(12対で +2〜+6)。clear の決め手にはならず、clear net は −2〜+2(M-029 の A/A の雑音の中)。D2 は −3〜+2、D3 は 0〜+3(主操作だけが行動の色を持つ)。
+  - ゲートを通る確率の粗い試算(セルを独立とみなす): 効果がなければ、1回目の 10/12 を通るのは約2%、2回目まで通るのは 0.5% 未満。D5.1 だけが 0.75 に上がって D5.4 が base のままなら、1回目を通るのは約35%。D5.4 も 0.88 に上がれば約61%。
+- 守る次元: D2・D3(M-013)。D2 は、シグネチャが色を失う、状態の色が既製の色になる、という失敗を見る。D3 は、行動の色を別の色相にしたことで主操作が弱くなる、または彩度のある色が増えて最初に目の行く先が分かれる、という失敗を見る。
+- 測り方と判定(先に決める): eval/rubric.md の経路 C の条件1〜5。ツールがないので条件2は当てはまらない。
+  - 生成と審査: 候補は変種で学習用 01〜06 を1回生成する(`node eval/run.mjs prepare --skill <変種> --split train --label exp031`。render check は score と同じ時刻、M-026)。生成と審査は Opus で、推論量は base と同じ。v2 の審査は生成と別の新しいコンテキストで、1ページ1体、盲検で1回(`judge --scale v2 --blind`、M-026)。
+  - 条件3(狙う基準は D5.1 と D5.4): base は36判定で 38/72 = 0.528(D5.1 12/36、D5.4 26/36)。不合格の率 0.472 の半分は 0.236 で、0.3 より小さいので、必要な上がり幅は 0.236、ゲートは 0.764。plan.md の 0.78 は、盲検の3回目を入れる前の24判定(27/48 = 0.5625)からの値。件数の閾値は変わらない。
+    - 1回目(6ページ、12セル): 10/12 以上(0.833)なら2回目を生成する。9/12(0.75)以下なら、2回目を作らずに却下する。
+    - 2回目を足した12ページ(24セル): 19/24 以上(0.792)なら条件3を満たす。18/24(0.75)以下は却下する。
+    - 1ページを2回以上審査したときは、件数ではなく率 0.764 以上で読む。
+    - 参考(判定には使わない): 盲検の1回だけで数えると、base は 11/24 = 0.458(D5.1 2/12、D5.4 9/12)で、ゲートは 0.729(9/12、18/24)になる。D5.1 は、盲検の回(2/12)が盲検前の2回(10/24)より低い。盲検前の2回はどちらも合格で、盲検の回だけ不合格だったのは、base100a の 04 と base100c の 05 の2ページ。候補は盲検だけで審査するので、36判定のゲートは候補に厳しい側に寄る。M-026 の result(3回を同じ系列として平均する)に従い、判定は 0.764 で行う。1回目が 9/12 だったときは、却下としたうえで、この差を記録に残す。
+  - 条件4(害がない。1回目の12対 = 候補6ページ × base 2回、`pair --base <base100a>,<base100b>,<base100c>,<base100d> --run <候補>`、Opus が片順・盲検で審査): clear only の net が −4 以上(M-029 で −2 から改めた)。D2・D3 の net がそれぞれ −6 より上。変更そのもの(行動の色が弱い、または主操作が見つからない。状態が静かすぎて読めない。シグネチャが色を失った)を決め手にした clear 負けが1件以下。
+  - 条件5: `compare --scale v2` に HOLD がない。狙った以外で満たす率が 0.5 以上下がった基準があれば根拠を読み、同じ具体的な欠陥を指していれば却下する。
+  - 条件1: 新しい Floor がなく、どのケースにも新しい拒否権がない。出たら、採用の手順 f のとおり根拠を読む。
+  - M-027: V3 の台帳で、D5 の一致が 70% 未満(5件以上)と分かったら、経路 C では採らず、記録にとどめる。
+  - 経路 P の条件(clear net +3 以上と守り)も満たしたら、経路 P として記録する。採用なら v0.11.0(本文の規則の変更なので minor)。VERSION と .claude-plugin/plugin.json をそろえ、CHANGELOG.md に書き、`node scripts/build.mjs` を実行し、v0.11.0 で base を2回生成し直す。次の base で、D5.1・D5.4 の満たす率が保たれたかを見る(M-025 の check)。
+- 記録(判定には使わない):
+  - 文面が読まれたか: 候補の各ページの NOTES.md か DESIGN.md に、役割ごとの色の行(行動、状態、シグネチャ)と共有の行があるページの数。6ページ中4以下なら、結果は文面の効果として読まない。
+  - 行動の色が、状態・データの印・飾りに使われた箇所(ページごと。コードで行動の色のトークンの使い先を読む)。
+  - D5.1 の不合格の根拠の型(行動の色が兼ねたか、ほかの色が兼ねたか)。D5.4 の不合格の根拠の型(済みが未済より強い、オンの設定が主操作と同じ強さ、ほか)。
+  - D5.2(base 36/36)と D5.3(base 23/36 = 0.64)の満たす率。フォーカスリングを根拠にした D5.3 の件数。
+  - 色の数: DESIGN.md の色トークンの数(tokens-check の R08 は10を超えると出る)、コードの異なる hex の数、R08 の件数。base の12ページと比べる。
+  - 状態の色に源が書かれているか。既製の緑・黄・赤か。
+  - 行動の色の色相(6ページ)。1つの色相に寄らないか(Diversity)。
+  - シグネチャに色が残ったか。D2.2・D2.3 の満たす率と、対比較の D2 の決め手。
+  - 対比較の次元別・ケース別の net(D8 を含む)。v2 の差と動いた基準。
+- 予想される失敗:
+  - (1) 状態の色が既製の緑・黄・赤になり、パレットが典型に寄る(D2.2、D5.2)。役割の行の源を状態の色にも書かせ、"not a stock red/amber/green" と書いた。手を打たなくてよい状態は静かにするので、「済み=緑」の反射も減る。D2 を守る。
+  - (2) 色の数が増え、R08 に当たる。"Colors (4–6)" を残し、共有の行を雛形にした。フォーカスは行動の色を共有でき、静かな状態は文字の色を使える。記録で数える。
+  - (3) 行動の色を別にしたことで、シグネチャが色を失って弱くなる(D2)。シグネチャを役割の並びに残し、§3 に「シグネチャを作っている色は、その役割にとどまる」と書いた。craft.md の役割の並びにも入れた。D2 を守る。
+  - (4) "selected" を広く読み、オンの設定を行動の色で塗る(base100b の 04 の型)。craft.md の状態の例に "switched on" を入れ、選択の例は1つだけ選ぶもの(the open tab, the one chosen option)にした。記録で見る。
+  - (5) 静かにした状態の印が 3:1 を割る(D5.3)。文面は "quiet" で、薄くするとは書いていない。記録で見る。
+  - (6) 行動の色が主題と縁のない色になる。または彩度のある色が3つになり、騒がしくなる(D2.2、D3)。候補を3つとも主題から取る規則は変えていない。D2・D3 を守る。
+  - (7) 計画が長くなり、状態の設計が押しのけられる(EXP-029 の型、D8)。増えたのは4行で、新しい段は作っていない。D8 の net を記録する。
+  - (8) 審査のゆらぎ。base では、同じページの3回の審査が D5.1 で割れたページが4つ(base100a の 04、base100b の 04、base100c の 05・06)、D5.4 で割れたページが2つある(base100b の 04、base100d の 02)。候補は1回の審査で読むので、10/12 の境界では運が入る。2回目の生成を足した24セルで確かめる。
+- candidate run: (未実施)
+- result: (未実施)
+- verdict: (未定)
+- notes: 採用するときにそろえる文が2つある。build では読まれないので、今回は触っていない。references/retro.md の例 "Accent limited to primary CTA and data highlights" は、新しい規則(行動の色はデータを示さない)と食い違う。references/steer.md の colorize の "Add a second accent role" は、アクセントを1つの役割とする書き方と合わない。条件の違いが1つある。base の4つの run は M-026 (a) の前の生成で、生成役の render check は実行時の時刻で撮っている。候補は score と同じ時刻で撮る。時刻で表示が変わる 05 では、候補だけが審査と同じ画面を確かめている。
