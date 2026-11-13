@@ -34,7 +34,8 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SKILL = path.join(ROOT, 'skills/design-nexus');
+// DN_SKILL: score a run with another copy of the skill's tools (a tool-changing variant is scored with its own checks).
+const SKILL = process.env.DN_SKILL ? path.resolve(process.env.DN_SKILL) : path.join(ROOT, 'skills/design-nexus');
 const CASES = path.join(ROOT, 'eval/cases');
 const RUNS = path.join(ROOT, 'eval/runs');
 const HISTORY = path.join(ROOT, 'eval/history.jsonl');
