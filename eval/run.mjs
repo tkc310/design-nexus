@@ -113,10 +113,10 @@ function shotLines(dir) {
   return out;
 }
 // Pair copies keep the shots (the pair judge reads them) but never scores, judge files, or prompts.
-const NOT_PAIR = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|generate\.log|judge\.log)$/;
+const NOT_PAIR = /(^|\/)(\.blind|score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|generate\.log|judge\.log)$/;
 const tiled = (dir) => fs.existsSync(path.join(dir, 'shots')) && fs.readdirSync(path.join(dir, 'shots')).some((f) => /^w\d+-01\.png$/.test(f));
 // What a judge or pair judge must never see in a page copy: scores, judge files, prompts (PROMPT.md names the skill variant), shots of the generator.
-const NOT_PAGE = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|before\.json|generate\.log|judge\.log|feedback\.md|compare\.md|shots[^/]*|\.design-nexus)$/;
+const NOT_PAGE = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|before\.json|generate\.log|judge\.log|feedback\.md|compare\.md|shots[^/]*|\.design-nexus|\.blind)$/;
 function die(msg) { console.error(msg); process.exit(1); }
 
 function findEntry(dir) {
@@ -251,7 +251,8 @@ const commands = {
         `Use the design-nexus skill: read \`${skill}/SKILL.md\` and follow it (budget: ${c.budget}, surface: ${c.surface}). Its references, scripts, and templates are in that same folder.`,
         `Work only inside this folder (${dir}). Write the result as a single self-contained \`index.html\` (inline CSS/JS) unless the brief says otherwise. Do not look at other case folders or earlier runs.`,
         `Nobody will answer questions: state your assumptions and proceed.`,
-        `Run the skill's lint and render check on \`index.html\` (\`node ${skill}/scripts/lint.mjs index.html\`, \`node ${skill}/scripts/render-check.mjs index.html --out shots\`) and fix Floor findings before finishing.`,
+        // M-026(a): the generator's render check sees the same clock as `score` (M-006), so a time-dependent page is fixed in the state the judge will see.
+        `Run the skill's lint and render check on \`index.html\` (\`node ${skill}/scripts/lint.mjs index.html\`, \`node ${skill}/scripts/render-check.mjs index.html --out shots ${c.language === 'ja' ? '--time 2026-11-04T10:30:00+09:00 --tz Asia/Tokyo' : '--time 2026-11-04T10:30:00-05:00 --tz America/New_York'}\`) and fix Floor findings before finishing.`,
         `Treat this folder as the project root: if the skill's steps call for a \`DESIGN.md\`, write it here.`,
         `When done, write \`NOTES.md\` with: the three directions you considered, the chosen one, the signature element, and any Reflex findings kept with reasons.`,
         '', '## Brief', '', c.brief, '',
@@ -289,19 +290,30 @@ const commands = {
       const brief = meta ? meta.brief : '(brief missing)';
       if (v2 && !tiled(dir)) console.log(`warning: ${d} has no tiled screenshots; run \`score\` first so the judge can read every width`);
       const tools = fs.existsSync(path.join(dir, 'score.json')) ? JSON.parse(read(path.join(dir, 'score.json'))).tools : null;
+      // M-026(b): with --blind the judge works in a copy whose path carries no run name (version, date, "exp" label), as pair judges do (M-012).
+      // The prompt is written there too; `score` brings the replies (judge-v2.*.json) back into the case folder.
+      let seen = dir;
+      if (v2 && opt.blind) {
+        seen = path.join(RUNS, '_blind', 'p-' + createHash('sha1').update(`${path.basename(run)}/${d}`).digest('hex').slice(0, 8));
+        fs.mkdirSync(seen, { recursive: true });
+        for (const f of fs.readdirSync(seen)) if (!/^judge-v2.*\.json$/.test(f)) fs.rmSync(path.join(seen, f), { recursive: true, force: true });
+        fs.cpSync(dir, seen, { recursive: true, dereference: true, filter: (f) => !NOT_PAIR.test(path.relative(dir, f)) });
+        fs.writeFileSync(path.join(dir, '.blind'), seen + '\n');
+      }
       const prompt = [
         // M-022: the prompt's id travels with the judgement, so a v2 series is (judge model, prompt, capture).
         ...(v2 ? [`<!-- judge-prompt-v2 ${promptId()} -->`, ''] : []),
         base, '', '## BRIEF', '', brief, '',
-        '## Case directory', '', dir, '',
+        '## Case directory', '', seen, '',
         ...(meta?.url ? ['## Reference page', '', `Live site: ${meta.url} (see *Reference pages* above).`, ''] : []),
-        '## Screenshots', '', ...shotLines(dir), '',
+        '## Screenshots', '', ...shotLines(seen), '',
         '## Tool results', '', '```json', JSON.stringify(tools, null, 2), '```', '',
       ].join('\n');
       // A judgement belongs to the prompt it was made with: replacing the prompt under existing v2 judgements breaks the series.
       const prev = v2 && fs.existsSync(path.join(dir, promptName)) ? (read(path.join(dir, promptName)).match(/<!-- judge-prompt-v2 (\w+) -->/) || [])[1] : null;
       if (prev && prev !== promptId() && Object.keys(readJudgesV2(dir)).length) console.log(`warning: ${d} has v2 judgements made with prompt ${prev}; the new prompt is ${promptId()}. Judge the page again (and move the old judge-v2 files aside) before scoring.`);
       fs.writeFileSync(path.join(dir, promptName), prompt);
+      if (seen !== dir) fs.writeFileSync(path.join(seen, promptName), prompt);
       if (opt.cmd && opt.cmd !== true) {
         console.log(`judge ${d} …`);
         const r = spawnSync(opt.cmd, { cwd: dir, input: prompt, shell: true, encoding: 'utf8', maxBuffer: 16 << 20, timeout: 900000 });
@@ -453,6 +465,11 @@ const commands = {
     for (const d of caseDirs(run)) {
       const dir = path.join(run, d);
       const c = caseMeta(dir, d) || {};
+      // M-026(b): replies written next to a blinded prompt come back to the case folder.
+      if (fs.existsSync(path.join(dir, '.blind'))) {
+        const seen = read(path.join(dir, '.blind')).trim();
+        if (fs.existsSync(seen)) for (const f of fs.readdirSync(seen)) if (/^judge-v2.*\.json$/.test(f)) fs.copyFileSync(path.join(seen, f), path.join(dir, f));
+      }
       // A reference page (CASE.md with a url, V4) is rendered live; there is no file to lint.
       const entry = findEntry(dir) || (/^https?:\/\//.test(c.url || '') ? c.url : null);
       if (!entry) { rows.push({ case: d, missing: true }); continue; }
