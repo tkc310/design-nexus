@@ -137,6 +137,17 @@ else {
   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
+  // R29: at 1920 the 1280 arrangement sits centred or merely stretches; a page that gains something at 1920 is not counted.
+  const wide = (f, w = '1280,1920') => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', w).out.findings.filter((x) => x.id === 'R29');
+  const wc = wide('wide-centred.html');
+  check('render flags R29 when the 1280 frame sits centred at 1920, with the measured margins', wc.length === 1 && /sits centred/.test(wc[0].message) && /1200px wide \(1200px at 1280, ×1\.00\), 360px and 360px from the edges/.test(wc[0].message), JSON.stringify(wc));
+  const ws = wide('wide-stretched.html');
+  check('render flags R29 when a strip and a table merely stretch at 1920', ws.length === 1 && /merely stretch/.test(ws[0].message) && /×1\.52\), 24px and 24px/.test(ws[0].message), JSON.stringify(ws));
+  for (const [f, what] of [['wide-column.html', 'a side column set beside the main one from 1600px'], ['wide-figure.html', 'a main figure enlarged from 1600px'], ['wide-type.html', 'root type scaled up from 1600px'], ['wide-frame.html', 'a frame widened 1.27x from 1600px']]) {
+    const r29 = wide(f);
+    check(`R29 ignores ${what}`, r29.length === 0, JSON.stringify(r29));
+  }
+  check('R29 is measured only when 1920 is rendered', wide('wide-centred.html', '1280').length === 0);
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');

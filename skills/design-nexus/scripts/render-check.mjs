@@ -2,7 +2,7 @@
 // design-nexus render check: screenshots at several widths plus rendered Floor checks.
 // Needs Playwright (any install it can find). Without it, prints a skip notice and exits 0.
 // Usage:
-//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]
+//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]   (R29 needs 1280 and 1920)
 //        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
 //        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
 // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
@@ -129,6 +129,7 @@ async function captureTiles(page, width) {
   return { files, height, truncated: covered < height };
 }
 const textsAt = new Map();
+const wideAt = new Map(); // R29: the arrangement at 1280 and 1920
 
 // Runs in the page. Returns raw measurements; judgement stays in Node.
 function measure(minTap) {
@@ -618,6 +619,80 @@ function overlaps() {
   return out;
 }
 
+// R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
+// The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
+// media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
+// edge, a full-bleed band, fixed overlays and aria-hidden decoration do not set the frame.
+function wideLayout() {
+  const vw = document.documentElement.clientWidth;
+  const sy = scrollY;
+  const all = [...document.querySelectorAll('body *')];
+  const fixed = all.filter((e) => getComputedStyle(e).position === 'fixed');
+  const away = (el) => el.closest('script, style, noscript, template, [aria-hidden="true"]') || fixed.some((f) => f.contains(el));
+  const shown = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0; };
+  // Elements are matched across the two widths by their place in the tree.
+  const key = (el) => { const p = []; for (let e = el; e && e !== document.body && e.parentElement; e = e.parentElement) p.push([...e.parentElement.children].indexOf(e)); return p.reverse().join('.'); };
+  const B = 8, cols = Array.from({ length: Math.ceil(vw / B) + 1 }, () => []);
+  const paint = (r) => {
+    const l = Math.max(0, r.left), rr = Math.min(vw, r.right);
+    if (rr - l < 1 || r.height < 1) return;
+    for (let i = Math.floor(l / B); i * B < rr; i++) cols[i].push([r.top + sy, r.bottom + sy]);
+  };
+  const sizes = [];
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode()) {
+    const t = tw.currentNode, p = t.parentElement;
+    if (!t.data.trim() || !p || away(p) || !shown(p)) continue;
+    const rg = document.createRange();
+    rg.selectNodeContents(t);
+    for (const r of rg.getClientRects()) if (r.width > 0) paint(r);
+    sizes.push([parseFloat(getComputedStyle(p).fontSize), t.data.trim().length]);
+  }
+  const figs = [], rows = [];
+  for (const el of all) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'svg' ? el.parentElement && el.parentElement.closest('svg') : el.closest('svg')) continue;
+    if (away(el) || !shown(el)) continue;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const media = /^(img|svg|canvas|video|iframe|object|embed)$/.test(tag) || el.getAttribute('role') === 'img' || /url\(/.test(cs.backgroundImage);
+    const ruled = ['Left', 'Right', 'Top', 'Bottom'].some((s) => parseFloat(cs[`border${s}Width`]) > 0 && cs[`border${s}Style`] !== 'none');
+    const filled = !/^(rgba\(0, 0, 0, 0\)|transparent)$/.test(cs.backgroundColor) || cs.backgroundImage !== 'none' || cs.boxShadow !== 'none';
+    if ((media || ruled || filled || /^(input|select|textarea|button)$/.test(tag)) && r.width < vw * 0.95) paint(r);
+    // A figure that fills the viewport grows with it at every width; only one inside the page's frame can be planned larger.
+    if (media && r.width * r.height >= 160 * 120 && r.width < vw * 0.95) figs.push({ key: key(el), w: Math.round(r.width), h: Math.round(r.height) });
+    // Tracks: the in-flow children of each box at least 200px wide, as [index, left, top, right, bottom]. Node decides
+    // which children are blocks from their size at 1920 and counts how many of them sit side by side at each width.
+    if (rows.length < 2000 && r.width >= 200 && !/^(inline|contents)$/.test(cs.display) && el.children.length) {
+      const kids = [];
+      [...el.children].forEach((k, i) => {
+        const c = getComputedStyle(k);
+        if (kids.length >= 60 || c.position === 'absolute' || c.position === 'fixed' || !shown(k)) return;
+        const b = k.getBoundingClientRect();
+        kids.push([i, Math.round(b.left), Math.round(b.top + sy), Math.round(b.right), Math.round(b.bottom + sy)]);
+      });
+      if (kids.length) rows.push({ key: key(el), w: Math.round(r.width), cell: cs.display === 'table-row', kids });
+    }
+  }
+  const depth = cols.map((iv) => {
+    iv.sort((x, y) => x[0] - y[0]);
+    let d = 0, end = -Infinity;
+    for (const [t, b] of iv) if (b > end) { d += b - Math.max(t, end); end = b; }
+    return d;
+  });
+  const on = depth.filter((v) => v > 0).sort((x, y) => x - y);
+  const peak = on.length ? on[Math.floor(on.length * 0.8)] : 0;
+  const lo = depth.findIndex((v) => v > 0 && v >= peak * 0.1);
+  let left = 0, right = 0; // no content, no box
+  if (lo >= 0) { left = lo * B; for (let i = depth.length - 1; i >= 0; i--) if (depth[i] >= peak * 0.1) { right = Math.min(vw, (i + 1) * B); break; } }
+  // Body type: the size that half of the visible characters are set at or below.
+  sizes.sort((x, y) => x[0] - y[0]);
+  const chars = sizes.reduce((a, s) => a + s[1], 0);
+  let n = 0, body = 0;
+  for (const [s, c] of sizes) { n += c; if (n >= chars / 2) { body = s; break; } }
+  return { vw, left, right, body, figs, rows };
+}
+
 const browser = await pw.chromium.launch();
 try {
   for (const width of opt.widths) {
@@ -653,6 +728,7 @@ try {
       capture.widths[width] = { tiles: t.files.length, page_height: t.height, truncated: t.truncated, flattened };
     }
     const m = await page.evaluate(measure, minTap);
+    if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
@@ -705,6 +781,44 @@ try {
     if (total >= 60) {
       const sample = gone.sort((a, b) => weight(b) - weight(a)).slice(0, 2).map((t) => `"${t.slice(0, 40)}"`).join(', ');
       add('R18', `@${narrow}px`, `${gone.length} text block(s) shown at ${wide}px are hidden at ${narrow}px (${total} chars), e.g. ${sample}; reflow or collapse them behind a labeled control instead of removing them`);
+    }
+  }
+
+  // R29: 1920 shows the 1280 arrangement unchanged, either centred between wide empty margins or with the same tracks
+  // merely stretched. Not counted when 1920 gains something: a block that now sits beside another (a side column, one
+  // more column of cards, a table column), text that 1280 does not show, a larger main figure, or larger body type.
+  if (wideAt.has(1280) && wideAt.has(1920)) {
+    const a = wideAt.get(1280), b = wideAt.get(1920);
+    const wa = a.right - a.left, wb = b.right - b.left, ratio = wb / wa;
+    const L = b.left, R = b.vw - b.right;
+    const side = (kids) => { let n = 0; for (const k of kids) { const y = (k[2] + k[4]) / 2; n = Math.max(n, kids.filter((j) => j[2] <= y && j[4] >= y).length); } return n; };
+    const was = new Map(a.rows.map((r) => [r.key, r]));
+    const added = b.rows.some((r) => {
+      const old = was.get(r.key);
+      if (!old || r.w < wb * 0.3) return false;
+      const big = r.kids.filter((k) => r.cell || (k[3] - k[1] >= Math.max(96, r.w * 0.08) && k[4] - k[2] >= 56));
+      if (big.length < 2) return false;
+      const ids = new Set(big.map((k) => k[0]));
+      return side(big) > side(old.kids.filter((k) => ids.has(k[0])));
+    });
+    const key = (t) => t.replace(/\d/g, '0');
+    const left = new Map();
+    for (const t of textsAt.get(1280) || []) left.set(key(t), (left.get(key(t)) || 0) + 1);
+    let gained = 0;
+    for (const t of textsAt.get(1920) || []) {
+      if (left.get(key(t))) left.set(key(t), left.get(key(t)) - 1);
+      else gained += t.length + (t.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+    }
+    // The main figure: the largest at 1280, or any at least half its area; the one that grew most counts.
+    const most = Math.max(0, ...a.figs.map((f) => f.w * f.h));
+    const at1920 = new Map(b.figs.map((f) => [f.key, f]));
+    const figure = Math.max(1, ...a.figs.filter((f) => f.w * f.h >= most / 2 && at1920.has(f.key)).map((f) => at1920.get(f.key).w / f.w));
+    const type = a.body ? b.body / a.body : 1;
+    if (wa > 0 && !added && gained < 40 && figure < 1.15 && type < 1.08) {
+      const box = `content ${wb}px wide (${wa}px at 1280, ×${ratio.toFixed(2)}), ${L}px and ${R}px from the edges`;
+      const fix = 'from 1600px add what a reader at 1280 scrolls to find: a side column with the next step, details or the legend, one more column of cards or rows, or a larger main figure or table, inside a min-width: 1600px query';
+      if (ratio <= 1.2 && Math.min(L, R) >= 200) add('R29', '@1920px', `the 1280 arrangement sits centred between empty margins: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
+      else if (ratio >= 1.3 && Math.min(L, R) < 200) add('R29', '@1920px', `the 1280 tracks merely stretch: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
     }
   }
 

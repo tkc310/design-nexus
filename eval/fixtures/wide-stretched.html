@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Stretched table fixture</title>
+<meta name="description" content="R29 fixture: a table and a strip of figures merely stretch at 1920">
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#fff;color:#1b1b1b}
+main{padding:24px}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 24px}
+.tile{border:1px solid #767676;padding:16px}
+.tile b{display:block;font-size:28px}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid #767676;padding:10px 12px;text-align:left;white-space:nowrap}
+</style></head><body>
+<!-- flagged: the same three tiles and six columns stretch from 1232px to 1872px, with no column or figure added -->
+<main><h1>Overtime this week</h1>
+<div class="strip"><div class="tile">Hours logged<b>412</b></div><div class="tile">Overtime<b>38</b></div><div class="tile">Pending approvals<b>3</b></div></div>
+<table><thead><tr><th>Name</th><th>Role</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Total</th></tr></thead><tbody>
+<tr><td>Aiko Tanaka</td><td>Nurse</td><td>8.0</td><td>9.5</td><td>8.0</td><td>25.5</td></tr>
+<tr><td>Ben Ortiz</td><td>Reception</td><td>7.5</td><td>7.5</td><td>8.0</td><td>23.0</td></tr>
+<tr><td>Chloe Martin</td><td>Hygienist</td><td>8.0</td><td>8.0</td><td>10.0</td><td>26.0</td></tr>
+</tbody></table></main></body></html>
