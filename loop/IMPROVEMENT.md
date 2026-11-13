@@ -92,12 +92,13 @@ node eval/run.mjs compare --base baseline --run <run>
 ```bash
 node eval/run.mjs prepare --skill <変種> --split train --label exp-<番号>
 # 生成 → score(第1画面と900pxのタイルを撮る)
-node eval/run.mjs judge --run <run> --scale v2      # JUDGE_PROMPT.v2.md。1ページ1体の Opus が judge-v2.opus.json を書く
+node eval/run.mjs judge --run <run> --scale v2 --blind   # 盲検の写し(eval/runs/_blind/p-…)に JUDGE_PROMPT.v2.md。1ページ1体の Opus が、その写しに judge-v2.opus.json を書く(M-026)
 node eval/run.mjs score --run <run>                 # v2 は基準から計算される
 node eval/run.mjs pair --base <base の run> --run <run> && node eval/run.mjs pair-score --run <run>   # 採否はここで決まる
 node eval/run.mjs compare --base <base の run> --run <run> --scale v2   # 水準と動いた基準。HOLD なら根拠を読む
 ```
 
+- 仮説を書くときに、経路 P(対比較)か経路 C(基準)かを先に決める(M-025、`eval/rubric.md`)。
 - v2 は v1 と別の系列で、比べない。主審査のモデルの点だけを使い、Sonnet や人は別の系列として記録する。
 - 審査のモデルかプロンプトを変えたら、較正セットの drift ページで採点し直してから続ける(`calib --tier drift`、`validate --against`)。
 - 新しい環境で eval/runs が空のときは、`restore` で凍結した base を戻す。
