@@ -1,0 +1,577 @@
+diff --git a/eval/fixtures/action-color-brand.html b/eval/fixtures/action-color-brand.html
+new file mode 100644
+index 0000000..887701f
+--- /dev/null
++++ b/eval/fixtures/action-color-brand.html
+@@ -0,0 +1,35 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color brand fixture</title>
++<meta name="description" content="R30 fixture: the brand mark, links, an outlined button and a focus ring may share the action color">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
++header{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid #c9c6bd}
++.brand{display:flex;align-items:center;gap:8px;color:#1f4fd1;font-weight:700}
++main{max-width:960px;margin:0 auto;padding:24px}
++a{color:#1f4fd1}
++.btn{display:inline-block;background:#1f4fd1;color:#fff;border-radius:6px;padding:12px 20px;text-decoration:none}
++.ghost{background:transparent;color:#1f4fd1;border:2px solid #1f4fd1;border-radius:6px;padding:10px 18px;font:inherit}
++.field{display:inline-block;border:1px solid #5d6470;border-radius:6px;padding:4px}
++.field:focus-within{box-shadow:0 0 0 3px #1f4fd1}
++.field input{border:0;font:inherit;padding:6px;background:transparent}
++footer{padding:24px;border-top:1px solid #c9c6bd}
++.wordmark{color:#1f4fd1;font-weight:700}
++.note{color:#1f4fd1}
++</style></head><body>
++<!-- not counted: the brand mark and its name -->
++<header><div class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="2" width="24" height="24" rx="4" fill="#1f4fd1"/></svg><span>Northline Studios</span></div></header>
++<main>
++<h1>Rehearsal rooms by the hour</h1>
++<p>Five soundproofed rooms by the river, each with a PA, two amps and a full kit. Rooms open at 9:00 and close at 23:00; a booking holds the room for two hours, and you can move it until the day before.</p>
++<!-- not counted: links, and an outlined button -->
++<p>Read the <a href="#rules">house rules</a> before your first visit, or <a href="#map">find us on the map</a>.</p>
++<p><a class="btn" href="#book" id="book">Book a room</a> <button class="ghost" type="button">See prices</button></p>
++<!-- not counted: the focus ring around a field that has focus when the page opens -->
++<p><span class="field"><input id="q" type="search" aria-label="Search rooms" placeholder="Search rooms"></span></p>
++<!-- the one mark outside: alone it is not enough -->
++<p class="note">Rooms are quiet after 21:00.</p>
++</main>
++<!-- not counted: a wordmark -->
++<footer><span class="wordmark">Northline</span>, 14 Dock Street</footer>
++<script>document.getElementById('q').focus();</script>
++</body></html>
+diff --git a/eval/fixtures/action-color-ink.html b/eval/fixtures/action-color-ink.html
+new file mode 100644
+index 0000000..d6f2b5c
+--- /dev/null
++++ b/eval/fixtures/action-color-ink.html
+@@ -0,0 +1,17 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color ink fixture</title>
++<meta name="description" content="R30 fixture: an action filled with the page's ink is not checked">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f7f8fb;color:#173f8a}
++main{max-width:860px;margin:0 auto;padding:24px}
++.btn{background:#173f8a;color:#fff;border:0;border-radius:6px;padding:12px 20px;font:inherit}
++.tag{border:1px solid #173f8a;border-radius:4px;padding:0 6px}
++</style></head><body>
++<main>
++<h1>Harbor ferry timetable</h1>
++<p>Boats leave the north pier every forty minutes from 6:20. The last boat back leaves the island at 22:40.</p>
++<p><button class="btn" type="button" id="ticket">Buy a ticket</button></p>
++<!-- not checked: the action is filled with the ink every line of text is set in, so its color is not an accent -->
++<ul><li>6:20 <span class="tag">Daily</span></li><li>7:00 <span class="tag">Weekdays</span></li><li>7:40 <span class="tag">Daily</span></li></ul>
++<p>Bikes ride free on every boat, and dogs ride free on a lead.</p>
++</main></body></html>
+diff --git a/eval/fixtures/action-color-light.html b/eval/fixtures/action-color-light.html
+new file mode 100644
+index 0000000..5dc3c83
+--- /dev/null
++++ b/eval/fixtures/action-color-light.html
+@@ -0,0 +1,26 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Light action color fixture</title>
++<meta name="description" content="R30 fixture: a yellow action that stands out by hue alone, below a filled toggle">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#fff;color:#1f2328}
++main{max-width:860px;margin:0 auto;padding:24px}
++.lamp{background:#1e7046;color:#fff;border:0;border-radius:6px;padding:10px 16px;font:inherit}
++.go{background:#ffd400;color:#1f2328;border:0;border-radius:6px;padding:12px 20px;font:inherit}
++.due{background:#ffd400;color:#1f2328;padding:0 4px}
++.on{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1e7046}
++</style></head><body>
++<main>
++<h1>Kiln schedule</h1>
++<!-- not the action: a filled toggle shows its state with its fill, so the finder looks past it -->
++<p><button class="lamp" type="button" aria-pressed="true">Kiln on</button></p>
++<p>Two firings are planned this week. Load the kiln by 17:00 on the day before a firing.</p>
++<!-- the action: yellow on white is under 2:1 but stands out by hue -->
++<p><button class="go" type="button" id="plan">Plan a firing</button></p>
++<!-- flagged: the action's yellow also marks what is due -->
++<ul>
++<li>Bisque firing, Tuesday: glazed pots <mark class="due">due Monday</mark></li>
++<li>Glaze firing, Friday: shelf labels <mark class="due">due Thursday</mark></li>
++</ul>
++<!-- not counted: the toggle's green is not the action color -->
++<p><span class="on" aria-hidden="true"></span> Kiln 1 is heating. <span class="on" aria-hidden="true"></span> Kiln 2 is heating.</p>
++</main></body></html>
+diff --git a/eval/fixtures/action-color-neutral.html b/eval/fixtures/action-color-neutral.html
+new file mode 100644
+index 0000000..4017409
+--- /dev/null
++++ b/eval/fixtures/action-color-neutral.html
+@@ -0,0 +1,40 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color neutral states fixture</title>
++<meta name="description" content="R30 fixture: states in status colors or neutral marks, pale washes, a large drawing and a band in the action color are not counted">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#fff;color:#1f2328}
++main{max-width:960px;margin:0 auto;padding:24px}
++.btn{background:#c43d1c;color:#fff;border:0;border-radius:6px;padding:12px 20px;font:inherit}
++table{border-collapse:collapse;width:100%}
++th,td{padding:8px 12px;border-bottom:1px solid #c9c6bd;text-align:left}
++.ok{color:#2f7d4f}
++.ok::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f7d4f;margin-right:6px}
++.due{color:#8a5a00}
++.late{color:#a8173f;border:1px solid #a8173f;border-radius:4px;padding:0 6px}
++.saved{color:#5d6470}
++.wash{background:#f6e9e5;padding:2px 8px;border-radius:4px}
++.note{color:#c43d1c}
++.band{background:#c43d1c;color:#fff;padding:48px 24px}
++.band h2{margin:0}
++</style></head><body>
++<main>
++<h1>Kiln shelf rentals</h1>
++<p>Each shelf holds one load for one firing. Pick up your pots within three days of the firing.</p>
++<p><button class="btn" type="button" id="rent">Rent a shelf</button></p>
++<!-- not counted: states in status colors and a neutral mark; the crimson of "Overdue" is 21° from the vermilion action -->
++<table><thead><tr><th>Shelf</th><th>Firing</th><th>State</th></tr></thead><tbody>
++<tr><td>Shelf 1</td><td>Tue 3</td><td><span class="ok">Booked</span></td></tr>
++<tr><td>Shelf 2</td><td>Wed 4</td><td><span class="due">Due</span></td></tr>
++<tr><td>Shelf 3</td><td>Thu 5</td><td><span class="late">Overdue</span></td></tr>
++<tr><td>Shelf 4</td><td>Fri 6</td><td><span class="saved">✓ Saved</span></td></tr>
++</tbody></table>
++<!-- not counted: pale washes toward the action hue read as tinted surfaces -->
++<p>Glazes this month: <span class="wash">Celadon</span> <span class="wash">Tenmoku</span> <span class="wash">Shino</span></p>
++<!-- the one mark outside: alone it is not enough -->
++<p class="note">Friday shelves fill first.</p>
++<!-- not counted: a large drawing in the action color -->
++<svg width="640" height="120" viewBox="0 0 640 120" aria-hidden="true"><path d="M0 100 Q160 0 320 60 T640 40" fill="none" stroke="#c43d1c" stroke-width="3"/></svg>
++</main>
++<!-- not counted: a band of 40,000px² or more in the action color -->
++<section class="band"><h2>Open studio on Saturday</h2><p>Bring a pot; we fire the best ones for free.</p></section>
++</body></html>
+diff --git a/eval/fixtures/action-color-selection.html b/eval/fixtures/action-color-selection.html
+new file mode 100644
+index 0000000..9237e23
+--- /dev/null
++++ b/eval/fixtures/action-color-selection.html
+@@ -0,0 +1,51 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color selection fixture</title>
++<meta name="description" content="R30 fixture: the action color on the current selection is not counted">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
++nav ul{display:flex;gap:16px;list-style:none;margin:0;padding:16px 24px;border-bottom:1px solid #c9c6bd}
++nav .here{border-bottom:3px solid #1f4fd1}
++main{max-width:960px;margin:0 auto;padding:24px}
++.btn{background:#1f4fd1;color:#fff;border:0;border-radius:6px;padding:12px 20px;font:inherit}
++.steps{display:flex;gap:24px;list-style:none;padding:0}
++.steps li::before{content:"";display:inline-block;width:12px;height:12px;margin-right:8px;border-radius:50%;border:1px solid #5d6470}
++.steps [aria-current="step"]{color:#1f4fd1}
++.steps [aria-current="step"]::before{background:#1f4fd1;border-color:#1f4fd1}
++table{border-collapse:collapse;width:100%}
++td{padding:8px 12px;border-bottom:1px solid #c9c6bd}
++tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 #1f4fd1}
++.sr{position:absolute;opacity:0;width:1px;height:1px;margin:0}
++.box{display:inline-block;width:18px;height:18px;border:2px solid #5d6470;border-radius:4px;vertical-align:middle}
++.sr:checked + .box{background:#1f4fd1;border-color:#1f4fd1}
++fieldset{border:0;padding:0;margin:16px 0}
++.opt{border:2px solid #c9c6bd;border-radius:8px;padding:12px;margin:8px 0}
++.opt:has(:checked){border-color:#1f4fd1}
++[role=tablist]{position:relative;display:flex;gap:8px;margin:16px 0}
++[role=tab]{background:transparent;border:0;font:inherit;padding:8px 12px}
++.bar{position:absolute;left:0;bottom:-4px;width:80px;height:3px;background:#1f4fd1}
++.note{color:#1f4fd1}
++</style></head><body>
++<!-- not counted: the current section in a nav, marked by class only -->
++<nav aria-label="Sections"><ul><li class="here">Rooms</li><li><a href="#gear">Gear</a></li><li><a href="#help">Help</a></li></ul></nav>
++<main>
++<h1>Book a rehearsal room</h1>
++<p>Pick a room, a time and a length; you pay at the desk when you arrive. Rooms open at 9:00 and close at 23:00, and you can move a booking until the day before.</p>
++<p><button class="btn" type="button" id="next">Continue to payment</button></p>
++<!-- not counted: the current step (aria-current="step") -->
++<ol class="steps"><li>Room</li><li aria-current="step">Time</li><li>Pay</li></ol>
++<!-- not counted: a selected row (aria-selected) -->
++<table role="grid" aria-label="Free slots"><tbody>
++<tr aria-selected="false"><td>Studio A</td><td>18:00 to 20:00</td></tr>
++<tr aria-selected="true"><td>Studio B</td><td>20:00 to 22:00</td></tr>
++</tbody></table>
++<!-- not counted: the box a checked input draws, and an option card that wraps one checked input -->
++<p><input class="sr" type="checkbox" id="remind" checked><span class="box" aria-hidden="true"></span> <label for="remind">Text me an hour before</label></p>
++<fieldset><legend>Length</legend>
++<div class="opt"><input type="radio" name="len" id="l2" checked> <label for="l2">Two hours</label></div>
++<div class="opt"><input type="radio" name="len" id="l3"> <label for="l3">Three hours</label></div>
++</fieldset>
++<!-- not counted: the indicator bar of a tab list -->
++<div role="tablist" aria-label="View"><button role="tab" aria-selected="true" type="button">Week</button><button role="tab" aria-selected="false" type="button">Month</button><span class="bar" aria-hidden="true"></span></div>
++<!-- the one mark outside the selection: alone it is not enough -->
++<p class="note">Studio B is quiet after 21:00.</p>
++</main></body></html>
+diff --git a/eval/fixtures/action-color.html b/eval/fixtures/action-color.html
+new file mode 100644
+index 0000000..83e68af
+--- /dev/null
++++ b/eval/fixtures/action-color.html
+@@ -0,0 +1,38 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color fixture</title>
++<meta name="description" content="R30 fixture: the action color also marks states nobody presses">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
++main{max-width:960px;margin:0 auto;padding:24px}
++.btn{display:inline-block;background:#1f4fd1;color:#fff;padding:12px 20px;border:0;border-radius:6px;font:inherit}
++table{border-collapse:collapse;width:100%;margin:24px 0}
++th,td{padding:8px 12px;border-bottom:1px solid #c9c6bd;text-align:left}
++.today{box-shadow:inset 0 -3px 0 #1f4fd1}
++.booked{color:#1f4fd1;border:1px solid #1f4fd1;border-radius:4px;padding:0 6px}
++.saved{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1f4fd1;margin-right:8px}
++.chip{background:#b3c4f5;padding:2px 8px;border-radius:4px}
++.done{color:#163a9c}
++.line{position:relative;height:40px;border-bottom:1px solid #c9c6bd}
++.line::after{content:"";position:absolute;left:40%;top:0;width:2px;height:40px;background:#1f4fd1}
++</style></head><body>
++<main>
++<h1>Rehearsal rooms this week</h1>
++<p>Rooms open at 9:00 and close at 23:00. A booking holds the room for two hours, and you can move it until the day before.</p>
++<p><button class="btn" type="button" id="book">Book a room</button></p>
++<!-- flagged: today's column (aria-current="date" is a state, not the selection) and a booked state repeated down one table -->
++<table><thead><tr><th>Room</th><th>Mon 2</th><th aria-current="date" class="today">Wed 4</th><th>Thu 5</th></tr></thead>
++<tbody>
++<tr><th>Studio A</th><td><span class="booked">Booked</span></td><td>Open</td><td>Open</td></tr>
++<tr><th>Studio B</th><td>Open</td><td><span class="booked">Booked</span></td><td>Open</td></tr>
++<tr><th>Drum room</th><td>Open</td><td>Open</td><td><span class="booked">Booked</span></td></tr>
++</tbody></table>
++<!-- flagged: a saved dot, a tint of the action color on a chip, and a darker shade on a confirmed state -->
++<section aria-labelledby="mine"><h2 id="mine">Your bookings</h2>
++<ul>
++<li><span class="saved" aria-hidden="true"></span>Studio A, Monday 18:00 <span class="chip">Deposit paid</span></li>
++<li>Drum room, Thursday 20:00 <span class="done">Confirmed</span></li>
++</ul></section>
++<!-- flagged: the now marker drawn by ::after, and an SVG status dot -->
++<figure><div class="line" role="img" aria-label="Now, 14:10"></div><figcaption>Today from 9:00 to 23:00; the line marks now.</figcaption></figure>
++<p><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="#1f4fd1"/></svg> Studio B has a waiting list on Friday.</p>
++</main></body></html>
+diff --git a/scripts/test.mjs b/scripts/test.mjs
+index 933df6a..d32a91c 100644
+--- a/scripts/test.mjs
++++ b/scripts/test.mjs
+@@ -148,6 +148,21 @@ else {
+     check(`R29 ignores ${what}`, r29.length === 0, JSON.stringify(r29));
+   }
+   check('R29 is measured only when 1920 is rendered', wide('wide-centred.html', '1280').length === 0);
++  // R30: the action color on things nobody presses. Each negative holds one stray mark, so any exempt item that slipped in would fire.
++  const r30 = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280').out.findings.filter((x) => x.id === 'R30');
++  const ac = r30('action-color.html');
++  check('render flags R30 when the action color marks today, booked, saved, paid, confirmed, now and a status dot', ac.length === 1 && /#book/.test(ac[0].where) && /#1F4FD1/.test(ac[0].message) && /also marks 9 things nobody presses, in 4 components/.test(ac[0].message) && ['th.today "Wed 4"', 'span.booked "Booked" ×3', 'span.saved', 'span.chip "Deposit paid"', 'span.done "Confirmed"', 'div.line', 'svg'].every((s) => ac[0].message.includes(s)), JSON.stringify(ac));
++  const acl = r30('action-color-light.html');
++  check('R30 takes a yellow action that stands out by hue, not the filled toggle above it', acl.length === 1 && /#plan/.test(acl[0].where) && /#FFD400/.test(acl[0].message) && /also marks 2 things/.test(acl[0].message) && !/span\.on/.test(acl[0].message), JSON.stringify(acl));
++  for (const [f, what] of [
++    ['action-color-selection.html', 'the current selection: a nav item, the current step, a selected row, a checked box and option card, a tab bar'],
++    ['action-color-brand.html', 'the brand mark and wordmark, links, an outlined button and a focus ring'],
++    ['action-color-neutral.html', 'states in status colors or a neutral mark, a crimson 21° away, pale washes, a large drawing and a band'],
++    ['action-color-ink.html', 'an action filled with the ink the text is set in'],
++  ]) {
++    const r = r30(f);
++    check(`R30 ignores ${what}`, r.length === 0, JSON.stringify(r));
++  }
+   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
+   const snap = path.join(ROOT, '.design-nexus/test-before.json');
+diff --git a/skills/design-nexus/references/checks.md b/skills/design-nexus/references/checks.md
+index d6f4ccc..7f19804 100644
+--- a/skills/design-nexus/references/checks.md
++++ b/skills/design-nexus/references/checks.md
+@@ -54,6 +54,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
+ | R25 | At 1280 or 768, the first enabled filled action (a button or link with a solid fill that stands out from its surface) starts below the first screen (900px) | render |
+ | R29 | At 1920 the 1280 arrangement is unchanged: it sits centred (content at most 1.2× its 1280 width, 200px or more of empty margin on each side) or its tracks merely stretch (1.3× or wider, reaching within 200px of an edge). Not counted when 1920 sets a block beside another (a side column, one more column of cards, a table column), shows text 1280 does not, widens the main figure 1.15× or more, or sets body type 1.08× larger. Measured only when both 1280 and 1920 are rendered | render |
++| R30 | At 1280 the action color also marks a state or decoration: two or more things nobody presses (a done, booked, saved, on, due or today mark, a data mark, an ornament) take the fill of the first filled action that has a hue, or a shade or tint of it, as text, fill, border, ring, underline, `::before`/`::after` or SVG paint. Not counted: controls and links, the brand mark, focus rings, the current selection (`aria-current` other than a date or time, `aria-selected`, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more (a band, a surface, the signature's ground). Not measured when the action color is the page's ink (a quarter or more of the text outside controls) | render |
+ 
+ ## Finish
+ 
+diff --git a/skills/design-nexus/references/craft.md b/skills/design-nexus/references/craft.md
+index 46e95e0..4848fcc 100644
+--- a/skills/design-nexus/references/craft.md
++++ b/skills/design-nexus/references/craft.md
+@@ -17,7 +17,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
+ - Never fake bold or italic; load the weights you use. Use `font-display: swap`.
+ 
+ ## Color
+-- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach.
++- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach; a status mark never borrows the action color, which stays on what is pressed and the current selection (R30).
+ - Neutrals carry 80–90% of the surface. Accent is rare enough to mean something.
+ - Tint neutrals slightly toward the accent hue rather than using pure gray.
+ - Status colors (success, warning, danger) are reserved for status.
+diff --git a/skills/design-nexus/references/direction.md b/skills/design-nexus/references/direction.md
+index 90ef430..561a969 100644
+--- a/skills/design-nexus/references/direction.md
++++ b/skills/design-nexus/references/direction.md
+@@ -56,7 +56,7 @@ Steering away from a named look tends to land on its nearest neighbor: cool pape
+ 
+ Sourcing a color from the subject is necessary, not sufficient: every subject contains something warm (lamp light, wood, clay, paper, signage, warning tape), so "sourced" picks still pile up on one amber-to-orange accent and one familiar display face. Decide by comparison, not by first association:
+ 
+-- **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. Choose the one that carries meaning here (what the user acts on, what the subject owns, what the status means), and write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
++- **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. Choose the one that carries meaning here; it may be the signature's hue. It marks what the user presses and the current selection, never a state: done, approved, booked, on, saved, or due take a status color or a neutral mark. Write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
+ - **Display face**: name three candidates from different type genres (axis table above) and choose by what the subject's own lettering looks like (its signage, labels, documents, screens), not by legibility alone; legibility is the body face's job.
+ 
+ If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, ground hue, type genre, and surface.
+diff --git a/skills/design-nexus/scripts/render-check.mjs b/skills/design-nexus/scripts/render-check.mjs
+index 55f896a..588746f 100755
+--- a/skills/design-nexus/scripts/render-check.mjs
++++ b/skills/design-nexus/scripts/render-check.mjs
+@@ -174,7 +174,7 @@ function measure(minTap) {
+     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
+   };
+ 
+-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
++  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, filled: [], cjkTight: [], texts: [], look: null };
+   const vw = document.documentElement.clientWidth;
+   if (document.documentElement.scrollWidth > vw + 1) {
+     const culprits = [...document.querySelectorAll('body *')]
+@@ -364,20 +364,30 @@ function measure(minTap) {
+   }
+   // R25: the strongest-looking action should be on the first screen. Find the first enabled control with a solid fill
+   // that stands out (2:1) from what is behind it; skip links and other off-screen helpers are ignored.
++  // The same finder hands R30 the solid fills top to bottom, with what is behind each, so that R30 can also take a fill
++  // that stands out by hue rather than by lightness (a yellow button on white paper).
+   if (vw >= 768) {
+     const fill = (el) => { const c = parse(getComputedStyle(el).backgroundColor); return c && c.a >= 0.6 ? c : null; };
+     const behind = (el) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = fill(e); if (c) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
+     let first = null;
++    const filled = [];
+     for (const el of document.querySelectorAll('a[href], button, [role="button"], input[type="submit"]')) {
+       if (!visible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+       const r = el.getBoundingClientRect();
+       const top = r.top + scrollY;
+       if (r.width < 40 || r.height < 24 || top < 0 || r.right <= 0 || r.left >= vw) continue;
+       const c = fill(el);
+-      if (!c || ratioOf(c, behind(el)) < 2) continue;
+-      if (!first || top < first.top) first = { top: Math.round(top), text: (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30), sel: sel(el) };
++      if (!c) continue;
++      const b = behind(el);
++      const strong = ratioOf(c, b) >= 2;
++      const text = (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30);
++      if (strong && (!first || top < first.top)) first = { top: Math.round(top), text, sel: sel(el) };
++      // A toggle, tab or current item shows its state or the selection with its fill; R30 looks past it to an action.
++      const toggle = el.matches('[aria-pressed], [aria-checked], [aria-selected], [aria-current]:not([aria-current="false"]), [role=switch], [role=tab], [role=checkbox], [role=radio], [role=option]');
++      filled.push({ top, text, sel: sel(el), rgb: [c.r, c.g, c.b].map(Math.round), behind: [b.r, b.g, b.b].map(Math.round), strong, toggle });
+     }
+     if (first && first.top > innerHeight) out.fold = first;
++    out.filled = filled.sort((a, b) => a.top - b.top).slice(0, 40).map((f) => ({ ...f, top: Math.round(f.top) }));
+   }
+   // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
+   for (const table of document.querySelectorAll('table')) {
+@@ -619,6 +629,204 @@ function overlaps() {
+   return out;
+ }
+ 
++// R30: the action color on things nobody presses. Runs in the page at rest, before any hover or focus. The action color
++// is the fill of the first filled action R25 finds that has a hue; a neutral fill (ink, white, grey) is shared with text
++// by design and is not checked. A mark is an element outside every control whose text, fill, border, ring, underline,
++// ::before/::after or SVG paint is that color: a state, a data mark, or decoration. Not counted: controls and what they
++// hold (links among them), the brand mark, focus rings, the current selection (aria-current other than a date or time,
++// aria-selected, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more
++// (a band, a surface, the signature's ground; counted marks are dots, badges, seals and markers of a few thousand px²).
++// Returns the marks with the component each sits in; Node fires at two marks.
++function actionMarks(filled) {
++  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
++  const parse = (c) => {
++    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
++    const m = c.match(/^rgba?\(([^)]+)\)$/);
++    if (m) {
++      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
++      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
++    }
++    cv.clearRect(0, 0, 1, 1);
++    cv.fillStyle = '#000'; cv.fillStyle = c;
++    cv.fillRect(0, 0, 1, 1);
++    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
++    return { r, g, b, a: a / 255 };
++  };
++  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
++  const seen = new Map();
++  const bgOf = (el) => {
++    if (seen.has(el)) return seen.get(el);
++    const layers = [];
++    for (let e = el; e; e = e.parentElement) {
++      const c = parse(getComputedStyle(e).backgroundColor);
++      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
++    }
++    let base = { r: 255, g: 255, b: 255, a: 1 };
++    for (const c of layers.reverse()) base = blend(c, base);
++    seen.set(el, base);
++    return base;
++  };
++  // A paint as it shows over what is behind it; a transparent one shows nothing of its own.
++  const over = (c, bg) => (c.a > 0 ? blend(c, bg) : null);
++  // OKLab, so that distance and hue follow what the eye sees.
++  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
++  const lab = (c) => {
++    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
++    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
++    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
++    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
++    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
++    return { L, a, b, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180) / Math.PI };
++  };
++  const hueGap = (x, y) => { const d = Math.abs(x.h - y.h) % 360; return d > 180 ? 360 - d : d; };
++  const rgbOf = (v) => ({ r: v[0], g: v[1], b: v[2], a: 1 });
++  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
++  // The first filled action (not a toggle, tab or current item) with a hue (chroma 0.05 or more) that stands out from what
++  // is behind it: 2:1 in lightness, as R25 asks, or by color alone (ΔE 0.15 or more in OKLab).
++  const action = filled.find((f) => { const c = lab(rgbOf(f.rgb)); return !f.toggle && c.C >= 0.05 && (f.strong || dist(c, lab(rgbOf(f.behind))) >= 0.15); });
++  if (!action) return null;
++  const A = lab(rgbOf(action.rgb));
++  // Near the action color: the same color (ΔE ≤ 0.04: rounding, a slight alpha); a shade of it (hue within 12°, at least
++  // 60% of its chroma, ΔE ≤ 0.12: a pressed or text variant); or, for a fill, a tint that still reads as it (lighter, hue
++  // within 15°, at least 30% of its chroma and 0.04: a badge or chip). A paler wash reads as a tinted surface, and a status
++  // red 20° away is another color.
++  const near = (c, tint) => {
++    if (!c || c.a <= 0) return false;
++    const P = lab(c);
++    const d = dist(P, A);
++    if (d <= 0.04) return true;
++    if (P.C >= 0.6 * A.C && hueGap(P, A) <= 12 && d <= 0.12) return true;
++    return !!tint && P.L > A.L && P.C >= Math.max(0.04, 0.3 * A.C) && hueGap(P, A) <= 15;
++  };
++  const LARGE = 40000;
++  const CONTROL = 'a[href], button, input, select, textarea, label, summary, [contenteditable]:not([contenteditable="false"]), [role=button], [role=link], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=slider], [role=spinbutton], [role=combobox], [role=treeitem]';
++  // A focusable element is a control unless it is a scroll box or a region that holds content.
++  const holder = /^(main|section|article|aside|nav|header|footer|table|figure|pre|dialog|form|ul|ol|dl)$/i;
++  const region = /^(region|group|tabpanel|dialog|alertdialog|document|article|list|table|grid|feed|log|status|img|figure|main|complementary)$/;
++  const control = (el) => {
++    if (el.closest(CONTROL)) return true;
++    for (let e = el.closest('[tabindex]'); e; e = e.parentElement && e.parentElement.closest('[tabindex]')) {
++      if (e.tabIndex < 0 || holder.test(e.tagName) || region.test(e.getAttribute('role') || '')) continue;
++      const cs = getComputedStyle(e);
++      if (!/auto|scroll/.test(cs.overflowX + cs.overflowY)) return true;
++    }
++    return false;
++  };
++  const SELECTED = '[aria-current]:not([aria-current="false"]):not([aria-current="date"]):not([aria-current="time"]), [aria-selected="true"], nav, [role=tablist], [role=radiogroup], [role=listbox], [role=menubar], [role=menu], [role=toolbar], [role=tree]';
++  const BRAND = '[class*="logo" i], [class*="brand" i], [class*="wordmark" i], [id*="logo" i], [id*="brand" i], [aria-label*="logo" i]';
++  // The box a checked input draws beside it, or a card that wraps one checked input.
++  const checkedBox = (el) => {
++    for (let e = el, k = 0; e && e !== document.body && k < 3; e = e.parentElement, k++) {
++      for (let s = e.previousElementSibling; s; s = s.previousElementSibling) if (s.matches('input:checked')) return true;
++      const fields = e.querySelectorAll('input, select, textarea');
++      if (fields.length === 1 && fields[0].matches(':checked')) return true;
++    }
++    return false;
++  };
++  // A color as computed styles write it (rgb() for most, oklch() or color() when the author used them).
++  const COLOR = /((?:rgba?|hsla?|color|oklch|oklab|lab|lch)\([^)]*\)|#[0-9a-f]{3,8}\b)/i;
++  // Hard rings and bars (blur of 2px or less, with a spread or an offset); soft elevation shadows are not marks.
++  const rings = (shadow, back) => {
++    if (!shadow || shadow === 'none') return [];
++    const out = [];
++    for (const s of shadow.split(/,(?![^(]*\))/)) {
++      const col = s.match(COLOR);
++      if (!col) continue;
++      const [x = 0, y = 0, blur = 0, spread = 0] = (s.replace(col[0], '').match(/-?[\d.]+px/g) || []).map(parseFloat);
++      if (blur <= 2 && (spread >= 1 || Math.abs(x) >= 1 || Math.abs(y) >= 1)) out.push(over(parse(col[0]), back));
++    }
++    return out;
++  };
++  const gradient = (img) => (img && img !== 'none' ? [...img.matchAll(new RegExp(COLOR.source, 'gi'))].map((m) => parse(m[1])) : []);
++  const box = (cs, back, size, ring) => {
++    const k = [];
++    const fill = parse(cs.backgroundColor);
++    if (size < LARGE && (near(over(fill, back), true) || gradient(cs.backgroundImage).some((c) => c.a > 0.5 && near(c, true)))) k.push('fill');
++    for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
++      if (parseFloat(cs[`border${side}Width`]) >= 1 && !/none|hidden/.test(cs[`border${side}Style`]) && near(over(parse(cs[`border${side}Color`]), back))) { k.push('border'); break; }
++    }
++    if (ring && cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 && near(over(parse(cs.outlineColor), back))) k.push('outline');
++    if (ring && rings(cs.boxShadow, back).some((c) => near(c))) k.push('ring');
++    return k;
++  };
++  const sel = (el) => {
++    if (el.id) return `#${el.id}`;
++    const cls = [...el.classList].slice(0, 2).join('.');
++    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
++  };
++  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('').replace(/\s+/g, ' ').trim();
++  const vw = document.documentElement.clientWidth;
++  const shown = (el) => {
++    const r = el.getBoundingClientRect();
++    if (r.width + r.height < 2 || r.right <= 0 || r.left >= vw) return null;
++    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return null;
++    return r;
++  };
++  const COMP = 'section, article, aside, header, footer, nav, form, fieldset, dialog, figure, table, ul, ol, dl, details, [role=region], [role=group], [role=list], [role=table], [role=grid], [role=dialog], [role=status], [role=complementary]';
++  const compOf = (el) => {
++    const c = el.parentElement && el.parentElement.closest(COMP);
++    if (c) return c;
++    let e = el;
++    while (e.parentElement && e.parentElement !== document.body && e.parentElement.tagName !== 'MAIN') e = e.parentElement;
++    return e;
++  };
++  const found = new Map(); // element (an SVG counts as one) -> paints that matched
++  const viaText = new Set();
++  let chars = 0, inked = 0;
++  for (const el of document.body.querySelectorAll('*')) {
++    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|BR|WBR)$/i.test(el.tagName)) continue;
++    let svg = el instanceof SVGElement ? (el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement ? null : el.ownerSVGElement) : null;
++    while (svg && svg.ownerSVGElement) svg = svg.ownerSVGElement;
++    if (el instanceof SVGElement && el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement) continue; // the root is judged by its shapes
++    const r = shown(el);
++    if (!r) continue;
++    const cs = getComputedStyle(el);
++    const text = svg ? '' : ownText(el);
++    const isControl = control(el);
++    if (text && !isControl) {
++      chars += text.length;
++      if (near(over(parse(cs.color), bgOf(el)))) inked += text.length;
++    }
++    if (isControl) continue;
++    let k = [];
++    if (svg) {
++      const sr = svg.getBoundingClientRect();
++      if (sr.width * sr.height >= LARGE) continue;
++      for (const p of ['fill', 'stroke']) if (!/none|url\(/.test(cs[p]) && near(over(parse(cs[p]), bgOf(svg)), p === 'fill')) k.push(p);
++    } else {
++      const back = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
++      const focused = el.matches(':focus-within');
++      if (text && near(over(parse(cs.color), bgOf(el)))) k.push('text');
++      if (text && cs.textDecorationLine !== 'none' && near(over(parse(cs.textDecorationColor), bgOf(el)))) k.push('underline');
++      k.push(...box(cs, back, r.width * r.height, !focused));
++      for (const pe of ['::before', '::after']) {
++        const ps = getComputedStyle(el, pe);
++        if (!ps.content || /^(none|normal)$/.test(ps.content) || ps.display === 'none' || ps.visibility === 'hidden' || +ps.opacity === 0) continue;
++        const size = (parseFloat(ps.width) || 0) * (parseFloat(ps.height) || 0);
++        const pk = box(ps, bgOf(el), size, !focused);
++        if (/^(["']).+\1$|^(counters?|attr)\(/.test(ps.content) && near(over(parse(ps.color), bgOf(el)))) pk.push('text');
++        if (pk.length) k.push(pe);
++      }
++    }
++    if (!k.length) continue;
++    const at = svg || el;
++    if (at.closest(SELECTED) || at.closest(BRAND) || checkedBox(at)) continue;
++    // Text that only inherits the color of a marked parent is the same mark.
++    if (!svg && k.every((x) => x === 'text') && el.parentElement && viaText.has(el.parentElement)) { viaText.add(el); continue; }
++    if (k.includes('text')) viaText.add(el);
++    found.set(at, [...new Set([...(found.get(at) || []), ...k])]);
++  }
++  const comps = new Map();
++  const marks = [...found].map(([el, paints]) => {
++    const c = compOf(el);
++    if (!comps.has(c)) comps.set(c, comps.size);
++    const label = (ownText(el) || el.getAttribute('aria-label') || (el.parentElement ? el.parentElement.innerText || '' : '')).replace(/\s+/g, ' ').trim().slice(0, 24);
++    return { sel: sel(el), text: label, paints, comp: comps.get(c), in: sel(c) };
++  });
++  const hex = '#' + action.rgb.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
++  return { action: { sel: action.sel, text: action.text, hex }, marks, chars, inked };
++}
++
+ // R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
+ // The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
+ // media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
+@@ -731,6 +939,18 @@ try {
+     if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
+     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
+     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
++    // R30: the action color also marks two or more things nobody presses (one stray mark is not enough; a state repeated
++    // down one table is). Skipped when the action color is the page's ink: a quarter or more of the text outside controls.
++    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
++      const ac = await page.evaluate(actionMarks, m.filled || []);
++      const comps = ac ? new Set(ac.marks.map((x) => x.comp)).size : 0;
++      if (ac && ac.inked < ac.chars * 0.25 && ac.marks.length >= 2) {
++        const groups = new Map();
++        for (const x of ac.marks) { const g = groups.get(x.sel) || { ...x, n: 0 }; g.n++; groups.set(x.sel, g); }
++        const list = [...groups.values()].slice(0, 8).map((g) => `${g.sel}${g.text ? ` "${g.text}"` : ''}${g.n > 1 ? ` ×${g.n}` : ''}`).join(', ');
++        add('R30', `@${width}px ${ac.action.sel}`, `the action color ${ac.action.hex} of "${ac.action.text}" also marks ${ac.marks.length} things nobody presses, in ${comps} component${comps === 1 ? '' : 's'}: ${list}${groups.size > 8 ? ', …' : ''}; the action color marks what is pressed and the current selection: give states a status color or a neutral mark (a current item marked with aria-current or aria-selected is not counted)`);
++      }
++    }
+     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
+     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
+     if (width === 1280 && m.fine.length >= 3) {
