@@ -1050,6 +1050,114 @@ function actionMarks(filled) {
   return { action: { sel: action.sel, text: action.text, hex }, marks, chars, inked };
 }
 
+// R33: the product default, white cards on a grey page. Runs in the page at rest. The ground is the background behind
+// main (behind body when there is no main); background images are not read, so a gradient that paints a sidebar strip
+// leaves the color under it. A panel is a box with a fill of its own that sits straight on that ground (what is behind it
+// is the ground's color) and is lighter than it, on the first screen (the top 900px of the page). Node counts the panels
+// with an edge (a radius of 2px or more, a shadow, or a border on three or more sides) that show 40,000px² or more. A
+// panel inside another counts once, as the outer one. App chrome is marked and not counted: nav, a banner or contentinfo,
+// a header or footer outside main and its sections, a fixed or sticky bar (as wide as most of the screen, or at most
+// 160px tall), a bar across the top, and a left sidebar (starting in the left quarter, at most 360px wide, and half the
+// screen tall, an aside, or holding a nav). Media and form controls are not panels. Also returns the left sidebar's
+// navigation, if there is one, so that a single panel beside it counts.
+function cardGround() {
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const parse = (c) => {
+    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
+  };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+  const memo = new Map();
+  const style = (el) => { let c = memo.get(el); if (!c) memo.set(el, (c = getComputedStyle(el))); return c; };
+  const seen = new Map();
+  const bgOf = (el) => {
+    if (seen.has(el)) return seen.get(el);
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const c = parse(style(e).backgroundColor);
+      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const c of layers.reverse()) base = blend(c, base);
+    seen.set(el, base);
+    return base;
+  };
+  // OKLab, so that lightness and chroma follow what the eye sees.
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lab = (c) => {
+    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return { L, a, b, C: Math.hypot(a, b) };
+  };
+  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
+  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const vw = document.documentElement.clientWidth, vh = innerHeight, sy = scrollY;
+  const main = [...document.querySelectorAll('main, [role=main]')].find((m) => m.getClientRects().length > 0);
+  const ground = bgOf(main || document.body);
+  const G = lab(ground);
+  const out = { ground: hex(ground), L: +G.L.toFixed(3), C: +G.C.toFixed(3), panels: [] };
+  const NOT = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|IMG|PICTURE|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|INPUT|SELECT|TEXTAREA|BUTTON|OPTION|METER|PROGRESS)$/;
+  const bar = (r) => r.width >= vw * 0.6 || r.height <= 160;
+  const found = [];
+  for (const el of document.body.querySelectorAll('*')) {
+    if (NOT.test(el.tagName) || el instanceof SVGElement) continue;
+    const r = el.getBoundingClientRect();
+    const top = r.top + sy;
+    const shown = Math.max(0, Math.min(vw, r.right) - Math.max(0, r.left)) * Math.max(0, Math.min(vh, top + r.height) - Math.max(0, top));
+    if (shown < 10000) continue;
+    const cs = style(el);
+    if (cs.display === 'inline' || (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))) continue;
+    const own = parse(cs.backgroundColor);
+    if (own.a <= 0) continue;
+    const behind = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
+    if (dist(lab(behind), G) > 0.02) continue;
+    const fill = blend(own, behind), F = lab(fill);
+    if (F.L <= G.L) continue;
+    const sides = ['Top', 'Right', 'Bottom', 'Left'].filter((s) => parseFloat(cs[`border${s}Width`]) >= 1 && !/none|hidden/.test(cs[`border${s}Style`])).length;
+    const radius = Math.max(...['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map((k) => parseFloat(cs[`border${k}Radius`]) || 0));
+    let chrome = null;
+    if (el.closest('nav, [role=navigation], [role=banner], [role=contentinfo]')) chrome = 'nav';
+    else {
+      const hf = el.closest('header, footer');
+      if (hf && !(hf.parentElement && hf.parentElement.closest('main, [role=main], article, section'))) chrome = hf.tagName.toLowerCase();
+    }
+    for (let a = el; !chrome && a && a !== document.body; a = a.parentElement) {
+      if (/^(fixed|sticky)$/.test(style(a).position) && bar(a.getBoundingClientRect())) chrome = 'fixed bar';
+    }
+    if (!chrome && top <= 1 && r.width >= vw * 0.9 && r.height <= 160) chrome = 'top bar';
+    if (!chrome && r.left < vw * 0.25 && r.width <= 360 && (r.height >= vh * 0.5 || el.matches('aside') || el.querySelector('nav, [role=navigation]'))) chrome = 'sidebar';
+    found.push({ el, sel: sel(el), x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), shown: Math.round(shown), fill: hex(fill), dL: +(F.L - G.L).toFixed(3), edge: radius >= 2 || cs.boxShadow !== 'none' || sides >= 3, chrome });
+  }
+  const panels = new Set(found.map((f) => f.el));
+  out.panels = found.filter((f) => { for (let a = f.el.parentElement; a; a = a.parentElement) if (panels.has(a)) return false; return true; }).map(({ el, ...f }) => f);
+  // The left sidebar, if any: navigation on the first screen that starts in the left quarter, at most 360px wide, with
+  // links or buttons stacked in three or more rows. Node lets one panel to the right of it count.
+  for (const n of document.querySelectorAll('nav, [role=navigation]')) {
+    const r = n.getBoundingClientRect();
+    if (!r.width || r.top + sy >= vh || r.left >= vw / 4 || r.width > 360) continue;
+    const rows = new Set([...n.querySelectorAll('a[href], button, [role=link], [role=tab]')].map((a) => a.getBoundingClientRect()).filter((b) => b.width > 0).map((b) => Math.round(b.top / 8)));
+    if (rows.size >= 3 && (!out.sidebar || r.right > out.sidebar.right)) out.sidebar = { sel: sel(n), right: Math.round(r.right) };
+  }
+  return out;
+}
+
 // R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
 // The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
 // media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
@@ -1180,6 +1288,23 @@ try {
         for (const x of ac.marks) { const g = groups.get(x.sel) || { ...x, n: 0 }; g.n++; groups.set(x.sel, g); }
         const list = [...groups.values()].slice(0, 8).map((g) => `${g.sel}${g.text ? ` "${g.text}"` : ''}${g.n > 1 ? ` ×${g.n}` : ''}`).join(', ');
         add('R30', `@${width}px ${ac.action.sel}`, `the action color ${ac.action.hex} of "${ac.action.text}" also marks ${ac.marks.length} things nobody presses, in ${comps} component${comps === 1 ? '' : 's'}: ${list}${groups.size > 8 ? ', …' : ''}; the action color marks what is pressed and the current selection: give states a status color or a neutral mark (a current item marked with aria-current or aria-selected is not counted)`);
+      }
+    }
+    // R33: white cards on a grey page (R04 e). At 1280, on a light near-neutral ground (OKLab lightness 0.9 or more,
+    // chroma 0.025 or less), two or more panels lighter than it (by 0.02 or more) with an edge, each showing 40,000px² or
+    // more of the first screen, or one such panel beside a left sidebar. App chrome is not counted. Not measured on a
+    // mobile surface, whose 1280 view is a fallback.
+    if (width === 1280 && opt.surface !== 'mobile') {
+      const cg = await page.evaluate(cardGround).catch(() => null);
+      const panels = cg ? cg.panels.filter((p) => !p.chrome && p.edge && p.dL >= 0.02 && p.shown >= 40000) : [];
+      const beside = cg && cg.sidebar && panels.length === 1 && panels[0].x >= cg.sidebar.right - 8;
+      if (cg && cg.L >= 0.9 && cg.C <= 0.025 && (panels.length >= 2 || beside)) {
+        const fills = new Map();
+        for (const p of panels) fills.set(p.fill, (fills.get(p.fill) || 0) + 1);
+        const tones = [...fills].map(([f, n]) => `${f}${n > 1 ? ` ×${n}` : ''}`).join(', ');
+        const list = panels.slice(0, 6).map((p) => `${p.sel} ${p.w}×${p.h}`).join(', ') + (panels.length > 6 ? ', …' : '');
+        const what = beside ? `1 panel lighter than the ground (${tones}) on a ${cg.ground} ground beside the left sidebar ${cg.sidebar.sel}` : `${panels.length} panels lighter than the ground (${tones}) on a ${cg.ground} ground`;
+        add('R33', `@${width}px`, `the first screen sets ${what}: ${list}; white cards on a grey page are the product default: build the work area from the subject's own working object, one ground whose rules, bands or plates divide the regions, and keep elevation for what floats (menus, dialogs, a dragged item)`);
       }
     }
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);

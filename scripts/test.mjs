@@ -184,6 +184,22 @@ else {
     const r = r31(f);
     check(`R31 ignores ${what}`, r.length === 0, JSON.stringify(r));
   }
+  // R33: white cards on a grey page, the product default (R04 e). Each negative holds an exempt item that would fire if it slipped in.
+  const r33 = (f, ...more) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', ...more).out.findings.filter((x) => x.id === 'R33');
+  const cg = r33('card-ground.html');
+  check('render flags R33 when white cards sit on a light grey ground, naming the ground, the panel colour and the count, and leaves out the top bar and the sidebar', cg.length === 1 && /sets 5 panels lighter than the ground \(#FFFFFF ×5\) on a #F3F3F1 ground: /.test(cg[0].message) && !/header|aside/.test(cg[0].message), JSON.stringify(cg));
+  const cgs = r33('card-ground-sidebar.html');
+  check('render flags R33 for one white card on a grey ground beside a left sidebar, not counting the fixed save bar', cgs.length === 1 && /sets 1 panel lighter than the ground \(#FFFFFF\) on a #F4F4F4 ground beside the left sidebar nav\.side: section\.card/.test(cgs[0].message), JSON.stringify(cgs));
+  for (const [f, what] of [
+    ['card-ground-ledger.html', 'one ground divided by rules, a band, a flat plate and a stub ruled on one side'],
+    ['card-ground-dark.html', 'lighter cards on a dark ground'],
+    ['card-ground-hero.html', 'a marketing page with one large white hero and a flat band on grey'],
+    ['card-ground-one.html', 'one card on grey with tiles inside it, a shadowed top bar, a fixed save bar and one-row navs'],
+  ]) {
+    const r = r33(f);
+    check(`R33 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
+  check('R33 is not measured on a mobile surface', r33('card-ground.html', '--surface', 'mobile').length === 0);
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');

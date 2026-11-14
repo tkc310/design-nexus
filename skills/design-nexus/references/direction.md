@@ -88,7 +88,7 @@ Two plans that both pass this skill, to show the range. They describe where valu
 
 ## 5. Challenge the plan
 
-For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against R04 (the three default looks) and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
+For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against R04 (the default looks) and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
 
 ## When the brief or DESIGN.md already decides
 

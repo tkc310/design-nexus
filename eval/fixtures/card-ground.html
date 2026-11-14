@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Card ground fixture</title>
+<meta name="description" content="R33 fixture: a dashboard whose work area is white cards on a light grey ground">
+<style>
+body{margin:0;font:15px/1.5 Georgia,serif;background:#f3f3f1;color:#1f2328}
+header{display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.shell{display:grid;grid-template-columns:216px 1fr}
+aside{background:#fff;box-shadow:1px 0 0 #d6d6d1;min-height:844px;padding:16px}
+aside a{display:block;padding:8px 12px;color:#1f2328}
+main{padding:24px;min-width:0}
+h1{margin:0 0 16px;font-size:26px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.card{background:#fff;border:1px solid #e1e1dc;border-radius:8px;padding:20px}
+.kpis .card{height:100px}
+.kpis b{display:block;font-size:30px}
+.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px;border-bottom:1px solid #e1e1dc;text-align:left}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+#inner{background:#fff;border:1px solid #e1e1dc;border-radius:6px;padding:12px;margin-top:12px}
+</style></head><body>
+<header><strong>Clinipay</strong><span>Harbor Street Clinic</span></header>
+<div class="shell">
+<!-- not counted: the white left sidebar and the white top bar are app chrome -->
+<aside><a href="#pay">This month</a><a href="#staff">Staff</a><a href="#time">Time sheets</a><a href="#set">Settings</a></aside>
+<main>
+<h1>November payroll</h1>
+<!-- counted: three KPI cards, the table card and the side card, all white on the grey ground -->
+<div class="kpis">
+<section class="card"><span>Days to cut-off</span><b>6</b></section>
+<section class="card"><span>Requests to approve</span><b>7</b></section>
+<section class="card"><span>Net pay this month</span><b>$84,120</b></section>
+</div>
+<div class="row">
+<section class="card" id="staff-table"><h2>Pay by staff member</h2>
+<table><thead><tr><th>Name</th><th>Role</th><th>Net pay</th></tr></thead><tbody>
+<tr><td>Mia Chen</td><td>Nurse</td><td class="num">$4,210</td></tr>
+<tr><td>Leo Park</td><td>Reception</td><td class="num">$2,980</td></tr>
+<tr><td>Ana Ruiz</td><td>Physio</td><td class="num">$3,640</td></tr>
+<tr><td>Sam Ito</td><td>Nurse</td><td class="num">$4,090</td></tr>
+<tr><td>Eve Lund</td><td>Radiographer</td><td class="num">$3,870</td></tr>
+<tr><td>Kai Moss</td><td>Admin</td><td class="num">$2,760</td></tr>
+<tr><td>Ida Berg</td><td>Nurse</td><td class="num">$4,150</td></tr>
+<tr><td>Noah Vale</td><td>Physio</td><td class="num">$3,560</td></tr>
+</tbody></table></section>
+<!-- not counted twice: a white box inside a white card is part of that card -->
+<section class="card" id="queue"><h2>Waiting for approval</h2><p>Overtime, Oct 30: Mia Chen, 1.5 hours.</p>
+<div id="inner"><p>Late punch, Oct 28: Leo Park, 8:52 to 8:30.</p></div></section>
+</div>
+</main>
+</div>
+</body></html>
