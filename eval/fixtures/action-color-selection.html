@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color selection fixture</title>
+<meta name="description" content="R30 fixture: the action color on the current selection is not counted">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
+nav ul{display:flex;gap:16px;list-style:none;margin:0;padding:16px 24px;border-bottom:1px solid #c9c6bd}
+nav .here{border-bottom:3px solid #1f4fd1}
+main{max-width:960px;margin:0 auto;padding:24px}
+.btn{background:#1f4fd1;color:#fff;border:0;border-radius:6px;padding:12px 20px;font:inherit}
+.steps{display:flex;gap:24px;list-style:none;padding:0}
+.steps li::before{content:"";display:inline-block;width:12px;height:12px;margin-right:8px;border-radius:50%;border:1px solid #5d6470}
+.steps [aria-current="step"]{color:#1f4fd1}
+.steps [aria-current="step"]::before{background:#1f4fd1;border-color:#1f4fd1}
+table{border-collapse:collapse;width:100%}
+td{padding:8px 12px;border-bottom:1px solid #c9c6bd}
+tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 #1f4fd1}
+.sr{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.box{display:inline-block;width:18px;height:18px;border:2px solid #5d6470;border-radius:4px;vertical-align:middle}
+.sr:checked + .box{background:#1f4fd1;border-color:#1f4fd1}
+fieldset{border:0;padding:0;margin:16px 0}
+.opt{border:2px solid #c9c6bd;border-radius:8px;padding:12px;margin:8px 0}
+.opt:has(:checked){border-color:#1f4fd1}
+[role=tablist]{position:relative;display:flex;gap:8px;margin:16px 0}
+[role=tab]{background:transparent;border:0;font:inherit;padding:8px 12px}
+.bar{position:absolute;left:0;bottom:-4px;width:80px;height:3px;background:#1f4fd1}
+.note{color:#1f4fd1}
+</style></head><body>
+<!-- not counted: the current section in a nav, marked by class only -->
+<nav aria-label="Sections"><ul><li class="here">Rooms</li><li><a href="#gear">Gear</a></li><li><a href="#help">Help</a></li></ul></nav>
+<main>
+<h1>Book a rehearsal room</h1>
+<p>Pick a room, a time and a length; you pay at the desk when you arrive. Rooms open at 9:00 and close at 23:00, and you can move a booking until the day before.</p>
+<p><button class="btn" type="button" id="next">Continue to payment</button></p>
+<!-- not counted: the current step (aria-current="step") -->
+<ol class="steps"><li>Room</li><li aria-current="step">Time</li><li>Pay</li></ol>
+<!-- not counted: a selected row (aria-selected) -->
+<table role="grid" aria-label="Free slots"><tbody>
+<tr aria-selected="false"><td>Studio A</td><td>18:00 to 20:00</td></tr>
+<tr aria-selected="true"><td>Studio B</td><td>20:00 to 22:00</td></tr>
+</tbody></table>
+<!-- not counted: the box a checked input draws, and an option card that wraps one checked input -->
+<p><input class="sr" type="checkbox" id="remind" checked><span class="box" aria-hidden="true"></span> <label for="remind">Text me an hour before</label></p>
+<fieldset><legend>Length</legend>
+<div class="opt"><input type="radio" name="len" id="l2" checked> <label for="l2">Two hours</label></div>
+<div class="opt"><input type="radio" name="len" id="l3"> <label for="l3">Three hours</label></div>
+</fieldset>
+<!-- not counted: the indicator bar of a tab list -->
+<div role="tablist" aria-label="View"><button role="tab" aria-selected="true" type="button">Week</button><button role="tab" aria-selected="false" type="button">Month</button><span class="bar" aria-hidden="true"></span></div>
+<!-- the one mark outside the selection: alone it is not enough -->
+<p class="note">Studio B is quiet after 21:00.</p>
+</main></body></html>

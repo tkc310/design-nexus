@@ -174,7 +174,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, filled: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -364,20 +364,30 @@ function measure(minTap) {
   }
   // R25: the strongest-looking action should be on the first screen. Find the first enabled control with a solid fill
   // that stands out (2:1) from what is behind it; skip links and other off-screen helpers are ignored.
+  // The same finder hands R30 the solid fills top to bottom, with what is behind each, so that R30 can also take a fill
+  // that stands out by hue rather than by lightness (a yellow button on white paper).
   if (vw >= 768) {
     const fill = (el) => { const c = parse(getComputedStyle(el).backgroundColor); return c && c.a >= 0.6 ? c : null; };
     const behind = (el) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = fill(e); if (c) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
     let first = null;
+    const filled = [];
     for (const el of document.querySelectorAll('a[href], button, [role="button"], input[type="submit"]')) {
       if (!visible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
       const r = el.getBoundingClientRect();
       const top = r.top + scrollY;
       if (r.width < 40 || r.height < 24 || top < 0 || r.right <= 0 || r.left >= vw) continue;
       const c = fill(el);
-      if (!c || ratioOf(c, behind(el)) < 2) continue;
-      if (!first || top < first.top) first = { top: Math.round(top), text: (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30), sel: sel(el) };
+      if (!c) continue;
+      const b = behind(el);
+      const strong = ratioOf(c, b) >= 2;
+      const text = (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+      if (strong && (!first || top < first.top)) first = { top: Math.round(top), text, sel: sel(el) };
+      // A toggle, tab or current item shows its state or the selection with its fill; R30 looks past it to an action.
+      const toggle = el.matches('[aria-pressed], [aria-checked], [aria-selected], [aria-current]:not([aria-current="false"]), [role=switch], [role=tab], [role=checkbox], [role=radio], [role=option]');
+      filled.push({ top, text, sel: sel(el), rgb: [c.r, c.g, c.b].map(Math.round), behind: [b.r, b.g, b.b].map(Math.round), strong, toggle });
     }
     if (first && first.top > innerHeight) out.fold = first;
+    out.filled = filled.sort((a, b) => a.top - b.top).slice(0, 40).map((f) => ({ ...f, top: Math.round(f.top) }));
   }
   // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
   for (const table of document.querySelectorAll('table')) {
@@ -619,6 +629,204 @@ function overlaps() {
   return out;
 }
 
+// R30: the action color on things nobody presses. Runs in the page at rest, before any hover or focus. The action color
+// is the fill of the first filled action R25 finds that has a hue; a neutral fill (ink, white, grey) is shared with text
+// by design and is not checked. A mark is an element outside every control whose text, fill, border, ring, underline,
+// ::before/::after or SVG paint is that color: a state, a data mark, or decoration. Not counted: controls and what they
+// hold (links among them), the brand mark, focus rings, the current selection (aria-current other than a date or time,
+// aria-selected, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more
+// (a band, a surface, the signature's ground; counted marks are dots, badges, seals and markers of a few thousand px²).
+// Returns the marks with the component each sits in; Node fires at two marks.
+function actionMarks(filled) {
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const parse = (c) => {
+    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
+  };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+  const seen = new Map();
+  const bgOf = (el) => {
+    if (seen.has(el)) return seen.get(el);
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const c = parse(getComputedStyle(e).backgroundColor);
+      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const c of layers.reverse()) base = blend(c, base);
+    seen.set(el, base);
+    return base;
+  };
+  // A paint as it shows over what is behind it; a transparent one shows nothing of its own.
+  const over = (c, bg) => (c.a > 0 ? blend(c, bg) : null);
+  // OKLab, so that distance and hue follow what the eye sees.
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lab = (c) => {
+    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return { L, a, b, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180) / Math.PI };
+  };
+  const hueGap = (x, y) => { const d = Math.abs(x.h - y.h) % 360; return d > 180 ? 360 - d : d; };
+  const rgbOf = (v) => ({ r: v[0], g: v[1], b: v[2], a: 1 });
+  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
+  // The first filled action (not a toggle, tab or current item) with a hue (chroma 0.05 or more) that stands out from what
+  // is behind it: 2:1 in lightness, as R25 asks, or by color alone (ΔE 0.15 or more in OKLab).
+  const action = filled.find((f) => { const c = lab(rgbOf(f.rgb)); return !f.toggle && c.C >= 0.05 && (f.strong || dist(c, lab(rgbOf(f.behind))) >= 0.15); });
+  if (!action) return null;
+  const A = lab(rgbOf(action.rgb));
+  // Near the action color: the same color (ΔE ≤ 0.04: rounding, a slight alpha); a shade of it (hue within 12°, at least
+  // 60% of its chroma, ΔE ≤ 0.12: a pressed or text variant); or, for a fill, a tint that still reads as it (lighter, hue
+  // within 15°, at least 30% of its chroma and 0.04: a badge or chip). A paler wash reads as a tinted surface, and a status
+  // red 20° away is another color.
+  const near = (c, tint) => {
+    if (!c || c.a <= 0) return false;
+    const P = lab(c);
+    const d = dist(P, A);
+    if (d <= 0.04) return true;
+    if (P.C >= 0.6 * A.C && hueGap(P, A) <= 12 && d <= 0.12) return true;
+    return !!tint && P.L > A.L && P.C >= Math.max(0.04, 0.3 * A.C) && hueGap(P, A) <= 15;
+  };
+  const LARGE = 40000;
+  const CONTROL = 'a[href], button, input, select, textarea, label, summary, [contenteditable]:not([contenteditable="false"]), [role=button], [role=link], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=slider], [role=spinbutton], [role=combobox], [role=treeitem]';
+  // A focusable element is a control unless it is a scroll box or a region that holds content.
+  const holder = /^(main|section|article|aside|nav|header|footer|table|figure|pre|dialog|form|ul|ol|dl)$/i;
+  const region = /^(region|group|tabpanel|dialog|alertdialog|document|article|list|table|grid|feed|log|status|img|figure|main|complementary)$/;
+  const control = (el) => {
+    if (el.closest(CONTROL)) return true;
+    for (let e = el.closest('[tabindex]'); e; e = e.parentElement && e.parentElement.closest('[tabindex]')) {
+      if (e.tabIndex < 0 || holder.test(e.tagName) || region.test(e.getAttribute('role') || '')) continue;
+      const cs = getComputedStyle(e);
+      if (!/auto|scroll/.test(cs.overflowX + cs.overflowY)) return true;
+    }
+    return false;
+  };
+  const SELECTED = '[aria-current]:not([aria-current="false"]):not([aria-current="date"]):not([aria-current="time"]), [aria-selected="true"], nav, [role=tablist], [role=radiogroup], [role=listbox], [role=menubar], [role=menu], [role=toolbar], [role=tree]';
+  const BRAND = '[class*="logo" i], [class*="brand" i], [class*="wordmark" i], [id*="logo" i], [id*="brand" i], [aria-label*="logo" i]';
+  // The box a checked input draws beside it, or a card that wraps one checked input.
+  const checkedBox = (el) => {
+    for (let e = el, k = 0; e && e !== document.body && k < 3; e = e.parentElement, k++) {
+      for (let s = e.previousElementSibling; s; s = s.previousElementSibling) if (s.matches('input:checked')) return true;
+      const fields = e.querySelectorAll('input, select, textarea');
+      if (fields.length === 1 && fields[0].matches(':checked')) return true;
+    }
+    return false;
+  };
+  // A color as computed styles write it (rgb() for most, oklch() or color() when the author used them).
+  const COLOR = /((?:rgba?|hsla?|color|oklch|oklab|lab|lch)\([^)]*\)|#[0-9a-f]{3,8}\b)/i;
+  // Hard rings and bars (blur of 2px or less, with a spread or an offset); soft elevation shadows are not marks.
+  const rings = (shadow, back) => {
+    if (!shadow || shadow === 'none') return [];
+    const out = [];
+    for (const s of shadow.split(/,(?![^(]*\))/)) {
+      const col = s.match(COLOR);
+      if (!col) continue;
+      const [x = 0, y = 0, blur = 0, spread = 0] = (s.replace(col[0], '').match(/-?[\d.]+px/g) || []).map(parseFloat);
+      if (blur <= 2 && (spread >= 1 || Math.abs(x) >= 1 || Math.abs(y) >= 1)) out.push(over(parse(col[0]), back));
+    }
+    return out;
+  };
+  const gradient = (img) => (img && img !== 'none' ? [...img.matchAll(new RegExp(COLOR.source, 'gi'))].map((m) => parse(m[1])) : []);
+  const box = (cs, back, size, ring) => {
+    const k = [];
+    const fill = parse(cs.backgroundColor);
+    if (size < LARGE && (near(over(fill, back), true) || gradient(cs.backgroundImage).some((c) => c.a > 0.5 && near(c, true)))) k.push('fill');
+    for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+      if (parseFloat(cs[`border${side}Width`]) >= 1 && !/none|hidden/.test(cs[`border${side}Style`]) && near(over(parse(cs[`border${side}Color`]), back))) { k.push('border'); break; }
+    }
+    if (ring && cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 && near(over(parse(cs.outlineColor), back))) k.push('outline');
+    if (ring && rings(cs.boxShadow, back).some((c) => near(c))) k.push('ring');
+    return k;
+  };
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('').replace(/\s+/g, ' ').trim();
+  const vw = document.documentElement.clientWidth;
+  const shown = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width + r.height < 2 || r.right <= 0 || r.left >= vw) return null;
+    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return null;
+    return r;
+  };
+  const COMP = 'section, article, aside, header, footer, nav, form, fieldset, dialog, figure, table, ul, ol, dl, details, [role=region], [role=group], [role=list], [role=table], [role=grid], [role=dialog], [role=status], [role=complementary]';
+  const compOf = (el) => {
+    const c = el.parentElement && el.parentElement.closest(COMP);
+    if (c) return c;
+    let e = el;
+    while (e.parentElement && e.parentElement !== document.body && e.parentElement.tagName !== 'MAIN') e = e.parentElement;
+    return e;
+  };
+  const found = new Map(); // element (an SVG counts as one) -> paints that matched
+  const viaText = new Set();
+  let chars = 0, inked = 0;
+  for (const el of document.body.querySelectorAll('*')) {
+    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|BR|WBR)$/i.test(el.tagName)) continue;
+    let svg = el instanceof SVGElement ? (el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement ? null : el.ownerSVGElement) : null;
+    while (svg && svg.ownerSVGElement) svg = svg.ownerSVGElement;
+    if (el instanceof SVGElement && el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement) continue; // the root is judged by its shapes
+    const r = shown(el);
+    if (!r) continue;
+    const cs = getComputedStyle(el);
+    const text = svg ? '' : ownText(el);
+    const isControl = control(el);
+    if (text && !isControl) {
+      chars += text.length;
+      if (near(over(parse(cs.color), bgOf(el)))) inked += text.length;
+    }
+    if (isControl) continue;
+    let k = [];
+    if (svg) {
+      const sr = svg.getBoundingClientRect();
+      if (sr.width * sr.height >= LARGE) continue;
+      for (const p of ['fill', 'stroke']) if (!/none|url\(/.test(cs[p]) && near(over(parse(cs[p]), bgOf(svg)), p === 'fill')) k.push(p);
+    } else {
+      const back = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
+      const focused = el.matches(':focus-within');
+      if (text && near(over(parse(cs.color), bgOf(el)))) k.push('text');
+      if (text && cs.textDecorationLine !== 'none' && near(over(parse(cs.textDecorationColor), bgOf(el)))) k.push('underline');
+      k.push(...box(cs, back, r.width * r.height, !focused));
+      for (const pe of ['::before', '::after']) {
+        const ps = getComputedStyle(el, pe);
+        if (!ps.content || /^(none|normal)$/.test(ps.content) || ps.display === 'none' || ps.visibility === 'hidden' || +ps.opacity === 0) continue;
+        const size = (parseFloat(ps.width) || 0) * (parseFloat(ps.height) || 0);
+        const pk = box(ps, bgOf(el), size, !focused);
+        if (/^(["']).+\1$|^(counters?|attr)\(/.test(ps.content) && near(over(parse(ps.color), bgOf(el)))) pk.push('text');
+        if (pk.length) k.push(pe);
+      }
+    }
+    if (!k.length) continue;
+    const at = svg || el;
+    if (at.closest(SELECTED) || at.closest(BRAND) || checkedBox(at)) continue;
+    // Text that only inherits the color of a marked parent is the same mark.
+    if (!svg && k.every((x) => x === 'text') && el.parentElement && viaText.has(el.parentElement)) { viaText.add(el); continue; }
+    if (k.includes('text')) viaText.add(el);
+    found.set(at, [...new Set([...(found.get(at) || []), ...k])]);
+  }
+  const comps = new Map();
+  const marks = [...found].map(([el, paints]) => {
+    const c = compOf(el);
+    if (!comps.has(c)) comps.set(c, comps.size);
+    const label = (ownText(el) || el.getAttribute('aria-label') || (el.parentElement ? el.parentElement.innerText || '' : '')).replace(/\s+/g, ' ').trim().slice(0, 24);
+    return { sel: sel(el), text: label, paints, comp: comps.get(c), in: sel(c) };
+  });
+  const hex = '#' + action.rgb.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return { action: { sel: action.sel, text: action.text, hex }, marks, chars, inked };
+}
+
 // R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
 // The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
 // media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
@@ -731,6 +939,18 @@ try {
     if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
+    // R30: the action color also marks two or more things nobody presses (one stray mark is not enough; a state repeated
+    // down one table is). Skipped when the action color is the page's ink: a quarter or more of the text outside controls.
+    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+      const ac = await page.evaluate(actionMarks, m.filled || []);
+      const comps = ac ? new Set(ac.marks.map((x) => x.comp)).size : 0;
+      if (ac && ac.inked < ac.chars * 0.25 && ac.marks.length >= 2) {
+        const groups = new Map();
+        for (const x of ac.marks) { const g = groups.get(x.sel) || { ...x, n: 0 }; g.n++; groups.set(x.sel, g); }
+        const list = [...groups.values()].slice(0, 8).map((g) => `${g.sel}${g.text ? ` "${g.text}"` : ''}${g.n > 1 ? ` ×${g.n}` : ''}`).join(', ');
+        add('R30', `@${width}px ${ac.action.sel}`, `the action color ${ac.action.hex} of "${ac.action.text}" also marks ${ac.marks.length} things nobody presses, in ${comps} component${comps === 1 ? '' : 's'}: ${list}${groups.size > 8 ? ', …' : ''}; the action color marks what is pressed and the current selection: give states a status color or a neutral mark (a current item marked with aria-current or aria-selected is not counted)`);
+      }
+    }
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
     if (width === 1280 && m.fine.length >= 3) {

@@ -148,6 +148,21 @@ else {
     check(`R29 ignores ${what}`, r29.length === 0, JSON.stringify(r29));
   }
   check('R29 is measured only when 1920 is rendered', wide('wide-centred.html', '1280').length === 0);
+  // R30: the action color on things nobody presses. Each negative holds one stray mark, so any exempt item that slipped in would fire.
+  const r30 = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280').out.findings.filter((x) => x.id === 'R30');
+  const ac = r30('action-color.html');
+  check('render flags R30 when the action color marks today, booked, saved, paid, confirmed, now and a status dot', ac.length === 1 && /#book/.test(ac[0].where) && /#1F4FD1/.test(ac[0].message) && /also marks 9 things nobody presses, in 4 components/.test(ac[0].message) && ['th.today "Wed 4"', 'span.booked "Booked" ×3', 'span.saved', 'span.chip "Deposit paid"', 'span.done "Confirmed"', 'div.line', 'svg'].every((s) => ac[0].message.includes(s)), JSON.stringify(ac));
+  const acl = r30('action-color-light.html');
+  check('R30 takes a yellow action that stands out by hue, not the filled toggle above it', acl.length === 1 && /#plan/.test(acl[0].where) && /#FFD400/.test(acl[0].message) && /also marks 2 things/.test(acl[0].message) && !/span\.on/.test(acl[0].message), JSON.stringify(acl));
+  for (const [f, what] of [
+    ['action-color-selection.html', 'the current selection: a nav item, the current step, a selected row, a checked box and option card, a tab bar'],
+    ['action-color-brand.html', 'the brand mark and wordmark, links, an outlined button and a focus ring'],
+    ['action-color-neutral.html', 'states in status colors or a neutral mark, a crimson 21° away, pale washes, a large drawing and a band'],
+    ['action-color-ink.html', 'an action filled with the ink the text is set in'],
+  ]) {
+    const r = r30(f);
+    check(`R30 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');

@@ -17,7 +17,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Never fake bold or italic; load the weights you use. Use `font-display: swap`.
 
 ## Color
-- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach.
+- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach; a status mark never borrows the action color, which stays on what is pressed and the current selection (R30).
 - Neutrals carry 80–90% of the surface. Accent is rare enough to mean something.
 - Tint neutrals slightly toward the accent hue rather than using pure gray.
 - Status colors (success, warning, danger) are reserved for status.
