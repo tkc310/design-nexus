@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Larger figure fixture</title>
+<meta name="description" content="R29 fixture: the main figure is enlarged from 1600px">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
+.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+header{border-bottom:1px solid #6f6a5e;padding:16px 0}
+h1{font-size:40px;line-height:1.15;margin:32px 0 16px}
+p{max-width:65ch}
+.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
+.hero svg{display:block;width:100%;height:auto}
+@media (min-width:1600px){
+  .wrap{max-width:1360px}
+  .hero{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+}
+</style></head><body>
+<!-- not flagged: the frame widens only 1.13x, but from 1600px the course map grows from 580px to about 880px wide -->
+<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
+<main class="wrap"><div class="hero"><div>
+<h1>Learn to row this autumn</h1>
+<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
+</div><svg viewBox="0 0 600 400" role="img" aria-label="Course map: the 2 km lane from the boathouse to the bridge"><rect width="600" height="400" fill="#dfe8ea"/><path d="M40 340 C 200 300, 380 120, 560 60" stroke="#24525e" stroke-width="10" fill="none"/></svg></div>
+<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
+</main></body></html>

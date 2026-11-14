@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color fixture</title>
+<meta name="description" content="R30 fixture: the action color also marks states nobody presses">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
+main{max-width:960px;margin:0 auto;padding:24px}
+.btn{display:inline-block;background:#1f4fd1;color:#fff;padding:12px 20px;border:0;border-radius:6px;font:inherit}
+table{border-collapse:collapse;width:100%;margin:24px 0}
+th,td{padding:8px 12px;border-bottom:1px solid #c9c6bd;text-align:left}
+.today{box-shadow:inset 0 -3px 0 #1f4fd1}
+.booked{color:#1f4fd1;border:1px solid #1f4fd1;border-radius:4px;padding:0 6px}
+.saved{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1f4fd1;margin-right:8px}
+.chip{background:#b3c4f5;padding:2px 8px;border-radius:4px}
+.done{color:#163a9c}
+.line{position:relative;height:40px;border-bottom:1px solid #c9c6bd}
+.line::after{content:"";position:absolute;left:40%;top:0;width:2px;height:40px;background:#1f4fd1}
+</style></head><body>
+<main>
+<h1>Rehearsal rooms this week</h1>
+<p>Rooms open at 9:00 and close at 23:00. A booking holds the room for two hours, and you can move it until the day before.</p>
+<p><button class="btn" type="button" id="book">Book a room</button></p>
+<!-- flagged: today's column (aria-current="date" is a state, not the selection) and a booked state repeated down one table -->
+<table><thead><tr><th>Room</th><th>Mon 2</th><th aria-current="date" class="today">Wed 4</th><th>Thu 5</th></tr></thead>
+<tbody>
+<tr><th>Studio A</th><td><span class="booked">Booked</span></td><td>Open</td><td>Open</td></tr>
+<tr><th>Studio B</th><td>Open</td><td><span class="booked">Booked</span></td><td>Open</td></tr>
+<tr><th>Drum room</th><td>Open</td><td>Open</td><td><span class="booked">Booked</span></td></tr>
+</tbody></table>
+<!-- flagged: a saved dot, a tint of the action color on a chip, and a darker shade on a confirmed state -->
+<section aria-labelledby="mine"><h2 id="mine">Your bookings</h2>
+<ul>
+<li><span class="saved" aria-hidden="true"></span>Studio A, Monday 18:00 <span class="chip">Deposit paid</span></li>
+<li>Drum room, Thursday 20:00 <span class="done">Confirmed</span></li>
+</ul></section>
+<!-- flagged: the now marker drawn by ::after, and an SVG status dot -->
+<figure><div class="line" role="img" aria-label="Now, 14:10"></div><figcaption>Today from 9:00 to 23:00; the line marks now.</figcaption></figure>
+<p><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="#1f4fd1"/></svg> Studio B has a waiting list on Friday.</p>
+</main></body></html>

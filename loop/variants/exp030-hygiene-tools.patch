@@ -1,0 +1,1197 @@
+diff --git a/eval/fixtures/dark-scheme.html b/eval/fixtures/dark-scheme.html
+new file mode 100644
+index 0000000..91a3e6d
+--- /dev/null
++++ b/eval/fixtures/dark-scheme.html
+@@ -0,0 +1,35 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Dark scheme: contrast that only fails after dark</title>
++<meta name="description" content="F01/F02 fixture: the light scheme passes; the dark scheme keeps a muted text color and a focus ring that no longer reach their ratios.">
++<style>
++  :root { --bg: #FFFFFF; --surface: #F3F4F6; --ink: #1F2328; --muted: #4D5661; --ring: #1F2328; --stamp: #1F2328; --s2: 8px; --s3: 16px; --s4: 24px; }
++  @media (prefers-color-scheme: dark) {
++    /* --muted and --ring were not given dark values; --stamp was. */
++    :root { --bg: #151617; --surface: #1F2123; --ink: #EDEDEA; --stamp: #EDEDEA; }
++  }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, serif; font-size: 17px; line-height: 1.6; }
++  main { max-width: 60rem; margin: 0 auto; padding: var(--s4); }
++  h1 { text-wrap: balance; }
++  .card { background: var(--surface); padding: var(--s3); }
++  #hint { color: var(--muted); }
++  #stamp { color: var(--stamp); }
++  button { font: inherit; min-height: 44px; padding: var(--s2) var(--s3); border: 2px solid var(--ink); background: var(--surface); color: var(--ink); }
++  button:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
++</style>
++</head>
++<body>
++<main>
++  <h1>Route 12 timetable</h1>
++  <div class="card">
++    <p id="stamp">Next bus 10:47, in 17 minutes.</p>
++    <p id="hint">Times are for weekdays until 28 November.</p>
++    <button id="later" type="button">Show later buses</button>
++  </div>
++</main>
++</body>
++</html>
+diff --git a/eval/fixtures/focus-ring.html b/eval/fixtures/focus-ring.html
+new file mode 100644
+index 0000000..3724326
+--- /dev/null
++++ b/eval/fixtures/focus-ring.html
+@@ -0,0 +1,62 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Focus rings: contrast against the surface they are drawn on</title>
++<meta name="description" content="F02 fixture: rings below 3:1 (outside, inside, carried by a label, in a closed dialog) and rings that must not be reported.">
++<style>
++  :root { --bg: #FFFFFF; --ink: #1F2328; --sun: #F5C400; --bar: #1C1E22; --rose: #B0175F; --s2: 8px; --s3: 16px; --s4: 24px; }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, serif; font-size: 17px; line-height: 1.6; }
++  main { max-width: 60rem; margin: 0 auto; padding: var(--s4); display: grid; gap: var(--s4); }
++  h1 { text-wrap: balance; }
++  button, .btn { font: inherit; min-height: 44px; padding: var(--s2) var(--s3); border: 2px solid var(--ink); background: var(--bg); color: var(--ink); }
++  /* The ring every case starts from: fine on white. */
++  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
++  /* Below 3:1 */
++  .bar { background: var(--bar); padding: var(--s3); }
++  .bar a { color: #FFFFFF; display: inline-block; padding: var(--s2); }
++  .bar a:focus-visible { outline-color: var(--rose); }               /* 2.5:1 on the dark bar */
++  #weak:focus-visible { outline-color: var(--sun); }                  /* 1.6:1 on the white page */
++  #inside:focus-visible { outline-color: var(--sun); outline-offset: -8px; } /* drawn on the button's own white fill */
++  .seg { display: inline-grid; grid-template-columns: 1fr 1fr; border: 2px solid var(--ink); }
++  .seg label { position: relative; padding: var(--s3); }
++  .seg input { position: absolute; inset: 0; opacity: 0; margin: 0; }
++  .seg label:has(input:focus-visible) { outline: 4px solid var(--sun); outline-offset: -6px; } /* the label carries the ring */
++  dialog { border: 0; padding: var(--s4); background: #F6F5F1; }
++  dialog :focus-visible { outline-color: var(--sun); }               /* seen only once the dialog is open */
++  /* Not to be reported */
++  .mid { background: #8A8F98; padding: var(--s4); }
++  #two:focus-visible { outline: 0; box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 5px #111111; } /* the inner ring is weak here, the outer one is not */
++  .photo { position: relative; height: 120px; }
++  .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
++  .photo button { position: absolute; left: var(--s3); top: var(--s3); }
++  #over-photo:focus-visible { outline-color: var(--sun); }            /* over an image: the surface is unknown */
++  .wash { background: linear-gradient(90deg, #FFFFFF, #1F2328); padding: var(--s4); }
++  #over-wash:focus-visible { outline-color: var(--sun); }             /* over a gradient: unknown */
++  #flip:focus-visible { outline-color: var(--sun); background: var(--ink); color: #FFFFFF; } /* the fill flips: an indicator by itself */
++  .check { position: relative; display: inline-flex; gap: var(--s2); align-items: center; min-height: 44px; }
++  .check input { position: absolute; width: 1px; height: 1px; opacity: 0; outline: 0; }
++  .check .box { width: 24px; height: 24px; border: 2px solid var(--ink); }
++  .check input:focus-visible + .box { outline: 3px solid var(--ink); outline-offset: 2px; } /* a sibling carries a strong ring */
++  #native:focus-visible { outline: revert; }                          /* the browser's own ring */
++</style>
++</head>
++<body>
++<main>
++  <h1>Focus rings</h1>
++  <nav class="bar" aria-label="App"><a href="#work">My work</a> <a href="#inbox">Inbox</a></nav>
++  <p><button id="weak" type="button">Move to Review</button> <button id="inside" type="button">Weekdays</button></p>
++  <fieldset><legend>Day type</legend>
++    <div class="seg"><label><input type="radio" name="dt" id="seg-a" checked>Weekday</label><label><input type="radio" name="dt" id="seg-b">Holiday</label></div>
++  </fieldset>
++  <dialog id="board" aria-label="Full board"><button id="dlg-close" type="button">Close board</button></dialog>
++  <p><button id="ok" type="button">Save changes</button> <button id="flip" type="button">Open the map</button> <button id="native" type="button">Print</button></p>
++  <div class="mid"><button id="two" type="button">Two-color ring</button></div>
++  <div class="photo"><img alt="" width="8" height="8" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4AdMOEQHxgJAGZDAQ8XQRRBAAAAAElFTkSuQmCC"><button id="over-photo" type="button">Over a photo</button></div>
++  <div class="wash"><button id="over-wash" type="button">Over a gradient</button></div>
++  <label class="check"><input type="checkbox" id="agree"><span class="box"></span>Email me the schedule</label>
++</main>
++</body>
++</html>
+diff --git a/eval/fixtures/good.html b/eval/fixtures/good.html
+index 4bd4d1f..2115715 100644
+--- a/eval/fixtures/good.html
++++ b/eval/fixtures/good.html
+@@ -10,22 +10,24 @@
+   :root {
+     --bg: #F3F6F7; --surface: #FFFFFF; --text: #1E2328; --muted: #4A5560;
+     --accent: #0E6E7E; --on-accent: #FFFFFF; --border: #CFE3E6;
+-    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
++    --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --dur-press: 150ms;
++    --t-body: 17px; --radius: 2px;
++    --s2: 8px; --s2h: 10px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s10: 40px;
+   }
+   * { box-sizing: border-box; }
+   body { margin: 0; background: var(--bg); color: var(--text);
+-    font-family: "Source Serif 4", "Shippori Mincho", serif; font-size: 17px; line-height: 1.8; letter-spacing: 0.03em; }
+-  main { max-width: 68rem; margin: 0 auto; padding: 40px 16px; }
++    font-family: "Source Serif 4", "Shippori Mincho", serif; font-size: var(--t-body); line-height: 1.8; letter-spacing: 0.03em; }
++  main { max-width: 68rem; margin: 0 auto; padding: var(--s10) var(--s4); }
+   h1, h2 { font-family: "Fraunces", "Shippori Mincho", serif; line-height: 1.35; text-wrap: balance; }
+   .figures { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--muted); }
+-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 24px; }
++  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s6); }
+   a { color: var(--accent); }
+-  .action { display: inline-block; min-height: 44px; padding: 10px 20px; background: var(--accent); color: var(--on-accent);
+-    border: 0; border-radius: 2px; font: inherit; transition: transform 150ms var(--ease-out); }
++  .action { display: inline-block; min-height: 44px; padding: var(--s2h) var(--s5); background: var(--accent); color: var(--on-accent);
++    border: 0; border-radius: var(--radius); font: inherit; transition: transform var(--dur-press) var(--ease-out); }
+   .action:active { transform: scale(0.97); }
+   .action:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+   label { display: block; }
+-  input { font: inherit; min-height: 44px; padding: 8px 12px; border: 1px solid var(--muted); border-radius: 2px; }
++  input { font: inherit; min-height: 44px; padding: var(--s2) var(--s3); border: 1px solid var(--muted); border-radius: var(--radius); }
+   svg { display: block; width: 100%; height: auto; }
+   @media (prefers-reduced-motion: reduce) { .action { transition: none; } }
+ </style>
+diff --git a/eval/fixtures/opacity-text.html b/eval/fixtures/opacity-text.html
+new file mode 100644
+index 0000000..ada8665
+--- /dev/null
++++ b/eval/fixtures/opacity-text.html
+@@ -0,0 +1,46 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Text faded with opacity</title>
++<meta name="description" content="F01 fixture: text whose colors pass but which opacity fades below 4.5:1, and the cases the check leaves alone.">
++<style>
++  :root { --bg: #FFFFFF; --ink: #1F2328; --accent: #8A3B12; --s2: 8px; --s3: 16px; --s4: 24px; }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, serif; font-size: 17px; line-height: 1.6; }
++  main { max-width: 60rem; margin: 0 auto; padding: var(--s4); }
++  h1 { text-wrap: balance; }
++  ul { list-style: none; padding: 0; }
++  button { font: inherit; min-height: 44px; padding: var(--s2) var(--s3); border: 2px solid var(--ink); background: var(--accent); color: #FFFFFF; }
++  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
++  /* Reported: the fade is on the text itself, or on a row above it. */
++  #caption { opacity: 0.45; }
++  .past { opacity: 0.5; }
++  /* Recorded only: a disabled control is exempt. */
++  button:disabled { opacity: 0.5; }
++  /* Left alone */
++  #soft { opacity: 0.9; }                      /* still 4.5:1 */
++  .deco { opacity: 0.12; font-size: 48px; }    /* decoration, hidden from assistive technology */
++  #gone { opacity: 0; }                        /* not shown at all */
++  #pulse { animation: pulse 1.2s ease-in-out infinite; }
++  @keyframes pulse { 50% { opacity: 0.3; } }   /* a running fade is taken at full strength */
++  @media (prefers-reduced-motion: reduce) { #pulse { animation: none; } }
++</style>
++</head>
++<body>
++<main>
++  <h1>Route 12 timetable</h1>
++  <p id="caption">Quiet hours are off. Notifications arrive around the clock.</p>
++  <ul>
++    <li class="past"><span id="past-time">09:47 departed from stop 4</span></li>
++    <li><span id="next-time">10:47 leaves in 17 minutes</span></li>
++  </ul>
++  <p><button id="full" type="button" disabled>Sold out</button> <button id="book" type="button">Book a seat</button></p>
++  <p id="soft">Fares are shown for adults.</p>
++  <p class="deco" aria-hidden="true">12</p>
++  <p id="gone">Loading the next departures</p>
++  <p id="pulse">Checking for delays</p>
++</main>
++</body>
++</html>
+diff --git a/eval/fixtures/raw-values-kept.css b/eval/fixtures/raw-values-kept.css
+new file mode 100644
+index 0000000..8af826b
+--- /dev/null
++++ b/eval/fixtures/raw-values-kept.css
+@@ -0,0 +1,4 @@
++/* design-nexus: keep R28 because the embed is styled by a vendor sheet that takes literals only */
++.embed { padding: 13px 18px; margin-top: 6px; border-radius: 3px; }
++.embed h2 { font-size: 15px; color: #5B6470; }
++.embed a { padding: 10px; }
+diff --git a/eval/fixtures/raw-values-ok.html b/eval/fixtures/raw-values-ok.html
+new file mode 100644
+index 0000000..305a98d
+--- /dev/null
++++ b/eval/fixtures/raw-values-ok.html
+@@ -0,0 +1,54 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Kiln schedule — values R28 leaves alone</title>
++<meta name="description" content="R28 fixture: everything here is a token, a dimension, a hairline, or relative to the type; four literals stay under the limit.">
++<style>
++  /* Not a rule: .card { padding: 13px; border-radius: 3px; color: #123456; } */
++  :root {
++    --bg: #F4F1EA; --surface: #FFFFFF; --ink: #1F2328; --muted: #4D5661; --accent: #8A3B12;
++    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px;
++    --radius: 4px; --t-sm: 14px; --t-base: 17px; --t-lg: clamp(1.5rem, 1.2rem + 1.5vw, 2rem); --dur: 140ms;
++    --shadow: 0 6px 14px -6px rgb(0 0 0 / 0.3);
++  }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, serif; font-size: var(--t-base); line-height: 1.6; }
++  main { max-width: 60rem; margin: 0 auto; padding: var(--s5) var(--s3); }
++  h1 { font-size: var(--t-lg); line-height: 1.2; text-wrap: balance; margin: 0 0 var(--s4); }
++  /* Component dimensions, tracks and line widths are not spacing steps. */
++  .card { width: 100%; min-height: 148px; max-width: 520px; background: var(--surface); padding: var(--s3); border: 3px solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow); }
++  .rows { display: grid; grid-template-columns: 140px 1fr; gap: 1px; margin: -1px 0 0; }
++  .rows p { margin: 0; padding: 0 0 0 auto; inset: auto; }
++  /* Relative to the type or the box: em, ch, %, and calc() on a token. */
++  code { padding: 0.1em 0.35em; border-radius: 0.2em; font-size: 100%; }
++  .pull { margin-left: calc(var(--s3) * -1); padding-left: 2ch; border-radius: 50%; }
++  small { font-size: 1em; font: inherit; }
++  /* Colors that come from a token or are not a palette choice. */
++  .badge { color: var(--ink, #000); background: color-mix(in srgb, var(--accent) 16%, white); border: 1px solid rgb(from var(--accent) r g b / 0.4); outline: 2px solid transparent; fill: currentColor; }
++  .icon { width: 20px; height: 20px; mask: linear-gradient(black, black); background: var(--muted) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23fff' style='padding:13px;color:#abc'/>"); }
++  .action { min-height: 44px; padding: var(--s2) var(--s3); border: 1px solid var(--ink); border-radius: var(--radius); background: var(--accent); color: var(--surface);
++    font: 600 var(--t-base)/1.2 Georgia, serif; transition: background-color var(--dur) ease, transform var(--dur) ease 0s; animation: none; }
++  .action:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
++  @keyframes rise { 0% { transform: translateY(8px); } 100% { transform: none; } }
++  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
++  /* Four literals: under the limit of five, so nothing is reported. */
++  .note { margin-top: 6px; padding: 2px 2px; border-radius: 3px; transition: opacity 200ms linear, color 200ms linear; }
++</style>
++</head>
++<body>
++<main>
++  <h1>Kiln schedule for the week of 9 November</h1>
++  <section class="card">
++    <div class="rows">
++      <p>Bisque</p><p>Load Tuesday 08:30 <code>cone 06</code></p>
++      <p>Glaze</p><p style="margin: 0; padding-top: var(--s1); width: 240px">Load Friday 09:00 <span class="badge">cone 6</span></p>
++    </div>
++    <p class="note">Shelves are 40 × 50 cm.</p>
++    <svg class="icon" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#8A3B12" stroke="#1F2328" stroke-width="2"/></svg>
++    <button class="action" type="button">Book a shelf</button>
++  </section>
++</main>
++</body>
++</html>
+diff --git a/eval/fixtures/raw-values.html b/eval/fixtures/raw-values.html
+new file mode 100644
+index 0000000..7db2056
+--- /dev/null
++++ b/eval/fixtures/raw-values.html
+@@ -0,0 +1,43 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Kiln schedule — raw values beside the tokens</title>
++<meta name="description" content="R28 fixture: a token plan in :root, and rules that write literals instead of using it.">
++<style>
++  /* The plan: an 8px spacing scale, one radius, three type sizes, one duration. */
++  :root {
++    --bg: #F4F1EA; --surface: #FFFFFF; --ink: #1F2328; --muted: #4D5661; --accent: #8A3B12;
++    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px;
++    --radius: 4px; --t-sm: 14px; --t-base: 17px; --t-lg: 28px; --dur: 140ms;
++  }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, serif; font-size: var(--t-base); line-height: 1.6; }
++  main { max-width: 60rem; margin: 0 auto; padding: var(--s5) var(--s3); }
++  h1 { font-size: var(--t-lg); line-height: 1.2; text-wrap: balance; }
++  /* Fifteen literals that go around the plan, in eight classes (two more are inline, in the markup). */
++  .card { background: var(--surface); padding: 13px 18px; border-radius: 3px; margin-top: 6px; }
++  .card h2 { font-size: 15px; margin: 0 0 10px; color: #5B6470; }
++  .rows { display: grid; gap: 10px; }
++  .badge { position: relative; top: 3px; border-radius: 999px; background: rgb(138 59 18 / 0.12); }
++  .action { min-height: 44px; padding: var(--s2) var(--s3); border: 1px solid var(--ink); border-radius: var(--radius); background: var(--accent); color: white;
++    font: inherit; transition: background-color 180ms ease, transform 180ms ease; }
++  .action:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
++  @media (prefers-reduced-motion: reduce) { .action { transition: none; } }
++</style>
++</head>
++<body>
++<main>
++  <h1>Kiln schedule for the week of 9 November</h1>
++  <section class="card">
++    <h2>Bisque firing</h2>
++    <div class="rows">
++      <p>Load Tuesday 08:30 <span class="badge">cone 06</span></p>
++      <p style="margin-top: 18px; color: #AA2200">Unload Thursday after 16:00</p>
++    </div>
++    <button class="action" type="button">Book a shelf</button>
++  </section>
++</main>
++</body>
++</html>
+diff --git a/scripts/test.mjs b/scripts/test.mjs
+index 23ed408..9bf1478 100644
+--- a/scripts/test.mjs
++++ b/scripts/test.mjs
+@@ -51,6 +51,18 @@ check('lint flags R19 for notes to the reviewer in visible copy and alt text', [
+ check('R19 ignores comments, scripts, styles, and placeholder attributes', !r19.some((m) => /TODO|Search stops/.test(m)), JSON.stringify(r19));
+ const keptAgg = run('lint.mjs', path.join(S2, 'kept-aggregate.css'));
+ check('a keep comment suppresses an aggregate R08', keptAgg.out.findings.filter((f) => f.id === 'R08').every((f) => f.kept));
++// R28: literals that go around the token plan.
++const raw = run('lint.mjs', path.join(S2, 'raw-values.html'));
++const r28 = raw.out.findings.filter((f) => f.id === 'R28');
++check('lint flags R28 once, as a Reflex, with a count per property class', r28.length === 1 && r28[0].tier === 'reflex' && raw.code === 0
++  && JSON.stringify(Object.entries(r28[0].counts || {}).sort()) === JSON.stringify(Object.entries({ color: 4, margin: 3, padding: 2, radius: 2, 'font-size': 1, gap: 1, inset: 1, duration: 1 }).sort()), JSON.stringify(r28));
++check('R28 lists the first ten places and says how to fix them', r28.length === 1 && r28[0].instances.length === 10 && /^15 raw values/.test(r28[0].message) && /First 10: line 20 padding: 13px;/.test(r28[0].message)
++  && /Round each to a step of the token plan/.test(r28[0].message) && /two or more places/.test(r28[0].message) && /one-off custom properties/.test(r28[0].message), JSON.stringify(r28));
++const rawOk = run('lint.mjs', path.join(S2, 'raw-values-ok.html'));
++check('R28 ignores tokens, 0, %, auto, dimensions, hairlines, type-relative spacing, token-derived colors, the reduced-motion reset, comments and data URIs, and stays quiet under five literals', rawOk.out.findings.length === 0, JSON.stringify(rawOk.out.findings.map((f) => `${f.id} ${f.message}`)));
++const rawKept = run('lint.mjs', path.join(S2, 'raw-values-kept.css'));
++check('a keep comment suppresses R28', rawKept.out.findings.some((f) => f.id === 'R28' && f.kept) && rawKept.out.counts.reflex === 0, JSON.stringify(rawKept.out.findings));
++check('lint reports how many custom properties the scan defines', raw.out.stats?.custom_properties === 15 && typeof raw.out.stats.custom_properties_used_once === 'number', JSON.stringify(raw.out.stats));
+ 
+ const tokens = run('tokens-check.mjs', path.join(ROOT, 'skills/design-nexus/templates/DESIGN.md'));
+ check('DESIGN.md template passes tokens-check', tokens.code === 0, JSON.stringify(tokens.out.findings));
+@@ -137,8 +149,31 @@ else {
+   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
+   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
++  // F02: focus rings below 3:1 against the surface they are drawn on.
++  const fr = run('render-check.mjs', path.join(S2, 'focus-ring.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
++  const frF = fr.out.findings.filter((f) => f.id === 'F02');
++  const frAll = frF.map((f) => `${f.where} ${f.message}`).join('\n');
++  check('render flags F02 for a focus ring below 3:1 on a dark bar', frF.some((f) => /#B0175F is 2\.49:1 against #1C1E22/.test(f.message) && /My work/.test(f.message) && /Inbox/.test(f.message)), frAll);
++  check('render flags F02 for a weak ring outside a button, inside a button, and carried by the label of a hidden radio', frF.some((f) => /#F5C400 is 1\.64:1 against #FFFFFF/.test(f.message) && /#weak/.test(f.where) && /Move to Review/.test(f.message) && /Weekdays/.test(f.message) && /Weekday"|Holiday"|1 more/.test(f.message)), frAll);
++  check('render flags F02 for a weak ring on a control inside a closed dialog', frF.some((f) => /#dlg-close/.test(f.where) && /against #F6F5F1/.test(f.message) && /in the dialog/.test(f.message)), frAll);
++  check('F02 groups controls by ring and surface, and lifts the 20-control limit without new reports', frF.length === 3 && fr.out.counts.floor === 3, frAll);
++  check('F02 ignores a two-color box-shadow ring, rings over a photo or a gradient, a fill that flips, a ring on a sibling, and the browser ring', !/Two-color|Over a photo|Over a gradient|Open the map|Email me|Print|Save changes/.test(frAll) && !frF.some((f) => /No visible focus/.test(f.message)), frAll);
++  // F01 and F02 measured again in the dark scheme.
++  const dk = run('render-check.mjs', path.join(S2, 'dark-scheme.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
++  const dkF = dk.out.findings.map((f) => `${f.id} ${f.where} ${f.message}`);
++  check('render measures a dark scheme again: F01 for text that keeps its light color', dk.out.dark_scheme === true && dkF.some((x) => /^F01 @1280px dark #hint contrast 2\.17:1/.test(x)), JSON.stringify(dkF));
++  check('render measures a dark scheme again: F02 for a ring that keeps its light color', dkF.some((x) => /^F02 @1280px dark #later focus ring #1F2328 is 1\.02:1 against #1F2123/.test(x)), JSON.stringify(dkF));
++  check('the dark pass reports nothing the light scheme passes and the dark tokens fix', dkF.length === 2, JSON.stringify(dkF));
++  check('render does not run a dark pass on a page without a dark scheme', fr.out.dark_scheme === false && !fr.out.findings.some((f) => / dark /.test(f.where)));
++  // F01 with the opacity of the element and its ancestors applied.
++  const op = run('render-check.mjs', path.join(S2, 'opacity-text.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
++  const opF = op.out.findings.filter((f) => f.id === 'F01');
++  check('render flags F01 for text faded by its own opacity', opF.some((f) => /#caption/.test(f.where) && /2\.75:1 < 4\.5:1/.test(f.message) && /at opacity 0\.45/.test(f.message)), JSON.stringify(opF));
++  check('render flags F01 for text faded by an ancestor', opF.some((f) => /#past-time/.test(f.where) && /at opacity 0\.5/.test(f.message)), JSON.stringify(opF));
++  check('a disabled control dimmed by opacity is recorded as a note, not a finding', op.out.notes.length === 1 && /#full/.test(op.out.notes[0].where) && /Sold out/.test(op.out.notes[0].message) && !opF.some((f) => /Sold out/.test(f.message)), JSON.stringify(op.out.notes));
++  check('F01 with opacity ignores a fade that keeps 4.5:1, aria-hidden decoration, hidden text, and a running fade', op.out.findings.length === 2, JSON.stringify(op.out.findings.map((f) => `${f.id} ${f.where}`)));
+   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+-  check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
++  check('render finds nothing on good.html', goodR.out.findings.length === 0 && goodR.out.notes.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
+   const snap = path.join(ROOT, '.design-nexus/test-before.json');
+   run('render-check.mjs', path.join(S2, 'redesign-before.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--snapshot', snap);
+   const improved = run('render-check.mjs', path.join(S2, 'redesign-improved.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
+diff --git a/skills/design-nexus/references/checks.md b/skills/design-nexus/references/checks.md
+index e60e1c1..d16a529 100644
+--- a/skills/design-nexus/references/checks.md
++++ b/skills/design-nexus/references/checks.md
+@@ -12,8 +12,8 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ 
+ | ID | Check | Detected by |
+ |---|---|---|
+-| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
+-| F02 | Focus indicator removed or invisible | lint, render |
++| F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus, as drawn: the opacity of the element and its ancestors is applied to the text (a disabled control dimmed by opacity is exempt and listed under `notes`, not as a finding); UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface. When the CSS has a dark scheme (`prefers-color-scheme: dark`), measured again in it at 1280px | render, tokens |
++| F02 | Focus indicator removed or invisible, or a focus ring (outline, box-shadow, or a border that changes on focus) whose color is below 3:1 against the surface it is drawn on. Every focusable control is checked, including those in a closed `<dialog>`, in the light scheme and in the dark one if there is one. A two-color ring passes when one color reaches 3:1; rings over photos or gradients are not measured | lint, render |
+ | F03 | Image without `alt` | lint |
+ | F04 | HTML document missing `lang` or viewport meta | lint |
+ | F05 | Animation without a `prefers-reduced-motion` path | lint, render |
+@@ -53,6 +53,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
+ | R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
+ | R25 | At 1280 or 768, the first enabled filled action (a button or link with a solid fill that stands out from its surface) starts below the first screen (900px) | render |
++| R28 | Raw values that bypass the tokens: five or more literals for padding, margin, gap, inset, border-radius, font-size, transition or animation time, or color, in stylesheets or inline `style`, instead of `var()`. Not counted: 0, %, `auto`, custom property definitions, width and height, 1px hairlines, em-based spacing, values built on a token (`calc(var(--s4) * -1)`, `color-mix()` on a token). Reported once, with a count per property class and the first ten places. Round each value to a step of the token plan; add a step only if the value is used in two or more places; do not mint one-off custom properties | lint |
+ 
+ ## Finish
+ 
+diff --git a/skills/design-nexus/scripts/lint.mjs b/skills/design-nexus/scripts/lint.mjs
+index 2389823..6ab011c 100755
+--- a/skills/design-nexus/scripts/lint.mjs
++++ b/skills/design-nexus/scripts/lint.mjs
+@@ -54,7 +54,137 @@ const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
+ const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
+ 
+ // Aggregate state across files.
+-const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false, props: new Map() };
++const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false, props: new Map(), raw: [], propRefs: new Map() };
++
++// ---------- R28: raw values that bypass the tokens ----------
++// Looks at CSS declarations (stylesheets, <style> blocks, inline style attributes) for spacing, radius, type size,
++// duration and color values written as literals instead of var(). Not counted:
++// - 0, %, auto and other keywords; unitless numbers
++// - anything inside a custom property definition (that is where the scale is stated)
++// - width, height and their min/max forms, grid tracks, border and outline widths (component dimensions)
++// - ±1px hairline offsets (gap: 1px, margin: -1px), and durations of 1ms or less (the reduced-motion reset)
++// - spacing and radius in text-relative units (em, ch, ex, lh), which follow the type size they sit in
++// - a value that uses var(), env() or a preprocessor variable anywhere, such as calc(var(--s4) * -1), and a color
++//   derived from a token (color-mix(in srgb, var(--ink) 20%, white), rgb(from var(--ink) r g b / .2))
++// - transparent, currentColor, and the black and white of a mask
++// The same value repeated inside one declaration (padding: 2px 2px, three 120ms in one transition) counts once.
++const blankOut = (s) => s.replace(/[^\n]/g, ' ');
++function splitTop(value, seps = /[\s,]/) {
++  const out = [];
++  let depth = 0, cur = '';
++  for (const ch of value) {
++    if (ch === '(') depth++;
++    else if (ch === ')') depth = Math.max(0, depth - 1);
++    if (depth === 0 && seps.test(ch)) { if (cur) out.push(cur); cur = ''; } else cur += ch;
++  }
++  if (cur) out.push(cur);
++  return out;
++}
++const RAW_CLASS = [
++  [/^padding(-(top|right|bottom|left|block|inline)(-(start|end))?)?$/, 'padding'],
++  [/^margin(-(top|right|bottom|left|block|inline)(-(start|end))?)?$/, 'margin'],
++  [/^((row|column)-|grid-((row|column)-)?)?gap$/, 'gap'],
++  [/^(inset(-(block|inline)(-(start|end))?)?|top|right|bottom|left)$/, 'inset'],
++  [/^border(-(top|bottom|start|end)-(left|right|start|end))?-radius$/, 'radius'],
++  [/^font-size$/, 'font-size'],
++  [/^(transition|animation)(-(duration|delay))?$/, 'duration'],
++];
++const LENGTH_UNIT = /^(px|rem|rlh|v[whib]|vmin|vmax|[sld]v([whib]|min|max)|cq([whib]|min|max)|pt|pc|cm|mm|in|q)$/;
++const TEXT_UNIT = /^(em|ex|ch|cap|ic|lh)$/;
++const TOKENIZED = /var\(|env\(|theme\(|token\(|[$@][\w{-]|#\{/;
++const NUMBER_RE = /(?<![\w.#$@-])(-?(?:\d+\.?\d*|\.\d+))([a-z%]+)?/gi;
++const rawLength = (part, cls) => {
++  if (TOKENIZED.test(part)) return false;
++  for (const m of part.matchAll(NUMBER_RE)) {
++    const n = parseFloat(m[1]), unit = (m[2] || '').toLowerCase();
++    if (!n || !unit) continue;
++    if (cls === 'font-size') { if ((LENGTH_UNIT.test(unit) || TEXT_UNIT.test(unit)) && !(unit === 'em' && n === 1)) return true; continue; }
++    if (!LENGTH_UNIT.test(unit)) continue; // %, and em/ch spacing that follows the type size
++    if (cls !== 'radius' && unit === 'px' && Math.abs(n) === 1) continue; // a hairline: gap: 1px, margin: -1px
++    return true;
++  }
++  return false;
++};
++// The size in a `font` shorthand: the part before a top-level slash, or the first part that is not style, variant, weight or stretch.
++function fontShorthandSize(value) {
++  if (/^\s*(inherit|initial|unset|revert|revert-layer|caption|icon|menu|message-box|small-caption|status-bar)\s*$/i.test(value)) return null;
++  const parts = splitTop(value, /\s/);
++  for (const p of parts) {
++    const cut = splitTop(p, /\//);
++    if (cut.length > 1) return cut[0];
++  }
++  return parts.find((p) => !/^(normal|italic|oblique|small-caps|bold|bolder|lighter|\d{1,4}|(ultra-|extra-|semi-)?(condensed|expanded))$/i.test(p)) || null;
++}
++const NAMED_COLORS = 'aliceblue|antiquewhite|aqua|aquamarine|azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgr[ae]y|darkgreen|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategr[ae]y|darkturquoise|darkviolet|deeppink|deepskyblue|dimgr[ae]y|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gr[ae]y|green|greenyellow|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgr[ae]y|lightgreen|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategr[ae]y|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategr[ae]y|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen';
++const COLOR_LITERAL = new RegExp(`#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![\\w-])|\\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\)|(?<![\\w-])(?:${NAMED_COLORS})(?![\\w(-])`, 'gi');
++const COLOR_PROP = /^(color|background(-color|-image)?|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?|outline(-color)?|fill|stroke|(box|text)-shadow|text-decoration(-color)?|caret-color|accent-color|column-rule(-color)?|scrollbar-color|stop-color|flood-color|-webkit-text-fill-color|-webkit-text-stroke(-color)?|-webkit-tap-highlight-color)$/;
++// One declaration → the raw values in it, as { cls, text }.
++function rawInDeclaration(prop, value) {
++  const out = [];
++  if (/[<>]|\$\{|\{\{/.test(value)) return out; // a template placeholder: not a literal
++  const cls = (RAW_CLASS.find(([re]) => re.test(prop)) || [])[1];
++  const show = (part) => `${prop}: ${part}`;
++  if (cls === 'duration') {
++    for (const part of splitTop(value)) {
++      const m = part.match(/^-?(\d+\.?\d*|\.\d+)(m?s)$/i);
++      if (m && parseFloat(m[1]) * (m[2].toLowerCase() === 's' ? 1000 : 1) > 1) out.push({ cls, text: show(part) });
++    }
++  } else if (cls) {
++    for (const part of splitTop(value, cls === 'radius' ? /[\s,/]/ : /[\s,]/)) if (rawLength(part, cls)) out.push({ cls, text: show(part) });
++  } else if (prop === 'font') {
++    const size = fontShorthandSize(value);
++    if (size && rawLength(size, 'font-size')) out.push({ cls: 'font-size', text: show(size) });
++  }
++  // Colors: any property but a mask (its black and white are alpha, not palette). A color function that takes a
++  // token (color-mix(in srgb, var(--ink) 20%, white), rgb(from var(--ink) r g b / .2), rgb(var(--ink-rgb) / .2)) is
++  // derived from the plan, so nothing inside it is counted.
++  if (!/^(-webkit-)?mask/.test(prop)) {
++    const scan = value.replace(/\b(?:color-mix|light-dark|rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\((?:[^()]|\([^()]*\))*\)/gi, (m) => (/var\(/.test(m) ? blankOut(m) : m))
++      .replace(/var\((?:[^()]|\([^()]*\))*\)/gi, blankOut); // a fallback inside var() is not the value in use
++    for (const m of scan.matchAll(COLOR_LITERAL)) {
++      if (!/^[#]|\(/.test(m[0]) && !COLOR_PROP.test(prop)) continue; // a color name only where a color is expected
++      out.push({ cls: 'color', text: show(m[0].replace(/\s+/g, ' ')) });
++    }
++  }
++  // The same value twice in one declaration is one place to fix.
++  const seen = new Set();
++  return out.filter((r) => !seen.has(r.cls + r.text) && seen.add(r.cls + r.text));
++}
++// Every raw value in a file, as { index, cls, text }.
++function rawValues(text, ext, isMarkup) {
++  const regions = [];
++  if (['.css', '.scss', '.less'].includes(ext)) regions.push({ start: 0, css: text });
++  else if (isMarkup) {
++    let src = text.replace(/<!--[\s\S]*?-->/g, blankOut);
++    for (const m of src.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) regions.push({ start: m.index + m[0].indexOf('>') + 1, css: m[1] });
++    // Inline style attributes, in the markup and in script templates; a style='…' inside a stylesheet's data URI is not one.
++    src = src.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, open, body, close) => open + blankOut(body) + close);
++    for (const m of src.matchAll(/\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)) {
++      const css = m[1] ?? m[2];
++      regions.push({ start: m.index + m[0].length - 1 - css.length, css });
++    }
++  }
++  const out = [];
++  for (const { start, css } of regions) {
++    // Comments, url() bodies and strings can hold anything; blank them, keeping every offset.
++    let s = css.replace(/\/\*[\s\S]*?\*\//g, blankOut).replace(/"[^"\n]*"|'[^'\n]*'/g, (m) => m[0] + blankOut(m.slice(1, -1)) + m[0])
++      .replace(/url\(\s*[^)]*\)/gi, (m) => 'url(' + blankOut(m.slice(4, -1)) + ')');
++    if (ext === '.scss' || ext === '.less') s = s.replace(/(^|[^:])\/\/[^\n]*/g, (m, lead) => lead + blankOut(m.slice(lead.length)));
++    // A segment that ends at `;`, `}` or the end is a declaration; one that ends at `{` is a selector or an at-rule.
++    let from = 0;
++    for (let i = 0; i <= s.length; i++) {
++      const ch = s[i];
++      if (i < s.length && ch !== ';' && ch !== '{' && ch !== '}') continue;
++      const seg = s.slice(from, i);
++      const m = ch !== '{' && seg.match(/^(\s*)([-\w]+)\s*:\s*([\s\S]+)$/);
++      if (m && !m[2].startsWith('--')) {
++        for (const r of rawInDeclaration(m[2].toLowerCase(), m[3].replace(/!\s*important/i, '').trim())) out.push({ index: start + from + m[1].length, ...r });
++      }
++      from = i + 1;
++    }
++  }
++  return out;
++}
+ 
+ // Faces that ship with common operating systems; declaring them needs no loader.
+ const SYSTEM_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|ui-[\w-]+|segoe ui|roboto|helvetica( neue)?|arial|georgia|times( new roman)?|verdana|tahoma|trebuchet ms|courier( new)?|menlo|monaco|consolas|sf (pro|mono)[\w ]*|hiragino[\w ]*|yu (gothic|mincho)|游ゴシック|游明朝|meiryo|メイリオ|ms (p?gothic|p?mincho)|sans-serif|serif|monospace|cursive|fantasy|emoji|math)$/i;
+@@ -281,6 +411,10 @@ for (const file of files) {
+     add('N07', null, 'Headings without text-wrap: balance');
+   }
+ 
++  // R28 raw values that bypass the tokens: collected here, reported once across files
++  if (!disabled.has('R28')) for (const r of rawValues(text, ext, isMarkup)) agg.raw.push({ file: rel, line: lineOf(text, r.index), cls: r.cls, text: r.text });
++  for (const m of text.matchAll(/var\(\s*--([\w-]+)/g)) agg.propRefs.set(m[1].toLowerCase(), (agg.propRefs.get(m[1].toLowerCase()) || 0) + 1);
++
+   // aggregates
+   for (const [id, why] of kept) if (!agg.kept.has(id)) agg.kept.set(id, why);
+   if (/prefers-color-scheme\s*:\s*dark|\[data-theme=["']?dark|\.dark\s*[{,]/.test(text)) agg.darkScheme = true;
+@@ -363,14 +497,31 @@ if (!agg.anyLoader) {
+     if (!agg.fontsLoaded.has(fam)) push('R16', at, `"${fam}" is declared but never loaded (@font-face, a font CDN link, or next/font); visitors without it installed see a fallback`);
+   }
+ }
++// R28 raw values that bypass the tokens: one finding with the count per property class and the first ten places.
++const RAW_MIN = 5, RAW_SHOWN = 10;
++if (agg.raw.length >= RAW_MIN) {
++  const by = {};
++  for (const r of agg.raw) by[r.cls] = (by[r.cls] || 0) + 1;
++  const classes = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([cls, n]) => `${cls} ${n}`).join(', ');
++  const oneFile = new Set(agg.raw.map((r) => r.file)).size === 1;
++  const shown = agg.raw.slice(0, RAW_SHOWN);
++  findings.push({
++    id: 'R28', tier: tierOf('R28'), file: agg.raw[0].file, line: agg.raw[0].line,
++    message: `${agg.raw.length} raw values bypass the tokens (${classes}). First ${shown.length}: ${shown.map((r) => `${oneFile ? 'line ' : r.file + ':'}${r.line} ${r.text}`).join('; ')}. Round each to a step of the token plan; where no step fits, add one only if the value is used in two or more places; do not mint one-off custom properties`,
++    counts: by, instances: shown,
++  });
++}
+ // Cross-file findings honor a keep anywhere in the scanned files.
+ for (const f of findings) {
+-  if (!f.kept && ['R06', 'R07', 'R08', 'R16'].includes(f.id) && agg.kept.has(f.id)) f.kept = agg.kept.get(f.id);
++  if (!f.kept && ['R06', 'R07', 'R08', 'R16', 'R28'].includes(f.id) && agg.kept.has(f.id)) f.kept = agg.kept.get(f.id);
+ }
+ 
+ const counts = summarize(findings);
++// For the experiment log (a one-off custom property is a way around R28): how many custom properties the scan
++// defines, and how many of them are read by exactly one var().
++const stats = { custom_properties: agg.props.size, custom_properties_used_once: [...agg.props.keys()].filter((p) => agg.propRefs.get(p) === 1).length };
+ if (opt.json) {
+-  console.log(JSON.stringify({ tool: 'design-nexus-lint', files: files.length, design: opt.design || null, counts, findings }, null, 2));
++  console.log(JSON.stringify({ tool: 'design-nexus-lint', files: files.length, design: opt.design || null, counts, stats, findings }, null, 2));
+ } else {
+   printFindings(findings, `design-nexus lint: ${files.length} file(s)${opt.design ? `, tokens from ${opt.design}` : ''}`);
+   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
+diff --git a/skills/design-nexus/scripts/render-check.mjs b/skills/design-nexus/scripts/render-check.mjs
+index ade4080..033efbb 100755
+--- a/skills/design-nexus/scripts/render-check.mjs
++++ b/skills/design-nexus/scripts/render-check.mjs
+@@ -80,6 +80,8 @@ const add = (id, where, message) => {
+   }
+   findings.push(f);
+ };
++// Recorded, not reported: measurements the checks exempt but the builder should see (a disabled control dimmed by opacity).
++const notes = [];
+ const shots = [];
+ let look = null;
+ // Evaluation captures: which widths were tiled, how tall the page was, and which bars were laid out in flow.
+@@ -130,6 +132,79 @@ async function captureTiles(page, width) {
+ }
+ const textsAt = new Map();
+ 
++// Runs in the page, once per load: color math shared by the contrast checks (F01 at rest and in states, F02).
++function installKit() {
++  if (window.__dnKit) return;
++  // Any CSS color (rgb, color(srgb …) from color-mix, oklch …) resolved through a 1×1 canvas.
++  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
++  const parse = (c) => {
++    if (!c || c === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
++    const m = c.match(/^rgba?\(([^)]+)\)$/);
++    if (m) {
++      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
++      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
++    }
++    cv.clearRect(0, 0, 1, 1);
++    cv.fillStyle = '#000'; cv.fillStyle = c;
++    cv.fillRect(0, 0, 1, 1);
++    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
++    return { r, g, b, a: a / 255 };
++  };
++  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
++  const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
++  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
++  const ratioOf = (a, b) => { const L1 = lum(a), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
++  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('').toUpperCase();
++  // What shows where nothing is painted: white, or the browser's dark canvas when the page opts into a dark scheme.
++  const probe = document.createElement('div');
++  probe.style.cssText = 'position:absolute;width:0;height:0;background-color:Canvas';
++  document.documentElement.appendChild(probe);
++  let canvas = parse(getComputedStyle(probe).backgroundColor);
++  probe.remove();
++  if (!(canvas.a >= 1)) canvas = { r: 255, g: 255, b: 255, a: 1 };
++  // Opacity as it settles: a fade that is still running (an entrance, a pulse) is taken as fully shown.
++  const opacityOf = (e, cs) => {
++    const o = +(cs || getComputedStyle(e)).opacity;
++    if (!(o < 1)) return 1;
++    const fading = e.getAnimations && e.getAnimations().some((a) => a.playState === 'running' && (a.effect?.getKeyframes?.() || []).some((k) => 'opacity' in k));
++    return fading ? 1 : o;
++  };
++  // The product of opacity over an element and its ancestors.
++  const alphaOf = (el) => { let a = 1; for (let e = el; e; e = e.parentElement) a *= opacityOf(e); return a; };
++  // Composites the backgrounds from the root down to `el` and draws `fg` (the text color) on top. Each element's
++  // opacity fades its whole subtree into what is behind it, unless `flat` asks for colors alone.
++  // Returns { bg, text, alpha } as drawn, or null when a gradient or an image is in the way.
++  const paint = (el, fg, flat) => {
++    const chain = [];
++    for (let e = el; e; e = e.parentElement) chain.push(e);
++    let alpha = 1;
++    const go = (i, behind) => {
++      const e = chain[i], cs = getComputedStyle(e);
++      const c = parse(cs.backgroundColor);
++      const inner = cs.backgroundImage !== 'none' ? null : c.a >= 1 ? c : c.a > 0 ? behind && blend(c, behind) : behind;
++      let res = i === 0 ? inner && { bg: inner, text: fg ? blend(fg, inner) : inner } : go(i - 1, inner);
++      const o = flat ? 1 : opacityOf(e, cs);
++      if (o < 1) {
++        alpha *= o;
++        if (!res || !behind) return null;
++        const fade = (x) => blend({ ...x, a: o }, behind);
++        res = { bg: fade(res.bg), text: fade(res.text) };
++      }
++      return res;
++    };
++    const res = go(chain.length - 1, canvas);
++    return res && { ...res, alpha };
++  };
++  // A disabled control, or the label of one: WCAG 1.4.3 exempts inactive components.
++  const inactive = (el) => {
++    const off = ':disabled, [aria-disabled="true"]';
++    if (el.closest(off)) return true;
++    const label = el.closest('label');
++    return !!(label && label.control && label.control.matches(off));
++  };
++  window.__dnKit = { parse, lum, blend, ratioOf, hex, canvas, opacityOf, alphaOf, paint, inactive };
++}
++
+ // Runs in the page. Returns raw measurements; judgement stays in Node.
+ function measure(minTap) {
+   const sel = (el) => {
+@@ -155,6 +230,7 @@ function measure(minTap) {
+   const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+   const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+   const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
++  const kit = window.__dnKit;
+   const bgOf = (el) => {
+     const layers = [];
+     for (let e = el; e; e = e.parentElement) {
+@@ -163,7 +239,7 @@ function measure(minTap) {
+       const c = parse(cs.backgroundColor);
+       if (c && c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+     }
+-    let base = { r: 255, g: 255, b: 255, a: 1 };
++    let base = kit.canvas; // white, or the dark canvas of a page that opts into a dark scheme
+     for (const c of layers.reverse()) base = blend(c, base);
+     return base;
+   };
+@@ -173,7 +249,7 @@ function measure(minTap) {
+     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
+   };
+ 
+-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
++  const out = { overflow: null, small: [], fine: [], lowContrast: [], dimmed: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
+   const vw = document.documentElement.clientWidth;
+   if (document.documentElement.scrollWidth > vw + 1) {
+     const culprits = [...document.querySelectorAll('body *')]
+@@ -214,7 +290,21 @@ function measure(minTap) {
+       const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+       const large = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700);
+       const need = large ? 3 : 4.5;
+-      if (ratio < need && out.lowContrast.length < 15) out.lowContrast.push({ sel: sel(el), ratio: +ratio.toFixed(2), need, text: t.textContent.trim().slice(0, 40) });
++      if (ratio < need) {
++        if (out.lowContrast.length < 15) out.lowContrast.push({ sel: sel(el), ratio: +ratio.toFixed(2), need, text: t.textContent.trim().slice(0, 40) });
++      } else {
++        // The colors pass; now the text as drawn. Opacity on the element or an ancestor fades it into what is behind.
++        // Text hidden from assistive technology is decoration, and a fade to nothing is not text at all.
++        const drawn = kit.paint(el, fg);
++        if (drawn && drawn.alpha < 1 && drawn.alpha > 0.02 && !el.closest('[aria-hidden="true"]')) {
++          const faded = kit.ratioOf(drawn.text, drawn.bg);
++          if (faded < need) {
++            const hit = { sel: sel(el), ratio: +faded.toFixed(2), need, opacity: +drawn.alpha.toFixed(2), text: t.textContent.trim().slice(0, 40) };
++            // A disabled control is exempt (WCAG 1.4.3, inactive components); it is recorded, not reported.
++            if (kit.inactive(el)) { if (out.dimmed.length < 10) out.dimmed.push(hit); } else if (out.lowContrast.length < 15) out.lowContrast.push(hit);
++          }
++        }
++      }
+     }
+   }
+ 
+@@ -459,59 +549,236 @@ function snapshot() {
+   };
+ }
+ 
+-async function focusCheck(page) {
+-  return page.evaluate(async () => {
+-    const els = [...document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])')].slice(0, 20);
+-    const bad = [];
+-    for (const el of els) {
+-      const look = () => { const c = getComputedStyle(el); return [c.outlineStyle, c.outlineWidth, c.outlineColor, c.boxShadow, c.borderColor, c.backgroundColor, c.textDecorationLine].join('|'); };
+-      el.blur();
+-      const before = look();
+-      el.focus({ focusVisible: true });
+-      if (document.activeElement !== el) continue;
+-      const after = look();
+-      const c = getComputedStyle(el);
+-      const outlined = c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0;
+-      if (before === after && !outlined) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
+-      el.blur();
+-    }
+-    return bad;
+-  });
+-}
+-
+-// F01 in interactive states: text inside a control must keep its contrast on hover and on keyboard focus.
+-// Transitions are switched off so the state is measured at its end value.
+-function stateTexts(i) {
+-  // Any CSS color (rgb, color(srgb …) from color-mix, oklch …) resolved through a 1×1 canvas.
+-  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+-  const parse = (c) => {
+-    if (!c || c === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+-    const m = c.match(/^rgba?\(([^)]+)\)$/);
+-    if (m) {
+-      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+-      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
++// F02: what keyboard focus draws. Runs in the page. Each focusable element is focused in turn, and the element and the
++// parts around it that can carry its focus style (its labels, wrappers, siblings and children) are compared before and after.
++// - Nothing changes anywhere and the element has no outline: no visible focus.
++// - A ring is drawn (an outline, a box-shadow, a border that changes): its color needs 3:1 against the surface it is
++//   drawn on. The element's own ring is judged first; a label's or wrapper's ring only when the element draws none or
++//   is itself hidden (a visually hidden radio). One ring that reaches 3:1 is enough, so a two-color ring passes.
++// Left alone, because the surface or the ring cannot be placed: photos, gradients, SVG art and large pseudo-element
++// layers under the ring; focus styles on pseudo-elements; the browser's own ring (outline-style: auto).
++function focusProbe(max) {
++  const kit = window.__dnKit;
++  const { parse, blend, ratioOf, hex } = kit;
++  // End values at once, and every painted layer answers elementsFromPoint (an overlay with pointer-events: none still paints).
++  const css = document.createElement('style');
++  css.textContent = '*,*::before,*::after{transition:none!important}*{pointer-events:auto!important}';
++  document.head.appendChild(css);
++  const KEYS = ['outlineStyle', 'outlineWidth', 'outlineColor', 'outlineOffset', 'boxShadow', 'backgroundColor', 'backgroundImage', 'textDecorationLine', 'opacity', 'visibility', 'display',
++    ...['Top', 'Right', 'Bottom', 'Left'].flatMap((d) => [`border${d}Color`, `border${d}Width`, `border${d}Style`])];
++  const snap = (el, pseudo) => {
++    const c = getComputedStyle(el, pseudo);
++    if (pseudo && (c.content === 'none' || c.content === 'normal')) return null;
++    const o = {};
++    for (const k of KEYS) o[k] = c[k];
++    return o;
++  };
++  const same = (a, b) => (!a && !b) || (!!a && !!b && KEYS.every((k) => a[k] === b[k]));
++  // The look the check has always compared on the element itself.
++  const lookOf = (o) => [o.outlineStyle, o.outlineWidth, o.outlineColor, o.boxShadow, o.borderTopColor, o.borderRightColor, o.borderBottomColor, o.borderLeftColor, o.backgroundColor, o.textDecorationLine].join('|');
++  const around = (el) => {
++    const set = new Set();
++    for (const l of el.labels || []) { set.add(l); for (const c of [...l.children].slice(0, 6)) set.add(c); }
++    for (let a = el.parentElement, k = 0; a && a !== document.body && a !== document.documentElement && k < 3; a = a.parentElement, k++) set.add(a);
++    for (let x = el.previousElementSibling, k = 0; x && k < 2; x = x.previousElementSibling, k++) set.add(x);
++    for (let x = el.nextElementSibling, k = 0; x && k < 2; x = x.nextElementSibling, k++) set.add(x);
++    for (const c of [...el.children].slice(0, 8)) set.add(c);
++    set.delete(el);
++    return [...set].slice(0, 24);
++  };
++  // Painted where a sighted user can see it: not faded out, not clipped to a pixel.
++  const present = (el) => {
++    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
++    if (r.width < 3 || r.height < 3 || cs.visibility === 'hidden' || kit.alphaOf(el) < 0.05) return false;
++    return !/inset\((50|100)%|circle\(0/.test(cs.clipPath) && !/^rect\(0(px)?[ ,]+0(px)?[ ,]+0(px)?[ ,]+0(px)?\)$/.test(cs.clip);
++  };
++  const parseShadows = (str) => {
++    if (!str || str === 'none') return [];
++    const parts = [];
++    let depth = 0, cur = '';
++    for (const ch of str) {
++      if (ch === '(') depth++; else if (ch === ')') depth--;
++      if (ch === ',' && depth === 0) { parts.push(cur); cur = ''; } else cur += ch;
+     }
+-    cv.clearRect(0, 0, 1, 1);
+-    cv.fillStyle = '#000'; cv.fillStyle = c;
+-    cv.fillRect(0, 0, 1, 1);
+-    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+-    return { r, g, b, a: a / 255 };
++    parts.push(cur);
++    return parts.map((part) => {
++      const fn = part.match(/[a-z-]+\((?:[^()]|\([^()]*\))*\)/i);
++      const rest = fn ? part.replace(fn[0], ' ') : part;
++      const n = (rest.match(/-?[\d.]+(?:e-?\d+)?px/g) || []).map(parseFloat);
++      const word = rest.match(/#[0-9a-f]{3,8}\b|\b(?!inset\b)[a-z]+\b/i);
++      return { raw: part.trim(), inset: /\binset\b/.test(rest), x: n[0] || 0, y: n[1] || 0, blur: n[2] || 0, spread: n[3] || 0, color: parse(fn ? fn[0] : word ? word[0] : 'transparent') };
++    });
+   };
+-  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+-  const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+-  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+-  const bgOf = (el) => {
++  // The rings `host` draws on focus: { host, kind, color, from, to }, where from..to is the band the ring covers,
++  // measured outward from the border edge (negative: inside the element).
++  const ringsOf = (host, b, a) => {
++    const list = [];
++    const on = a.outlineStyle !== 'none' && parseFloat(a.outlineWidth) > 0;
++    if (on && ['outlineStyle', 'outlineWidth', 'outlineColor', 'outlineOffset'].some((k) => a[k] !== b[k])) {
++      const off = parseFloat(a.outlineOffset) || 0;
++      list.push(a.outlineStyle === 'auto' ? { host, kind: 'outline', auto: true } : { host, kind: 'outline', color: parse(a.outlineColor), from: off, to: off + parseFloat(a.outlineWidth) });
++    }
++    if (a.boxShadow !== b.boxShadow) {
++      const was = new Set(parseShadows(b.boxShadow).map((x) => x.raw));
++      const bw = Math.max(...['Top', 'Right', 'Bottom', 'Left'].map((d) => parseFloat(a[`border${d}Width`]) || 0));
++      let over = 0, overIn = 0; // a shadow listed earlier paints over the ones after it
++      for (const sh of parseShadows(a.boxShadow)) {
++        const reach = sh.spread + sh.blur / 2 + Math.max(Math.abs(sh.x), Math.abs(sh.y)) / 2;
++        const covered = sh.inset ? overIn : over;
++        if (!was.has(sh.raw) && sh.color.a > 0 && reach > covered + 0.5) {
++          list.push(sh.inset ? { host, kind: 'box-shadow', color: sh.color, from: -(bw + reach), to: -(bw + covered) } : { host, kind: 'box-shadow', color: sh.color, from: covered, to: reach });
++        }
++        if (sh.color.a >= 0.99 && sh.blur === 0) { if (sh.inset) overIn = Math.max(overIn, sh.spread); else over = Math.max(over, sh.spread); }
++      }
++    }
++    for (const d of ['Top', 'Right', 'Bottom', 'Left']) {
++      const w = parseFloat(a[`border${d}Width`]) || 0;
++      if (w < 1 || /none|hidden/.test(a[`border${d}Style`])) continue;
++      const drawnBefore = (parseFloat(b[`border${d}Width`]) || 0) >= 1 && !/none|hidden/.test(b[`border${d}Style`]);
++      if (drawnBefore && a[`border${d}Color`] === b[`border${d}Color`]) continue;
++      list.push({ host, kind: 'border', color: parse(a[`border${d}Color`]), from: -w, to: 0, border: true });
++      break;
++    }
++    return list;
++  };
++  const paintsLayer = (el, pseudo) => {
++    const c = getComputedStyle(el, pseudo);
++    if (c.content === 'none' || c.content === 'normal' || c.display === 'none' || +c.opacity <= 0.02) return false;
++    if (!(parseFloat(c.width) >= 24 && parseFloat(c.height) >= 24)) return false;
++    return c.backgroundImage !== 'none' || parse(c.backgroundColor).a > 0.05;
++  };
++  // The color painted at a point, leaving out `host` and what is inside it when the ring is drawn outside.
++  // null: unknown (a photo, a gradient, SVG art, a pseudo-element layer). undefined: outside the viewport.
++  const surfaceAt = (x, y, host, outside) => {
++    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return undefined;
+     const layers = [];
+-    for (let e = el; e; e = e.parentElement) {
+-      const cs = getComputedStyle(e);
+-      if (cs.backgroundImage !== 'none') return null;
++    for (const el of document.elementsFromPoint(x, y)) {
++      const own = el === host || host.contains(el);
++      if (outside && own) continue;
++      if (el instanceof SVGElement) {
++        const box = (el.ownerSVGElement || el).getBoundingClientRect();
++        if (own || box.width * box.height <= 64 * 64) continue; // an icon's strokes are not the surface
++        return null;
++      }
++      if (/^(IMG|VIDEO|CANVAS|IFRAME|OBJECT|EMBED|PICTURE)$/.test(el.tagName)) return null;
++      const a = kit.alphaOf(el);
++      if (a <= 0.02) continue;
++      const cs = getComputedStyle(el);
++      if (cs.backgroundImage !== 'none' || paintsLayer(el, '::before') || paintsLayer(el, '::after')) return null;
+       const c = parse(cs.backgroundColor);
+-      if (c && c.a > 0) { layers.push(c); if (c.a >= 1) break; }
++      if (c.a * a > 0) { layers.push({ ...c, a: c.a * a }); if (c.a * a >= 1) break; }
+     }
+-    let base = { r: 255, g: 255, b: 255, a: 1 };
++    let base = kit.canvas;
+     for (const c of layers.reverse()) base = blend(c, base);
+     return base;
+   };
++  const boxOf = (el) => { const rs = el.getClientRects(); return rs.length > 1 ? rs[0] : el.getBoundingClientRect(); };
++  // Surfaces at the middle of each side, `d` px out from the border edge (negative: in).
++  const surfaces = (host, d) => {
++    const r = boxOf(host);
++    if (d < 0) d = -Math.min(-d, Math.max(1, Math.min(r.width, r.height) / 2 - 1));
++    const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
++    return [[cx, r.top - d], [cx, r.bottom + d], [r.left - d, cy], [r.right + d, cy]].map(([x, y]) => surfaceAt(x, y, host, d > 0));
++  };
++  // The best contrast a ring reaches on any side, with the surface it was measured on. Infinity: cannot tell.
++  const judge = (ring) => {
++    if (ring.auto) return { ratio: Infinity };
++    const fade = kit.alphaOf(ring.host);
++    const color = { ...ring.color, a: ring.color.a * fade };
++    const bands = [];
++    if (ring.border) bands.push(1.5, ring.from - 1.5); // a border shows against what is outside it or against the fill inside
++    else if (ring.to <= 0 || ring.from >= 0) bands.push((ring.from + ring.to) / 2 || 0.5);
++    else bands.push(ring.to / 2, ring.from / 2); // straddles the edge: part outside, part inside
++    let best = null, known = 0;
++    for (const d of bands) {
++      for (const s of surfaces(ring.host, d)) {
++        if (s === null) return { ratio: Infinity };
++        if (s === undefined) continue;
++        known++;
++        const drawn = blend(color, s), ratio = ratioOf(drawn, s);
++        if (!best || ratio > best.ratio) best = { ratio, ring: hex(drawn), on: hex(s), kind: ring.kind };
++      }
++    }
++    return known >= 2 && best ? best : { ratio: Infinity };
++  };
++  // A fill that flips on focus (an inverted button) is an indicator by itself.
++  const fillFlips = (host, b, a) => {
++    if (a.backgroundImage !== b.backgroundImage) return true;
++    if (a.backgroundColor === b.backgroundColor) return false;
++    const behind = host.parentElement ? kit.paint(host.parentElement, null, true) : { bg: kit.canvas };
++    if (!behind) return true;
++    return ratioOf(blend(parse(a.backgroundColor), behind.bg), blend(parse(b.backgroundColor), behind.bg)) >= 3;
++  };
++
++  const SEL = 'a[href], button, input:not([type=hidden]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
++  const out = { checked: 0, unfocused: [], weak: [] };
++  const startX = scrollX, startY = scrollY;
++  const probe = (el, where) => {
++    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
++    const watch = [el, ...around(el)];
++    const before = watch.map((w) => [snap(w), snap(w, '::before'), snap(w, '::after')]);
++    el.focus({ focusVisible: true, preventScroll: true });
++    if (document.activeElement !== el) return;
++    el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
++    out.checked++;
++    const after = watch.map((w) => [snap(w), snap(w, '::before'), snap(w, '::after')]);
++    const [b0, a0] = [before[0][0], after[0][0]];
++    const outlined = a0.outlineStyle !== 'none' && parseFloat(a0.outlineWidth) > 0;
++    const pseudoChanged = watch.some((w, i) => !same(before[i][1], after[i][1]) || !same(before[i][2], after[i][2]));
++    const othersChanged = pseudoChanged || watch.some((w, i) => i > 0 && !same(before[i][0], after[i][0]));
++    const tag = (el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30);
++    if (lookOf(b0) === lookOf(a0) && !outlined) {
++      // The element itself does not change. A label, wrapper or sibling that does (a custom radio, a switch) carries the focus.
++      if (!othersChanged) { out.unfocused.push(tag); return; }
++    }
++    if (pseudoChanged) return; // a ring drawn by ::before or ::after cannot be placed
++    const box = boxOf(el);
++    const inlineSpill = getComputedStyle(el).display === 'inline' && [...el.querySelectorAll('*')].slice(0, 20).some((c) => { const r = c.getBoundingClientRect(); return r.width > 0 && (r.top < box.top - 4 || r.bottom > box.bottom + 4); });
++    let rings = present(el) && !inlineSpill ? ringsOf(el, b0, a0) : [];
++    let hosts = rings.length ? [0] : [];
++    if (!rings.length) {
++      watch.forEach((w, i) => {
++        if (i === 0 || same(before[i][0], after[i][0]) || !present(w)) return;
++        const r = ringsOf(w, before[i][0], after[i][0]);
++        if (r.length) { rings.push(...r); hosts.push(i); }
++      });
++    }
++    if (!rings.length) return;
++    if (a0.textDecorationLine !== b0.textDecorationLine) return; // an underline in the text color
++    if ([0, ...hosts].some((i) => fillFlips(watch[i], before[i][0], after[i][0]))) return;
++    let best = null;
++    for (const ring of rings) {
++      const j = judge(ring);
++      if (!best || j.ratio > best.ratio) best = j;
++      if (best.ratio >= 3) break;
++    }
++    if (best && best.ratio < 3) {
++      const text = (el.getAttribute('aria-label') || el.innerText || (el.labels && el.labels[0] ? el.labels[0].innerText : '') || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 24);
++      out.weak.push({ sel: (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.classList[0] ? '.' + el.classList[0] : '')), text, ratio: +best.ratio.toFixed(2), ring: best.ring, on: best.on, kind: best.kind, ...(where ? { where } : {}) });
++    }
++  };
++  for (const el of [...document.querySelectorAll(SEL)].filter((x) => !x.closest('[inert]')).slice(0, max)) probe(el);
++  // Controls inside a closed dialog are focused too: each dialog is opened for the check, then closed again.
++  for (const dialog of [...document.querySelectorAll('dialog:not([open])')].slice(0, 5)) {
++    try { dialog.showModal(); } catch { continue; }
++    for (const el of [...dialog.querySelectorAll(SEL)].slice(0, 30)) probe(el, 'in the dialog');
++    try { dialog.close(); } catch {}
++  }
++  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
++  css.remove();
++  scrollTo({ left: startX, top: startY, behavior: 'instant' });
++  return out;
++}
++
++async function focusCheck(page) {
++  await page.evaluate(installKit);
++  return page.evaluate(focusProbe, 200);
++}
++
++// F01 in interactive states: text inside a control must keep its contrast on hover and on keyboard focus.
++// Transitions are switched off so the state is measured at its end value.
++function stateTexts(i) {
++  const kit = window.__dnKit;
+   const root = document.querySelector(`[data-dn-i="${i}"]`);
+   if (!root) return [];
+   const out = [];
+@@ -522,12 +789,13 @@ function stateTexts(i) {
+     const el = t.parentElement;
+     const cs = getComputedStyle(el);
+     if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+-    const fg = parse(cs.color), bg = bgOf(el);
+-    if (!fg || !bg) continue;
+-    const L1 = lum(blend(fg, bg)), L2 = lum(bg);
++    // As drawn, with opacity (a hover that fades the control fades its label too); colors alone where that is unknown.
++    const fg = kit.parse(cs.color);
++    const drawn = kit.paint(el, fg) || kit.paint(el, fg, true);
++    if (!drawn || drawn.alpha <= 0.02) continue;
+     const size = parseFloat(cs.fontSize);
+     const large = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700);
+-    out.push({ text: t.textContent.trim().slice(0, 30), ratio: +((Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05)).toFixed(2), need: large ? 3 : 4.5 });
++    out.push({ text: t.textContent.trim().slice(0, 30), ratio: +kit.ratioOf(drawn.text, drawn.bg).toFixed(2), need: large ? 3 : 4.5 });
+   }
+   return out;
+ }
+@@ -618,23 +886,96 @@ function overlaps() {
+   return out;
+ }
+ 
++// Runs in the page: does a stylesheet answer prefers-color-scheme: dark (a media query, a sheet's media, light-dark())?
++function hasDarkScheme() {
++  const DARK = /prefers-color-scheme\s*:\s*dark|light-dark\(/i;
++  const scan = (sheet) => {
++    try {
++      if (sheet.media && DARK.test(sheet.media.mediaText)) return true;
++      for (const rule of sheet.cssRules) {
++        if (rule.styleSheet ? DARK.test(rule.media ? rule.media.mediaText : '') || scan(rule.styleSheet) : DARK.test(rule.cssText)) return true;
++      }
++    } catch {} // a cross-origin sheet cannot be read
++    return false;
++  };
++  return [...document.styleSheets].some(scan) || [...document.querySelectorAll('[style]')].some((e) => DARK.test(e.getAttribute('style')));
++}
++
++// The width the contrast checks run at: 1280, or the last width when 1280 is not in the list.
++const contrastWidth = opt.widths.includes(1280) ? 1280 : opt.widths[opt.widths.length - 1];
++const said = new Set();
++const once = (key) => !said.has(key) && !!said.add(key);
++// F01 on text, at rest. `scheme` is 'dark' on the second pass; a finding the light pass already made with the same
++// numbers is not dark-specific and is not repeated.
++function reportText(m, width, scheme) {
++  const at = `@${width}px${scheme ? ` ${scheme}` : ''}`;
++  for (const c of m.lowContrast) {
++    if (!once(`t|${width}|${c.sel}|${c.text}|${c.ratio}`)) continue;
++    add('F01', `${at} ${c.sel}`, `contrast ${c.ratio}:1 < ${c.need}:1 "${c.text}"${c.opacity ? ` at opacity ${c.opacity} (the element's and its ancestors' opacity, multiplied); dim it with a color that keeps ${c.need}:1 instead of opacity` : ''}`);
++  }
++}
++function reportFields(m, width, scheme) {
++  const at = `@${width}px${scheme ? ` ${scheme}` : ''}`;
++  for (const b of m.boundary) {
++    if (!once(`b|${b.sel}|${b.ratio}`)) continue;
++    add('F01', `${at} ${b.sel}`, `field boundary ${b.ratio}:1 < 3:1${b.name ? ` "${b.name}"` : ''}; give the border or fill 3:1 against the surface so the field can be found`);
++  }
++  for (const d of m.dimmed) {
++    if (!once(`d|${d.sel}|${d.text}|${d.ratio}`)) continue;
++    notes.push({ about: 'F01', where: `${at} ${d.sel}`, message: `disabled control text "${d.text}" is ${d.ratio}:1 at opacity ${d.opacity} (< ${d.need}:1). WCAG exempts inactive controls, so this is not a finding; if the text is itself the information (sold out, suspended, saving), also state it somewhere at full contrast` });
++  }
++}
++async function reportStates(page, width, scheme) {
++  const at = `@${width}px${scheme ? ` ${scheme}` : ''}`;
++  for (const b of await stateContrast(page)) {
++    if (!once(`s|${b.state}|${b.text}|${b.ratio}`)) continue;
++    add('F01', `${at} :${b.state}`, `contrast ${b.ratio}:1 < ${b.need}:1 on ${b.state} "${b.text}"`);
++  }
++}
++// F02: controls that show no focus, and focus rings below 3:1. One finding per ring color and surface, because the
++// fix is one color however many controls share it.
++async function reportFocus(page, width, scheme) {
++  const res = await focusCheck(page);
++  const at = `@${width}px${scheme ? ` ${scheme}` : ''}`;
++  let shown = 0;
++  for (const u of res.unfocused) if (once(`u|${u}`) && shown++ < 10) add('F02', u, 'No visible focus change on keyboard focus');
++  const groups = new Map();
++  for (const w of res.weak) {
++    if (!once(`w|${w.sel}|${w.text}|${w.ring}|${w.on}`)) continue;
++    const k = `${w.ring} on ${w.on}`;
++    groups.set(k, [...(groups.get(k) || []), w]);
++  }
++  for (const list of [...groups.values()].slice(0, 6)) {
++    const worst = list.reduce((a, b) => (b.ratio < a.ratio ? b : a));
++    const names = list.slice(0, 3).map((w) => (w.text ? `"${w.text}"` : w.sel) + (w.where ? ` (${w.where})` : '')).join(', ');
++    add('F02', `${at} ${list[0].sel}`, `focus ring ${worst.ring} is ${worst.ratio}:1 against ${worst.on}, the surface it is drawn on (needs 3:1): ${names}${list.length > 3 ? ` and ${list.length - 3} more` : ''}; draw the ring in a color that reaches 3:1 on this surface, or add a second ring that does`);
++  }
++}
++
+ const browser = await pw.chromium.launch();
++// Loads the target at one width and waits until it shows what a visitor sees. `scheme` sets prefers-color-scheme.
++async function openPage(width, scheme) {
++  const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ...(scheme ? { colorScheme: scheme } : {}), ...(opt.tz ? { timezoneId: opt.tz } : {}) });
++  const page = await ctx.newPage();
++  if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
++  try {
++    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
++  } catch (e) {
++    await page.goto(url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
++  }
++  // Wait for images (decoding="async" data URIs too) and web fonts, so the screenshot shows what a visitor sees.
++  await page.evaluate(() => Promise.race([
++    Promise.all([...document.images].map((i) => (i.complete ? i.decode() : new Promise((r) => { i.onload = i.onerror = r; })).catch(() => {})).concat(document.fonts ? [document.fonts.ready] : [])),
++    new Promise((r) => setTimeout(r, 5000)),
++  ])).catch(() => {});
++  await page.waitForTimeout(400);
++  await page.evaluate(installKit);
++  return { ctx, page };
++}
++let darkScheme = false;
+ try {
+   for (const width of opt.widths) {
+-    const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ...(opt.tz ? { timezoneId: opt.tz } : {}) });
+-    const page = await ctx.newPage();
+-    if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
+-    try {
+-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+-    } catch (e) {
+-      await page.goto(url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
+-    }
+-    // Wait for images (decoding="async" data URIs too) and web fonts, so the screenshot shows what a visitor sees.
+-    await page.evaluate(() => Promise.race([
+-      Promise.all([...document.images].map((i) => (i.complete ? i.decode() : new Promise((r) => { i.onload = i.onerror = r; })).catch(() => {})).concat(document.fonts ? [document.fonts.ready] : [])),
+-      new Promise((r) => setTimeout(r, 5000)),
+-    ])).catch(() => {});
+-    await page.waitForTimeout(400);
++    const { ctx, page } = await openPage(width);
+     const file = path.join(opt.out, `w${width}.png`);
+     if (opt.first) {
+       const first = path.join(opt.out, `w${width}-first.png`);
+@@ -661,11 +1002,9 @@ try {
+       const sizes = [...new Set(m.fine.map((x) => x.size))].sort((a, b) => a - b).join('/');
+       add('R20', `@${width}px`, `${m.fine.length} text block(s) carry information at ${sizes}px, e.g. ${m.fine.slice(0, 3).map((x) => `"${x.text}"`).join(', ')}; set hints, metadata, captions, table cells and errors at 14px or more`);
+     }
+-    if (width === opt.widths[opt.widths.length - 1] || width >= 1280) {
+-      for (const c of m.lowContrast) add('F01', `@${width}px ${c.sel}`, `contrast ${c.ratio}:1 < ${c.need}:1 "${c.text}"`);
+-    }
+-    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+-      for (const b of m.boundary) add('F01', `@${width}px ${b.sel}`, `field boundary ${b.ratio}:1 < 3:1${b.name ? ` "${b.name}"` : ''}; give the border or fill 3:1 against the surface so the field can be found`);
++    if (width === opt.widths[opt.widths.length - 1] || width >= 1280) reportText(m, width);
++    if (width === contrastWidth) {
++      reportFields(m, width);
+       for (const n of m.nameMismatch) add('F13', `@${width}px ${n.sel}`, `aria-label "${n.label}" leaves out the visible "${n.missing}"; put the visible words in the label, first (voice users say what they see)`);
+     }
+     if (width <= 768) for (const t of m.tap) add('F09', `@${width}px ${t.sel}`, `tap target ${t.w}×${t.h}px < ${minTap}px`);
+@@ -674,15 +1013,25 @@ try {
+     for (const x of m.sidescroll) add('R24', `@${width}px ${x.sel}`, `${x.kind} hides ${x.pct}% of its width in a sideways scroll, e.g. "${x.text}"; ${x.kind === 'table' ? 'reflow rows into labelled blocks below about 640px, or keep the deciding column next to the first' : x.kind === 'code' ? 'wrap commands (white-space: pre-wrap; overflow-wrap: anywhere) or break them at flags' : 'reflow it to the width'}`);
+     if (width === 1280) for (const c of m.cjkTight) add('R14', `@${width}px ${c.sel}`, `Japanese running text at line-height ${c.ratio}; body copy needs 1.7–1.9 "${c.text}"`);
+     if (width === 1280 || (!look && width === opt.widths[opt.widths.length - 1])) look = m.look;
+-    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+-      for (const b of await stateContrast(page)) add('F01', `@${width}px :${b.state}`, `contrast ${b.ratio}:1 < ${b.need}:1 on ${b.state} "${b.text}"`);
++    if (width === contrastWidth) {
++      darkScheme = await page.evaluate(hasDarkScheme).catch(() => false);
++      await reportStates(page, width);
+     }
+     textsAt.set(width, m.texts);
+-    if (width === opt.widths[0]) {
+-      for (const src of m.brokenImg) add('N06', src, 'Broken image');
+-      const unfocused = await focusCheck(page);
+-      for (const u of unfocused.slice(0, 10)) add('F02', u, 'No visible focus change on keyboard focus');
+-    }
++    if (width === opt.widths[0]) for (const src of m.brokenImg) add('N06', src, 'Broken image');
++    // Focus is checked at the first width (as it always was) and at the contrast width, where the desktop navigation shows.
++    if (width === opt.widths[0] || width === contrastWidth) await reportFocus(page, width);
++    await ctx.close();
++  }
++
++  // A page with a dark scheme is measured again in it: text and field contrast (F01) and focus (F02).
++  if (darkScheme) {
++    const { ctx, page } = await openPage(contrastWidth, 'dark');
++    const m = await page.evaluate(measure, minTap);
++    reportText(m, contrastWidth, 'dark');
++    reportFields(m, contrastWidth, 'dark');
++    await reportStates(page, contrastWidth, 'dark');
++    await reportFocus(page, contrastWidth, 'dark');
+     await ctx.close();
+   }
+ 
+@@ -749,9 +1098,10 @@ try {
+ }
+ 
+ const counts = summarize(findings);
+-if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(capture ? { capture } : {}) }, null, 2));
++if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, notes, dark_scheme: darkScheme, look, ...(capture ? { capture } : {}) }, null, 2));
+ else {
+-  printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
++  printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}${darkScheme ? `\ndark scheme found: contrast and focus measured again at ${contrastWidth}px in dark` : ''}`);
++  if (notes.length) console.log(`notes (recorded, not findings):\n${notes.map((n) => `  ${n.about} ${n.where}  ${n.message}`).join('\n')}`);
+   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
+ }
+ process.exit(counts.floor ? 2 : 0);

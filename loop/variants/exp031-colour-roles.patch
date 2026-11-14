@@ -1,0 +1,59 @@
+diff --git a/skills/design-nexus/references/craft.md b/skills/design-nexus/references/craft.md
+index 7a1fcdd..f5d6c9f 100644
+--- a/skills/design-nexus/references/craft.md
++++ b/skills/design-nexus/references/craft.md
+@@ -17,8 +17,9 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
+ - Never fake bold or italic; load the weights you use. Use `font-display: swap`.
+ 
+ ## Color
+-- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach.
+-- Neutrals carry 80–90% of the surface. Accent is rare enough to mean something.
++- Build from the token plan's roles (action, status, data marks, signature, text, surface, focus), not from a brand-color-everywhere approach.
++- Neutrals carry 80–90% of the surface. The accent is the action color: it goes only on things you press and on the item currently selected in a set (the open tab, the one chosen option). It never marks data or a state (switched on, done, pending, available, failed), and never decorates (a rule, a band, a highlighted word, the logo).
++- The focus ring is a color that reaches 3:1 on every surface it lands on; it may be the action color if that holds.
+ - Tint neutrals slightly toward the accent hue rather than using pure gray.
+ - Status colors (success, warning, danger) are reserved for status.
+ - Dark mode is its own palette: raise surface lightness for elevation, desaturate accents, never pure #000 with pure #FFF body text for long reading.
+diff --git a/skills/design-nexus/references/direction.md b/skills/design-nexus/references/direction.md
+index 90ef430..1bb5a93 100644
+--- a/skills/design-nexus/references/direction.md
++++ b/skills/design-nexus/references/direction.md
+@@ -56,19 +56,20 @@ Steering away from a named look tends to land on its nearest neighbor: cool pape
+ 
+ Sourcing a color from the subject is necessary, not sufficient: every subject contains something warm (lamp light, wood, clay, paper, signage, warning tape), so "sourced" picks still pile up on one amber-to-orange accent and one familiar display face. Decide by comparison, not by first association:
+ 
+-- **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. Choose the one that carries meaning here (what the user acts on, what the subject owns, what the status means), and write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
++- **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. The accent is the action color: it marks only what the user presses and the item currently selected, so choose the candidate that is free to mean just "press this". Status colors and the signature's color are separate roles with their own lines in the plan (§4): a hue that already means a state in the subject, or that the signature is made of, stays in that role, however neatly a metaphor ties it to the button. Write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
+ - **Display face**: name three candidates from different type genres (axis table above) and choose by what the subject's own lettering looks like (its signage, labels, documents, screens), not by legibility alone; legibility is the body face's job.
+ 
+ If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, ground hue, type genre, and surface.
+ 
+ ## 4. Token plan
+ 
+-Write the plan in this shape. The values are yours to choose; there are deliberately no example values here, so nothing anchors them.
++Write the plan in this shape. The values are yours to choose; there are deliberately no example values here, so nothing anchors them. For colors, list the roles this page needs first and choose a hue for each after; no color is used outside its role.
+ 
+ ```
+-Colors (4–6, named by role in the subject's vocabulary):
+-  <name>  #RRGGBB  role (text / ground / surface / accent / status) — source: where in the subject's world it comes from
+-  accent candidates: <three hues ≥90° apart, each with a source> → chosen: <one> because <subject-specific reason>
++Colors (4–6), by role: action · each status the page shows (quiet unless the user must act on it) · data marks (highlighted values, series, meters) · signature · text and rules · ground and surface · focus
++  <role>  <name in the subject's vocabulary>  #RRGGBB — source: where in the subject's world it comes from (status colors too, not a stock red/amber/green)
++  <role>  = <another role>'s color — why the two meanings cannot be confused on this page (only focus may share the action color)
++  accent candidates (for the action role): <three hues ≥90° apart, each with a source> → chosen: <one> because <subject-specific reason>
+ Type:
+   display  "<family>" <weights> — where it is used, how many sizes (candidates: three genres → chosen because …)
+   body     "<family>" <weight> — size, line-height
+diff --git a/skills/design-nexus/templates/DESIGN.md b/skills/design-nexus/templates/DESIGN.md
+index 40d258f..a120541 100644
+--- a/skills/design-nexus/templates/DESIGN.md
++++ b/skills/design-nexus/templates/DESIGN.md
+@@ -42,6 +42,8 @@ pairs: text/bg, muted/bg, text/surface, on-accent/accent, accent/bg
+ 
+ Replace every `#RRGGBB` and `<family>`; delete the `dark.` lines if there is no dark scheme. Then run `node scripts/tokens-check.mjs DESIGN.md`. A Google-format `DESIGN.md` (YAML front matter with `colors`, `typography`, `components`) is read too.
+ 
++Color roles: one line per color token with its role (action, a status, data marks, signature, text or rules, ground or surface, focus) and its source. `accent` is the action color; a role with no token of its own names the token it uses.
++
+ ## Patterns
+ 
+ - Buttons:

@@ -1,0 +1,23 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>t</title><meta name="description" content="t">
+<!-- R31 negatives: the same content under the new rule (auto-phrase with the overflow-wrap fallback on the root, never
+     reset), with nowrap spans and room for labels of up to 14 characters. Longer cells, notes and a balanced heading
+     break only between phrases. -->
+<style>html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+body{margin:0;padding:16px;font:16px/1.8 sans-serif}
+h2{width:6.5em;text-wrap:balance}
+.nw{white-space:nowrap}
+.btn{display:inline-block;color:#1a1a1a}
+table{table-layout:fixed;width:16em;border-collapse:collapse}th,td{padding:0;text-align:left;vertical-align:top}col.k{width:4em}col.v{width:8.5em}col.w{width:7.5em}
+dl{margin:0}dd{margin:0}
+.tag{display:inline-block}
+#note{width:11.5em}</style></head>
+<body><main>
+<h1>教室</h1>
+<p><a class="btn" id="book" href="#"><span class="nw">（土）の回を</span>予約する</a></p>
+<table><col class="k"><col class="v"><tr><th>行き方</th><td id="access">駅から<span class="nw">徒歩約十分</span></td></tr></table>
+<table><col class="k"><col class="w"><tr><th>場所</th><td id="route">清水寺へ向かう坂の途中にある工房</td></tr></table>
+<dl><dt>時刻表</dt><dd id="stop">停留所の時刻表</dd></dl>
+<p><span class="tag" id="confirm">予約を確認</span></p>
+<p id="note">停留所を押すと時刻表に切り替わります</p>
+<h2 id="lead">土にさわる二時間半を</h2>
+</main></body></html>

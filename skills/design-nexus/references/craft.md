@@ -17,7 +17,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Never fake bold or italic; load the weights you use. Use `font-display: swap`.
 
 ## Color
-- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach.
+- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach; a status mark never borrows the action color, which stays on what is pressed and the current selection (R30).
 - Neutrals carry 80–90% of the surface. Accent is rare enough to mean something.
 - Tint neutrals slightly toward the accent hue rather than using pure gray.
 - Status colors (success, warning, danger) are reserved for status.
@@ -59,7 +59,7 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet 
   - Date strips and timelines become a grid that wraps (a month grid, a two-row week), not a strip that runs off the screen.
   - Log or sample output may scroll, but shorten its lines so the meaningful part (level, message) shows first. The render check flags content a scroll box hides as R24. A table never escapes its panel (R17).
 - **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
-- **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
+- **1920 gains something.** Cap the line length of text blocks (about 70ch), not the page. From 1600px, add what a reader at 1280 scrolls to find: a side column with the next step, details, or the legend beside what it explains; one more column of cards or rows; or a larger main figure or table. Keep the change inside a `min-width: 1600px` query so 1280 stays as planned. The added part has content in the first two screens and never repeats or outranks the main action. A page whose 1280 arrangement sits centred between wide empty margins at 1920 is not designed for that width (R29).
 
 ## Components and states
 - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.

@@ -13,7 +13,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | ID | Check | Detected by |
 |---|---|---|
 | F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
-| F02 | Focus indicator removed or invisible | lint, render |
+| F02 | Focus indicator removed or invisible. An indicator drawn on a `:focus-within` wrapper or a label that holds no other control, or on a following sibling such as the visible box of a visually hidden input (`input:focus-visible + .box` or `~ .box`), counts as the control's own | lint, render |
 | F03 | Image without `alt` | lint |
 | F04 | HTML document missing `lang` or viewport meta | lint |
 | F05 | Animation without a `prefers-reduced-motion` path | lint, render |
@@ -33,7 +33,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R01 | An overused default face as the primary family (Inter, Roboto, Arial, Helvetica, Open Sans, Poppins, Montserrat, Lato, bare system-ui; Japanese: Noto Sans JP alone with no other voice) | lint |
 | R02 | Purple/indigo/violet gradient as default decoration | lint |
 | R03 | Gradient-filled text | lint |
-| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band | audit, eval diversity |
+| R04 | One of the default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band; (e) product default: white cards on a light grey ground with a left sidebar, pill toggles, and stock checkboxes in the work area | audit, eval diversity |
 | R05 | Emoji used as icons in headings, buttons, or list markers | lint |
 | R06 | Large uniform radius on everything | lint |
 | R07 | Glassmorphism (backdrop blur) on many surfaces | lint |
@@ -53,6 +53,10 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
 | R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
 | R25 | At 1280 or 768, the first enabled filled action (a button or link with a solid fill that stands out from its surface) starts below the first screen (900px) | render |
+| R29 | At 1920 the 1280 arrangement is unchanged: it sits centred (content at most 1.2× its 1280 width, 200px or more of empty margin on each side) or its tracks merely stretch (1.3× or wider, reaching within 200px of an edge). Not counted when 1920 sets a block beside another (a side column, one more column of cards, a table column), shows text 1280 does not, widens the main figure 1.15× or more, or sets body type 1.08× larger. Measured only when both 1280 and 1920 are rendered | render |
+| R30 | At 1280 the action color also marks a state or decoration: two or more things nobody presses (a done, booked, saved, on, due or today mark, a data mark, an ornament) take the fill of the first filled action that has a hue, or a shade or tint of it, as text, fill, border, ring, underline, `::before`/`::after` or SVG paint. Not counted: controls and links, the brand mark, focus rings, the current selection (`aria-current` other than a date or time, `aria-selected`, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more (a band, a surface, the signature's ground). Not measured when the action color is the page's ink (a quarter or more of the text outside controls) | render |
+| R31 | At some width, Japanese text breaks inside a phrase where it must not: text of one or two lines, or a heading, button, label, nav item, table cell, `dt`/`dd`, caption, or legend, breaks where the browser's own `auto-phrase` segmentation would not (駅か\|ら, 停留\|所, 基本\|給) or between a closing bracket and its particle (（土）\|の回を), or a Japanese label of up to 14 characters (not a heading) wraps and leaves 2 characters or fewer on its last line (予約を\|確認, 茶の\|色); a break at a space, punctuation, or `<wbr>` is not counted. Running text of three or more lines is not counted | render |
+| R33 | At 1280, white cards on a grey page (R04 e): on a light near-neutral ground behind `main` (OKLab lightness 0.9 or more, chroma 0.025 or less), the first screen shows two or more panels lighter than the ground (by 0.02 or more) that have a radius, a shadow, or a border on three or more sides and show 40,000px² or more each, or one such panel beside a left sidebar. App chrome is not counted (nav, a header or footer outside `main`, fixed and sticky bars, a bar across the top, a left sidebar), and a panel inside another counts once. Not measured with `--surface mobile` | render |
 
 ## Finish
 

@@ -2,7 +2,7 @@
 // design-nexus render check: screenshots at several widths plus rendered Floor checks.
 // Needs Playwright (any install it can find). Without it, prints a skip notice and exits 0.
 // Usage:
-//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]
+//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]   (R29 needs 1280 and 1920)
 //        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
 //        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
 // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
@@ -129,6 +129,7 @@ async function captureTiles(page, width) {
   return { files, height, truncated: covered < height };
 }
 const textsAt = new Map();
+const wideAt = new Map(); // R29: the arrangement at 1280 and 1920
 
 // Runs in the page. Returns raw measurements; judgement stays in Node.
 function measure(minTap) {
@@ -173,7 +174,7 @@ function measure(minTap) {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0;
   };
 
-  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, cjkTight: [], texts: [], look: null };
+  const out = { overflow: null, small: [], fine: [], lowContrast: [], boundary: [], nameMismatch: [], tap: [], brokenImg: [], breaks: [], sidescroll: [], fold: null, filled: [], cjkTight: [], texts: [], look: null };
   const vw = document.documentElement.clientWidth;
   if (document.documentElement.scrollWidth > vw + 1) {
     const culprits = [...document.querySelectorAll('body *')]
@@ -363,20 +364,30 @@ function measure(minTap) {
   }
   // R25: the strongest-looking action should be on the first screen. Find the first enabled control with a solid fill
   // that stands out (2:1) from what is behind it; skip links and other off-screen helpers are ignored.
+  // The same finder hands R30 the solid fills top to bottom, with what is behind each, so that R30 can also take a fill
+  // that stands out by hue rather than by lightness (a yellow button on white paper).
   if (vw >= 768) {
     const fill = (el) => { const c = parse(getComputedStyle(el).backgroundColor); return c && c.a >= 0.6 ? c : null; };
     const behind = (el) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = fill(e); if (c) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
     let first = null;
+    const filled = [];
     for (const el of document.querySelectorAll('a[href], button, [role="button"], input[type="submit"]')) {
       if (!visible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
       const r = el.getBoundingClientRect();
       const top = r.top + scrollY;
       if (r.width < 40 || r.height < 24 || top < 0 || r.right <= 0 || r.left >= vw) continue;
       const c = fill(el);
-      if (!c || ratioOf(c, behind(el)) < 2) continue;
-      if (!first || top < first.top) first = { top: Math.round(top), text: (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30), sel: sel(el) };
+      if (!c) continue;
+      const b = behind(el);
+      const strong = ratioOf(c, b) >= 2;
+      const text = (el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+      if (strong && (!first || top < first.top)) first = { top: Math.round(top), text, sel: sel(el) };
+      // A toggle, tab or current item shows its state or the selection with its fill; R30 looks past it to an action.
+      const toggle = el.matches('[aria-pressed], [aria-checked], [aria-selected], [aria-current]:not([aria-current="false"]), [role=switch], [role=tab], [role=checkbox], [role=radio], [role=option]');
+      filled.push({ top, text, sel: sel(el), rgb: [c.r, c.g, c.b].map(Math.round), behind: [b.r, b.g, b.b].map(Math.round), strong, toggle });
     }
     if (first && first.top > innerHeight) out.fold = first;
+    out.filled = filled.sort((a, b) => a.top - b.top).slice(0, 40).map((f) => ({ ...f, top: Math.round(f.top) }));
   }
   // A table whose columns no longer line up: a breakpoint hid a column in the head but not in the body or foot.
   for (const table of document.querySelectorAll('table')) {
@@ -459,22 +470,53 @@ function snapshot() {
   };
 }
 
+// F02: each focusable element is focused in turn and compared before and after. The indication may also be drawn on a
+// part around it: a wrapper or label (`:focus-within`, `label:has(input:focus-visible)`) or a following sibling (the
+// visible box of a visually hidden input, `input:focus-visible + .box` or `~ .box`). A part counts only if it holds no
+// other control (a ring on a whole form or nav does not show which field or link has focus) and, after focus, is shown
+// and draws something new: an outline or border where one is drawn, a box-shadow, a fill, an underline.
 async function focusCheck(page) {
   return page.evaluate(async () => {
-    const els = [...document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])')].slice(0, 20);
+    const SEL = 'a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])';
+    const els = [...document.querySelectorAll(SEL)].slice(0, 20);
+    // Right after focus a transition still reads its start value; read the end values instead.
+    const still = document.createElement('style');
+    still.textContent = '*,*::before,*::after{transition:none!important}';
+    document.head.appendChild(still);
+    const line = (w, s, rest) => (parseFloat(w) > 0 && !/none|hidden/.test(s) ? `${w} ${s} ${rest}` : '');
+    const drawn = (e) => {
+      const c = getComputedStyle(e);
+      return [line(c.outlineWidth, c.outlineStyle, `${c.outlineColor} ${c.outlineOffset}`), ...['Top', 'Right', 'Bottom', 'Left'].map((d) => line(c[`border${d}Width`], c[`border${d}Style`], c[`border${d}Color`])),
+        c.boxShadow, c.backgroundColor, c.backgroundImage, c.textDecorationLine].join('|');
+    };
+    const shown = (e) => {
+      const r = e.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2 || getComputedStyle(e).visibility === 'hidden') return false;
+      for (let a = e; a; a = a.parentElement) if (+getComputedStyle(a).opacity < 0.05) return false;
+      return true;
+    };
     const bad = [];
     for (const el of els) {
+      const other = (x) => x !== el && x.matches(SEL) && !x.disabled && x.getClientRects().length > 0;
+      const alone = (p) => !other(p) && ![...p.querySelectorAll(SEL)].some(other);
+      const parts = [];
+      for (const l of el.labels || []) if (alone(l)) parts.push(l, ...l.children);
+      for (let a = el.parentElement, k = 0; a && a !== document.body && k < 3 && alone(a); a = a.parentElement, k++) parts.push(a);
+      for (let s = el.nextElementSibling, k = 0; s && k < 3; s = s.nextElementSibling, k++) if (alone(s)) parts.push(s);
+      const watch = [...new Set(parts)].filter((p) => p !== el);
       const look = () => { const c = getComputedStyle(el); return [c.outlineStyle, c.outlineWidth, c.outlineColor, c.boxShadow, c.borderColor, c.backgroundColor, c.textDecorationLine].join('|'); };
       el.blur();
-      const before = look();
+      const before = look(), was = watch.map(drawn);
       el.focus({ focusVisible: true });
       if (document.activeElement !== el) continue;
       const after = look();
       const c = getComputedStyle(el);
       const outlined = c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0;
-      if (before === after && !outlined) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
+      const around = watch.some((p, i) => drawn(p) !== was[i] && shown(p));
+      if (before === after && !outlined && !around) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
       el.blur();
     }
+    still.remove();
     return bad;
   });
 }
@@ -618,6 +660,578 @@ function overlaps() {
   return out;
 }
 
+// R31: Japanese text that breaks inside a phrase. Runs in the page at rest. A block's inline text is read as runs (the
+// text under its inline elements; a <br>, a nested block or an atomic inline ends a run), and the characters' boxes show
+// where its lines start. Only short text counts: a block of one or two lines, or a heading, button, label, nav item,
+// table cell, dt/dd, caption or legend; running text of three or more lines may break between any characters (JLReq).
+// A break counts where the browser's own auto-phrase segmentation would not make it: a probe sets the run after a 1px
+// spacer, exactly as wide as the text before the break, and a phrase that straddles the break moves down whole (the
+// spacer keeps a first phrase from being split as too wide for its line). Also counted: a particle after a closing
+// bracket (（土）|の回), which auto-phrase splits, and a wrap of a Japanese label of up to 14 characters that is not a
+// heading when it leaves two characters or fewer on the label's last line (予約を|確認, 茶の|色). A break at a space or
+// a <wbr>, after 、。・ and the like, or before an opening bracket is between phrases. Text whose language is not Japanese is not read, and nothing is measured where the browser has no
+// auto-phrase.
+function jaBreaks() {
+  const found = [];
+  if (!(window.CSS && CSS.supports('word-break', 'auto-phrase'))) return found;
+  const JA = /[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff01-\uff9f]/; // kana, kanji, CJK and full-width forms
+  const WORD = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/; // kana and kanji
+  const KANA = /[\u3040-\u30ff]/;
+  const AFTER = /[、。，．！？：；・…‥!?]/; // a break after these is between phrases
+  const BEFORE = /[（「『【〔〈《［｛]/; // and so is a break before these
+  const CLOSE = /[）」』】〕〉》］｝)\]]/;
+  const HIRA = /[\u3041-\u309f]/;
+  // Text shown on screen is read even when aria-hidden (a legend drawn for the eye breaks like any other text).
+  const SKIP = 'script, style, noscript, template, textarea, select, option, pre, code, kbd, samp, svg, math';
+  const ATOMIC = /^(IMG|INPUT|SELECT|TEXTAREA|BUTTON|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|METER|PROGRESS|svg|math)$/;
+  const SHORT = 'h1, h2, h3, h4, h5, h6, button, label, legend, caption, figcaption, th, td, dt, dd, summary, nav, [role=button], [role=tab], [role=link], [role=menuitem], [role=heading], [role=cell], [role=gridcell], [role=columnheader], [role=rowheader]';
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const vw = document.documentElement.clientWidth;
+  const memo = new Map();
+  const style = (el) => { let c = memo.get(el); if (!c) memo.set(el, (c = getComputedStyle(el))); return c; };
+  const flows = (el) => !ATOMIC.test(el.tagName) && /^(inline|contents|ruby|ruby-base|ruby-base-container)$/.test(style(el).display);
+  const blockOf = (el) => { let e = el; while (e !== document.body && e.parentElement && flows(e)) e = e.parentElement; return e; };
+  const blocks = new Set();
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode()) {
+    const t = tw.currentNode, p = t.parentElement;
+    if (p && WORD.test(t.data) && !p.closest(SKIP)) blocks.add(blockOf(p));
+  }
+  if (!blocks.size) return found;
+  // The probe: a run set after a 1px spacer in a box exactly as wide as the text before the break (inline !important,
+  // so page rules on every element do not reach it).
+  const probe = document.createElement('dn-probe');
+  probe.setAttribute('lang', 'ja');
+  probe.setAttribute('aria-hidden', 'true');
+  probe.style.cssText = ['display:block', 'position:absolute', 'left:-30000px', 'top:0', 'visibility:hidden', 'contain:layout style', 'width:max-content', 'margin:0', 'padding:0', 'border:0',
+    'font:16px/2 sans-serif', 'letter-spacing:0', 'word-spacing:0', 'font-kerning:none', 'font-feature-settings:normal', 'text-transform:none', 'text-indent:0', 'white-space:normal', 'word-break:auto-phrase',
+    'line-break:strict', 'overflow-wrap:normal', 'hyphens:manual', 'text-wrap:wrap', 'text-spacing-trim:space-all', 'text-autospace:no-autospace', 'writing-mode:horizontal-tb', 'direction:ltr'].map((d) => d + ' !important').join(';');
+  const gap = document.createElement('dn-gap');
+  gap.style.cssText = 'display:inline-block !important;width:1px !important;height:1em !important;margin:0 !important;padding:0 !important';
+  const ptext = document.createTextNode('');
+  probe.append(gap, ptext);
+  const pr = document.createRange();
+  const at = (i) => { pr.setStart(ptext, i); pr.setEnd(ptext, i + ((ptext.data.charCodeAt(i) & 0xfc00) === 0xd800 ? 2 : 1)); return [...pr.getClientRects()].find((x) => x.width > 0); };
+  const cy = (r) => (r.top + r.bottom) / 2;
+  const cache = new Map();
+  // Whether auto-phrase would break the run before index k (p is the last visible character before it).
+  const phraseBreak = (s, p, k) => {
+    const key = `${k}\u0001${s}`;
+    if (cache.has(key)) return cache.get(key);
+    if (!probe.isConnected) document.documentElement.appendChild(probe);
+    ptext.data = s;
+    probe.style.setProperty('width', 'max-content', 'important');
+    const left = probe.getBoundingClientRect().left;
+    const rk = at(k);
+    let ok = true;
+    if (rk) {
+      probe.style.setProperty('width', `${rk.left - left + 0.5}px`, 'important');
+      const first = s.search(/\S/);
+      const g = gap.getBoundingClientRect(), r0 = at(first), rp = at(p), rn = at(k);
+      ok = !!(r0 && rp && rn) && Math.abs(cy(r0) - cy(g)) < 16 && Math.abs(cy(rp) - cy(r0)) < 16 && cy(rn) - cy(rp) > 16;
+    }
+    cache.set(key, ok);
+    return ok;
+  };
+  const rg = document.createRange();
+  try {
+    for (const B of blocks) {
+      const br = B.getBoundingClientRect();
+      if (br.width <= 2 || br.height <= 2 || br.right <= 0 || br.left >= vw) continue;
+      if (B.checkVisibility && !B.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+      const lang = (B.closest('[lang]')?.getAttribute('lang') || '').toLowerCase();
+      if (lang ? !/^ja\b/.test(lang) : !KANA.test(B.textContent)) continue;
+      const cs = style(B);
+      if (!/^horizontal/.test(cs.writingMode) || cs.direction === 'rtl') continue;
+      let clipped = false;
+      for (let a = B; a && a !== document.body && !clipped; a = a.parentElement) clipped = /rect\(0/.test(style(a).clip) || /inset\(50%|circle\(0/.test(style(a).clipPath);
+      if (clipped) continue;
+      // Runs of inline text, with the <wbr> opportunities in them.
+      const runs = [];
+      let cur = null;
+      const end = () => { if (cur && cur.chars.some((ch) => /\S/.test(ch))) runs.push(cur); cur = null; };
+      const walk = (n) => {
+        for (let c = n.firstChild; c; c = c.nextSibling) {
+          if (c.nodeType === 3) {
+            const nl = /^(pre|pre-wrap|pre-line|break-spaces)$/.test(style(c.parentElement).whiteSpace);
+            for (let i = 0; i < c.data.length; i++) {
+              if (nl && c.data[i] === '\n') { end(); continue; }
+              if (!cur) cur = { chars: [], node: [], off: [], wbr: new Set() };
+              cur.chars.push(c.data[i]); cur.node.push(c); cur.off.push(i);
+            }
+          } else if (c.nodeType === 1) {
+            if (c.tagName === 'BR') end();
+            else if (c.tagName === 'WBR') { if (cur) cur.wbr.add(cur.chars.length); }
+            else if (c.tagName === 'RT' || c.tagName === 'RP' || style(c).display === 'none') continue;
+            else if (c.matches(SKIP) || !flows(c)) end();
+            else walk(c);
+          }
+        }
+      };
+      walk(B);
+      end();
+      if (!runs.length) continue;
+      // Lines of the block, from its text boxes (boxes that overlap by half their height share a line).
+      const rects = [];
+      for (const t of new Set(runs.flatMap((r) => r.node))) {
+        rg.selectNodeContents(t);
+        for (const r of rg.getClientRects()) if (r.width > 0.5 && r.height > 0.5) rects.push(r);
+      }
+      rects.sort((a, b) => a.top - b.top);
+      let lines = 0, band = null;
+      for (const r of rects) if (!band || Math.min(r.bottom, band.bottom) - Math.max(r.top, band.top) < 0.5 * Math.min(r.height, band.height)) { lines++; band = r; }
+      if (lines < 2) continue;
+      const bare = runs.map((r) => r.chars.join('')).join('').replace(/\s+/g, '');
+      // A label, not a heading: a short heading may wrap between phrases (text-wrap: balance does just that).
+      const heading = !!B.closest('h1, h2, h3, h4, h5, h6, [role=heading]');
+      const label = !heading && bare.length <= 14 && [...bare].filter((ch) => WORD.test(ch)).length >= 2;
+      if (!(lines <= 2 || label || B.matches('a[href]') || B.closest(SHORT))) continue;
+      const quotes = [];
+      let phrase = false;
+      // A label's wrap between phrases counts only when it leaves two characters or fewer on the block's last line, so the
+      // lines are followed across the runs: line is the line of the latest character and onLast the characters on it.
+      const orphans = [];
+      let line = 0, onLast = 0, last = null;
+      const newLine = (r, q) => cy(r) > q.bottom - 1 || (r.left < q.left - 1 && r.top > q.top + 1);
+      for (const run of runs) {
+        const T = run.chars;
+        const jp = T.some((ch) => WORD.test(ch));
+        if (!jp && !label) continue;
+        const s = T.join('');
+        let prev = null, p = -1;
+        for (let i = 0; i < T.length; i++) {
+          if (/\s/.test(T[i])) continue;
+          const pair = (T[i].charCodeAt(0) & 0xfc00) === 0xd800 && i + 1 < T.length && run.node[i + 1] === run.node[i];
+          rg.setStart(run.node[i], run.off[i]);
+          rg.setEnd(run.node[i], run.off[i] + (pair ? 2 : 1));
+          const r = [...rg.getClientRects()].find((x) => x.width > 0);
+          if (r && last && newLine(r, last)) { line++; onLast = 0; }
+          if (r) { onLast++; last = r; }
+          if (jp && r && prev && newLine(r, prev)) {
+            // A new line starts at i. Breaks at a space, at a <wbr>, in Latin text, and after or before punctuation are fine.
+            let why = '';
+            const a = T[p], b = T[i];
+            const spaced = T.slice(p + 1, i).some((ch) => /\s/.test(ch));
+            const wbr = [...run.wbr].some((w) => w > p && w <= i);
+            if (!spaced && !wbr && (JA.test(a) || JA.test(b)) && !AFTER.test(a) && !BEFORE.test(b)) {
+              if (CLOSE.test(a)) why = HIRA.test(b) ? 'phrase' : '';
+              else if (!phraseBreak(s, p, i)) why = 'phrase';
+              else if (label) why = 'label';
+            }
+            if (why) {
+              // About eight characters before the break and six after, never cutting a surrogate pair.
+              const low = (j) => (s.charCodeAt(j) & 0xfc00) === 0xdc00;
+              let from = Math.max(0, i - 8), to = Math.min(s.length, i + 6);
+              if (low(from)) from--;
+              if (low(to)) to++;
+              const before = s.slice(from, i).replace(/\s+/g, ' ').trimStart(), after = s.slice(i, to).replace(/\s+/g, ' ').trimEnd();
+              const quote = `${from > 0 ? '…' : ''}${before}|${after}${to < s.length ? '…' : ''}`;
+              if (why === 'label') orphans.push({ line, quote });
+              else { phrase = true; quotes.push(quote); }
+            }
+          }
+          if (r) { prev = r; p = i; }
+          if (pair) i++;
+        }
+      }
+      // The label's wrap into its last line, when that line holds two characters or fewer.
+      if (onLast <= 2) for (const o of orphans) if (o.line === line) quotes.push(o.quote);
+      if (!quotes.length) continue;
+      const what = heading ? 'a heading' : B.closest('button, [role=button]') || B.closest('a[href]') ? 'a button or link'
+        : B.closest('label') ? 'a label' : B.closest('nav') ? 'a nav item' : B.closest('th, td, [role=cell], [role=gridcell], [role=columnheader], [role=rowheader]') ? 'a table cell'
+          : B.closest('dt, dd') ? `a ${B.closest('dt, dd').tagName.toLowerCase()}` : B.closest('caption, figcaption, legend, summary') ? `a ${B.closest('caption, figcaption, legend, summary').tagName.toLowerCase()}` : 'text';
+      found.push({ sel: sel(B), kind: phrase ? 'phrase' : 'label', what, lines, chars: bare.length, orphan: onLast, quotes });
+    }
+  } finally {
+    probe.remove();
+  }
+  return found;
+}
+
+// R30: the action color on things nobody presses. Runs in the page at rest, before any hover or focus. The action color
+// is the fill of the first filled action R25 finds that has a hue; a neutral fill (ink, white, grey) is shared with text
+// by design and is not checked. A mark is an element outside every control whose text, fill, border, ring, underline,
+// ::before/::after or SVG paint is that color: a state, a data mark, or decoration. Not counted: controls and what they
+// hold (links among them), the brand mark, focus rings, the current selection (aria-current other than a date or time,
+// aria-selected, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more
+// (a band, a surface, the signature's ground; counted marks are dots, badges, seals and markers of a few thousand px²).
+// Returns the marks with the component each sits in; Node fires at two marks.
+function actionMarks(filled) {
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const parse = (c) => {
+    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
+  };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+  const seen = new Map();
+  const bgOf = (el) => {
+    if (seen.has(el)) return seen.get(el);
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const c = parse(getComputedStyle(e).backgroundColor);
+      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const c of layers.reverse()) base = blend(c, base);
+    seen.set(el, base);
+    return base;
+  };
+  // A paint as it shows over what is behind it; a transparent one shows nothing of its own.
+  const over = (c, bg) => (c.a > 0 ? blend(c, bg) : null);
+  // OKLab, so that distance and hue follow what the eye sees.
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lab = (c) => {
+    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return { L, a, b, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180) / Math.PI };
+  };
+  const hueGap = (x, y) => { const d = Math.abs(x.h - y.h) % 360; return d > 180 ? 360 - d : d; };
+  const rgbOf = (v) => ({ r: v[0], g: v[1], b: v[2], a: 1 });
+  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
+  // The first filled action (not a toggle, tab or current item) with a hue (chroma 0.05 or more) that stands out from what
+  // is behind it: 2:1 in lightness, as R25 asks, or by color alone (ΔE 0.15 or more in OKLab).
+  const action = filled.find((f) => { const c = lab(rgbOf(f.rgb)); return !f.toggle && c.C >= 0.05 && (f.strong || dist(c, lab(rgbOf(f.behind))) >= 0.15); });
+  if (!action) return null;
+  const A = lab(rgbOf(action.rgb));
+  // Near the action color: the same color (ΔE ≤ 0.04: rounding, a slight alpha); a shade of it (hue within 12°, at least
+  // 60% of its chroma, ΔE ≤ 0.12: a pressed or text variant); or, for a fill, a tint that still reads as it (lighter, hue
+  // within 15°, at least 30% of its chroma and 0.04: a badge or chip). A paler wash reads as a tinted surface, and a status
+  // red 20° away is another color.
+  const near = (c, tint) => {
+    if (!c || c.a <= 0) return false;
+    const P = lab(c);
+    const d = dist(P, A);
+    if (d <= 0.04) return true;
+    if (P.C >= 0.6 * A.C && hueGap(P, A) <= 12 && d <= 0.12) return true;
+    return !!tint && P.L > A.L && P.C >= Math.max(0.04, 0.3 * A.C) && hueGap(P, A) <= 15;
+  };
+  const LARGE = 40000;
+  const CONTROL = 'a[href], button, input, select, textarea, label, summary, [contenteditable]:not([contenteditable="false"]), [role=button], [role=link], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=option], [role=slider], [role=spinbutton], [role=combobox], [role=treeitem]';
+  // A focusable element is a control unless it is a scroll box or a region that holds content.
+  const holder = /^(main|section|article|aside|nav|header|footer|table|figure|pre|dialog|form|ul|ol|dl)$/i;
+  const region = /^(region|group|tabpanel|dialog|alertdialog|document|article|list|table|grid|feed|log|status|img|figure|main|complementary)$/;
+  const control = (el) => {
+    if (el.closest(CONTROL)) return true;
+    for (let e = el.closest('[tabindex]'); e; e = e.parentElement && e.parentElement.closest('[tabindex]')) {
+      if (e.tabIndex < 0 || holder.test(e.tagName) || region.test(e.getAttribute('role') || '')) continue;
+      const cs = getComputedStyle(e);
+      if (!/auto|scroll/.test(cs.overflowX + cs.overflowY)) return true;
+    }
+    return false;
+  };
+  const SELECTED = '[aria-current]:not([aria-current="false"]):not([aria-current="date"]):not([aria-current="time"]), [aria-selected="true"], nav, [role=tablist], [role=radiogroup], [role=listbox], [role=menubar], [role=menu], [role=toolbar], [role=tree]';
+  const BRAND = '[class*="logo" i], [class*="brand" i], [class*="wordmark" i], [id*="logo" i], [id*="brand" i], [aria-label*="logo" i]';
+  // The box a checked input draws beside it, or a card that wraps one checked input.
+  const checkedBox = (el) => {
+    for (let e = el, k = 0; e && e !== document.body && k < 3; e = e.parentElement, k++) {
+      for (let s = e.previousElementSibling; s; s = s.previousElementSibling) if (s.matches('input:checked')) return true;
+      const fields = e.querySelectorAll('input, select, textarea');
+      if (fields.length === 1 && fields[0].matches(':checked')) return true;
+    }
+    return false;
+  };
+  // A color as computed styles write it (rgb() for most, oklch() or color() when the author used them).
+  const COLOR = /((?:rgba?|hsla?|color|oklch|oklab|lab|lch)\([^)]*\)|#[0-9a-f]{3,8}\b)/i;
+  // Hard rings and bars (blur of 2px or less, with a spread or an offset); soft elevation shadows are not marks.
+  const rings = (shadow, back) => {
+    if (!shadow || shadow === 'none') return [];
+    const out = [];
+    for (const s of shadow.split(/,(?![^(]*\))/)) {
+      const col = s.match(COLOR);
+      if (!col) continue;
+      const [x = 0, y = 0, blur = 0, spread = 0] = (s.replace(col[0], '').match(/-?[\d.]+px/g) || []).map(parseFloat);
+      if (blur <= 2 && (spread >= 1 || Math.abs(x) >= 1 || Math.abs(y) >= 1)) out.push(over(parse(col[0]), back));
+    }
+    return out;
+  };
+  const gradient = (img) => (img && img !== 'none' ? [...img.matchAll(new RegExp(COLOR.source, 'gi'))].map((m) => parse(m[1])) : []);
+  const box = (cs, back, size, ring) => {
+    const k = [];
+    const fill = parse(cs.backgroundColor);
+    if (size < LARGE && (near(over(fill, back), true) || gradient(cs.backgroundImage).some((c) => c.a > 0.5 && near(c, true)))) k.push('fill');
+    for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+      if (parseFloat(cs[`border${side}Width`]) >= 1 && !/none|hidden/.test(cs[`border${side}Style`]) && near(over(parse(cs[`border${side}Color`]), back))) { k.push('border'); break; }
+    }
+    if (ring && cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 && near(over(parse(cs.outlineColor), back))) k.push('outline');
+    if (ring && rings(cs.boxShadow, back).some((c) => near(c))) k.push('ring');
+    return k;
+  };
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('').replace(/\s+/g, ' ').trim();
+  const vw = document.documentElement.clientWidth;
+  const shown = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width + r.height < 2 || r.right <= 0 || r.left >= vw) return null;
+    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return null;
+    return r;
+  };
+  const COMP = 'section, article, aside, header, footer, nav, form, fieldset, dialog, figure, table, ul, ol, dl, details, [role=region], [role=group], [role=list], [role=table], [role=grid], [role=dialog], [role=status], [role=complementary]';
+  const compOf = (el) => {
+    const c = el.parentElement && el.parentElement.closest(COMP);
+    if (c) return c;
+    let e = el;
+    while (e.parentElement && e.parentElement !== document.body && e.parentElement.tagName !== 'MAIN') e = e.parentElement;
+    return e;
+  };
+  const found = new Map(); // element (an SVG counts as one) -> paints that matched
+  const viaText = new Set();
+  let chars = 0, inked = 0;
+  for (const el of document.body.querySelectorAll('*')) {
+    if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|BR|WBR)$/i.test(el.tagName)) continue;
+    let svg = el instanceof SVGElement ? (el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement ? null : el.ownerSVGElement) : null;
+    while (svg && svg.ownerSVGElement) svg = svg.ownerSVGElement;
+    if (el instanceof SVGElement && el.tagName.toLowerCase() === 'svg' && !el.ownerSVGElement) continue; // the root is judged by its shapes
+    const r = shown(el);
+    if (!r) continue;
+    const cs = getComputedStyle(el);
+    const text = svg ? '' : ownText(el);
+    const isControl = control(el);
+    if (text && !isControl) {
+      chars += text.length;
+      if (near(over(parse(cs.color), bgOf(el)))) inked += text.length;
+    }
+    if (isControl) continue;
+    let k = [];
+    if (svg) {
+      const sr = svg.getBoundingClientRect();
+      if (sr.width * sr.height >= LARGE) continue;
+      for (const p of ['fill', 'stroke']) if (!/none|url\(/.test(cs[p]) && near(over(parse(cs[p]), bgOf(svg)), p === 'fill')) k.push(p);
+    } else {
+      const back = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
+      const focused = el.matches(':focus-within');
+      if (text && near(over(parse(cs.color), bgOf(el)))) k.push('text');
+      if (text && cs.textDecorationLine !== 'none' && near(over(parse(cs.textDecorationColor), bgOf(el)))) k.push('underline');
+      k.push(...box(cs, back, r.width * r.height, !focused));
+      for (const pe of ['::before', '::after']) {
+        const ps = getComputedStyle(el, pe);
+        if (!ps.content || /^(none|normal)$/.test(ps.content) || ps.display === 'none' || ps.visibility === 'hidden' || +ps.opacity === 0) continue;
+        const size = (parseFloat(ps.width) || 0) * (parseFloat(ps.height) || 0);
+        const pk = box(ps, bgOf(el), size, !focused);
+        if (/^(["']).+\1$|^(counters?|attr)\(/.test(ps.content) && near(over(parse(ps.color), bgOf(el)))) pk.push('text');
+        if (pk.length) k.push(pe);
+      }
+    }
+    if (!k.length) continue;
+    const at = svg || el;
+    if (at.closest(SELECTED) || at.closest(BRAND) || checkedBox(at)) continue;
+    // Text that only inherits the color of a marked parent is the same mark.
+    if (!svg && k.every((x) => x === 'text') && el.parentElement && viaText.has(el.parentElement)) { viaText.add(el); continue; }
+    if (k.includes('text')) viaText.add(el);
+    found.set(at, [...new Set([...(found.get(at) || []), ...k])]);
+  }
+  const comps = new Map();
+  const marks = [...found].map(([el, paints]) => {
+    const c = compOf(el);
+    if (!comps.has(c)) comps.set(c, comps.size);
+    const label = (ownText(el) || el.getAttribute('aria-label') || (el.parentElement ? el.parentElement.innerText || '' : '')).replace(/\s+/g, ' ').trim().slice(0, 24);
+    return { sel: sel(el), text: label, paints, comp: comps.get(c), in: sel(c) };
+  });
+  const hex = '#' + action.rgb.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return { action: { sel: action.sel, text: action.text, hex }, marks, chars, inked };
+}
+
+// R33: the product default, white cards on a grey page. Runs in the page at rest. The ground is the background behind
+// main (behind body when there is no main); background images are not read, so a gradient that paints a sidebar strip
+// leaves the color under it. A panel is a box with a fill of its own that sits straight on that ground (what is behind it
+// is the ground's color) and is lighter than it, on the first screen (the top 900px of the page). Node counts the panels
+// with an edge (a radius of 2px or more, a shadow, or a border on three or more sides) that show 40,000px² or more. A
+// panel inside another counts once, as the outer one. App chrome is marked and not counted: nav, a banner or contentinfo,
+// a header or footer outside main and its sections, a fixed or sticky bar (as wide as most of the screen, or at most
+// 160px tall), a bar across the top, and a left sidebar (starting in the left quarter, at most 360px wide, and half the
+// screen tall, an aside, or holding a nav). Media and form controls are not panels. Also returns the left sidebar's
+// navigation, if there is one, so that a single panel beside it counts.
+function cardGround() {
+  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const parse = (c) => {
+    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
+    const m = c.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
+    }
+    cv.clearRect(0, 0, 1, 1);
+    cv.fillStyle = '#000'; cv.fillStyle = c;
+    cv.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: a / 255 };
+  };
+  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+  const memo = new Map();
+  const style = (el) => { let c = memo.get(el); if (!c) memo.set(el, (c = getComputedStyle(el))); return c; };
+  const seen = new Map();
+  const bgOf = (el) => {
+    if (seen.has(el)) return seen.get(el);
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const c = parse(style(e).backgroundColor);
+      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const c of layers.reverse()) base = blend(c, base);
+    seen.set(el, base);
+    return base;
+  };
+  // OKLab, so that lightness and chroma follow what the eye sees.
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lab = (c) => {
+    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return { L, a, b, C: Math.hypot(a, b) };
+  };
+  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
+  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const vw = document.documentElement.clientWidth, vh = innerHeight, sy = scrollY;
+  const main = [...document.querySelectorAll('main, [role=main]')].find((m) => m.getClientRects().length > 0);
+  const ground = bgOf(main || document.body);
+  const G = lab(ground);
+  const out = { ground: hex(ground), L: +G.L.toFixed(3), C: +G.C.toFixed(3), panels: [] };
+  const NOT = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|IMG|PICTURE|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|INPUT|SELECT|TEXTAREA|BUTTON|OPTION|METER|PROGRESS)$/;
+  const bar = (r) => r.width >= vw * 0.6 || r.height <= 160;
+  const found = [];
+  for (const el of document.body.querySelectorAll('*')) {
+    if (NOT.test(el.tagName) || el instanceof SVGElement) continue;
+    const r = el.getBoundingClientRect();
+    const top = r.top + sy;
+    const shown = Math.max(0, Math.min(vw, r.right) - Math.max(0, r.left)) * Math.max(0, Math.min(vh, top + r.height) - Math.max(0, top));
+    if (shown < 10000) continue;
+    const cs = style(el);
+    if (cs.display === 'inline' || (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))) continue;
+    const own = parse(cs.backgroundColor);
+    if (own.a <= 0) continue;
+    const behind = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
+    if (dist(lab(behind), G) > 0.02) continue;
+    const fill = blend(own, behind), F = lab(fill);
+    if (F.L <= G.L) continue;
+    const sides = ['Top', 'Right', 'Bottom', 'Left'].filter((s) => parseFloat(cs[`border${s}Width`]) >= 1 && !/none|hidden/.test(cs[`border${s}Style`])).length;
+    const radius = Math.max(...['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map((k) => parseFloat(cs[`border${k}Radius`]) || 0));
+    let chrome = null;
+    if (el.closest('nav, [role=navigation], [role=banner], [role=contentinfo]')) chrome = 'nav';
+    else {
+      const hf = el.closest('header, footer');
+      if (hf && !(hf.parentElement && hf.parentElement.closest('main, [role=main], article, section'))) chrome = hf.tagName.toLowerCase();
+    }
+    for (let a = el; !chrome && a && a !== document.body; a = a.parentElement) {
+      if (/^(fixed|sticky)$/.test(style(a).position) && bar(a.getBoundingClientRect())) chrome = 'fixed bar';
+    }
+    if (!chrome && top <= 1 && r.width >= vw * 0.9 && r.height <= 160) chrome = 'top bar';
+    if (!chrome && r.left < vw * 0.25 && r.width <= 360 && (r.height >= vh * 0.5 || el.matches('aside') || el.querySelector('nav, [role=navigation]'))) chrome = 'sidebar';
+    found.push({ el, sel: sel(el), x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), shown: Math.round(shown), fill: hex(fill), dL: +(F.L - G.L).toFixed(3), edge: radius >= 2 || cs.boxShadow !== 'none' || sides >= 3, chrome });
+  }
+  const panels = new Set(found.map((f) => f.el));
+  out.panels = found.filter((f) => { for (let a = f.el.parentElement; a; a = a.parentElement) if (panels.has(a)) return false; return true; }).map(({ el, ...f }) => f);
+  // The left sidebar, if any: navigation on the first screen that starts in the left quarter, at most 360px wide, with
+  // links or buttons stacked in three or more rows. Node lets one panel to the right of it count.
+  for (const n of document.querySelectorAll('nav, [role=navigation]')) {
+    const r = n.getBoundingClientRect();
+    if (!r.width || r.top + sy >= vh || r.left >= vw / 4 || r.width > 360) continue;
+    const rows = new Set([...n.querySelectorAll('a[href], button, [role=link], [role=tab]')].map((a) => a.getBoundingClientRect()).filter((b) => b.width > 0).map((b) => Math.round(b.top / 8)));
+    if (rows.size >= 3 && (!out.sidebar || r.right > out.sidebar.right)) out.sidebar = { sel: sel(n), right: Math.round(r.right) };
+  }
+  return out;
+}
+
+// R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
+// The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
+// media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
+// edge, a full-bleed band, fixed overlays and aria-hidden decoration do not set the frame.
+function wideLayout() {
+  const vw = document.documentElement.clientWidth;
+  const sy = scrollY;
+  const all = [...document.querySelectorAll('body *')];
+  const fixed = all.filter((e) => getComputedStyle(e).position === 'fixed');
+  const away = (el) => el.closest('script, style, noscript, template, [aria-hidden="true"]') || fixed.some((f) => f.contains(el));
+  const shown = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0; };
+  // Elements are matched across the two widths by their place in the tree.
+  const key = (el) => { const p = []; for (let e = el; e && e !== document.body && e.parentElement; e = e.parentElement) p.push([...e.parentElement.children].indexOf(e)); return p.reverse().join('.'); };
+  const B = 8, cols = Array.from({ length: Math.ceil(vw / B) + 1 }, () => []);
+  const paint = (r) => {
+    const l = Math.max(0, r.left), rr = Math.min(vw, r.right);
+    if (rr - l < 1 || r.height < 1) return;
+    for (let i = Math.floor(l / B); i * B < rr; i++) cols[i].push([r.top + sy, r.bottom + sy]);
+  };
+  const sizes = [];
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode()) {
+    const t = tw.currentNode, p = t.parentElement;
+    if (!t.data.trim() || !p || away(p) || !shown(p)) continue;
+    const rg = document.createRange();
+    rg.selectNodeContents(t);
+    for (const r of rg.getClientRects()) if (r.width > 0) paint(r);
+    sizes.push([parseFloat(getComputedStyle(p).fontSize), t.data.trim().length]);
+  }
+  const figs = [], rows = [];
+  for (const el of all) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'svg' ? el.parentElement && el.parentElement.closest('svg') : el.closest('svg')) continue;
+    if (away(el) || !shown(el)) continue;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const media = /^(img|svg|canvas|video|iframe|object|embed)$/.test(tag) || el.getAttribute('role') === 'img' || /url\(/.test(cs.backgroundImage);
+    const ruled = ['Left', 'Right', 'Top', 'Bottom'].some((s) => parseFloat(cs[`border${s}Width`]) > 0 && cs[`border${s}Style`] !== 'none');
+    const filled = !/^(rgba\(0, 0, 0, 0\)|transparent)$/.test(cs.backgroundColor) || cs.backgroundImage !== 'none' || cs.boxShadow !== 'none';
+    if ((media || ruled || filled || /^(input|select|textarea|button)$/.test(tag)) && r.width < vw * 0.95) paint(r);
+    // A figure that fills the viewport grows with it at every width; only one inside the page's frame can be planned larger.
+    if (media && r.width * r.height >= 160 * 120 && r.width < vw * 0.95) figs.push({ key: key(el), w: Math.round(r.width), h: Math.round(r.height) });
+    // Tracks: the in-flow children of each box at least 200px wide, as [index, left, top, right, bottom]. Node decides
+    // which children are blocks from their size at 1920 and counts how many of them sit side by side at each width.
+    if (rows.length < 2000 && r.width >= 200 && !/^(inline|contents)$/.test(cs.display) && el.children.length) {
+      const kids = [];
+      [...el.children].forEach((k, i) => {
+        const c = getComputedStyle(k);
+        if (kids.length >= 60 || c.position === 'absolute' || c.position === 'fixed' || !shown(k)) return;
+        const b = k.getBoundingClientRect();
+        kids.push([i, Math.round(b.left), Math.round(b.top + sy), Math.round(b.right), Math.round(b.bottom + sy)]);
+      });
+      if (kids.length) rows.push({ key: key(el), w: Math.round(r.width), cell: cs.display === 'table-row', kids });
+    }
+  }
+  const depth = cols.map((iv) => {
+    iv.sort((x, y) => x[0] - y[0]);
+    let d = 0, end = -Infinity;
+    for (const [t, b] of iv) if (b > end) { d += b - Math.max(t, end); end = b; }
+    return d;
+  });
+  const on = depth.filter((v) => v > 0).sort((x, y) => x - y);
+  const peak = on.length ? on[Math.floor(on.length * 0.8)] : 0;
+  const lo = depth.findIndex((v) => v > 0 && v >= peak * 0.1);
+  let left = 0, right = 0; // no content, no box
+  if (lo >= 0) { left = lo * B; for (let i = depth.length - 1; i >= 0; i--) if (depth[i] >= peak * 0.1) { right = Math.min(vw, (i + 1) * B); break; } }
+  // Body type: the size that half of the visible characters are set at or below.
+  sizes.sort((x, y) => x[0] - y[0]);
+  const chars = sizes.reduce((a, s) => a + s[1], 0);
+  let n = 0, body = 0;
+  for (const [s, c] of sizes) { n += c; if (n >= chars / 2) { body = s; break; } }
+  return { vw, left, right, body, figs, rows };
+}
+
 const browser = await pw.chromium.launch();
 try {
   for (const width of opt.widths) {
@@ -653,8 +1267,46 @@ try {
       capture.widths[width] = { tiles: t.files.length, page_height: t.height, truncated: t.truncated, flattened };
     }
     const m = await page.evaluate(measure, minTap);
+    if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
+    // R31: short Japanese text that breaks inside a phrase, one finding per block (at most 20 per width).
+    const ja = await page.evaluate(jaBreaks).catch(() => []);
+    ja.slice(0, 20).forEach((j, n) => {
+      const list = j.quotes.slice(0, 4).map((q) => `"${q}"`).join(', ') + (j.quotes.length > 4 ? ` and ${j.quotes.length - 4} more` : '');
+      const rest = n === 19 && ja.length > 20 ? `; ${ja.length - 20} more blocks break at ${width}px` : '';
+      if (j.kind === 'label') add('R31', `@${width}px ${j.sel}`, `at ${width}px the ${j.chars}-character Japanese label ${list} wraps and leaves ${j.orphan} character${j.orphan === 1 ? '' : 's'} on its last line; keep a label of up to 14 characters on one line: white-space: nowrap with room for it, or shorter copy${rest}`);
+      else add('R31', `@${width}px ${j.sel}`, `at ${width}px Japanese text breaks inside a phrase: ${list} (${j.what}, ${j.lines} line${j.lines === 1 ? '' : 's'}); set word-break: auto-phrase on html:lang(ja) and never reset it to normal, and keep a compound, a name, or a figure with its unit whole with a white-space: nowrap span or a <wbr> at its real boundary, or give it room${rest}`);
+    });
+    // R30: the action color also marks two or more things nobody presses (one stray mark is not enough; a state repeated
+    // down one table is). Skipped when the action color is the page's ink: a quarter or more of the text outside controls.
+    if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {
+      const ac = await page.evaluate(actionMarks, m.filled || []);
+      const comps = ac ? new Set(ac.marks.map((x) => x.comp)).size : 0;
+      if (ac && ac.inked < ac.chars * 0.25 && ac.marks.length >= 2) {
+        const groups = new Map();
+        for (const x of ac.marks) { const g = groups.get(x.sel) || { ...x, n: 0 }; g.n++; groups.set(x.sel, g); }
+        const list = [...groups.values()].slice(0, 8).map((g) => `${g.sel}${g.text ? ` "${g.text}"` : ''}${g.n > 1 ? ` ×${g.n}` : ''}`).join(', ');
+        add('R30', `@${width}px ${ac.action.sel}`, `the action color ${ac.action.hex} of "${ac.action.text}" also marks ${ac.marks.length} things nobody presses, in ${comps} component${comps === 1 ? '' : 's'}: ${list}${groups.size > 8 ? ', …' : ''}; the action color marks what is pressed and the current selection: give states a status color or a neutral mark (a current item marked with aria-current or aria-selected is not counted)`);
+      }
+    }
+    // R33: white cards on a grey page (R04 e). At 1280, on a light near-neutral ground (OKLab lightness 0.9 or more,
+    // chroma 0.025 or less), two or more panels lighter than it (by 0.02 or more) with an edge, each showing 40,000px² or
+    // more of the first screen, or one such panel beside a left sidebar. App chrome is not counted. Not measured on a
+    // mobile surface, whose 1280 view is a fallback.
+    if (width === 1280 && opt.surface !== 'mobile') {
+      const cg = await page.evaluate(cardGround).catch(() => null);
+      const panels = cg ? cg.panels.filter((p) => !p.chrome && p.edge && p.dL >= 0.02 && p.shown >= 40000) : [];
+      const beside = cg && cg.sidebar && panels.length === 1 && panels[0].x >= cg.sidebar.right - 8;
+      if (cg && cg.L >= 0.9 && cg.C <= 0.025 && (panels.length >= 2 || beside)) {
+        const fills = new Map();
+        for (const p of panels) fills.set(p.fill, (fills.get(p.fill) || 0) + 1);
+        const tones = [...fills].map(([f, n]) => `${f}${n > 1 ? ` ×${n}` : ''}`).join(', ');
+        const list = panels.slice(0, 6).map((p) => `${p.sel} ${p.w}×${p.h}`).join(', ') + (panels.length > 6 ? ', …' : '');
+        const what = beside ? `1 panel lighter than the ground (${tones}) on a ${cg.ground} ground beside the left sidebar ${cg.sidebar.sel}` : `${panels.length} panels lighter than the ground (${tones}) on a ${cg.ground} ground`;
+        add('R33', `@${width}px`, `the first screen sets ${what}: ${list}; white cards on a grey page are the product default: build the work area from the subject's own working object, one ground whose rules, bands or plates divide the regions, and keep elevation for what floats (menus, dialogs, a dragged item)`);
+      }
+    }
     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
     if (width === 1280 && m.fine.length >= 3) {
@@ -705,6 +1357,44 @@ try {
     if (total >= 60) {
       const sample = gone.sort((a, b) => weight(b) - weight(a)).slice(0, 2).map((t) => `"${t.slice(0, 40)}"`).join(', ');
       add('R18', `@${narrow}px`, `${gone.length} text block(s) shown at ${wide}px are hidden at ${narrow}px (${total} chars), e.g. ${sample}; reflow or collapse them behind a labeled control instead of removing them`);
+    }
+  }
+
+  // R29: 1920 shows the 1280 arrangement unchanged, either centred between wide empty margins or with the same tracks
+  // merely stretched. Not counted when 1920 gains something: a block that now sits beside another (a side column, one
+  // more column of cards, a table column), text that 1280 does not show, a larger main figure, or larger body type.
+  if (wideAt.has(1280) && wideAt.has(1920)) {
+    const a = wideAt.get(1280), b = wideAt.get(1920);
+    const wa = a.right - a.left, wb = b.right - b.left, ratio = wb / wa;
+    const L = b.left, R = b.vw - b.right;
+    const side = (kids) => { let n = 0; for (const k of kids) { const y = (k[2] + k[4]) / 2; n = Math.max(n, kids.filter((j) => j[2] <= y && j[4] >= y).length); } return n; };
+    const was = new Map(a.rows.map((r) => [r.key, r]));
+    const added = b.rows.some((r) => {
+      const old = was.get(r.key);
+      if (!old || r.w < wb * 0.3) return false;
+      const big = r.kids.filter((k) => r.cell || (k[3] - k[1] >= Math.max(96, r.w * 0.08) && k[4] - k[2] >= 56));
+      if (big.length < 2) return false;
+      const ids = new Set(big.map((k) => k[0]));
+      return side(big) > side(old.kids.filter((k) => ids.has(k[0])));
+    });
+    const key = (t) => t.replace(/\d/g, '0');
+    const left = new Map();
+    for (const t of textsAt.get(1280) || []) left.set(key(t), (left.get(key(t)) || 0) + 1);
+    let gained = 0;
+    for (const t of textsAt.get(1920) || []) {
+      if (left.get(key(t))) left.set(key(t), left.get(key(t)) - 1);
+      else gained += t.length + (t.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+    }
+    // The main figure: the largest at 1280, or any at least half its area; the one that grew most counts.
+    const most = Math.max(0, ...a.figs.map((f) => f.w * f.h));
+    const at1920 = new Map(b.figs.map((f) => [f.key, f]));
+    const figure = Math.max(1, ...a.figs.filter((f) => f.w * f.h >= most / 2 && at1920.has(f.key)).map((f) => at1920.get(f.key).w / f.w));
+    const type = a.body ? b.body / a.body : 1;
+    if (wa > 0 && !added && gained < 40 && figure < 1.15 && type < 1.08) {
+      const box = `content ${wb}px wide (${wa}px at 1280, ×${ratio.toFixed(2)}), ${L}px and ${R}px from the edges`;
+      const fix = 'from 1600px add what a reader at 1280 scrolls to find: a side column with the next step, details or the legend, one more column of cards or rows, or a larger main figure or table, inside a min-width: 1600px query';
+      if (ratio <= 1.2 && Math.min(L, R) >= 200) add('R29', '@1920px', `the 1280 arrangement sits centred between empty margins: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
+      else if (ratio >= 1.3 && Math.min(L, R) < 200) add('R29', '@1920px', `the 1280 tracks merely stretch: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
     }
   }
 

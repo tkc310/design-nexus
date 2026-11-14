@@ -1,6 +1,6 @@
 # Surface: product UI (dashboards, admin, settings, tools)
 
-- **Quiet surfaces.** Neutral backgrounds, hairline or subtle-elevation separation, color reserved for status, selection, and data.
+- **Quiet, not default.** Keep the work area calm and dense, but build its surface from the subject's own working object (the ledger sheet, the patch panel, the timetable board, the order slip): one ground whose rules, bands, or plates divide the regions, not white cards on a grey page; elevation only for what floats (menus, dialogs, a dragged item). Draw a state the user sets (on, approved, booked) with the signature's unit in a status color sourced from the subject (a lit lamp, a stamp), never as a stock checkbox grid or pill switch; the action color stays on what is pressed (`direction.md` §3). Color stays reserved for status, selection, and data.
 - **Density is a feature.** Default to compact rows (32–40px), tabular numerals, right-aligned numbers, left-aligned text. Offer a comfortable density only if users need it.
 - **Alignment over decoration.** Shared column edges across panels; labels and values on a consistent baseline.
 - **Navigation**: persistent and predictable (sidebar or top bar), current location always visible, breadcrumbs for depth > 2.
