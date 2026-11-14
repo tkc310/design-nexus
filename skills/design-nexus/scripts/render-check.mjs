@@ -660,6 +660,198 @@ function overlaps() {
   return out;
 }
 
+// R31: Japanese text that breaks inside a phrase. Runs in the page at rest. A block's inline text is read as runs (the
+// text under its inline elements; a <br>, a nested block or an atomic inline ends a run), and the characters' boxes show
+// where its lines start. Only short text counts: a block of one or two lines, or a heading, button, label, nav item,
+// table cell, dt/dd, caption or legend; running text of three or more lines may break between any characters (JLReq).
+// A break counts where the browser's own auto-phrase segmentation would not make it: a probe sets the run after a 1px
+// spacer, exactly as wide as the text before the break, and a phrase that straddles the break moves down whole (the
+// spacer keeps a first phrase from being split as too wide for its line). Also counted: a particle after a closing
+// bracket (（土）|の回), which auto-phrase splits, and a wrap of a Japanese label of up to 14 characters that is not a
+// heading when it leaves two characters or fewer on the label's last line (予約を|確認, 茶の|色). A break at a space or
+// a <wbr>, after 、。・ and the like, or before an opening bracket is between phrases. Text whose language is not Japanese is not read, and nothing is measured where the browser has no
+// auto-phrase.
+function jaBreaks() {
+  const found = [];
+  if (!(window.CSS && CSS.supports('word-break', 'auto-phrase'))) return found;
+  const JA = /[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff01-\uff9f]/; // kana, kanji, CJK and full-width forms
+  const WORD = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/; // kana and kanji
+  const KANA = /[\u3040-\u30ff]/;
+  const AFTER = /[、。，．！？：；・…‥!?]/; // a break after these is between phrases
+  const BEFORE = /[（「『【〔〈《［｛]/; // and so is a break before these
+  const CLOSE = /[）」』】〕〉》］｝)\]]/;
+  const HIRA = /[\u3041-\u309f]/;
+  // Text shown on screen is read even when aria-hidden (a legend drawn for the eye breaks like any other text).
+  const SKIP = 'script, style, noscript, template, textarea, select, option, pre, code, kbd, samp, svg, math';
+  const ATOMIC = /^(IMG|INPUT|SELECT|TEXTAREA|BUTTON|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|METER|PROGRESS|svg|math)$/;
+  const SHORT = 'h1, h2, h3, h4, h5, h6, button, label, legend, caption, figcaption, th, td, dt, dd, summary, nav, [role=button], [role=tab], [role=link], [role=menuitem], [role=heading], [role=cell], [role=gridcell], [role=columnheader], [role=rowheader]';
+  const sel = (el) => {
+    if (el.id) return `#${el.id}`;
+    const cls = [...el.classList].slice(0, 2).join('.');
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const vw = document.documentElement.clientWidth;
+  const memo = new Map();
+  const style = (el) => { let c = memo.get(el); if (!c) memo.set(el, (c = getComputedStyle(el))); return c; };
+  const flows = (el) => !ATOMIC.test(el.tagName) && /^(inline|contents|ruby|ruby-base|ruby-base-container)$/.test(style(el).display);
+  const blockOf = (el) => { let e = el; while (e !== document.body && e.parentElement && flows(e)) e = e.parentElement; return e; };
+  const blocks = new Set();
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (tw.nextNode()) {
+    const t = tw.currentNode, p = t.parentElement;
+    if (p && WORD.test(t.data) && !p.closest(SKIP)) blocks.add(blockOf(p));
+  }
+  if (!blocks.size) return found;
+  // The probe: a run set after a 1px spacer in a box exactly as wide as the text before the break (inline !important,
+  // so page rules on every element do not reach it).
+  const probe = document.createElement('dn-probe');
+  probe.setAttribute('lang', 'ja');
+  probe.setAttribute('aria-hidden', 'true');
+  probe.style.cssText = ['display:block', 'position:absolute', 'left:-30000px', 'top:0', 'visibility:hidden', 'contain:layout style', 'width:max-content', 'margin:0', 'padding:0', 'border:0',
+    'font:16px/2 sans-serif', 'letter-spacing:0', 'word-spacing:0', 'font-kerning:none', 'font-feature-settings:normal', 'text-transform:none', 'text-indent:0', 'white-space:normal', 'word-break:auto-phrase',
+    'line-break:strict', 'overflow-wrap:normal', 'hyphens:manual', 'text-wrap:wrap', 'text-spacing-trim:space-all', 'text-autospace:no-autospace', 'writing-mode:horizontal-tb', 'direction:ltr'].map((d) => d + ' !important').join(';');
+  const gap = document.createElement('dn-gap');
+  gap.style.cssText = 'display:inline-block !important;width:1px !important;height:1em !important;margin:0 !important;padding:0 !important';
+  const ptext = document.createTextNode('');
+  probe.append(gap, ptext);
+  const pr = document.createRange();
+  const at = (i) => { pr.setStart(ptext, i); pr.setEnd(ptext, i + ((ptext.data.charCodeAt(i) & 0xfc00) === 0xd800 ? 2 : 1)); return [...pr.getClientRects()].find((x) => x.width > 0); };
+  const cy = (r) => (r.top + r.bottom) / 2;
+  const cache = new Map();
+  // Whether auto-phrase would break the run before index k (p is the last visible character before it).
+  const phraseBreak = (s, p, k) => {
+    const key = `${k}\u0001${s}`;
+    if (cache.has(key)) return cache.get(key);
+    if (!probe.isConnected) document.documentElement.appendChild(probe);
+    ptext.data = s;
+    probe.style.setProperty('width', 'max-content', 'important');
+    const left = probe.getBoundingClientRect().left;
+    const rk = at(k);
+    let ok = true;
+    if (rk) {
+      probe.style.setProperty('width', `${rk.left - left + 0.5}px`, 'important');
+      const first = s.search(/\S/);
+      const g = gap.getBoundingClientRect(), r0 = at(first), rp = at(p), rn = at(k);
+      ok = !!(r0 && rp && rn) && Math.abs(cy(r0) - cy(g)) < 16 && Math.abs(cy(rp) - cy(r0)) < 16 && cy(rn) - cy(rp) > 16;
+    }
+    cache.set(key, ok);
+    return ok;
+  };
+  const rg = document.createRange();
+  try {
+    for (const B of blocks) {
+      const br = B.getBoundingClientRect();
+      if (br.width <= 2 || br.height <= 2 || br.right <= 0 || br.left >= vw) continue;
+      if (B.checkVisibility && !B.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+      const lang = (B.closest('[lang]')?.getAttribute('lang') || '').toLowerCase();
+      if (lang ? !/^ja\b/.test(lang) : !KANA.test(B.textContent)) continue;
+      const cs = style(B);
+      if (!/^horizontal/.test(cs.writingMode) || cs.direction === 'rtl') continue;
+      let clipped = false;
+      for (let a = B; a && a !== document.body && !clipped; a = a.parentElement) clipped = /rect\(0/.test(style(a).clip) || /inset\(50%|circle\(0/.test(style(a).clipPath);
+      if (clipped) continue;
+      // Runs of inline text, with the <wbr> opportunities in them.
+      const runs = [];
+      let cur = null;
+      const end = () => { if (cur && cur.chars.some((ch) => /\S/.test(ch))) runs.push(cur); cur = null; };
+      const walk = (n) => {
+        for (let c = n.firstChild; c; c = c.nextSibling) {
+          if (c.nodeType === 3) {
+            const nl = /^(pre|pre-wrap|pre-line|break-spaces)$/.test(style(c.parentElement).whiteSpace);
+            for (let i = 0; i < c.data.length; i++) {
+              if (nl && c.data[i] === '\n') { end(); continue; }
+              if (!cur) cur = { chars: [], node: [], off: [], wbr: new Set() };
+              cur.chars.push(c.data[i]); cur.node.push(c); cur.off.push(i);
+            }
+          } else if (c.nodeType === 1) {
+            if (c.tagName === 'BR') end();
+            else if (c.tagName === 'WBR') { if (cur) cur.wbr.add(cur.chars.length); }
+            else if (c.tagName === 'RT' || c.tagName === 'RP' || style(c).display === 'none') continue;
+            else if (c.matches(SKIP) || !flows(c)) end();
+            else walk(c);
+          }
+        }
+      };
+      walk(B);
+      end();
+      if (!runs.length) continue;
+      // Lines of the block, from its text boxes (boxes that overlap by half their height share a line).
+      const rects = [];
+      for (const t of new Set(runs.flatMap((r) => r.node))) {
+        rg.selectNodeContents(t);
+        for (const r of rg.getClientRects()) if (r.width > 0.5 && r.height > 0.5) rects.push(r);
+      }
+      rects.sort((a, b) => a.top - b.top);
+      let lines = 0, band = null;
+      for (const r of rects) if (!band || Math.min(r.bottom, band.bottom) - Math.max(r.top, band.top) < 0.5 * Math.min(r.height, band.height)) { lines++; band = r; }
+      if (lines < 2) continue;
+      const bare = runs.map((r) => r.chars.join('')).join('').replace(/\s+/g, '');
+      // A label, not a heading: a short heading may wrap between phrases (text-wrap: balance does just that).
+      const heading = !!B.closest('h1, h2, h3, h4, h5, h6, [role=heading]');
+      const label = !heading && bare.length <= 14 && [...bare].filter((ch) => WORD.test(ch)).length >= 2;
+      if (!(lines <= 2 || label || B.matches('a[href]') || B.closest(SHORT))) continue;
+      const quotes = [];
+      let phrase = false;
+      // A label's wrap between phrases counts only when it leaves two characters or fewer on the block's last line, so the
+      // lines are followed across the runs: line is the line of the latest character and onLast the characters on it.
+      const orphans = [];
+      let line = 0, onLast = 0, last = null;
+      const newLine = (r, q) => cy(r) > q.bottom - 1 || (r.left < q.left - 1 && r.top > q.top + 1);
+      for (const run of runs) {
+        const T = run.chars;
+        const jp = T.some((ch) => WORD.test(ch));
+        if (!jp && !label) continue;
+        const s = T.join('');
+        let prev = null, p = -1;
+        for (let i = 0; i < T.length; i++) {
+          if (/\s/.test(T[i])) continue;
+          const pair = (T[i].charCodeAt(0) & 0xfc00) === 0xd800 && i + 1 < T.length && run.node[i + 1] === run.node[i];
+          rg.setStart(run.node[i], run.off[i]);
+          rg.setEnd(run.node[i], run.off[i] + (pair ? 2 : 1));
+          const r = [...rg.getClientRects()].find((x) => x.width > 0);
+          if (r && last && newLine(r, last)) { line++; onLast = 0; }
+          if (r) { onLast++; last = r; }
+          if (jp && r && prev && newLine(r, prev)) {
+            // A new line starts at i. Breaks at a space, at a <wbr>, in Latin text, and after or before punctuation are fine.
+            let why = '';
+            const a = T[p], b = T[i];
+            const spaced = T.slice(p + 1, i).some((ch) => /\s/.test(ch));
+            const wbr = [...run.wbr].some((w) => w > p && w <= i);
+            if (!spaced && !wbr && (JA.test(a) || JA.test(b)) && !AFTER.test(a) && !BEFORE.test(b)) {
+              if (CLOSE.test(a)) why = HIRA.test(b) ? 'phrase' : '';
+              else if (!phraseBreak(s, p, i)) why = 'phrase';
+              else if (label) why = 'label';
+            }
+            if (why) {
+              // About eight characters before the break and six after, never cutting a surrogate pair.
+              const low = (j) => (s.charCodeAt(j) & 0xfc00) === 0xdc00;
+              let from = Math.max(0, i - 8), to = Math.min(s.length, i + 6);
+              if (low(from)) from--;
+              if (low(to)) to++;
+              const before = s.slice(from, i).replace(/\s+/g, ' ').trimStart(), after = s.slice(i, to).replace(/\s+/g, ' ').trimEnd();
+              const quote = `${from > 0 ? '…' : ''}${before}|${after}${to < s.length ? '…' : ''}`;
+              if (why === 'label') orphans.push({ line, quote });
+              else { phrase = true; quotes.push(quote); }
+            }
+          }
+          if (r) { prev = r; p = i; }
+          if (pair) i++;
+        }
+      }
+      // The label's wrap into its last line, when that line holds two characters or fewer.
+      if (onLast <= 2) for (const o of orphans) if (o.line === line) quotes.push(o.quote);
+      if (!quotes.length) continue;
+      const what = heading ? 'a heading' : B.closest('button, [role=button]') || B.closest('a[href]') ? 'a button or link'
+        : B.closest('label') ? 'a label' : B.closest('nav') ? 'a nav item' : B.closest('th, td, [role=cell], [role=gridcell], [role=columnheader], [role=rowheader]') ? 'a table cell'
+          : B.closest('dt, dd') ? `a ${B.closest('dt, dd').tagName.toLowerCase()}` : B.closest('caption, figcaption, legend, summary') ? `a ${B.closest('caption, figcaption, legend, summary').tagName.toLowerCase()}` : 'text';
+      found.push({ sel: sel(B), kind: phrase ? 'phrase' : 'label', what, lines, chars: bare.length, orphan: onLast, quotes });
+    }
+  } finally {
+    probe.remove();
+  }
+  return found;
+}
+
 // R30: the action color on things nobody presses. Runs in the page at rest, before any hover or focus. The action color
 // is the fill of the first filled action R25 finds that has a hue; a neutral fill (ink, white, grey) is shared with text
 // by design and is not checked. A mark is an element outside every control whose text, fill, border, ring, underline,
@@ -970,6 +1162,14 @@ try {
     if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
+    // R31: short Japanese text that breaks inside a phrase, one finding per block (at most 20 per width).
+    const ja = await page.evaluate(jaBreaks).catch(() => []);
+    ja.slice(0, 20).forEach((j, n) => {
+      const list = j.quotes.slice(0, 4).map((q) => `"${q}"`).join(', ') + (j.quotes.length > 4 ? ` and ${j.quotes.length - 4} more` : '');
+      const rest = n === 19 && ja.length > 20 ? `; ${ja.length - 20} more blocks break at ${width}px` : '';
+      if (j.kind === 'label') add('R31', `@${width}px ${j.sel}`, `at ${width}px the ${j.chars}-character Japanese label ${list} wraps and leaves ${j.orphan} character${j.orphan === 1 ? '' : 's'} on its last line; keep a label of up to 14 characters on one line: white-space: nowrap with room for it, or shorter copy${rest}`);
+      else add('R31', `@${width}px ${j.sel}`, `at ${width}px Japanese text breaks inside a phrase: ${list} (${j.what}, ${j.lines} line${j.lines === 1 ? '' : 's'}); set word-break: auto-phrase on html:lang(ja) and never reset it to normal, and keep a compound, a name, or a figure with its unit whole with a white-space: nowrap span or a <wbr> at its real boundary, or give it room${rest}`);
+    });
     // R30: the action color also marks two or more things nobody presses (one stray mark is not enough; a state repeated
     // down one table is). Skipped when the action color is the page's ink: a quarter or more of the text outside controls.
     if (width === 1280 || (!opt.widths.includes(1280) && width === opt.widths[opt.widths.length - 1])) {

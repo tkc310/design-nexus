@@ -168,6 +168,22 @@ else {
     const r = r30(f);
     check(`R30 ignores ${what}`, r.length === 0, JSON.stringify(r));
   }
+  // R31: short Japanese text that breaks inside a phrase, measured against the browser's own auto-phrase segmentation.
+  const r31 = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320').out.findings.filter((x) => x.id === 'R31');
+  const jb = r31('ja-phrase-breaks.html');
+  const at31 = (id) => jb.find((f) => f.where === `@320px #${id}`);
+  check('render flags R31 when a button, a table cell, a dd and a two-line note break inside a phrase, quoting each break and the width', [['book', '"（土）|の回を'], ['access', '"駅か|ら'], ['stop', '"停留|所'], ['note', '時刻|表']].every(([id, q]) => at31(id) && at31(id).message.includes(q) && /^at 320px Japanese text breaks inside a phrase/.test(at31(id).message)), JSON.stringify(jb));
+  check('render flags R31 when a Japanese label of up to 14 characters wraps between phrases and leaves two characters or fewer on its last line', !!at31('confirm') && /the 5-character Japanese label "予約を\|確認" wraps and leaves 2 characters on its last line/.test(at31('confirm').message), JSON.stringify(at31('confirm')));
+  check('R31 ignores a Japanese label that wraps between phrases and keeps three characters on its last line', !at31('hours'), JSON.stringify(at31('hours')));
+  check('R31 lists nothing else on that page (a heading set with auto-phrase, a one-line cell and term)', jb.length === 5, JSON.stringify(jb.map((f) => f.where)));
+  for (const [f, what] of [
+    ['ja-phrase-ok.html', 'the same text under the root rule (auto-phrase with the overflow-wrap fallback) with nowrap spans and room, cells and a balanced heading that break between phrases'],
+    ['ja-running-text.html', 'running text of three or more lines'],
+    ['en-narrow.html', 'a page whose language is not Japanese'],
+  ]) {
+    const r = r31(f);
+    check(`R31 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');

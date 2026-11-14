@@ -6,6 +6,14 @@
 - 評価(M-017〜M-022): 尺度 v2(40個の観察できる基準から計算する0〜100点、`eval/judge-prompt-v2.md`)、較正セットの凍結と検証(`calib-archive`・`calib`・`validate`・`restore`、`eval/calib/`)、参照ページ(`ref`・`ref-compare`、`eval/reference/`)、`compare --scale v2`、score.json と history.jsonl の `scale`。v1 の run と判定はそのまま読める。`eval/rubric.md` に95点の意味、ループの目標を v2 の 92(旧尺度の95点相当)に置くこと(M-023、`at_92` と旧尺度の目安の表示)、モデルが変わったときの読み方、対比較と v2 の役割、採用の手順を書いた。
 - ケース 06 に `hero.png`(製品のボード画面)を足し、`prepare` がケースの `assets:` をコピーする(M-019)。
 
+## 0.13.0 — 2026-11-14
+
+EXP-039 の変種を、再現(EXP-044)と合わせた2回の生成で採用(経路 C、基準点は base120a・base120b)。狙った v2 の D4.4(語や句の途中で折れない)は base の 7/12 に対して候補 10/12、日本語のページでは 1/6 に対して 5/6。対比較24対は 13勝11敗、clear 5–4。v2 の平均は +0.3(SE 2.7)と +0.9(SE 1.8)。1回目は日本語 3/3 の条件に届かず(2/3)、条件を先に書いてから同じ変種を生成し直した。D5.3 が2回とも 0.92 → 0.67 に下がっており、次の base の確認で読む。
+
+- japanese.md の Line breaking: `word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere;` を根(`html:lang(ja)`)に1回置き、`body`、セル、操作部品で `normal` に戻さない。1〜2行の文は語の途中で折らない。複合語、名前、数と単位は `nowrap` か `<wbr>` で保つ。コード、コマンド、数字では `overflow-wrap` を `normal` に戻す。
+- render-check に Reflex の R31: 1〜2行の日本語の文(見出し、ボタン、ラベル、ナビ、表のセル、`dt`/`dd`、キャプション)が、ブラウザ自身の auto-phrase の切れ目と違う所で折れたら挙げる。14 文字までのラベルが折り返して最後の行に 2 文字以下を残すときも挙げる。3行以上の本文は数えない。
+- checks.md に R31 の行。fixture `ja-phrase-breaks.html`、`ja-phrase-ok.html`、`ja-running-text.html`、`en-narrow.html` と test.mjs の確認。`good.html` に根の規則を入れた。
+
 ## 0.12.1 — 2026-11-14
 
 ツールの誤検知の修正(EXP-037)。出力の評価は変えていない。審査済みの 60 ページでは新旧の F02 とも 0 件で、効果は fixture でだけ確かめた。

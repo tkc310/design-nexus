@@ -1,0 +1,20 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>t</title><meta name="description" content="t">
+<!-- R31 positives: the old rule (word-break: normal on body, auto-phrase on headings only) lets short text break inside a phrase.
+     The label #confirm wraps between phrases and leaves 2 characters on its last line (counted); #hours wraps between
+     phrases and keeps 3 (not counted). -->
+<style>body{margin:0;padding:16px;font:16px/1.8 sans-serif;line-break:strict;word-break:normal;overflow-wrap:anywhere}
+h1,h2,h3{word-break:auto-phrase}
+.btn{display:inline-block;width:3.25em;color:#1a1a1a}
+table{table-layout:fixed;width:6.5em;border-collapse:collapse}th,td{padding:0;text-align:left;vertical-align:top}col.k{width:4em}col.v{width:2.5em}
+dl{margin:0}dd{margin:0;width:2.5em}
+.tag{display:inline-block;width:3.25em}
+#note{width:9.5em}</style></head>
+<body><main>
+<h1>教室</h1>
+<p><a class="btn" id="book" href="#">（土）の回を予約する</a></p>
+<table><col class="k"><col class="v"><tr><th>行き方</th><td id="access">駅から徒歩約十分</td></tr></table>
+<dl><dt>時刻表</dt><dd id="stop">停留所の時刻表</dd></dl>
+<p><span class="tag" id="confirm">予約を確認</span></p>
+<p><span class="tag" id="hours">受付の時間帯</span></p>
+<p id="note">停留所を押すと時刻表に切り替わります</p>
+</main></body></html>
