@@ -13,7 +13,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | ID | Check | Detected by |
 |---|---|---|
 | F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
-| F02 | Focus indicator removed or invisible | lint, render |
+| F02 | Focus indicator removed or invisible. An indicator drawn on a `:focus-within` wrapper or a label that holds no other control, or on a following sibling such as the visible box of a visually hidden input (`input:focus-visible + .box` or `~ .box`), counts as the control's own | lint, render |
 | F03 | Image without `alt` | lint |
 | F04 | HTML document missing `lang` or viewport meta | lint |
 | F05 | Animation without a `prefers-reduced-motion` path | lint, render |

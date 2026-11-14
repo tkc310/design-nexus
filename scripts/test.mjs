@@ -96,6 +96,11 @@ else {
   check('render flags F01 when a link loses contrast on hover', scF.some((f) => /hover/.test(f.where) && /Book a fitting/.test(f.message)), JSON.stringify(scF));
   check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
   check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
+  // F02 around the control. Two widths, so focus is checked at 320 before the 1280 state checks switch transitions off, as in a default run.
+  const fw = run('render-check.mjs', path.join(S2, 'focus-wrapper.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const fwF = fw.out.findings.filter((f) => f.id === 'F02').map((f) => f.where.trim());
+  check('F02 accepts focus drawn on a :focus-within wrapper, a label, or the box of a visually hidden input, through a transition too', !fwF.some((w) => /^#(filter|query|agree|plan-week|plan-month|day-wk|day-hol|opt-in)\b/.test(w)), JSON.stringify(fwF));
+  check('F02 still flags no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a hidden part', JSON.stringify(fwF.sort()) === JSON.stringify(['#bare', '#email', '#hover-only', '#lost', '#name', '#plain', '#undrawn']), JSON.stringify(fwF));
   const st = run('render-check.mjs', path.join(S2, 'small-text.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const r20 = st.out.findings.filter((f) => f.id === 'R20');
   check('render flags R20 when hints and metadata are set at 13px', r20.length === 1 && /3 text block/.test(r20[0].message), JSON.stringify(r20));

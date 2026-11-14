@@ -470,22 +470,53 @@ function snapshot() {
   };
 }
 
+// F02: each focusable element is focused in turn and compared before and after. The indication may also be drawn on a
+// part around it: a wrapper or label (`:focus-within`, `label:has(input:focus-visible)`) or a following sibling (the
+// visible box of a visually hidden input, `input:focus-visible + .box` or `~ .box`). A part counts only if it holds no
+// other control (a ring on a whole form or nav does not show which field or link has focus) and, after focus, is shown
+// and draws something new: an outline or border where one is drawn, a box-shadow, a fill, an underline.
 async function focusCheck(page) {
   return page.evaluate(async () => {
-    const els = [...document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])')].slice(0, 20);
+    const SEL = 'a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])';
+    const els = [...document.querySelectorAll(SEL)].slice(0, 20);
+    // Right after focus a transition still reads its start value; read the end values instead.
+    const still = document.createElement('style');
+    still.textContent = '*,*::before,*::after{transition:none!important}';
+    document.head.appendChild(still);
+    const line = (w, s, rest) => (parseFloat(w) > 0 && !/none|hidden/.test(s) ? `${w} ${s} ${rest}` : '');
+    const drawn = (e) => {
+      const c = getComputedStyle(e);
+      return [line(c.outlineWidth, c.outlineStyle, `${c.outlineColor} ${c.outlineOffset}`), ...['Top', 'Right', 'Bottom', 'Left'].map((d) => line(c[`border${d}Width`], c[`border${d}Style`], c[`border${d}Color`])),
+        c.boxShadow, c.backgroundColor, c.backgroundImage, c.textDecorationLine].join('|');
+    };
+    const shown = (e) => {
+      const r = e.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2 || getComputedStyle(e).visibility === 'hidden') return false;
+      for (let a = e; a; a = a.parentElement) if (+getComputedStyle(a).opacity < 0.05) return false;
+      return true;
+    };
     const bad = [];
     for (const el of els) {
+      const other = (x) => x !== el && x.matches(SEL) && !x.disabled && x.getClientRects().length > 0;
+      const alone = (p) => !other(p) && ![...p.querySelectorAll(SEL)].some(other);
+      const parts = [];
+      for (const l of el.labels || []) if (alone(l)) parts.push(l, ...l.children);
+      for (let a = el.parentElement, k = 0; a && a !== document.body && k < 3 && alone(a); a = a.parentElement, k++) parts.push(a);
+      for (let s = el.nextElementSibling, k = 0; s && k < 3; s = s.nextElementSibling, k++) if (alone(s)) parts.push(s);
+      const watch = [...new Set(parts)].filter((p) => p !== el);
       const look = () => { const c = getComputedStyle(el); return [c.outlineStyle, c.outlineWidth, c.outlineColor, c.boxShadow, c.borderColor, c.backgroundColor, c.textDecorationLine].join('|'); };
       el.blur();
-      const before = look();
+      const before = look(), was = watch.map(drawn);
       el.focus({ focusVisible: true });
       if (document.activeElement !== el) continue;
       const after = look();
       const c = getComputedStyle(el);
       const outlined = c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0;
-      if (before === after && !outlined) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
+      const around = watch.some((p, i) => drawn(p) !== was[i] && shown(p));
+      if (before === after && !outlined && !around) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
       el.blur();
     }
+    still.remove();
     return bad;
   });
 }
