@@ -1,0 +1,118 @@
+diff -ru skills/design-nexus/SKILL.md /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/SKILL.md
+--- skills/design-nexus/SKILL.md	2026-11-15 09:04:43.366266817 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/SKILL.md	2026-11-15 18:54:44.272811534 +0000
+@@ -52,7 +52,7 @@
+ 4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–e, including the agent house look).
+ 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
+ 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
+-7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
++7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then open at full size the first screen and every tile at 320 and 768, and the first screen at 1280 and 1920 (full-page images are shrunk past reading; read the code if no render is possible), against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
+ 8. **Remove one accessory** before finishing: the least necessary decoration, effect, or label.
+ 9. **Record.** Update `DESIGN.md` with new tokens or patterns, add rejected ideas to its *Learnings*, and add one line to *Looks used* (value, ground and accent hue, type genre, surface), so later work doesn't repeat itself. Record what shipped, not what was planned: the lint flags DESIGN.md colors the code doesn't use (N09), and every claim in your report or notes (a removed shadow, a fixed state) must be true of the final code.
+ 
+diff -ru skills/design-nexus/references/checks.md /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/references/checks.md
+--- skills/design-nexus/references/checks.md	2026-11-14 21:05:52.858143880 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/references/checks.md	2026-11-15 18:54:44.272811534 +0000
+@@ -50,7 +50,7 @@
+ | R18 | Content removed at the narrowest width instead of reflowed: text readable at 1280px is hidden (`display: none`, zero size) at 320px. Navigation and `aria-hidden` decoration are exempt | render |
+ | R19 | The page talks about itself: a note to the owner or reviewer in visible copy or `alt` text ("sample data", "placeholder name", "before publishing", "draft note", TODO;「サンプルデータ」「ダミー」「表示見本」「実際の画面ではありません」「公開前に確認」). Move it to NOTES.md | lint |
+ | R20 | Informative text below 14px at 1280: three or more blocks of hints, metadata, captions, table cells, or errors set at 12–13px | render |
+-| R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
++| R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), including text drawn by `::before` or `::after`, after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
+ | R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
+ | R25 | At 1280 or 768, the first enabled filled action (a button or link with a solid fill that stands out from its surface) starts below the first screen (900px) | render |
+ | R29 | At 1920 the 1280 arrangement is unchanged: it sits centred (content at most 1.2× its 1280 width, 200px or more of empty margin on each side) or its tracks merely stretch (1.3× or wider, reaching within 200px of an edge). Not counted when 1920 sets a block beside another (a side column, one more column of cards, a table column), shows text 1280 does not, widens the main figure 1.15× or more, or sets body type 1.08× larger. Measured only when both 1280 and 1920 are rendered | render |
+diff -ru skills/design-nexus/references/craft.md /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/references/craft.md
+--- skills/design-nexus/references/craft.md	2026-11-15 09:04:43.368072417 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/references/craft.md	2026-11-15 18:54:44.272811534 +0000
+@@ -43,7 +43,7 @@
+ 
+ ## Responsive
+ Design each width; don't let it happen. The middle width (about 768px, a tablet or a narrow laptop window) breaks most often, because desktop layouts get squeezed there and mobile layouts get stretched. The tools catch overflow, not ugliness: a layout can pass every check and still be broken.
+-- **Open the 320, 768, 1280, and 1920 screenshots in that order** and look at each one before saying a width works. At 768 look for squeezed components, overlapping labels, and orphaned columns.
++- **Open the first screen and the tiles at 320 and 768, then the first screens at 1280 and 1920,** and look at each one at full size before saying a width works. At 768 look for squeezed components, overlapping labels, and orphaned columns.
+ - **At 320, the signature or the primary action appears within the first screen** (about 640px). Move intro copy below it, or shorten it.
+ - **Grid and flex children that hold tables, code, or long words get `min-width: 0`**, or they push their track wider than the screen.
+ - **Narrow widths reflow content; they don't delete it.** Hide only duplicates and decoration. Anything a desktop reader can read is still there at 320: stacked, shortened, or behind a labeled disclosure, never `display: none` (R18). Collapsing the navigation into a menu is fine.
+diff -ru skills/design-nexus/scripts/render-check.mjs /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/scripts/render-check.mjs
+--- skills/design-nexus/scripts/render-check.mjs	2026-11-14 11:46:50.980586680 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/h1/design-nexus/scripts/render-check.mjs	2026-11-15 18:54:44.272811534 +0000
+@@ -4,7 +4,8 @@
+ // Usage:
+ //   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]   (R29 needs 1280 and 1920)
+ //        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
+-//        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
++//        [--first-screen] [--tiles]   (default: the first screen at every width and 900px tiles at 320 and 768, the
++//        images to open at full size; passing either flag captures exactly what is asked. Findings are the same either way.)
+ // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
+ import fs from 'node:fs';
+ import path from 'node:path';
+@@ -83,6 +84,7 @@
+ const shots = [];
+ let look = null;
+ // Evaluation captures: which widths were tiled, how tall the page was, and which bars were laid out in flow.
++if (!opt.first && !opt.tiles) { opt.first = true; opt.tiles = true; opt.tilesNarrow = true; }
+ const TILE = { height: 900, step: 840, max: 30 };
+ const capture = opt.first || opt.tiles ? { first_screen: opt.first, tiles: opt.tiles, tile_height: TILE.height, tile_step: TILE.step, widths: {} } : null;
+ 
+@@ -613,6 +615,33 @@
+ function overlaps() {
+   const sel = (el) => (el.id ? `#${el.id}` : el.tagName.toLowerCase() + [...el.classList].slice(0, 2).map((c) => '.' + c).join(''));
+   const boxes = [];
++  // Labels drawn by ::before / ::after (a card's "data-k" captions) are text too. Stand a real span in for each
++  // worded one, with the pseudo-element's own computed style, measure, then put the page back.
++  const stand = [];
++  const off = document.createElement('style');
++  off.textContent = '[data-dn-pb]::before{content:none!important}[data-dn-pa]::after{content:none!important}';
++  for (const el of document.body.querySelectorAll('*')) {
++    if (el.closest('[aria-hidden="true"], script, style, noscript, svg')) continue;
++    for (const [pseudo, flag] of [['::before', 'data-dn-pb'], ['::after', 'data-dn-pa']]) {
++      const cs = getComputedStyle(el, pseudo);
++      const m = /^"((?:[^"\\]|\\.)*)"$/.exec(cs.content);
++      if (!m || cs.display === 'none') continue;
++      const txt = m[1].replace(/\\(.)/g, '$1');
++      if ((txt.match(/[\p{L}\p{N}]/gu) || []).length < 2) continue;
++      const sp = document.createElement('span');
++      let css = '';
++      for (const p of cs) css += p + ':' + cs.getPropertyValue(p) + ';';
++      sp.style.cssText = css;
++      sp.textContent = txt;
++      sp.setAttribute('data-dn-pseudo', '');
++      stand.push([el, flag, sp, pseudo]);
++    }
++  }
++  if (stand.length) document.head.appendChild(off);
++  for (const [el, flag, sp, pseudo] of stand) {
++    el.setAttribute(flag, '');
++    if (pseudo === '::before') el.prepend(sp); else el.append(sp);
++  }
+   const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+   while (tw.nextNode()) {
+     const t = tw.currentNode;
+@@ -640,9 +669,11 @@
+       const pad = r.height * 0.2;
+       let L = r.left, R = r.right, T = r.top + pad, B = r.bottom - pad;
+       for (const c of clips) { L = Math.max(L, c.left); R = Math.min(R, c.right); T = Math.max(T, c.top); B = Math.min(B, c.bottom); }
+-      if (R - L > 2 && B - T > 3) boxes.push({ el, t, layer, L, R, T, B, txt: t.data.trim().slice(0, 30) });
++      if (R - L > 2 && B - T > 3) boxes.push({ el: el.hasAttribute("data-dn-pseudo") ? el.parentElement : el, t, layer, L, R, T, B, txt: t.data.trim().slice(0, 30) });
+     }
+   }
++  for (const [el, flag, sp] of stand) { sp.remove(); el.removeAttribute(flag); }
++  off.remove();
+   boxes.sort((a, b) => a.T - b.T);
+   const out = [];
+   for (let i = 0; i < boxes.length && out.length < 5; i++) {
+@@ -1256,10 +1287,11 @@
+       shots.push(first);
+     }
+     // With --tiles the bars go back in place before any check below, so every check measures the page as it is.
+-    const flattened = opt.tiles ? await page.evaluate(flattenBars) : null;
++    const tiled = opt.tiles && (!opt.tilesNarrow || width <= 768);
++    const flattened = tiled ? await page.evaluate(flattenBars) : null;
+     await page.screenshot({ path: file, fullPage: true });
+     shots.push(file);
+-    if (opt.tiles) {
++    if (tiled) {
+       const t = await captureTiles(page, width);
+       shots.push(...t.files);
+       await page.evaluate(restoreBars);
