@@ -308,3 +308,11 @@
 {"run":"20261115-1451-v0.14.2-base142b","version":"0.14.2","commit":"29ce7e4","at":"2026-11-15T18:41:32.710Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261115-1451-v0.14.2-base142c","version":"0.14.2","commit":"29ce7e4","at":"2026-11-15T18:43:37.630Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261115-1451-v0.14.2-base142d","version":"0.14.2","commit":"29ce7e4","at":"2026-11-15T18:45:14.546Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1ca","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:09:48.026Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1cb","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:11:15.484Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1cc","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:13:16.149Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1cd","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:14:52.551Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1va","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:16:22.400Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1vb","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:17:55.117Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1vc","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:20:02.276Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-1857-v0.14.2-h1vd","version":"0.14.2","commit":"75b5dcc","at":"2026-11-15T19:21:37.395Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
