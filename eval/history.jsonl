@@ -299,3 +299,4 @@
 {"run":"20261115-0712-v0.14.1-exp055a","version":"0.14.1","commit":"429ca9d","at":"2026-11-15T07:24:15.054Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261115-0841-v0.14.1-exp058a","version":"0.14.1","commit":"fddf200","at":"2026-11-15T08:52:36.974Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261115-0841-v0.14.1-exp058b","version":"0.14.1","commit":"fddf200","at":"2026-11-15T08:54:20.820Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261115-0909-v0.14.2-exp059a","version":"0.14.2","commit":"be7c46a","at":"2026-11-15T09:21:31.493Z","scale":"v1","mean_auto":40,"mean_judge":null,"mean_total":null,"gate_failures":0}
