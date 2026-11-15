@@ -314,3 +314,14 @@
 - change: `eval/pair-prompt.md` に 1 項、`eval/judge-prompt-v2.md` の D2.2 から「pill toggles」を外して 1 文。製品画面の D2 は作業領域の地・構成・見出し・要約・データで読む。利用者が設定する状態を示す見慣れた部品(チェックボックス、スイッチ、ラジオ、セレクト)は減点しない。代わりの独自の印は加点せず、凡例や見直しが要るなら減点する。
 - 確かめ: 審査済みの 12 対を新しい文で審査し直した。04 の 6 対は表の側が 2–4 から 5–1 へ(ルーブリックなしの審査の 4–0 と同じ向き)。01・02・06 の 6 対は総合も D2 も旧文と同じ。
 - 扱い: これより前の 04 の対比較と D2.2 は旧文の結果で、新しい結果とそのまま並べない。03・05 では未確認。
+
+## M-042 対の位置に候補の run 名を入れる / M-047 ルーブリックなしの審査を run に残す / M-051 plateau の読み取り
+
+- date: 2026-11-15(計画の見直し、EXP-053 の後)
+- 理由: 1. `pair` は A・B の位置を「ケース+基準点」だけで決めていたので、どの候補も同じ基準点に対して同じ側に座り、位置の偏りと基準点の強さを分けられなかった(EXP-053 の 8 対はすべて A)。2. ルーブリックなしの審査(M-039)は scratchpad で手作業で作っており、結果が run に残らなかった。3. `plateau` は `- verdict:` の行しか読まず、EXP-044 以降の `- decision:`・`- 判定:` を数えなかった(4 件続けて不採用なのに「not stalled」と出た)。
+- 変更(`eval/run.mjs`、`eval/neutral-prompt.md`):
+  1. 位置のハッシュに候補の run 名を入れた。すでに key のある対は側を保つ(審査済みの対を入れ替えない)。`--swap` の対は、必ず元の対の逆になる。
+  2. `pair --neutral` が `_neutral/<対>/NEUTRAL_PROMPT.md` を作る(写しに NOTES.md と DESIGN.md は入れない)。`neutral-score --run a,b` が勝敗、clear、位置、`--swap` があるときは反転の数を出し、両順が一致した対だけを勝ち負けに数える。EXP-052・053 の 16 件は exp051a・b と exp053a・b の `_neutral/` に移した。
+  3. `plateau` は 3 つの書式を読み、行の中の太字の ACCEPT/REJECT を優先する。`reviewed-after` の見出しより後をファイルの順で数える。`- same-variant-as: EXP-NNN` のある項は、同じ変種の測り直しとして 1 件にまとめる。
+- 確認: `reviewed-after: EXP-037` に戻すと「EXP-044 ACCEPT, EXP-045 ACCEPT, EXP-047 ACCEPT, EXP-048 REJECT, EXP-050 REJECT, EXP-052 REJECT, EXP-053 REJECT、STALLED: 4 rejects in a row」と出る。`node scripts/test.mjs` は通る。
+- 見直しの計画(`loop/plan.md`、reviewed-after: EXP-053)のうち、M-041(Opus のスキルなしの対照)と M-046(基準点を 4 run に)は次の波で行う。M-043〜M-045、M-048〜M-050 は使うときに記録する。

@@ -1,202 +1,429 @@
-reviewed-after: EXP-037
-reviewed-at: 2026-11-14
+reviewed-after: EXP-053
+reviewed-at: 2026-11-15
 
-見直し役: 新しいコンテキストの Opus(M-009)。読んだもの: AGENTS.md、loop/IMPROVEMENT.md、loop/method.md(M-025〜M-036)、前回の loop/plan.md、loop/experiments.md(EXP-029〜EXP-038 と、関係する EXP-007・010・014・015・016・017・020・024)、eval/rubric.md、eval/judge-prompt-v2.md、SKILL.md と references/。審査済みの学習用 run 10個(base100e・f、exp033、base110a・b、exp034、exp038、base120a・b、exp035a。60ページ)の judge-v2.opus.json と、対比較6組(72対)の pair.opus.json。検証用 07〜12 は読んでいない。eval/runs には何も書いていない。数字はすべて盲検1回の審査から見直し役が数えたもので、正式の数字はメインのセッションが出す。集計と検定のスクリプトは /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/analysis/ にある(セッションが終わると消える。どれも短い)。
+見直し役: 新しいコンテキストの Opus(M-009)。読んだもの: AGENTS.md、loop/IMPROVEMENT.md、loop/plan-review.md、loop/experiments.md(EXP-041 以降は全文、それより前は仮説・変更・判定)、loop/method.md(M-029〜M-040)、前回の loop/plan.md、eval/rubric.md、eval/judge-prompt-v2.md、eval/pair-prompt.md、eval/run.mjs の pair() と plateau()、SKILL.md と references/(v0.14.1)、学習用 01〜06 のブリーフ。審査の記録は、eval/runs の学習用の対比較 380 判定(pair.opus.json と key.json)と中立の審査 52 判定(neutral.opus.json)、scratchpad の n052・n053 にある中立の審査 16 判定。検証用 07〜12 の審査と docs/design-trends/ は読んでいない。eval/runs には何も書いていない。数字は見直し役が数えたもので、正式の数字はメインのセッションが出す。集計のスクリプトは /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/review/ にある(pairs.py、pos.py、show.py。セッションが終わると消える)。下の「次の仮説」の 1〜5 を、本文では H1〜H5 と書く。
 
 ## 診断
 
-### 1. 前回の5つの仮説から分かったこと
+### 0. 利用者の問いへの今の答え
 
-- EXP-033(採用、v0.11.0): 原因の文の置き換えとツール(R29)で、対照 0/12 の D7.3 が 6/6 になり、以後の base でも 11/12・12/12 を保った。対比較は 4勝8敗で、全体が良くなった証拠はない。隣の D6.3 が 11/12 → 5/12 に下がった。
-- EXP-034・038(再現で採用、v0.12.0): 同じ形(direction.md の文と R30)で D5.1 が 0/12 → 11/12 になり、v0.12.0 の base でも 11/12。代償は D2 で、3回の生成で −6、−2、−4。04 は3回とも 0–2。負けの理由は毎回同じで、v0.11.0 の 04 は「オンの状態を琥珀のランプで点す」配電盤だったが、v0.12.0 の 04 はランプをやめて既製のチェックボックスにした。R30 は「チェックした入力が描く箱」を選択中として除くので、チェックは行動の色の塗りのまま残り、D5.4 も2回とも落ちた。
-- EXP-035(段階1で却下): 出典表は D2 +8 を出すが、状態の数(D8 −8)と広い幅(D7.3 4/6、D6.3 2/6)を削る。手数を足す変更は別の仕事を押しのける(EXP-028・029・032 と同じ)。出典表の一族は閉じた。
-- EXP-036(見送り): 前提(V3 の正式の判定か、事実の照合を計器と認めること)が立たなかった。V3 は下の3で出した。
-- EXP-037(ツールの修正だけ): 60 ページで新旧とも 0 件。Floor の誤検知は律速ではない。
-- まとめ: 通ったのは「対照でほぼ 0 の基準」+「その基準の原因の文の置き換え」+「生成役に見せるツール」の形だけ(2/2)。通った変更は対比較を動かさず(EXP-033 は 4–8、EXP-034+038 は 11–13、採用の確認は clear net +2、+1)、隣の基準か個性に小さな代償を残した。どちらも、しきい値を検定のページを見てから決めた(R29 は 1.15 → 1.2 倍、R30 は「3つ以上」→「2つ以上」)ので、生成の前の検定は確認であって検証ではなかった。
+- Fable 5.2 では「優位」(EXP-046。ルーブリックあり 23–1、なし 18–6)。差の大半は Floor の壊れから来ている。スキルなしは 12 ページ中 11 ページが Floor で不合格、スキルありは 0 ページ。中立の審査で負けた 6 件は、04 の 3 件(独自の印。EXP-047 で直した)、05 の 2 件(署名の板で第1便の行が割れ、2・3 便目が小さい)、01 の 1 件。
+- Opus ではまだ答えていない。Opus をスキルなしで生成したことは一度もない。EXP-050〜053 の「スキルなしとの比較」は、Opus+スキル 対 スキルなしの **Fable** で、同じモデルどうしの比較ではない。
+- 費用は Fable でしか測っていない。スキルなしが約 6 万トークン・約 2.5 分、スキルありが 10〜17 万トークン・6〜15 分(トークンで 1.7〜2.8 倍、時間で 2.4〜6 倍)。Opus の費用は記録がない。run.json には費用も generator_model もない。
 
-### 2. v0.12.0(base120a・b、12ページ)で弱い基準
+### 1. 計器の感度: 1 回の実験で見える大きさより、変更の効果が小さい
 
-40基準の満たす率(盲検1回)のうち、7/12 以下の6つ。比べるのは v0.11.0(base110a・b)と v0.10.0 の対照(base100e・f)。ケース別は上の10 run で満たした数。
+- 版どうしの 12 対(片順)は 21 件あり、勝ち数は平均 6.1・SD 1.6。効果がないときの二項分布(SD 1.73)と区別できない。採用した変種も 4〜9 勝(exp033 4、exp034 6・exp038 5、exp039 6・exp044 7、exp041 7・exp045 9、exp047a 8・exp047b 4)、却下した変種も 4〜8 勝(exp029 5、exp030〜032 各 4、exp035a 8、exp051a・b 各 5)。
+- 効果がないわけではない。採用の確認 5 件(base110a、base120a、base130a、base140a、b141v140。新しい版の base 対 前の版の base)を合わせると 37–23(0.62、片側 p≈0.05)。1 回の採用が足すのは、勝ちの率で 0.05〜0.1 程度とみられる。12〜24 対の 1 回では見えない。
+- 片側 5%・検出力 8 割に要る対の数は、勝ちの率 0.75 で約 23 対、0.7 で約 36 対、0.65 で約 67 対、0.6 で約 150 対。1 文の変更の効果は 0.55〜0.65 と見込まれるので、8〜24 対の関門は、ほぼ偶然で通るか落ちる。
+- ルーブリックの対比較で勝って採用された変更は、EXP-023(v0.10.0)が最後。その後の採用は、経路 C の 4 件(EXP-033、034/038、039/044、041/045。狙った基準が 0 近くから大きく動いた)と、4 対・8 対の中立の関門とルーブリックの非劣性で通った EXP-047 だけ。
+- 経路 C の基準は対比較の勝ちを予測しない(V3 0.56、M-034)。基準が動いても、勝ちは動かない。
 
-| 基準 | v0.12 | v0.11 | v0.10 | ケース別(10 run) | 審査の根拠に出た欠陥(base120) |
-|---|---|---|---|---|---|
-| D10.1 | 0/12 | 0/12 | 1/11 | どのケースも 0〜1 | 12ページとも repeated。トークンの横の別の角丸 10/12(--radius 6px の横の 4px、2・3・9・13px)、刻みの外の余白 9/12(2・3・6・15px)、部品の寸法 10/12(操作部品の高さ、アバター、ピン、min-height)、生の文字の大きさ 6/12(12・17・18px、rem)、生の時間 3/12、生の色 2/12 |
-| D1.2 | 6/12 | 7/12 | 6/12 | 01 0/10、06 1/10 | 不合格6件のうち5件はブリーフにない製品の事実。01: 演算子(or、!=、括弧)、1ファイルに形式を混ぜられる、設定ファイル不要。06: 金曜のまとめメール、3〜20人のチーム、レビュー担当への通知、持ち主なしで保存できない。02b: 参加費 5,500円、海外発送、英語対応。01b と 02b の NOTES.md は「作った」と書いている。残る1件(03b)は、合計がラベルと食い違う計算の誤り |
-| D6.3 | 6/12 | 5/12 | 11/12 | 05 3/10、06 3/10 | 並んだ2列の片方が隣より 250〜500px 早く終わる。見出しと導入の列が長い表・一覧の横(01b、06b)、ヒーローの文の列が背の高いデモの横(01a)、1600px 以上で足した列が短い(04b・05b の 1920)、時刻表の列が早く終わる(05b の 1280)、隣に高さを合わせて伸ばした要約のパネル(03a)。v0.11 以降の base と候補の不合格20件(exp035a を除く)のうち14件が 1280 を含み、1920 だけのものは6件 |
-| D8.3 | 6/12 | 5/12 | 10/12 | 05 0/10 | :active がどの操作部品にもない(05a、05b、02a の枠線のボタン)。hover がないか見えない(01a は hover の地が行の地と同じ白、02a の文字リンク、02b の回の札、05b は (hover: hover) の中だけ)。操作のあとの知らせが live region の外(04b の「Saved」と Slack の接続は拒否権、02b の予約ボタンの日付、05a の停留所の切り替えと 20 秒ごとの更新)。v0.10 の対照は、:active の縮み、hover、aria-live をほぼ全ページで持っていた |
-| D2.2 | 7/12 | 7/12 | 8/12 | 04 1/10、03 3/10 | 03 と 04 の4ページとも「シグネチャを隠すと、灰の地に白いカード(柔らかい影か細い罫)、既製のチェックボックスかピルのスイッチ」= SaaS の既定。01b は黒い地・等幅・明るい1色。04 の唯一の合格は出典表の exp035a(チャンネルの帯と面板) |
-| D4.4 | 7/12 | 4/12 | 8/12 | 02 0/10、03 1/10、05 2/10(01・04・06 は各 9/10) | 不合格5件とも、和文の短い文が文節の途中で折れる。表のセル(2時間/半、水曜休/み、駅か/ら、下/車)、行のラベル(基本/給、残業/代)、名前のセル(エミ/リー)、要約のラベル(取/込待ち)、ボタン(（土）/の回を予約する、予約ページ/へ)、知らせの見出しと2行の注記(一部/の便、停留/所、時/刻、切り/替わります)。和文の30ページでは 27/30 が不合格 |
+### 2. 変更の大きさと種類: 足す変更は 0/10、原因の文の置き換えは 5/6
 
-- 境目(8〜9/12): D6.4 と D7.1 が 8/12。D7.1 の 01 は2回とも、320 の第1画面で絞り込みの入力欄が例の値を切る(10 run で 01 は 2/10)。D4.3 は 9/12 で、不合格3件とも和文の数字と単位の分離(1.5時/間、2.0/時間、14/時03分、市役所2/階)。D4.1 は 9/12(01 は2回とも等幅の書体が2つ、04b はほぼ同じゴシックが2つ)。D2.1 は 9/12(04 は2回とも、名乗った配電盤・パッチベイが画面に見えない。10 run で 2/10)。
-- 次元の平均(満たした基準の数、4点満点): D10 2.42、D4 2.83 が最低。D4 の不合格13件のうち8件は和文の改行と数字。D10 は D10.1 の 0/12 が大半を占める。
-- 原因の文。
-  - D4.4: references/japanese.md の改行の項 "for running text, `line-break: strict; word-break: normal; overflow-wrap: anywhere;`. For headings, buttons, and short labels, `word-break: auto-phrase`"。base120 の和文6ページはすべて body にこの本文の規則を置き、auto-phrase を h1〜h3(と1つのクラス)にしか当てていない。セル、ボタン、dd、注記は body から word-break: normal を受け継ぐ(EXP-014 の記録と同じ形)。
-  - D2.2: references/surface-product.md の最初の項 "Quiet surfaces. Neutral backgrounds, hairline or subtle-elevation separation" が、審査の言う SaaS の既定(灰の地に白いカード)をそのまま指示している。checks.md の R04 の既定の見た目(a〜d)にも、製品画面の既定がない。
-  - D8.3: craft.md *Components and states* は hover・focus-visible・active・disabled を並べるが、操作のあとの知らせを live region に書くことは、スキルのどこにも書いていない。
-  - D1.2: 前回の診断のとおり SKILL.md 手順1(禁じるのが社会的な証拠だけ)。加えて craft.md *Default render* の "List every invented fact in NOTES.md" が、作ってから書き出せばよいと読める。
+- 原因の文の置き換えは、EXP-033、034/038、039/044、041/045、047 が採用された。落ちた EXP-031 は、置き換えと言いながら正味 +4 行で、ツールもなかった。
+- 足す変更(手順、項、表)は 10 件すべて却下された: EXP-026、027、028、029、032、035、048、050、051/052、053。足した分が別の仕事を押しのける。EXP-035 は D8 −8。EXP-052 は D8 +13 と引き換えに D2・D4・D5・D6 が合わせて −30。EXP-053 は行に操作を足した分だけ要約が下がり、D1 −6。
+- 全面に効く craft.md に、1 つの面の問題のための項を足すと、別の面で害が出る(EXP-052 の 01 は 0–4)。
 
-### 3. V3 の正式の集計(M-034)
+### 3. 仮説の選び方: 少ない対、別のモデル、勝敗を決めない次元
 
-- 新しい系列(盲検1回、プロンプト 6f71a8d850)で、両方のページが v2 を持つ72対(EXP-033、base110a の確認、EXP-034、EXP-038、base120a の確認、EXP-035a)。clear の対で、v2 の差の向きと勝ちの向きは 18 一致・14 不一致・1 引き分け(0.56)。slight を含めると 36–33–3(0.52)。前回の概算(23–11–1)と足すと 41–25–2(0.62)。
-- 次元別(全対。対比較が選んだ次元のうち、v2 のその次元の点が違う対): D7 0.72、D2 0.71、D4 0.65、D5 0.62、D10 0.62、D6 0.56、D1 0.55、D3 0.50、D8 0.47、D9 0.44。
-- M-027 の規則のとおり、v2 は水準と診断の記録にとどめ、経路 C はツールのある基準に限る。ツールのない経路 C(前回の仮説4の D1.2 など)は使えない。ページ単位の v2 の差は、対比較の勝ち負けとほぼ無関係。
+- 少ない対から仮説を作った。EXP-048 は Fable の 2 対から(Opus の基準点はすでに 3–1)。EXP-050 は 2 事例の理由から。EXP-053 は EXP-052 の 03 の 4 対から。
+- 仮説を作った基準点で、そのまま確かめた。EXP-053 の観察は base141a・b との 03 の対から取り、関門も同じ base141a・b との対だった。基準点のページが勝敗を決めるので(下の 4)、作ったデータと確かめるデータが半分重なる。
+- D8 の 5–7 は、Opus+スキル 対 スキルなしの Fable の数字。同じモデルの Fable どうしでは D8 −2/0(24 対)。12 対の次元の net は、効果がなくても ±3 は振れる(M-029)。総合は 12–0 のままで、D8 は勝敗を決めていない(EXP-050 の学び 3)。
+- ルーブリックの D8 は状態の数を数える。D8 の負け 14 件のうち 13 件が「状態と操作の数」だった(EXP-051)。pair-prompt.md は「依頼より多い機能を好まない」と書くのに、D8 は逆を数えている。中立の審査が選んだ理由は数ではなかった(EXP-052 の 03 は「申請 1 件ずつをその場で処理できる」、04 は表の読みやすさと 320px)。D8 を狙った 3 つの変種(EXP-050、051/052、053)は、計器の癖を追っていた。
 
-### 4. 対比較で現行の版がはっきり負けた理由
+### 4. 生成のばらつき: 同じ版の 2 回の差が、1 文の効果より大きい
 
-- 材料: base120a の確認(base110a・b との12対)、EXP-034・038 の24対(v0.12.0 になった変種)、EXP-035a の12対(base120 が base の側)。現行の側の clear 負けは9件(06 対 110a、EXP-034 の 01・02・04、EXP-038 の 01 ×2、EXP-035a の 01・03・04 で base120 が負けたもの)。
-- 9件とも、決め手に「よくある見た目」(D2)が入っている。01 の4件は「明るいページに黒い端末のカード1枚は、開発ツールの LP の定番」(うち3件は 320 で入力欄か例のチップが切れることも)。04 の2件は「白い罫のパネルに色付きのチェックボックスは、よくある設定の表」。03 は「残りは柔らかい影の白いカード」、02 は「暗い地に琥珀の光は、工芸の既定」、06 は「どの SaaS のボードでも通る」。v2 の D2.2 の不合格と同じページ、同じ言葉。
-- D6 の理由は、v2 の D6.3 と同じ空き(「1280 で宛先のパネルの下が長く空く」「短い横のパネルの下に空いた地」「ヒーローの下の大きな空いた左の列」「1920 で足した要約の列が余計」)。
-- D8 の理由は「base のほうが状態を多く作った」で、部品の仕組みの欠陥ではない。
+- 対の結果は基準点のページで決まる(M-030)。v0.10〜0.14.1 の「基準点のページ × ケース」64 組で、同じページに対する候補たちの勝敗のうち、多数の側の割合は平均 0.81 だった(雑音だけなら約 0.72)。base141b の 03 には候補が 0/4 しか勝てず、base141a の 03・04 には 6/8 勝つ。
+- 同じ変種の 2 回も大きく違う。EXP-047a は 8–4、EXP-047b は 4–8。D7 は EXP-041 で −9、EXP-045 で +5。EXP-053 では、base141a と base141b の 03 の差が、足した 1 項の効果より大きかった。
+- 良い回がしたことを毎回させる仕組み(手順や判断の順番)がない。項を足しても、悪い回は直らず、良い回の強みと取り合いになる。
 
-### 5. 生成の前の検定(M-033)を、既存の60ページで先に試した(0 トークン)
+### 5. 審査の癖: 位置と基準点が一緒に動く
 
-- 過去の変種のスクリプトは /mnt/project-files/design-nexus-archive/variants-20261101.tar.gz にある(variants/exp010 の R19、exp014 の R20、exp015 の R21、exp017 の R22、exp024 の R26)。どれも本体には入っていない。
-- R26(EXP-024 の空きの検出。手を加えず、第1・第2画面の空きだけを数えた)と D6.3: 不合格 22/27(0.81)に出て、合格 14/33(0.42)にも出た。M-033 の「合格の 20% 以下」を満たさない。合格に出たのは、時刻表の行の中の空白(05 の3ページ)と、04 の 1920 の短い横の列。04 の 1920 の横の列は7ページで出て、審査は5ページを合格、2ページを不合格にした。審査の線引きが割れており、どのツールでも特異度の上限になる。
-- R20(EXP-014。14字までの和文のラベルが折り返す)と D4.4: 和文30ページの不合格 27 のうち 21(0.78)に出た。合格は3ページしかなく、特異度は測れない。base120a の 03 では、審査が挙げた「基本/給」「残業/代」をそのまま出した。
-- R22(EXP-017。数字の直後の改行)と D4.3: 不合格 11 のうち 7(0.64)、合格 19 のうち 5(0.26)に出た。「1.5時/間」のような、数字に続く単位の語の中の改行を見ない。
-- 文節の検出の試作(ブラウザ自身の auto-phrase を物差しにし、1〜2行の文と、見出し・ボタン・ラベル・セル・dt/dd に限った。analysis/ja_probe.mjs): 和文の不合格 27/27 に出た(1ページ 4〜45 件)。合格3ページのうち2ページにも出たが、2〜3件だった。base120 の不合格5ページで審査が挙げた16か所のうち、9か所を見つけた。外したのは、ブラウザ自身が切ってよいとする複合語(基本|給、残業|代、切り|替わ、2時間|半、水曜休|み)、閉じ括弧の後の助詞(（土）|の回)、一部|の便。同じ30ページの root に auto-phrase を注入すると、検出は 456 件 → 0 件になり、4幅のどれにもページの横スクロールは出なかった。物差しも auto-phrase なので 0 件になるのは当然の部分がある。それでも、CSS の1行で審査の挙げた箇所のおよそ6割が消え、残りの4割は nowrap か `<wbr>` の個別の直しが要る、という見積りになる。
-- D8.3 の静的な目安: :active の規則がどこにもないページは 7/7 が不合格。ただしそれは不合格 23 のうち 7 だけで、残りは :active も live region もどこかに持ちながら、特定の部品で落ちている。部品ごとに hover と押下の見た目の変化と、知らせの置き場を確かめるレンダーのチェックが要る。
+- run.mjs の pair() は、A と B の位置を「ケース+基準点の run 名」のハッシュだけで決める。どの候補も、同じ基準点に対しては同じ側に座る。そのため、位置の偏りと基準点の強さを分けられない。
+- EXP-053 のルーブリックの 8 対は、すべて A が選ばれた。候補は base141a に対して A、base141b に対して B なので、これは「base141b > 候補 > base141a」という並びと同じ結果になる。
+- 同じ 03 の 4 対で、中立の審査は 4 件とも B を選び、並びは逆になった(base141a > 候補 > base141b)。中立の 8 件のうち 7 件は slight で、slight は順を入れ替えると約半分が反転する(M-008)。EXP-053 を止めた「5 勝(6 勝が条件)」は、ほぼ slight 1 件の差だった。
+- ルーブリック全体では A 187・B 193 で、偏りはない。偏りが出るのは、少ない対・slight・片順が重なるときである。
+- 中立の審査の結果を eval/runs に残す仕組みがない。EXP-052・053 の 16 件は scratchpad(n052、n053)にしかなく、セッションが終わると消える。
+- 製品画面では、ルーブリックと中立の審査の向きが逆になる(EXP-046・047・049 の 04)。M-040 で 04 の D2 は直したが、03 と 05 は確かめていない。
+
+### 6. 中身の型: スキルはシグネチャを先に決め、答えを決めない
+
+- v0.12 以降の版どうしの対 164 件の決め手を、見直し役が主な型に分けた。約 4 割は「ブリーフの答え(依頼が名指す数字・行・時刻・コマンド)が、第1画面にそのままの形で先に届くか」。約 4 割は「シグネチャと既定の見た目」。
+- 中立の審査の理由も、多くは答えの届き方だった。「一目で分かる」「HH:MM の普通の時刻」「便ごとの行き先と方向」「要約の帯、前月比の内訳、止まっている確定の理由」(EXP-047・048・053)。
+- スキルの本文は、シグネチャを先に決め、答えを決めないまま進む。
+  - SKILL.md 手順3 は、シグネチャを「ページが覚えられる 1 つの要素」と定める。手順7 は最初に「シグネチャが意味のある状態で見えるか」を確かめる。
+  - craft.md は「ヒーローは主題の最も特徴的なもので始める」「320 ではシグネチャか主操作が第1画面に入る」と書く。surface-marketing.md は「モバイルでもヒーローはシグネチャで始める」と書く。
+  - 依頼の答えを第1画面にそのままの形で置くことは、どこにも書いていない(主操作のボタンだけは R25 が見ている)。
+- その結果、ケースごとに答えが下がるか、形が変わった。
+  - 05: 署名の板で第1便が割れ、2・3 便目が小さい(EXP-046 の懸念 3、b141v140 の 05)。
+  - 03: 勝った側の理由は、主な仕事の答えの届き方だった。base141a は「未承認・総額・控除・前月比が 1 本の帯」と「確定が止まっている理由が一目で分かる」(EXP-053)、EXP-052 の変種は「申請 1 件ずつをその場で承認できる」。
+  - 02・05: 主な仕事を個性のために弱めた(EXP-029。D1 −4、D9 −4)。
+  - 04: 頼まれていない配信ログの欄(EXP-041)。
+
+### 7. 却下に共通する型(EXP-048〜053)
+
+- 4 回とも同じ流れだった。少ない対か別のモデルとの比較から弱点を 1 つ見つける。その弱点に効く項を 1 つ足す。同じ基準点との 8〜24 対を片順で審査する。足した項が別の次元を押しのけるか、基準点のページの差に埋もれる。
+- どの回も、見込んだ効果がその測り方で見える大きさに届いていなかった。
+- plateau が新しい書式(「- 判定: … **REJECT**」)を読まず、4 回続いた却下を数えなかった。そのため、見直しが 1 回遅れた。
 
 ## やめること
 
-1. **ツールのない経路 C。** V3 は 0.56(clear 33対)で、次元別でも D1・D3・D8・D9 は 0.6 未満。
-2. **生成の手数を増やす変更**(計画の段、必須の状態の追加、出典表)。EXP-028・029・032・035 で、毎回状態か広い幅が削れた。1つの変更で増やしてよい作業は、CSS の数行か、選ぶ段階の文までにする。
-3. **行動の色の規則を緩めて、ランプをアクセントに戻すこと。** D5.1 の 11/12 を失う。R30 の「チェックした入力」の除外も変えない。個性は仮説3の形(状態をシグネチャの単位と状態の色で描く)で戻す。
-4. **D10.1 をツールで追うこと**(前回の7を続ける)。3波で 0〜1/12。審査は部品の寸法まで数え、EXP-030 の R28 はツールが 0 件でも 2/6 だった。寸法ごとのトークンは CSS を悪くする。M-035(審査の文の明確化)を待つ。
-5. **検定に使うページでしきい値を決め、同じページで検定すること**(R29・R30 の形)。設計と確かめのページを分ける(M-037 の案)。
-6. **R26 をそのまま入れること、空きを「埋めさせる」こと。** 検定で合格の 42% に出る。EXP-024 は D2 −11。
-7. **1つのケースにしか出ない欠陥を、実験として直すこと。** 01 の 320 で例の値を切る入力欄(D7.1)と、01 の等幅の書体2つ(D4.1)は本物の欠陥だが、満たす余地が 3〜4/12 で、経路 C の検出力がない。やるなら、実験のない回にツールだけの patch として扱う(EXP-037 の扱い)。
-8. **R29 や 1920 の文を弱めて D6.3 を戻すこと。** D7.3 の 12/12 を失う。空きは仮説5で直接直す。
-9. **数字と単位(D4.3)を仮説1の関門に入れること。** R22 型の検定は 7/11。記録だけにする。
-10. 前回から止めたままにするもの: 出典表の一族。審査を甘くする文の変更(M-035 は、台帳の再審査で一致が上がる条件つきのまま)。検証用 07〜12 を読むこと。
-11. 前回の「やめること」9 の「和文の組版の細則」は、仮説1の1件に限って外す。理由は計器が変わったこと(下の仮説1)。D4.4 が関門に届かなければ元に戻し、和文の改行はこれで終わりにする。
+1. **本文に項・手順・表を足すこと。**
+   - 変更は、問題を招いている文を探して替えるか消すかに限る。スキルの本文(SKILL.md と references/)の正味の行数は増やさない。checks.md のツールの行と render-check の実装は除く。
+   - 原因の文が見つからない仮説は、実験にしない。
+   - 1 つの面の問題は、その面の reference の文で直す。craft.md には置かない。
+   - 作業を足す例外は H5 だけ。その代わり、優位の関門と費用の関門の両方を置く。
+2. **少ない対から仮説を作ること。**
+   - 仮説の元は、24 対以上の決め手を全件分類した結果か、M-048 の性質の確かめに限る。
+   - 4 対以下・2 事例以下の観察は、記録だけにする。
+   - 仮説を作った対の基準点のページは、その仮説の関門に使わない。確かめには M-046 の新しい基準点を使う。
+3. **D8 を状態の数で追うこと。別のモデルとの比較で出た次元の差を、弱点と読むこと。**
+   - D8 は、M-041(Opus のスキルなし)と M-049(D8 の文)が終わるまで狙わない。
+   - その後も同じモデルに負けるなら、原因の文(craft.md の「go offline」の例など)の置き換えで扱う。
+4. **1 回分の雑音の中に関門を置くこと。**
+   - 事前登録に、効果がないときに通る率と、想定の効果で通る率を書く(M-043)。
+   - 採用の関門は、24 対以上にするか、M-048 で勝ちを予測すると確かめた代理の基準に限る。
+   - 8 対以下の段階は中止にだけ使い、両順で一致した負けのときだけ止める。
+   - slight だけの差で採否を決めない。
+5. **却下した変種を、事後に決めた比較で測り直すこと。** 測り直すのは、最初の事前登録に書いた条項(M-036)があるときだけ。EXP-052 のように、却下の後で比較を変えて測り直すことはしない。
+6. **前回から続けて止めるもの。**
+   - ツールのない経路 C。代理の基準は、M-048 を通ったものだけ使う。
+   - 出典表の一族。
+   - 中立の審査の根拠なしに、R29・R30・R31・R33 を緩めること。
+   - D10.1 をツールで追うこと。
+   - 1 つのケースにしか出ない欠陥を、実験で直すこと。
+   - 検定に使うページでしきい値を決めること(前回の M-037)。
+   - 検証用 07〜12 を読むこと。
+   - 製品画面(03・04)の変更を、中立の審査なしで採ること(M-039)。
 
-## 次の仮説(期待値の順、5件)
+## 次の仮説(優先順、最大5件)
 
-共通: 基準点は base120a・b(M-031)。対比較は base120a・b と組む12対(片順・盲検)。v2 は盲検で1回。経路 C の関門は rubric の式 min(0.3, base の不合格の率 ÷ 2)で、6ページの1回の生成で判定する。害の条件は M-029 のとおり clear net −4 以上と、守る次元がそれぞれ −6 より上。狙った基準と同じ次元のほかの基準が 0.25 以上下がったら根拠を読む(M-034 の適用)。偶然に通る確率は、基準の率がケースで大きく違うので、ケース別の率で出した。版は、本文の規則の変更が minor、ツールだけが patch。EXP の番号は仮の番号。
+### 共通
 
-### 1. EXP-039: 和文は root で文節ごとに折り、1〜2行の文を文節の途中で折らない(japanese.md の改行の項の置き換えと R31)
+**先に行うこと**(仮説の前。どれも生成は少ない)
 
-- **仮説**: japanese.md の改行の規則を「auto-phrase と line-break: strict は root に1回置き、body やセルで word-break を戻さない」に置き換え、1〜2行の和文が文節の途中で折れたら R31 で見せれば、和文ページの D4.4 が満たされ、ほかの基準は動かない。生成の手数は CSS の1行と、R31 が挙げた箇所の span だけ。
-- **狙う基準**: D4.4(base120 7/12。和文ページは 1/6、10 run の和文30ページで 3/30)。記録: D4.3(9/12)。
-- **経路**: C(ツールあり)。
-- **変更先と文面の案**(1項の置き換えと、チェック1つ)
-  - references/japanese.md の改行の項を置き換える。
-    - 旧: "**Line breaking**: for running text, `line-break: strict; word-break: normal; overflow-wrap: anywhere;`. For headings, buttons, and short labels, `word-break: auto-phrase` (where supported) so phrases don't split awkwardly, and `text-wrap: balance` for short headings. Code, commands, and figures follow `craft.md` *Responsive* instead: never `overflow-wrap: anywhere` on them."
-    - 新: "**Line breaking**: set `word-break: auto-phrase; line-break: strict;` once, on the root (`html:lang(ja)`), and never reset `word-break` to `normal` on `body`, cells, or controls, so headings, buttons, labels, navigation, table cells, `dt`/`dd`, notes, and running text all break between phrases (a break between phrases is also correct in running text). `overflow-wrap: anywhere` may stay only as the fallback for a phrase wider than its line. Text of one or two lines never breaks inside a word at any width: where the browser's phrases fall short (a compound such as 差引支給額, a name or a place, a figure with its unit or counter such as 1.5時間 or 14時03分), keep it whole with a `white-space: nowrap` span or a `<wbr>` at its real boundary, or give it room. Short headings also get `text-wrap: balance`. Code, commands, and figures follow `craft.md` *Responsive*: never `overflow-wrap: anywhere` on them. The render check lists short text that breaks inside a phrase (R31)."
-  - references/checks.md に R31 の行: "| R31 | At some width, Japanese text breaks inside a phrase where it must not: text of one or two lines, or a heading, button, label, nav item, table cell, `dt`/`dd`, caption, or legend, breaks where the browser's own `auto-phrase` segmentation would not (駅か\|ら, 停留\|所, （土）\|の回を), or a Japanese label of up to 14 characters wraps at all (基本\|給). Running text of three or more lines is not counted | render |"
-  - scripts/render-check.mjs に R31(Reflex)。lang が ja の文で、各幅の改行の位置を文字の矩形から取り、(a) 上の範囲の文で、auto-phrase の probe が切らない位置(EXP-010 の R19 の測り方。閉じ括弧の後の助詞も数える)、(b) 14字までの和文のラベルの折り返し(EXP-014 の R20)、を挙げる。3行以上の本文は数えない(JLReq では正しい組版)。数字と単位の検出(R22 型)は入れない。
-  - eval/fixtures に正例(body の word-break: normal を受け継いで折れるセルとボタン、14字のラベルの折り返し、（土）|の回)と負例(root の auto-phrase、3行以上の本文の改行、欧文のセル、nowrap の数字)。scripts/test.mjs。
-  - SKILL.md と craft.md は変えない(craft.md *Responsive* の "Short labels stay whole" はこの規則と食い違わない)。
-- **生成の前の検定**(M-033、0 トークン)
-  - (a) 和文30ページで、R31 が D4.4 の不合格 27 のうち 22 以上(0.8)に出る。試作は 27/27、R20 だけでは 21/27。
-  - (b) base120 の不合格5ページで審査が挙げた16か所のうち、12か所以上を見つける。試作は 9/16 で、(b) の R20 の部分で 基本|給・残業|代、括弧の規則で （土）|の回 が加わる見込み。
-  - (c) 欧文の30ページで R31 が 0 件。
-  - (d) 同じ30ページに新しい文面の CSS(root の auto-phrase、body の word-break を消す)を注入し、R31 の残りを数え、F08 と R17 が増えないことを確かめる。
-  - しきい値と除外は base110・base120 の和文12ページで決め、残りの18ページで (a) を確かめる(M-037)。外れたら設計に戻り、2回外れたら仮説を捨てる。
-- **関門**: 1. 新しい Floor と拒否権がない(変種のツールで測る)。2. R31 が出る候補のページが 1/6 以下(理由つきで残したものも出たと数える)。base の12ページでは5ページ以上に出ているはず。3. D4.4 が 5/6 以上(必要な上がり幅 min(0.3, 0.21) = 0.21 で、0.58 → 0.79)。和文ページの合格の率が 0.15 のまま(効果なし)なら、5/6 以上は約5%。0.75 に上がれば約7割。4. 害: clear net −4 以上、D4・D7 がそれぞれ −6 より上、変更そのもの(言い換えで文が不自然、nowrap のはみ出し)を決め手にした clear 負けが1件以下。5. HOLD がない。D4.3 と D7.1 を記録する。
-- **予想**: D4.4 0.58 → 0.85 前後、v2 +0.6〜1.0。対比較は ±2(D4 は決め手にならない)。D4.3 は、auto-phrase が「1.5時間」を1つの文節にまとめるので、少し上がる見込み。
-- **費用**: 生成と審査 1.2M、12対 1.2M、計 2.4M。
-- **予想される失敗と守り**
-  - auto-phrase が切ってよいとする複合語(基本|給、切り|替わ)が残り、審査が repeated で落とす。R31 の (b) と、文面の「複合語・名前・地名・単位つきの数字は nowrap か `<wbr>`」で対処する。残った箇所を記録する。
-  - nowrap が 320 で枠からはみ出す(D7.1、R17・F08)。文面は「余地を作る」を並べた。D7 を守る。
-  - 生成役が文を言い換えて改行を避け、語が不自然になる(D9)。記録する。
-  - R31 の直しが手順7を押しのける(EXP-015 の型)。直しは CSS の1行と span なので小さい見込み。D7・D8 の net を記録する。
-  - 審査が D4 のほかの基準(数字と単位、欧文のスペース)で次の傷を見つける。D4.3 は関門に入れず、記録する。
-- **繰り返しでない理由**: EXP-029〜035 のどれも和文の改行に触れていない。近いのは v1 の時代の EXP-007・010・014・017・020 の5件で、どれも「狙った欠陥は消えたが、審査が同じ次元の次の傷を見つけ、D4 の点が動かなかった」で却下された。v2 では D4.4(短い文の改行)、D4.3(数字と単位)、D4.2(大きさ)が別の二値の基準で、M-024 で D4.4 の範囲を見出し・ボタン・ラベル・ナビと1〜2行の文に絞った。前の5件が測れなかったのは、計器の側の理由。中身は EXP-014(root の auto-phrase と R20)に最も近い。違いは3つ: body の上書きを消すことを文面に書く、R19 の物差しを足して 14 字を超える1〜2行の文も見る、経路 C で測る。
+1. コードを直す: M-051(plateau の読み取り)、M-047(中立の審査の保存)、M-042(位置の割り当て)。あわせて M-045(費用の記録)を入れる。
+2. M-042 の反転を測る。既存の中立の 28 対を逆の順で審査し、中立の審査を両順にするかを決める。
+3. M-046(base141c・d)と M-041(Opus のスキルなし nsOa・nsOb)を同じ波で生成し、M-041 を審査する。利用者の問いに Opus で答え、負けた対の理由を全件分類する。仮説の順は、その最も多い型に合わせて入れ替えてよい(例: 事実の型が多ければ H4 を先にする)。
+4. M-048 で、H1 の性質(A1)が勝ちを予測するかを確かめる。
 
-### 2. EXP-040: 操作部品の hover と押下、操作のあとの知らせ(craft.md *Components and states* の1項の置き換えと R32)
+**確かめ方の共通の形**(各仮説の関門は、この形の上で書く)
 
-- **仮説**: craft.md の最初の項を「どの操作部品にも見て分かる hover と押下があり、押下はタッチでも出る。操作や時刻で変わる答え・件数・確認・失敗は、読み込み時からある live region に、変わるたびに1回書く」に置き換え、hover か押下で見た目が変わらない部品と、live region の外で書き換わる知らせを R32 で見せれば、D8.3 を満たすページが増える。生成の手数は CSS の数行と role の属性だけ。
-- **狙う基準**: D8.3(base120 6/12。05 は 10 run で 0/10。v0.10 の対照は 10/12)。
-- **経路**: C(ツールあり)。
-- **変更先と文面の案**
-  - craft.md *Components and states* の "Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`." を置き換える。新: "Every interactive element has a visible default, hover, focus-visible, active, and disabled state; `:active` must show on touch too, so it never sits only inside `@media (hover: hover)`. Inputs also have an error state, with the message tied by `aria-describedby`. A result, count, confirmation, or error that changes after an action or on a timer is written into a live region that exists at load (`role="status"`; failures `role="alert"`), once per change: a timer that redraws the same answer announces nothing. After an action that re-renders its own control, move focus to the result or the next control (R32)."
-  - render-check.mjs に R32(Reflex)。1280 と 320 で、見えている操作部品(button、a[href]、[role=button]、summary、入力のラベル)に順にポインタを置き、押し下げ、計算済みの色・背景・枠・影・transform・text-decoration・outline の変化が見える大きさに届かない部品を数え、2つ以上か主操作なら挙げる。最初の画面の主なボタン(R25 の探し方。ページの外へ移らないものだけ)を押し、live region の外の文字が変わったら挙げる。
-  - checks.md の行、fixture(hover のない文字リンク、hover の media の中だけの :active、live region の外の「保存しました」。負例: 全部そろったページ、操作のない静的なページ)、test.mjs。
-- **生成の前の検定**: 60ページで、D8.3 の不合格 23 のうち 19 以上(0.8)に出て、合格 37 のうち 7 以下(0.2)にしか出ない。設計は base110・base120(不合格13、合格11)、確かめは残りの36ページ(不合格10、合格26)。静的な目安(:active がない)だけでは 7/23。live region の部分が外れたら、hover と押下だけのツールにして、狙いをその部分と書き直す(関門の数字は変えない)。
-- **関門**: 2. R32 が出る候補 1/6 以下。3. D8.3 が 5/6 以上(base 0.5、上がり幅 0.25)。効果がなければ約11%。05 が落ちたまま、ほかが 0.85 なら約6割。4. 害: clear net −4 以上、D8・D3 がそれぞれ −6 より上、変更そのもの(読み上げが多すぎる、フォーカスが飛ぶ)を決め手にした clear 負けが1件以下。5. HOLD がない。D8.1・D8.2 を記録する。
-- **予想**: D8.3 0.5 → 0.8、v2 +0.7。対比較は ±2。
-- **費用**: 2.4M。
-- **予想される失敗と守り**: (1) live region を増やしすぎ、時刻の更新ごとに読み上げる(base100f の 05 の型)。文面に「同じ答えを描き直すだけなら読み上げない」と書いた。05 の根拠を読む。(2) R32 の押し方でダイアログや遷移に入り、誤検知する。検定と fixture で止める。(3) 目に見えない差(地の 1% の違い)の hover で R32 を逃げる(01a の型)。R32 は色の差に下限を持つ。(4) 直しが手順7を押しのける。直しは CSS の数行なので、記録だけにする。
-- **繰り返しでない理由**: EXP-029〜035 は D8.3 を狙っていない(EXP-030 の F02 はフォーカスの輪のコントラスト、EXP-037 はその誤検知)。EXP-006・011 は状態を部品の中で見せる規則で、操作部品の状態と知らせではない。D8.3 は v0.11.0 から 10/12 → 5〜6/12 に下がった。v0.10 の対照が持っていたものを、規則とツールで戻す。
+- 生成: Opus、base と同じ推論量で、変種を 2 回 × 6 ケース(12 ページ)。費用は M-045 で記録する。
+- 中立の審査: 候補 12 ページ × 基準点 4 run(base141a〜d)= 48 対。位置は M-042 で決める。
+  - M-042 の測定で反転が 1/4 以上なら、両順で審査する。両順で同じ側を選んだ対だけを勝ち負けに数え、残りは引き分けにする。
+  - 結果は M-047 で eval/runs に残す。
+- ルーブリックの審査は、守りにだけ使う: base141a・b との 24 対を、M-042 の位置で片順に審査する。関門は、clear net −6 以上と、名指した守りの次元がそれぞれ −9 より上。
+- v2 は審査しない(M-050)。審査するのは採用の確認の base だけ。
+- 段階: 1 回目(6 ページ・24 対)のあと、中立の一致した net が −4 以下なら止める。
+- 関門の目安(M-043): 48 対のうち両順で一致する対を 28 と見込んだ、二項分布の近似。M-029・M-046 の A/A の値が出たら置き換える。
+  - 優位 net +8 以上: 効果なしで通る率は約 9%。勝ちの率 0.65 なら約 6 割、0.75 なら約 9 割で通る。
+  - 優位 net +6 以上: それぞれ約 17%、約 75%、約 97%。
+  - 非劣性 net −4 以上: 効果なしなら約 8 割で通る。勝ちの率 0.35 の害でも約 25% は通ってしまう。
+- 1 実験の費用の目安: 生成 2〜3M、中立の審査 48〜96 判定で 4〜10M(M-050 の軽い審査なら約半分)、ルーブリック 24 判定で約 2.5M。
 
-### 3. EXP-041: 製品画面の作業域を、灰の地の白いカードにしない(surface-product.md の最初の項の置き換えと R33)
+**番号と、前回の残り**
 
-- **仮説**: surface-product.md の最初の項を「静かでも既定ではない。作業域は主題の実物の面(台帳の紙、パッチ盤、時刻表の板)から作り、灰の地に白いカードを並べない。利用者が設定する状態(オン、承認済み)はシグネチャの単位と主題の状態の色で描き、既製のチェックボックスやピルのスイッチにしない」に置き換え、1280 の作業域が灰の地の白いパネルなら R33 で見せれば、03・04 の D2.2 が満たされ、v0.12.0 の個性の代償(04 の 0–2)が戻る。選ぶ段階の文で、手数を増やさない(EXP-035 の学び)。
-- **狙う基準**: D2.2(base120 7/12。03・04 は 0/4。10 run で 04 は 1/10、03 は 3/10)。記録: D2.1(04 は 2/10)、D5.4(04 は2回とも不合格)、対比較の D2。
-- **経路**: C(ツールあり)。R33 が検定を通らなければ経路 P(M-032、候補2回・24対で clear net +6 以上)。
-- **変更先と文面の案**
-  - references/surface-product.md の "Quiet surfaces. Neutral backgrounds, hairline or subtle-elevation separation, color reserved for status, selection, and data." を置き換える。新: "**Quiet, not default.** Keep the work area calm and dense, but build its surface from the subject's own working object (the ledger sheet, the patch panel, the timetable board, the order slip): one ground whose rules, bands, or plates divide the regions, not white cards on a grey page; elevation only for what floats (menus, dialogs, a dragged item). Draw a state the user sets (on, approved, booked) with the signature's unit in a status color sourced from the subject (a lit lamp, a stamp), never as a stock checkbox grid or pill switch; the action color stays on what is pressed (`direction.md` §3). Color stays reserved for status, selection, and data."
-  - references/checks.md の R04 に "(e) product default: white cards on a light grey ground with a left sidebar, pill toggles, and stock checkboxes in the work area" を足し、SKILL.md 手順4の "(R04 a–d, including the agent house look)" を "(R04 a–e, …)" にする(1字)。
-  - render-check.mjs に R33(Reflex): 1280 の第1画面で、主な内容の地(body か main の背景)が明るい無彩色で、その上に 40,000px² 以上の、地より明るいパネル(角丸か影か枠を持つ)が2つ以上あれば挙げる。アプリの枠(header、nav、左のサイドバー)は数えない。
-- **生成の前の検定**: 60ページで、03・04 の D2.2 の不合格 16 のうち 13 以上に出て、D2.2 の合格 37 のうち 7 以下にしか出ない。06 の「暖かい灰に白いカード」は、対比較では既定と書かれたが v2 では合格なので、そこに出た数は別に記録する。
-- **関門**: 2. R33 の候補 1/6 以下。3. D2.2 が 5/6 以上(base 0.58、上がり幅 0.21)。01 は D2.2 を半分の生成で落とすので、03・04 の合格の率が 0.7 に上がっても 5/6 は約6割、効果がなければ約1割。4. 害: clear net −4 以上、D8・D6・D3 がそれぞれ −6 より上、D5.1 が 0.75 以上のまま(行動の色の規則を崩さない)、変更そのもの(作業域が読みにくい、操作部品と分からない)を決め手にした clear 負けが1件以下。5. HOLD がない。D5.3(独自の部品のコントラスト)と D8.3 を記録する。
-- **予想**: D2.2 0.58 → 0.85、v2 +0.8〜1.2(重み 1.5)。対比較の D2 は 03・04 で正(+2〜+4)。
-- **費用**: 経路 C 2.4M、経路 P 4.8M。
-- **予想される失敗と守り**: (1) 地を白くしてカードを細い罫に変えるだけで R33 を逃げ、審査は既定のままと見る(R28 と D10.1 の型)。文面は形より先に「主題の実物の面」を書いた。D2.2 の根拠を読む。(2) 独自の状態の部品が、キーボードやコントラストで崩れる(F02、D5.3、D8.3)。Floor のツールが見張る。(3) 実物の面を作る手数が増え、状態が減る(EXP-035 の型)。D8 を守る。(4) 面の規則がマーケティングのページに漏れる。surface-product.md は製品画面でしか読まれない。
-- **繰り返しでない理由**: 出典表(EXP-026〜035)は計画の段を足して手数を増やした。この案は製品画面の原因の文1つの置き換えで、段を足さない。EXP-031 のようにシグネチャの色をアクセントから取り上げない(行動の色の規則はそのままで、状態にシグネチャの単位と状態の色を渡す)。近いのは v1 の EXP-016(部品もシグネチャの素材で作る。D2 が動かず却下)だが、EXP-016 は全面の部品の形の一般則だった。ここは、審査が既定と呼ぶ2つ(灰の地の白いカード、既製のスイッチ)を指示している文そのものを置き換え、ツールで確かめる。
+- EXP の番号は仮。実行の順に振り直してよい(M-051 は、番号ではなくファイルの順で数える)。
+- 前回の仮説のうち実行していないもの:
+  - EXP-040(D8.3 と R32)と EXP-043(D6.3 と R34)は、M-048 で、それぞれの性質が勝ちを予測するとわかるまで実験にしない。
+  - ただし live region の外で書き換わる知らせは WCAG 4.1.3 の問題なので、R32 は実験のない回に、ツールだけの patch(EXP-037 の扱い)として入れてよい。
+  - EXP-042 は、下の H4 になった。
 
-### 4. EXP-042: ブリーフにない製品の事実を足さない(前回の仮説4。計器を先に決める)
+### 1. EXP-054: 第1画面は依頼の答えをそのままの形で出し、シグネチャはその答えを形づくる(判断の順番を変える、原因の文の置き換え)
 
-- **前提**: 事実の照合を M-033 の「ツール」と認める(M-038 の案)。照合は、新しいコンテキストが CASE.md のブリーフとページの見える文だけを読み、ブリーフにない製品の事実(機能、構文、上限、料金、保証、連携、人数)を挙げる。base110・base120 の24ページ(D1.2 の不合格11、合格13)で、不合格の 80% 以上に事実を挙げ、合格の 20% 以下にしか挙げないこと(約 1M)。通らなければこの仮説は飛ばす。
-- **仮説**: 「作ってはいけないもの」を社会的な証拠から製品の事実に広げ、作った製品の事実を NOTES.md に書き出せば済むという読み方を消せば、D1.2 を満たすページが増える。作る量はむしろ減る。
-- **狙う基準**: D1.2(6/12。01 は 10 run で 0/10、06 は 1/10)。
-- **経路**: C(照合を計器として)。
-- **変更先と文面の案**(同じ原因の2文を1つの変更として扱う)
-  - SKILL.md 手順1の第1段落の最後の2文。旧: "Use plausible, specific content from the subject's world when real material is missing, and say so in NOTES.md and your report, not on the page. Never invent testimonials, metrics, or customer logos presented as real." 新: "When real material is missing, fill only what the brief leaves open (names, dates, rows of data and their figures, current settings) with plausible specifics, and say so in NOTES.md and your report, not on the page. Do not add product facts the brief does not give: features, commands, syntax or flags, plans, prices, limits, guarantees, integrations, testimonials, metrics, or customer logos. When a section looks thin, show the brief's own facts larger instead."
-  - craft.md *Default render* の "List every invented fact in NOTES.md." を "List every invented sample (names, dates, rows, figures) in NOTES.md; product facts are never invented." にする。
-- **関門**: D1.2 が 5/6 以上(base 0.5、上がり幅 0.25)。照合が事実を挙げる候補のページが 1/6 以下。害: D2・D9 がそれぞれ −6 より上(中身が薄くなる)、D1.1 と D1.3 が下がらない。
-- **予想**: D1.2 0.5 → 0.85、v2 +1.2(重み 1.5)。対比較の D1 はわずかに正。費用は照合の検定 1M と実験 2.4M。
-- **予想される失敗と守り**: 01 の構文の表がブリーフの2例だけになり、役に立たなくなる(D1.1、D9)。06 の節が薄くなる(D2.2)。作った事実を「例」と言い換えて残す。照合の結果をページごとに記録する。
-- **繰り返しでない理由**: 前回の仮説4(EXP-036)は前提が立たず、測っていない。却下された実験に、D1.2 を狙ったものはない。
+- **仮説**: 良い回と悪い回の差の主な源は、スキルがシグネチャを先に定め、答えを定めないこと(診断 6)にある。次の 2 つを変えると、320 と 1280 の第1画面に答えが全部・普通の形で出るページが増え、中立の審査で基準点に勝ち越す。
+  - 手順1 で「第1画面が出す答え」を決めさせる。
+  - シグネチャの定義と、手順7・craft.md・surface-marketing.md の確かめの順を、「答えが先、シグネチャはその答えの作り」に置き換える。
+- **狙う次元とチェック**
+  - 狙う: 中立の審査の総合。ルーブリックでは D1・D3 が動くと見込む。
+  - 代理の基準: M-048 の A1。320 と 1280 の両方の第1画面に、依頼が名指す答えが全部、利用者が普段読む形で出ている。題とその答えの間に飾りがない。枠や札が答えを割っていない。
+  - 新しいツールは作らない。
+  - 守り: D2・D3・D6(ルーブリック)。
+- **対象ケース**: 6 ケースすべて。
+  - 効くと見込むケース: 05(次の 3 便の HH:MM と「あと何分」と行き先)、03(締めまでの日数、未承認の件数、支給額の表の見出しと最初の行、前月比、確定が止まっている理由)、02(次の回の日付・空き・予約への導線)。
+  - 01(install コマンド)と 04(チャンネル × イベントの表と保存)は、すでに満たす回が多いと見込む。
+- **変更先のファイル**(置き換えだけで、正味の行は 0。英文は案)
+  - SKILL.md 手順1
+    - 旧: "name the subject, the audience, and the page's single job in one sentence each"
+    - 新: "name the subject, the audience, the page's single job, and the answer its first screen gives (the figures, rows, dates, or command the brief names, in the form its reader already reads), one sentence each"
+  - SKILL.md 手順3
+    - 旧: "the **signature**: the one element the page will be remembered for, plus the unit it is built from and which other sections reuse that unit"
+    - 新: "the **signature**: the subject's material the answer from step 1 is built in, the unit it is made of, and which other sections reuse that unit; it never changes the answer's form, splits it, needs a legend, or pushes it below the first screen"
+  - SKILL.md 手順7
+    - 最初の文の旧: "Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*)."
+    - 最初の文の新: "Check first that the first screen at 320 and at 1280, before any scroll or interaction, shows the answer from step 1 complete and in its plain form, built in the signature (`references/craft.md` *Default render*)."
+    - 同じ手順の "Cover the signature … that is the first problem." の "the first problem" を "the next problem" にする。
+  - craft.md *Hierarchy*
+    - 旧: "The hero is a thesis: …"
+    - 新: "The first screen answers the brief: open with what the reader came for, complete and in the form they already read (the next departures as HH:MM with minutes to go and destination, the pay table with its column headers, the class dates with seats left, the install command), set in the subject's material, not "big headline + two buttons + gradient blob" by reflex."
+  - craft.md *Default render*
+    - 旧: "**The signature is visible and in its meaningful state on load.**"
+    - 新: "**The answer is visible, complete, and in its meaningful state on load, at 320 and at 1280, inside the signature.**"(続く文はそのまま)
+  - craft.md *Responsive*
+    - 旧: "At 320, the signature or the primary action appears within the first screen (about 640px). Move intro copy below it, or shorten it."
+    - 新: "At 320, the answer and the primary action appear within the first screen (about 640px). Move intro copy and ornament below them, or shorten them."
+  - surface-marketing.md *Mobile*
+    - 旧: "the hero still leads with the signature"
+    - 新: "the hero still leads with the answer and the primary action, set in the signature"
+  - 個性の仕組みは残す。craft.md の "The signature is a system, not a widget."、R04、R33 は変えない。
+- **効果を確かめる方法**(結果を見る前に決める)
+  - 前提(通らなければ H1 は行わず、H2 に進む):
+    - M-048 で A1 が勝ちを予測する。片方だけが A1 の対が 40 対以上あり、A1 の側の勝ちの率が 0.62 以上(40 対で偶然に届く率は約 8%)。
+    - 伸びしろがある。基準点 base141a〜d の A1 が 24 ページ中 16 以下。
+  - 生成と審査は共通の形(12 ページ、中立 48 対、ルーブリック 24 対)。
+  - 採用の関門(すべて満たす):
+    1. 候補の A1 が 12 ページ中 10 以上で、かつ基準点の率 + 0.3 以上。付ける人には run を知らせず、基準点と候補を混ぜて付ける。
+    2. 中立の一致した net が +6 以上(48 対)。
+    3. ルーブリックの clear net が −6 以上、D2・D3・D6 がそれぞれ −9 より上。
+    4. Floor が増えない。
+    5. トークンの中央値が基準点の 1.1 倍以下。
+  - 予想: A1 は基準点で 6〜8/12、候補で 10〜12/12。中立は +4〜+10。ルーブリックの D2 は −2〜−6。
+- **予想される失敗と回避策**
+  - 答えを先にしたぶんページが平らになり、ルーブリックの D2 が落ちる。シグネチャは「答えの作り」として定義に残し、"signature is a system" と R04・R33 も変えない。D2 を守りにする。
+  - 第1画面に答えを詰めすぎて混む(D3・D6)。文は「全部・普通の形」とだけ言い、要素を足せとは言わない。D3・D6 を守りにする。
+  - 01・04 はすでに満たしていて動かず、効果が 02・03・05 の 6 ページに集まる。ケース別の勝敗を必ず並べ、効いたケースと効かなかったケースを分けて書く。
+  - A1 を付ける人が候補に甘くなる。run を隠し、基準点と候補を混ぜて付ける。20 ページは別のコンテキストで付け直し、一致を見る。
+  - 05 で、EXP-048 の文(全部を同じ大きさにする)に寄る。新しい文は同じ大きさを求めない。05 の負けの理由を読む。
+- **繰り返しでない理由**
+  - 足す変更ではない。手順1 と、シグネチャを先にしている 7 か所の文を置き換えて、判断の順番を変える。
+  - 次の実験とは違う。EXP-032 は、仕事の表と初見テストを出典表の上に足した。EXP-048 は、05 だけの項を Fable の 2 対から surface-mobile.md に足した。EXP-053 は、項目の行に操作を置く項を 4 対から足した。
+  - 仮説の元は、164 件の決め手の分類と中立の審査の理由である。関門の前に、M-048 で性質が勝ちを予測することを既存の対で確かめる。
+  - EXP-023(主操作を第1画面に、R25)が扱ったのは操作のボタンで、答えの中身ではない。
 
-### 5. EXP-043: 1280・1920 の最初の2画面で、並んだ列の片方を早く終わらせない(R26 を直した R34 と craft.md の1項)
+### 2. EXP-055: 確かめの回数を減らし、生成の費用を下げる(費用、非劣性)
 
-- **前提**: 直した検出が、分けた検定(下)を通ること。通らなければやらない。
-- **仮説**: craft.md の "No half-empty rows at desktop." の項に、いまの空きの3つの形(長い表の横の見出しの列、背の高いデモの横の文の列、1600px で足した短い列)と、並べ替えだけの直し方を書き、R34 で第1・第2画面の空きを見せれば、D6.3 が v0.10 の水準に戻る。
-- **狙う基準**: D6.3(6/12。v0.10 の対照は 11/12)。
-- **経路**: C(ツールあり)。
-- **変更先と文面の案**: craft.md の項を置き換える。新: "**No half-empty rows at desktop.** At 1280 and 1920, within the first two screens, columns that sit side by side end within about 200px of each other: a heading column beside a longer table or list, a hero's copy beside a taller demo, and the column added from 1600px all count. Rebalance with what the page already has: put the heading above its table, move a block the section needs into the short column, show fewer demo rows, or let the block below rise; never pad with filler, repeats, or a stretched box (R34)." R34 は R26 の測り方(塗られたものから 320×256px 以上の空きを探す)を第1・第2画面に限り、表と時刻表の行の中の空白を除き、空きの横に下まで続く列があるものだけを挙げる。
-- **生成の前の検定**: しきい値と除外は base110・base120 の24ページ(不合格13、合格11)で決め、残りの36ページ(不合格14、合格22)で、不合格の 80% 以上・合格の 20% 以下に出ることを確かめる。いまの R26 は 0.81・0.42。04 の 1920 の横の列は審査が割れている(7ページ中5ページを合格)ので、届かない見込みもある。
-- **関門**: D6.3 5/6 以上(上がり幅 0.25)。R34 の候補 1/6 以下。害: clear net −4 以上、D2・D7・D8 がそれぞれ −6 より上(EXP-024 の D2 −11、EXP-015 の D7 の低下)、ページが均されたことを決め手にした clear 負けが1件以下、D7.3 が 0.75 以上のまま(R29 の効果を崩さない)。
-- **予想**: D6.3 0.5 → 0.8、v2 +0.7。対比較の D6 は正(対比較の D6 の理由は同じ空きを挙げている)。
-- **予想される失敗と守り**: 空きを埋めて個性が均される(EXP-024)。文面は「並べ替える」だけを並べ、埋め草を禁じた。D2 を守る。デスクトップの直しが狭い幅の確認を押しのける(EXP-015)。D7 を守る。
-- **繰り返しでない理由**: EXP-029〜035 は D6.3 を狙っていない(EXP-033 が下げた)。EXP-015(R21)と EXP-024(R26)は v1 か経路 P で測られ、空きは対比較の決め手にならなかった。v2 の D6.3 はこの空きそのものの基準で、v0.11 からの低下は EXP-033 の副作用として測れる。ただし EXP-024 の D2 −11 という前回の「やめること」の理由はまだ生きているので、5番目に置いた。
+- **仮説**: 標準の予算の「直し 2 回」と「4 幅すべての撮影を見る」は、費用の大きな部分を占めるのに、勝ちにはあまり効いていない。次のように減らすと、トークンと時間が 0.75 倍以下になり、中立の審査で負けない。
+  - 直しは 1 回にする。2 回目は、Floor の指摘と第1画面の壊れがあるときだけ。
+  - 見る撮影は、320 と 1280 の第1画面とタイルにする。768 と 1920 は、render check がその幅で何かを挙げたときだけ見る。
+- **狙う次元とチェック**: 費用(M-045)。守りは D7(ルーブリック)、Floor、R17・R24・R29・F08 の件数。
+- **対象ケース**: 6 ケースすべて。特に 05(320 が主)と 01(320 の入力欄、D7.1)。
+- **変更先のファイル**(正味の行は 0 か −1)
+  - SKILL.md *Budget* の standard の行: "up to 2 fix rounds" → "one fix round; a second only for Floor findings or a broken first screen"
+  - SKILL.md 手順7: "look at the screenshots at 320, 768, 1280, and 1920" → "look at the 320 and 1280 screenshots, and at 768 or 1920 wherever the render check reports a finding there"
+  - craft.md *Responsive* の "Open the 320, 768, 1280, and 1920 screenshots in that order …" を、同じ意味に書き換える。
+- **効果を確かめる方法**
+  - 前提: M-045 の内訳で、直しと撮影の確かめが費用の 2 割以上を占めること。2 割未満なら行わない。
+  - 共通の形で、経路 N(M-044)。
+  - 採用の関門(すべて満たす):
+    1. ページごとのトークンの中央値と時間の中央値が、どちらも基準点の 0.75 倍以下。
+    2. 中立の一致した net が −4 以上(48 対)。
+    3. ルーブリックの clear net が −6 以上、D7 が −9 より上(24 対)。
+    4. Floor が増えない。候補 12 ページの R17・R24・R29・F08 の合計が、基準点 24 ページの合計の半分 + 2 以下。
+  - 予想: 費用 0.6〜0.7 倍、中立 −2〜+2、D7 −2〜−6。
+- **予想される失敗と回避策**
+  - 768 の崩れ(並んだ部品の押しつぶし)を render check が挙げず、見逃す(EXP-015 の型の逆)。D7 を守りにし、審査役が挙げた 768 の根拠を読む。外れたら、768 を残す形を別の変種として登録する。
+  - 生成役が自分で撮影を足し、費用が下がらない。M-045 で回数を数える。
+- **繰り返しでない理由**: これまでの 53 件に、手順を減らして費用を下げる実験はない。EXP-015(デスクトップの直しが狭い幅の確認を押しのけ、D7 が下がった)は、確かめを減らすと D7 に出るという証拠で、だから D7 を守りにする。
 
-### 順番の理由
+### 3. EXP-056: 計画の段を短くする(スキルを短くする、非劣性)
 
-- 期待値の粗い見積り(生成の前の検定を通る見込み × 関門を通る見込み × v2 の伸び): 仮説1 は 0.8 × 0.6 × 0.8、仮説2 は 0.6 × 0.6 × 0.7、仮説3 は 0.5 × 0.6 × 1.0、仮説4 は 0.5 × 0.6 × 1.2(計器の検定が先)、仮説5 は 0.4 × 0.5 × 0.7。仮説1 は、検定の材料がすでにあり、原因がコードで確かめられ、効果がないときに偶然通る確率が最も低い。
-- 仮説1・2 は衛生の基準で、通っても対比較は動かない見込み。通った2件(EXP-033・034)はどちらも隣に代償を残した。仮説1か2で対比較の D2 が −4 以下になったら、仮説3を先にする。仮説3 は現行の版の対比較の負けの主な理由に直接当たる。
+- **仮説**: 計画の段のうち、次の 2 つは個性を支えていない。
+  - 手順2 の「三つの方向を 2 行ずつ書いて、1 つを勧める」。
+  - 手順4(計画への問い)と、それと重なる direction.md §5。
+
+  次のように変えると、本文が 15 行以上短くなり、個性も勝ちも下がらない。
+  - 三つの方向を、「選んだ 1 つ(2 行)と、捨てた中で一番強い案(習慣の外のもの、1 行で理由つき)」に替える。
+  - 手順4 は手順3 の最後の 1 文にまとめ、§5 は消す。
+  - アクセントと書体の 3 候補(EXP-008)と、主題から取る規則は残す。
+- **狙う次元とチェック**: 本文の行数と費用。守りは D2(ルーブリック)と見た目の多様性。
+- **対象ケース**: 6 ケースすべて。
+- **変更先のファイル**(正味 −15〜−20 行)
+  - SKILL.md 手順2・3・4。手順が 1 つ減るので、redesign.md の "step 6 (verify)" と audit.md の "step 7" の番号を合わせる。
+  - SKILL.md *Budget* の quick: "skip the three directions" → "skip the direction"。
+  - direction.md §3: 書式の枠を「1 方向+捨てた案」に替える。軸の表、*Avoid the house look*、*Spread the candidates* は残す。
+  - direction.md §5: 消す。tokens-check の確認は §4 の最後へ移す。
+- **効果を確かめる方法**
+  - 共通の形で、経路 N。
+  - 採用の関門(すべて満たす):
+    1. SKILL.md と direction.md の合計が 15 行以上減る。
+    2. トークンの中央値が基準点以下。
+    3. 中立の一致した net が −4 以上(48 対)。
+    4. ルーブリックの clear net が −6 以上、D2 が −9 より上(24 対)。
+    5. 多様性: 12 ページのアクセントを色相 30° ごとに分けたときの最多の組の数と、表示書体の分類の最多の数が、どちらも基準点の最大を超えない。基準点の最大は、base141a〜d の 6 ページずつを 2 run ずつ組んだ 12 ページの値で取る。
+    6. Floor が増えない。
+  - 予想: 中立 ±2、D2 −2〜−4、費用 0.95 倍前後。
+- **予想される失敗と回避策**
+  - 選ぶ前に比べないので、習慣の見た目に寄る(EXP-005・008 の橙)。捨てた案は「習慣の外」のものと決め、*Looks used* と R04 の照合を残す。多様性を関門に入れた。
+  - 手順の番号を変えて、参照が切れる。`node scripts/build.mjs` のあとに、dist の中を "step " で検索する。
+- **繰り返しでない理由**: 三つの方向を減らした実験はない。EXP-008(候補を広げてから選ぶ、採用)のアクセントと書体の 3 候補は残す。EXP-028・032 は計画に段を足したが、この仮説は削る。
+
+### 4. EXP-057: 依頼にない製品の事実を作らない(前回の EXP-042、置き換え)
+
+- **仮説**: 原因の文は 2 つある。SKILL.md 手順1 が禁じているのは社会的な証拠(推薦、数字、ロゴ)だけで、craft.md の "List every invented fact in NOTES.md" は「作って書き出せばよい」と読める。この 2 文を次の内容に替えると、事実を足すページが減り、中立の審査で負けない。作る量はむしろ減る。
+  - 依頼が空けている所(名前、日付、データの行と数字、今の設定)だけを埋める。
+  - 製品の事実(機能、コマンド、構文、料金、上限、保証、連携)は足さない。
+  - 節が薄く見えるなら、依頼の事実を大きく見せる。
+- **狙う次元とチェック**
+  - 狙う: D1(D1.2)。
+  - 計器: 事実の照合(前回の M-038)。新しいコンテキストが、ブリーフとページの見える文だけを読み、依頼にない製品の事実を挙げる。
+  - 守り: D2・D9(中身が薄くなる)。
+- **対象ケース**: 6 ケースで生成し、効果は 01(演算子、設定ファイル)、02(料金、空席)、06(機能、通知)で読む。
+- **変更先のファイル**(正味の行は 0)
+  - SKILL.md 手順1 の最後の 2 文
+    - 旧: "Use plausible, specific content from the subject's world when real material is missing, and say so in NOTES.md and your report, not on the page. Never invent testimonials, metrics, or customer logos presented as real."
+    - 新(前回の plan.md の仮説4 の文案): "When real material is missing, fill only what the brief leaves open (names, dates, rows of data and their figures, current settings) with plausible specifics, and say so in NOTES.md and your report, not on the page. Do not add product facts the brief does not give: features, commands, syntax or flags, plans, prices, limits, guarantees, integrations, testimonials, metrics, or customer logos. When a section looks thin, show the brief's own facts larger instead."
+  - craft.md *Default render*: "List every invented fact in NOTES.md." → "List every invented sample (names, dates, rows, figures) in NOTES.md; product facts are never invented."
+- **効果を確かめる方法**
+  - 前提: 照合を計器として確かめる(約 1M)。base140a・b と base141a・b の 24 ページで、D1.2 の不合格の 0.8 以上に事実を挙げ、合格の 0.2 以下にしか挙げないこと。通らなければ行わない。
+  - 共通の形で、経路 N。
+  - 採用の関門(すべて満たす):
+    1. 照合が事実を挙げる候補のページが、12 ページ中 2 以下。基準点の率は前提の確かめで出す。
+    2. 中立の一致した net が −4 以上(48 対)。
+    3. ルーブリックの D1 net が 0 以上、D2・D9 が −9 より上(24 対)。
+    4. Floor が増えない。
+  - 予想: 照合は 6/12 前後から 1〜2/12 に下がる。中立は ±2。
+- **予想される失敗と回避策**
+  - 01 の構文の表がブリーフの 2 例だけになり、役に立たなくなる(D1.1)。「依頼の事実を大きく見せる」で受ける。
+  - 作った事実を「例」と書き換えて残す。照合はそれも数える。
+  - 照合が、見本のデータ(名前、日付)を事実と誤って挙げる。照合の文で見本と製品の事実を分け、確かめで誤りを数える。
+- **繰り返しでない理由**: 前回の仮説4(EXP-042)は、前提の計器が立たず、実行していない。却下された実験に、D1.2 を狙ったものはない。EXP-051 の D1 の負け(依頼にない事実、仮の空席数を実在のように見せた)が、同じ欠陥を別の比較で示した。
+
+### 5. EXP-058: 方向は、描いた第1画面を比べて選ぶ(生成の手順を変えて、ばらつきを減らす)
+
+- **仮説**: 同じ版の 2 回の差(診断 4)は、手順2 で文だけを見て方向を 1 つ選ぶことから来る。上位 2 つの方向で、本物の答えを入れた第1画面だけを作り、1280 と 320 で撮る。依頼により直接答え、その種類の既定に見えないほうを残す。こうすると悪い回が減り、中立の審査で基準点に勝ち越す。H3 を採った後なら、比べるのは選んだ方向と捨てた案の 2 つ。
+- **狙う次元とチェック**: 中立の審査の総合、D1・D2。守りは D6・D7・D8(手数の取り合い)と費用。
+- **対象ケース**: 6 ケースすべて。基準点どうしの差が大きい 03・05 で読む。
+- **変更先のファイル**
+  - SKILL.md 手順2 の "Recommend one and proceed with it unless the user picks." を、"Build only the first screen of the top two, with the real answer, render it at 1280 and 320, and keep the one that answers the brief more directly and looks less like its category's default; say why in NOTES.md." に置き換える。
+  - direction.md §3 の "Recommend <X> because …" の行を、同じ意味に替える。
+- **効果を確かめる方法**
+  - 前提: H2 が採用されていること(費用の余地)。
+  - 共通の形で審査する。
+  - 採用の関門(すべて満たす):
+    1. 中立の一致した net が +8 以上(48 対。効果なしで通る率は約 9%)。
+    2. トークンの中央値が、H2 を入れる前の基準点以下。
+    3. ルーブリックの clear net が −6 以上、D6・D7・D8 がそれぞれ −9 より上。
+    4. Floor が増えない。
+  - 予想: 中立 +4〜+10。費用は H2 の後の基準点の 1.2〜1.4 倍。
+- **予想される失敗と回避策**
+  - 生成役が、目立つほう(シグネチャの強いほう)を選ぶ。選ぶ基準の最初に「依頼の答えが第1画面にそのまま出るか」を書いた。NOTES.md に書かれた理由を読む。
+  - 2 つ描く手間で、仕上げの状態と狭い幅が削られる(EXP-035 の型)。D7・D8 を守りにした。
+  - 費用が H2 の得を超える。費用を関門にした。
+- **繰り返しでない理由**: 描いた案から選ぶ実験はない。EXP-032 の初見テストは 1 案を確かめる手順、EXP-028 は計画で幅の形を決める手順で、どちらも選ぶ手順ではない。作業を足す手順だが、置き換える文は 1 つで、関門は優位(+8)と費用の両方に置く。
 
 ## 評価手法の改善案
 
-### M-034 の結果を書く(0 トークン)
+method.md に M- として記録する(番号は仮)。前回の計画の M-037(設計と確かめのページを分ける)と M-038(事実の照合)は、method.md に見出しがない。M-037 は EXP-041 で使ったので、見出しを付けて記録する。M-038 は H4 の前提として残す。
 
-- 上の診断3の数字を M-034 の result に書く。M-027 の規則の厳しい側のまま運用する(v2 は水準と診断の記録、経路 C はツールのある基準だけ)。採用の手順は変えない。
+### M-041 Opus のスキルなしの対照(利用者の問いに、同じモデルで答える)
 
-### M-037 生成の前の検定を、設計と確かめのページに分ける(0 トークン)
+- 理由: 診断 0・3。D8 の 5–7 も 05 の弱さも、生成役の違いと分けられない(EXP-048 の学び)。
+- 方法:
+  - nsOa・nsOb を生成する(Opus、base と同じ推論量、M-039 の雛形、費用を記録)。M-046 の base141c・d と同じ波で作る。
+  - base141a・b との 24 対を審査する。中立の審査は両順で、一致した対だけ数える。ルーブリックは片順で、NOTES/DESIGN を消し、D10 は読まない。
+  - 判定は M-039 の読み方(24 対で勝ち 18 以上かつ clear net +6 以上で優位)と、ケース別の勝ち越しで読む。
+  - 負けた対の理由は全件を分類し、仮説の元にする。D8 はこの比較と M-049 の後で読み直す。
+  - 04 の結果で EXP-047 の採用も読み直す。04 の 4 対で一致した負けが 3 以上なら、04 の文を見直す。
+- 費用: 生成約 1M、審査約 6〜7M。
 
-- 理由: R29 と R30 のしきい値は、検定に使うページを見てから決めた(診断1)。
-- 変更: しきい値と除外は、直近の base 2回(いまは base110・base120 の24ページ)だけで決める。残りの審査済みのページ(いまは36ページ)で、M-033 の条件(不合格の 80% 以上、合格の 20% 以下)を確かめ、それで進むかを決める。両方の数字を experiments.md に書く。
-- あわせて、関門を偶然に通る確率は、ケース別の満たす率で出す。D4.4 は和文で 3/30、01・04・06 で 27/30 のように、ケースで率が大きく違う。
+### M-042 位置の割り当てを直し、中立の審査の反転を測る
 
-### M-038 事実の照合を計器と認める条件(仮説4の前提、約 1M)
+- 理由: 診断 5。位置が「ケース+基準点」で決まるので、どの候補も同じ側に座る。EXP-053 の「すべて A」は、位置のせいか基準点の強さのせいかを分けられない。
+- 方法:
+  - pair() のハッシュに候補の run 名も入れる(または乱数の種を key.json に書く)。候補が A になる対を、ケースごと・基準点ごとに半分ずつにそろえる。
+  - 既存の中立の 28 対(EXP-047・048・052・053 の版どうし)を逆の順で審査し、反転の率を数える。
+  - 反転が 1/4 以上なら、中立の審査は両順を標準にし、両順で一致した対だけを勝ち負けに数える。
+  - ルーブリックは片順のまま(反転は M-029 で 0/6、M-030 で 1/12)。
+- 費用: 測定約 2.5M。両順にすると、中立の審査の費用は倍になる。
 
-- 照合は1ページ1体の新しいコンテキストで、ブリーフとページの見える文だけを読み、ブリーフにない製品の事実を挙げる(審査の v2 とは別。判定は D1.2 で行う)。base110・base120 の24ページで、不合格の 80% 以上に挙げ、合格の 20% 以下にしか挙げなければ、M-027 の「ツール」に数える。
+### M-043 検出力から関門を決め、中立の審査を主にする
 
-### 保留のまま
+- 理由: 診断 1。12 対の勝ち数は、効果がないときの分布と区別できない。EXP-051 の D1 の関門(9 勝)は基準点 1 回分のゆらぎの中にあり、EXP-053 の関門(8 対、ほぼ slight)も雑音の中にあった。
+- 方法:
+  - 事前登録に、関門ごとの「効果がないときに通る率」と「想定の効果(勝ちの率 0.65 と 0.75)で通る率」を書く。数字は M-029 の A/A と M-046 の 4 run の組から出し、それまでは共通の項の二項の近似を使う。
+  - 採用の関門は 24 対以上にする。代理の基準を使うときは、M-048 で確かめたものと害の関門を組にする。
+  - 8 対以下の段階は、中止にだけ使う。
+  - 仮説を作った対の基準点のページは、関門に使わない。
+  - 全ケースで中立の審査を主にし、ルーブリックを守りにする(M-039 を製品画面以外にも広げる)。
+- 費用: 0。
 
-- M-035(D10.1 と D5.1 の審査の文の明確化)。D10.1 は3波で 0〜1/12 で、審査が部品の寸法を数えるかで割れる。採るなら、V3 の台帳のページを新しい文で審査し直し、一致が上がることを条件にする(前回のとおり)。
+### M-044 非劣性の経路(経路 N)
 
-## 次のループで最初に行うこと
+- 理由: 短くする・安くする変更(H2・H3・H4)は、良くなることではなく、悪くならないことと、測れる得(費用、行数、照合の件数)で採否を決める。費用と行数は、勝ち負けと違って、ほとんど雑音がない。
+- 方法: rubric.md の採用の手順に、経路 N を足す。関門は次のすべて。
+  - 中立 48 対の一致した net が −4 以上。
+  - ルーブリック 24 対の clear net が −6 以上、守りの次元が −9 より上。
+  - Floor が増えない。
+  - 得が、事前に書いた量に届く。
 
-1. `node eval/run.mjs plateau` を実行し、この plan.md の `reviewed-after: EXP-037` から数え直していることを確かめる。
-2. M-034 に result(診断3)を書き、M-037 を loop/method.md に記録する。
-3. EXP-039 を loop/experiments.md に書く(仮説、経路 C、検定の条件 (a)〜(d)、関門1〜5、予想、守る次元)。結果を見る前に書く。
-4. R31 を Opus max で設計する(M-010)。/mnt/project-files/design-nexus-archive/variants-20261101.tar.gz の variants/exp010(R19 の auto-phrase の probe)と variants/exp014(R20)を出発点にし、閉じ括弧の後の助詞を加える。現行のスキルを写した変種で japanese.md の項を置き換え、checks.md、fixtures、test.mjs を直し、`node scripts/test.mjs` を通す。差分は loop/variants/exp039-ja-phrase.patch に置く。
-5. 検定 (a)〜(d) を行う(`--time 2026-11-04T10:30:00+09:00 --tz Asia/Tokyo` は score と同じ)。外れたら手順4に戻る。2回外れたら仮説を捨て、仮説2に進む。
-6. `node eval/run.mjs prepare --skill <変種> --split train --label exp039` で6件を作り、Opus で生成する(推論量は base と同じ、同時4体まで)。`DN_SKILL=<変種> node eval/run.mjs score --run <run>`、`node eval/run.mjs judge --run <run> --scale v2 --blind`(1ページ1体、新しいコンテキスト)、もう一度 score。
-7. `node eval/run.mjs pair --base <base120a>,<base120b> --run <run>` の12対を、1対1体の新しいコンテキストの Opus が片順で審査し、`pair-score --run <run>`。`compare --base <base120a>,<base120b> --run <run> --scale v2`。
-8. 関門1〜5で判定し、experiments.md に書く。採用なら v0.13.0(VERSION と .claude-plugin/plugin.json、CHANGELOG.md、`node scripts/build.mjs`)。v0.13.0 で base を2回生成し、base120a・b との12対の clear net を記録する(M-031)。eval/runs を tar で保存する(M-028)。
-9. 次は仮説2(R32 が検定を通ったとき)、仮説3(R33 が通れば経路 C、通らなければ経路 P)、仮説4(M-038 を満たしたとき)、仮説5(R34 が分けた検定を通ったとき)の順。各実験のあと `plateau` を実行する。
+  採用の確認(M-031)では、守りの次元を 3 回目として読む。
+- 費用: 0。
+
+### M-045 生成の費用をページごとに記録する
+
+- 理由: 費用の比較は Fable の 1 回だけで、Opus では測っていない。どの手順に費用がかかるかも分からない(H2・H3 の前提)。
+- 方法:
+  - run.json に、generator_model と、ページごとの入出力トークン、時間、render check と lint の回数、直しの回数、読んだ撮影の枚数を書く(サブエージェントの usage と記録から)。
+  - 過去の生成の記録が残っていれば、手順ごと(計画、作る、確かめ、直し)の内訳を、base141a・b の 12 ページで数える。
+  - `compare` が、費用を勝ち負けと並べて出す。
+- 費用: 小。
+
+### M-046 基準点を 1 ケース 4 ページにする
+
+- 理由: 診断 4。基準点のページが勝敗を決めるので(多数の側 0.81)、2 ページの当たり外れが実験の結果を左右する。
+- 方法:
+  - v0.14.1 で base141c・d を作る(M-041 と同じ波)。
+  - 以後の対比較は、候補 12 ページ × 基準点 4 run = 48 対にする。候補を増やさずに対が倍になり、基準点のページ 1 つの重みが半分になる。
+  - 版が変わったら、新しい版の base を 2 回作り、古いものから 2 つ入れ替える(M-031)。
+- 費用: 生成約 2〜3M(一度だけ)。審査は 1 実験あたり倍になる(M-050 で一部を戻す)。
+
+### M-047 中立の審査を eval/runs に残す
+
+- 理由: 診断 5。中立の審査を主の計器にするのに、保存と集計の仕組みがない。
+- 方法:
+  - `pair --neutral` を作る。NEUTRAL_PROMPT.md を作り、neutral.<model>.json を各対のフォルダに書く。
+  - `neutral-score` を作る(両順の一致、ケース別)。`compare` がその集計を並べて出す(AGENTS.md の「compare で採る」を保つ)。
+  - NOTES/DESIGN を消すのは、スキルなしとの比較の写しだけにする。
+  - scratchpad の n052・n053 の 16 件を、exp051a・b と exp053a・b の _pairs に移す(位置は各 run の key.json のまま)。
+- 費用: 0(コードだけ)。
+
+### M-048 代理の基準は、勝ちを予測すると確かめてから使う
+
+- 理由: 経路 C で動かした基準は、勝ちを予測しなかった(V3 0.56)。仮説にする性質が勝ちと結びつくかを、生成の前に既存の対で確かめれば、少ない対から仮説を作る失敗(EXP-048・050・053)も防げる。
+- 方法:
+  - 結果を知らない新しいコンテキストが、ブリーフと w1280-first.png・w320-first.png だけを見て、ページごとに性質を二値で付ける(理由を 1 行)。
+  - 対象は、v0.12 以降の学習用の判定済みのページ(約 110 ページ)とスキルなしのページ。
+  - 片方だけがその性質を持つ対を集め、持つ側の勝ちの率を数える。版どうしのルーブリックの対と、中立の対は別に数える。対が 40 以上あって勝ちの率が 0.62 以上なら、代理の基準として使う。
+  - 20 ページを別のコンテキストで付け直し、一致が 0.85 以上であること。
+  - 性質の定義は半分のページで決め、残りの半分で確かめる(前回の M-037)。
+- 費用: 1 ページ約 1 万トークン。約 130 ページで約 1.3M。
+
+### M-049 D8 を状態の数で読まない(計器の変更。EXP-049 の型)
+
+- 理由: 診断 3。D8 の負け 14 件のうち 13 件が数によるもので、pair-prompt.md の「依頼より多い機能を好まない」と向きが逆。EXP-052 の D8 +13 は、D2・D4・D5・D6 の −30 と引き換えだった。
+- 方法:
+  - pair-prompt.md に 1 項を足す: 「D8 は、依頼が名指すか主な仕事に要る状態(保存・失敗・空・読み込み・項目ごとの操作)に、ページ自身の操作で出会えるかで比べる。デモの切り替え・URL・オフラインでしか出ない状態は軽く数え、依頼より多い状態は加点しない」。
+  - 確かめ: D8 の負け 14 件と、D8 が勝ちか引き分けの守りの 6 対を、新しい文で審査し直す。次の 2 つを満たせば採る。
+    - 依頼の状態で負けた対(04 の保存の失敗に画面から届く、など)は、負けのまま残る。
+    - 守りの 6 対のうち 5 対以上で、総合の勝者が変わらない。
+- 費用: 約 2M。
+
+### M-050 審査の費用を下げる(軽い中立の審査、v2 は確認のときだけ)
+
+- 理由: 中立 48 対を両順にすると、1 実験で 96 判定になる。v2 は監視だけで(M-034)、採否に使っていない。
+- 方法:
+  1. 中立の審査の撮影を、320 と 1280 の第1画面とタイルに絞る(コードは読む)。既存の中立の 24 対を両方の形で審査し、総合の一致が 0.8 以上なら主の計器にする。
+  2. 経路 P・N の実験では v2 を審査しない。採用の確認(M-031)の base 2 回だけ審査する。経路 C(ツールのある基準)は今のまま。
+- 費用: 確かめに約 1.5M。以後、中立の審査は約半分になり、v2 の 6 判定(約 0.6〜1M)が毎回なくなる。
+
+### M-051 plateau の読み取り(提案。見直し役はコードを変えていない)
+
+- いまの読み方と問題
+  - `^- verdict:` の行だけを読み、最初の「。」までで ACCEPT か REJECT を探し、`id > reviewed-after` で数える。
+  - EXP-044・045 の結果は "- decision:"、EXP-047〜053 は "- 判定: …。**REJECT**" と書かれているので、EXP-039 以降はどれも数えられない。
+  - そのため、EXP-037 の後に却下が 4 回続いても(EXP-048、050、051/052、053)、"not stalled" と出た。
+- 直し方
+  1. 新しく `- outcome:` の行(ACCEPT | REJECT | INSTRUMENT | MEASURE | CONTINUED)を作り、まずこれを読む。experiments.md のテンプレートに `- outcome:` と `- variant:`(変種の名前。測り直しは同じ名前)を足し、EXP-039 以降の項に書き足す。
+  2. `- outcome:` がない古い項は、`^- (verdict|decision|判定)\s*[::]` に合う行(キーワードの直後が「:」のもの)のうち、最後の行を読む。「判定(先に決める…)」「decision(1回目)」「判定の途中経過」は読まない。
+     - 行の全体から、太字か裸の ACCEPT/REJECT のうち最後のものを取る。
+     - 「計器を採用」は INSTRUMENT、「優位」「劣位」「区別できない」は MEASURE、「この1回では採用しない」は CONTINUED とし、どれも数えない。
+  3. 同じ `- variant:` の項は 1 つの仮説として扱い、最後の結果だけを数える(EXP-051 と 052 は 1 回の却下)。
+  4. 数える範囲は、`reviewed-after` の EXP の見出しより後(ファイルの順)にする。ファイルは番号の順に並んでいない(EXP-041 は EXP-044 の後にある。計画で番号を先に振るので、番号が飛ぶ)。
+  5. 結果が読めない項があれば、その番号を出し、終了コード 4 にする。見落としを黙って "not stalled" にしない。
+  6. eval/fixtures/plateau/ に、EXP-037〜053 の見出しと結果の行だけを写した experiments.md と plan.md を置き、期待する出力を scripts/test.mjs で確かめる(`plateau` に `--log` と `--plan` の引数を足す)。
+- 期待する出力
+  - reviewed-after: EXP-037 のとき、数えるのは次の 7 件: EXP-044 ACCEPT(039 と同じ変種)、EXP-045 ACCEPT(041 と同じ変種)、EXP-047 ACCEPT、EXP-048 REJECT、EXP-050 REJECT、EXP-051/052 REJECT、EXP-053 REJECT。EXP-046 と 049 は数えない。出力は "STALLED: 4 rejects in a row" で、終了コード 3。
+  - この plan.md(reviewed-after: EXP-053)では、数える項がなく(none)、not stalled。
+- 費用: 0。
