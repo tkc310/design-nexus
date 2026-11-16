@@ -1,0 +1,24 @@
+diff -ru skills/design-nexus/SKILL.md /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/v067/design-nexus/SKILL.md
+--- skills/design-nexus/SKILL.md	2026-11-15 23:48:51.262952992 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/v067/design-nexus/SKILL.md	2026-11-16 04:39:14.017648321 +0000
+@@ -47,7 +47,7 @@
+ 
+    Before adopting any candidate, judge whether it helps this project: fit with purpose, audience, and brand; accessibility and performance impact; 確度 (低, 低〜中, and 未確認 are not grounds to adopt); status fading or dropped; `#mature` (not a reason to look new); `#anti-pattern` (do not apply the warned-against look; an item that is itself the warning, such as T01, may still be followed); and the item's 避ける場面. Adopt only items that pass. State in one line why each candidate was adopted or rejected. If none pass, adopt none.
+ 
+-2. **Directions** (standard/deep). Propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Recommend one and proceed with it unless the user picks.
++2. **Directions** (standard/deep). Propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Build only the first screen of the top two, with real values, as `directions/1.html` and `directions/2.html`, capture each at 320 and 1280, and keep the one that does the page's single job more directly; say why in NOTES.md, and proceed with it unless the user picks.
+ 3. **Token plan.** Before code, write: 4–6 named colors with hex, their role, and their source in the subject's world, with the accent and display face each chosen from three spread candidates (`references/direction.md` §3), type roles (display / body / utility) with families, a scale, and how each is loaded, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for, plus the unit it is built from and which other sections reuse that unit (`references/craft.md` *Layout and spacing*).
+ 4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–e, including the agent house look).
+ 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
+diff -ru skills/design-nexus/references/direction.md /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/v067/design-nexus/references/direction.md
+--- skills/design-nexus/references/direction.md	2026-11-14 11:46:50.980575918 +0000
++++ /tmp/claude-0/-home-user/d0751cf7-b84f-541c-8a0e-9b33a5b9f63d/scratchpad/v067/design-nexus/references/direction.md	2026-11-16 04:39:14.017785347 +0000
+@@ -43,7 +43,7 @@
+ A — "<name>": <what it borrows from the subject's world>; <what leads the page>.
+ B — …
+ C — …
+-Recommend <X> because <the subject-specific reason>.
++Keep <X> after building the first screen of the top two: <why it does the page's single job more directly>.
+ ```
+ 
+ ### Avoid the house look
