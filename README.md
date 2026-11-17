@@ -74,6 +74,10 @@ node eval/run.mjs compare --base baseline --run <run>   # 採用/不採用を判
 
 Claude Code では、このリポジトリで `/improve-design-nexus` を実行すると1イテレーションを通しで回します。手順と判定基準は [loop/IMPROVEMENT.md](loop/IMPROVEMENT.md) と [eval/rubric.md](eval/rubric.md)、利用中に気づいたことは [loop/feedback.md](loop/feedback.md) に書きます。
 
+## フィクスチャの公開
+
+`eval/fixtures/` の HTML の公開先は https://tkc310.github.io/design-nexus/ です。自動では実行しません。Actions タブから手動実行してください（Publish fixture pages）。初回は Settings > Pages の Source を GitHub Actions にしてから実行します。載るのは HTML と、同じディレクトリ内で相対参照しているファイルだけです。
+
 ## 構成
 
 ```
@@ -91,6 +95,8 @@ install.sh                インストーラ
 docs/comparison.md        調査・比較レポート
 docs/design-skills.md     X上のスキル検証（2026-10-31）
 docs/design-trends/       デザイン手法の月次データベース（流行を求められたときだけスキルが読む）
+.github/workflows/pages.yml  フィクスチャ HTML を Pages へ手動公開
+.github/assemble-fixture-pages.mjs  公開物の収集と index.html の生成
 ```
 
 ## クレジット
