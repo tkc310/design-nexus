@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ledger ground fixture</title>
+<meta name="description" content="R33 fixture: one ledger ground whose regions are divided by rules, a band and a flat plate, not cards">
+<style>
+body{margin:0;font:15px/1.5 Georgia,serif;background:#f5f2ea;color:#22201b}
+main{padding:24px 32px}
+h1{margin:0;font-size:28px;padding-bottom:12px;border-bottom:2px solid #22201b}
+/* a band: lighter, ruled above and below, square, no shadow */
+.band{display:grid;grid-template-columns:repeat(4,1fr);background:#fbfaf6;border-top:1px solid #8d877a;border-bottom:1px solid #8d877a;margin:0 -32px;padding:20px 32px;min-height:120px}
+.band b{display:block;font-size:28px}
+.cols{display:grid;grid-template-columns:2fr 1fr;gap:32px;margin-top:24px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px 4px;border-bottom:1px solid #c9c2b3;text-align:left}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+/* a flat plate: lighter, no border, radius or shadow */
+.plate{background:#fbfaf6;padding:20px;min-height:320px}
+/* a stub ruled on one side only */
+.stub{background:#fbfaf6;border-left:3px solid #22201b;padding:16px;margin-top:16px;min-height:140px}
+</style></head><body>
+<main>
+<h1>November payroll ledger</h1>
+<section class="band"><div><span>Days to cut-off</span><b>6</b></div><div><span>To approve</span><b>7</b></div><div><span>Gross</span><b>$97,300</b></div><div><span>Net</span><b>$84,120</b></div></section>
+<div class="cols">
+<table><thead><tr><th>Name</th><th>Role</th><th>Net pay</th></tr></thead><tbody>
+<tr><td>Mia Chen</td><td>Nurse</td><td class="num">$4,210</td></tr>
+<tr><td>Leo Park</td><td>Reception</td><td class="num">$2,980</td></tr>
+<tr><td>Ana Ruiz</td><td>Physio</td><td class="num">$3,640</td></tr>
+<tr><td>Sam Ito</td><td>Nurse</td><td class="num">$4,090</td></tr>
+<tr><td>Eve Lund</td><td>Radiographer</td><td class="num">$3,870</td></tr>
+<tr><td>Kai Moss</td><td>Admin</td><td class="num">$2,760</td></tr>
+<tr><td>Ida Berg</td><td>Nurse</td><td class="num">$4,150</td></tr>
+<tr><td>Noah Vale</td><td>Physio</td><td class="num">$3,560</td></tr>
+</tbody></table>
+<div><section class="plate"><h2>Waiting for approval</h2><p>Overtime, Oct 30: Mia Chen, 1.5 hours.</p><p>Late punch, Oct 28: Leo Park.</p></section>
+<section class="stub"><h2>Pay date</h2><p>Wednesday, November 25</p></section></div>
+</div>
+</main>
+</body></html>

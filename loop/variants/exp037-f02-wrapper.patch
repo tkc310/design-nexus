@@ -1,0 +1,175 @@
+diff --git a/eval/fixtures/focus-wrapper.html b/eval/fixtures/focus-wrapper.html
+new file mode 100644
+index 0000000..b90388d
+--- /dev/null
++++ b/eval/fixtures/focus-wrapper.html
+@@ -0,0 +1,79 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Focus drawn around the control</title>
++<meta name="description" content="F02 fixture: focus drawn on a wrapper, a label, or the box of a visually hidden input counts; no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a part nobody sees do not.">
++<style>
++  :root { --bg: #FFFFFF; --ink: #1F2328; --line: #6B7280; --accent: #0B57D0; --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; }
++  * { box-sizing: border-box; }
++  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 Georgia, serif; }
++  main { max-width: 40rem; margin: 0 auto; padding: var(--s4) var(--s3); display: grid; gap: var(--s4); }
++  h1 { text-wrap: balance; }
++  input, textarea { font: inherit; color: inherit; }
++  fieldset { border: 0; margin: 0; padding: 0; }
++  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
++  .wrap { display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s2); border: 2px solid var(--line); }
++  .wrap input, .wrap textarea, .field input { flex: 1; min-height: 44px; border: 0; background: transparent; outline: none; }
++  .opt { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: 44px; }
++  .opt input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; outline: none; }
++  .box { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--ink); }
++
++  /* Counted: the ring is drawn around the control. */
++  #search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }   /* a wrapper */
++  #q { transition: border-color 200ms; }
++  #q:focus-within { border-color: var(--ink); }                                         /* a wrapper, one color, through a transition */
++  .check input:focus-visible + .box { outline: 3px solid var(--ink); outline-offset: 2px; } /* the next sibling */
++  .face { padding: var(--s1) var(--s2); border: 2px solid var(--line); }
++  .plan input:focus-visible ~ .face { box-shadow: 0 0 0 3px var(--ink); }               /* a later sibling */
++  .seg { display: inline-flex; border: 2px solid var(--ink); }
++  .seg .opt { padding: 0 var(--s3); }
++  .seg label:has(input:focus-visible) { outline: 3px solid var(--ink); outline-offset: -6px; } /* the label */
++  .note input { outline: none; }
++  .note input:focus-visible + label .box { outline: 3px solid var(--ink); outline-offset: 2px; } /* inside the label for it */
++
++  /* Not counted: nothing shows which control has focus. */
++  #hover:hover { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }          /* hover only */
++  .card { display: grid; gap: var(--s2); padding: var(--s3); border: 2px solid var(--line); }
++  .card:focus-within { box-shadow: 0 0 0 3px var(--ink); }                              /* holds two fields: does not say which */
++  .field { display: grid; border-bottom: 2px solid var(--line); }
++  #ghost { border: 0; }
++  #ghost:focus-within { border-color: var(--accent); }                                  /* a border that is not drawn */
++  #undrawn { border-bottom: 2px solid var(--line); }
++  .copy label { display: inline-flex; align-items: center; min-height: 44px; }
++  .copy input { outline: none; }
++  .copy input:focus-visible + .sr-only { outline: 3px solid var(--ink); }               /* drawn on a part nobody sees */
++  @media (prefers-reduced-motion: reduce) { #q { transition: none; } }
++</style>
++</head>
++<body>
++<main>
++  <h1>Route 12 timetable</h1>
++  <div class="wrap" id="search">
++    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
++    <input id="filter" type="search" aria-label="Filter stops">
++  </div>
++  <div class="wrap" id="q"><textarea id="query" rows="1" aria-label="Departures query">after 10:00</textarea></div>
++  <div class="opt check"><input type="checkbox" id="agree"><span class="box" aria-hidden="true"></span><label for="agree">Email me the timetable</label></div>
++  <fieldset class="plan"><legend>Pass</legend>
++    <label class="opt"><input type="radio" name="plan" id="plan-week" checked><span class="box" aria-hidden="true"></span><span class="face">Weekly</span></label>
++    <label class="opt"><input type="radio" name="plan" id="plan-month"><span class="box" aria-hidden="true"></span><span class="face">Monthly</span></label>
++  </fieldset>
++  <fieldset><legend>Day type</legend>
++    <div class="seg"><label class="opt"><input type="radio" name="day" id="day-wk" checked>Weekdays</label><label class="opt"><input type="radio" name="day" id="day-hol">Holidays</label></div>
++  </fieldset>
++  <div class="note"><input type="checkbox" id="opt-in" class="sr-only"><label for="opt-in" class="opt"><span class="box" aria-hidden="true"></span>Text me when the line is delayed</label></div>
++
++  <div class="wrap"><input id="plain" aria-label="Find a route"></div>
++  <div class="wrap" id="hover"><input id="hover-only" aria-label="Find a stop"></div>
++  <form class="card" aria-label="Contact">
++    <label class="field">Name<input id="name" autocomplete="name"></label>
++    <label class="field">Email<input id="email" type="email" autocomplete="email"></label>
++  </form>
++  <div class="wrap" id="ghost"><input id="undrawn" aria-label="Find a line"></div>
++  <label class="opt"><input type="checkbox" id="bare"><span class="box" aria-hidden="true"></span>Remind me the day before</label>
++  <p class="copy"><input type="checkbox" id="lost"><span class="sr-only">(a copy goes to your email)</span> <label for="lost">Send me a copy</label></p>
++</main>
++</body>
++</html>
+diff --git a/scripts/test.mjs b/scripts/test.mjs
+index d32a91c..d987e8b 100644
+--- a/scripts/test.mjs
++++ b/scripts/test.mjs
+@@ -96,6 +96,11 @@ else {
+   check('render flags F01 when a link loses contrast on hover', scF.some((f) => /hover/.test(f.where) && /Book a fitting/.test(f.message)), JSON.stringify(scF));
+   check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
+   check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
++  // F02 around the control. Two widths, so focus is checked at 320 before the 1280 state checks switch transitions off, as in a default run.
++  const fw = run('render-check.mjs', path.join(S2, 'focus-wrapper.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
++  const fwF = fw.out.findings.filter((f) => f.id === 'F02').map((f) => f.where.trim());
++  check('F02 accepts focus drawn on a :focus-within wrapper, a label, or the box of a visually hidden input, through a transition too', !fwF.some((w) => /^#(filter|query|agree|plan-week|plan-month|day-wk|day-hol|opt-in)\b/.test(w)), JSON.stringify(fwF));
++  check('F02 still flags no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a hidden part', JSON.stringify(fwF.sort()) === JSON.stringify(['#bare', '#email', '#hover-only', '#lost', '#name', '#plain', '#undrawn']), JSON.stringify(fwF));
+   const st = run('render-check.mjs', path.join(S2, 'small-text.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
+   const r20 = st.out.findings.filter((f) => f.id === 'R20');
+   check('render flags R20 when hints and metadata are set at 13px', r20.length === 1 && /3 text block/.test(r20[0].message), JSON.stringify(r20));
+diff --git a/skills/design-nexus/references/checks.md b/skills/design-nexus/references/checks.md
+index 7f19804..4f2b807 100644
+--- a/skills/design-nexus/references/checks.md
++++ b/skills/design-nexus/references/checks.md
+@@ -13,7 +13,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | ID | Check | Detected by |
+ |---|---|---|
+ | F01 | Text contrast below 4.5:1 (3:1 for large text), at rest or inside a control on hover or keyboard focus; UI component contrast below 3:1, including a text field, select, or textarea whose border, fill, or drawn wrapper is below 3:1 against its surface | render, tokens |
+-| F02 | Focus indicator removed or invisible | lint, render |
++| F02 | Focus indicator removed or invisible. An indicator drawn on a `:focus-within` wrapper or a label that holds no other control, or on a following sibling such as the visible box of a visually hidden input (`input:focus-visible + .box` or `~ .box`), counts as the control's own | lint, render |
+ | F03 | Image without `alt` | lint |
+ | F04 | HTML document missing `lang` or viewport meta | lint |
+ | F05 | Animation without a `prefers-reduced-motion` path | lint, render |
+diff --git a/skills/design-nexus/scripts/render-check.mjs b/skills/design-nexus/scripts/render-check.mjs
+index 588746f..0c8a390 100755
+--- a/skills/design-nexus/scripts/render-check.mjs
++++ b/skills/design-nexus/scripts/render-check.mjs
+@@ -470,22 +470,53 @@ function snapshot() {
+   };
+ }
+ 
++// F02: each focusable element is focused in turn and compared before and after. The indication may also be drawn on a
++// part around it: a wrapper or label (`:focus-within`, `label:has(input:focus-visible)`) or a following sibling (the
++// visible box of a visually hidden input, `input:focus-visible + .box` or `~ .box`). A part counts only if it holds no
++// other control (a ring on a whole form or nav does not show which field or link has focus) and, after focus, is shown
++// and draws something new: an outline or border where one is drawn, a box-shadow, a fill, an underline.
+ async function focusCheck(page) {
+   return page.evaluate(async () => {
+-    const els = [...document.querySelectorAll('a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])')].slice(0, 20);
++    const SEL = 'a[href], button, input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])';
++    const els = [...document.querySelectorAll(SEL)].slice(0, 20);
++    // Right after focus a transition still reads its start value; read the end values instead.
++    const still = document.createElement('style');
++    still.textContent = '*,*::before,*::after{transition:none!important}';
++    document.head.appendChild(still);
++    const line = (w, s, rest) => (parseFloat(w) > 0 && !/none|hidden/.test(s) ? `${w} ${s} ${rest}` : '');
++    const drawn = (e) => {
++      const c = getComputedStyle(e);
++      return [line(c.outlineWidth, c.outlineStyle, `${c.outlineColor} ${c.outlineOffset}`), ...['Top', 'Right', 'Bottom', 'Left'].map((d) => line(c[`border${d}Width`], c[`border${d}Style`], c[`border${d}Color`])),
++        c.boxShadow, c.backgroundColor, c.backgroundImage, c.textDecorationLine].join('|');
++    };
++    const shown = (e) => {
++      const r = e.getBoundingClientRect();
++      if (r.width < 2 || r.height < 2 || getComputedStyle(e).visibility === 'hidden') return false;
++      for (let a = e; a; a = a.parentElement) if (+getComputedStyle(a).opacity < 0.05) return false;
++      return true;
++    };
+     const bad = [];
+     for (const el of els) {
++      const other = (x) => x !== el && x.matches(SEL) && !x.disabled && x.getClientRects().length > 0;
++      const alone = (p) => !other(p) && ![...p.querySelectorAll(SEL)].some(other);
++      const parts = [];
++      for (const l of el.labels || []) if (alone(l)) parts.push(l, ...l.children);
++      for (let a = el.parentElement, k = 0; a && a !== document.body && k < 3 && alone(a); a = a.parentElement, k++) parts.push(a);
++      for (let s = el.nextElementSibling, k = 0; s && k < 3; s = s.nextElementSibling, k++) if (alone(s)) parts.push(s);
++      const watch = [...new Set(parts)].filter((p) => p !== el);
+       const look = () => { const c = getComputedStyle(el); return [c.outlineStyle, c.outlineWidth, c.outlineColor, c.boxShadow, c.borderColor, c.backgroundColor, c.textDecorationLine].join('|'); };
+       el.blur();
+-      const before = look();
++      const before = look(), was = watch.map(drawn);
+       el.focus({ focusVisible: true });
+       if (document.activeElement !== el) continue;
+       const after = look();
+       const c = getComputedStyle(el);
+       const outlined = c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0;
+-      if (before === after && !outlined) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
++      const around = watch.some((p, i) => drawn(p) !== was[i] && shown(p));
++      if (before === after && !outlined && !around) bad.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || '').trim().slice(0, 30));
+       el.blur();
+     }
++    still.remove();
+     return bad;
+   });
+ }

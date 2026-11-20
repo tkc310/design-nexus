@@ -1,0 +1,13 @@
+--- a/skills/design-nexus/references/second-look.md	2026-11-15 23:48:51.264678990 +0000
++++ b/skills/design-nexus/references/second-look.md	2026-11-16 09:34:34.727359856 +0000
+@@ -5,7 +5,8 @@
+ 1. Read `SKILL.md` and the references its mode and surface call for. Read the brief and `DESIGN.md`.
+ 2. Do not redo steps 1 to 5. Do not change the direction, the roles of the tokens, or the signature. You are finishing this page, not designing another one.
+ 3. Carry out steps 6 to 8 on the page exactly as the skill and its references describe them: run the lint and the render check, fix every Floor finding, look at every screenshot against `references/audit.md` and `references/craft.md` *Responsive*, list the top three problems, fix them, re-verify, and remove one accessory. Stay inside the round limit of the budget.
+-4. Keep the deliverable in the form it has (for example a single self-contained `index.html`).
+-5. Append a section `## Second look` to `NOTES.md` that lists each change you made and why, or says "no changes". Update `DESIGN.md` only where a change made it untrue.
++4. Then hold the page to its own document. Read what `DESIGN.md` promises for type, colour, and the signature, and look at the first screen at 1280 and 320. Where the page delivers less than the document says (a type scale flatter than the one written down, the display face used once, the accent or the subject's colour barely present, the signature small or below the first screen), bring the page up to the document and re-verify. This carries the direction out; it does not change it.
++5. Keep the deliverable in the form it has (for example a single self-contained `index.html`).
++6. Append a section `## Second look` to `NOTES.md` that lists each change you made and why (mark the ones that came from step 4 with `(4)`), or says "no changes". Update `DESIGN.md` only where a change made it untrue.
+ 
+ Do not start another second look.

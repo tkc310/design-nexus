@@ -1,0 +1,367 @@
+diff --git a/eval/fixtures/wide-centred.html b/eval/fixtures/wide-centred.html
+new file mode 100644
+index 0000000..31cbd2d
+--- /dev/null
++++ b/eval/fixtures/wide-centred.html
+@@ -0,0 +1,19 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Centred frame fixture</title>
++<meta name="description" content="R29 fixture: the 1280 frame sits centred at 1920">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
++.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
++header{border-bottom:1px solid #6f6a5e;padding:16px 0}
++h1{font-size:40px;line-height:1.15;margin:32px 0 16px}
++p{max-width:65ch}
++.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
++.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
++</style></head><body>
++<!-- flagged: at 1920 the same 1200px frame sits between 360px of empty ground on each side -->
++<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
++<main class="wrap">
++<h1>Learn to row this autumn</h1>
++<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
++<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
++</main></body></html>
+diff --git a/eval/fixtures/wide-column.html b/eval/fixtures/wide-column.html
+new file mode 100644
+index 0000000..9e5cd0e
+--- /dev/null
++++ b/eval/fixtures/wide-column.html
+@@ -0,0 +1,24 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Side column fixture</title>
++<meta name="description" content="R29 fixture: a side column added from 1600px">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
++.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
++header{border-bottom:1px solid #6f6a5e;padding:16px 0}
++h1{font-size:40px;line-height:1.15;margin:32px 0 16px}
++p{max-width:65ch}
++.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
++.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
++@media (min-width:1600px){
++  .wrap{max-width:1360px}
++  .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px;align-items:start}
++}
++</style></head><body>
++<!-- not flagged: from 1600px the "Before your first row" column sits beside the course instead of below it -->
++<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
++<main class="wrap"><div class="layout"><div>
++<h1>Learn to row this autumn</h1>
++<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
++<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
++</div><aside class="card"><h2>Before your first row</h2><p>Pass the 50m swim check at the city pool, sign the waiver at the boathouse, and arrive 15 minutes early on day one.</p></aside></div>
++</main></body></html>
+diff --git a/eval/fixtures/wide-figure.html b/eval/fixtures/wide-figure.html
+new file mode 100644
+index 0000000..21f83f3
+--- /dev/null
++++ b/eval/fixtures/wide-figure.html
+@@ -0,0 +1,26 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Larger figure fixture</title>
++<meta name="description" content="R29 fixture: the main figure is enlarged from 1600px">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
++.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
++header{border-bottom:1px solid #6f6a5e;padding:16px 0}
++h1{font-size:40px;line-height:1.15;margin:32px 0 16px}
++p{max-width:65ch}
++.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
++.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
++.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
++.hero svg{display:block;width:100%;height:auto}
++@media (min-width:1600px){
++  .wrap{max-width:1360px}
++  .hero{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
++}
++</style></head><body>
++<!-- not flagged: the frame widens only 1.13x, but from 1600px the course map grows from 580px to about 880px wide -->
++<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
++<main class="wrap"><div class="hero"><div>
++<h1>Learn to row this autumn</h1>
++<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
++</div><svg viewBox="0 0 600 400" role="img" aria-label="Course map: the 2 km lane from the boathouse to the bridge"><rect width="600" height="400" fill="#dfe8ea"/><path d="M40 340 C 200 300, 380 120, 560 60" stroke="#24525e" stroke-width="10" fill="none"/></svg></div>
++<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
++</main></body></html>
+diff --git a/eval/fixtures/wide-frame.html b/eval/fixtures/wide-frame.html
+new file mode 100644
+index 0000000..e06fbfc
+--- /dev/null
++++ b/eval/fixtures/wide-frame.html
+@@ -0,0 +1,20 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Widened frame fixture</title>
++<meta name="description" content="R29 fixture: the frame is widened 1.27x from 1600px">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
++.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
++header{border-bottom:1px solid #6f6a5e;padding:16px 0}
++h1{font-size:40px;line-height:1.15;margin:32px 0 16px}
++p{max-width:65ch}
++.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
++.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
++@media (min-width:1600px){ .wrap{max-width:1520px} }
++</style></head><body>
++<!-- not flagged: from 1600px the frame grows from 1200px to 1520px of content (1.27x), still 200px from each edge -->
++<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
++<main class="wrap">
++<h1>Learn to row this autumn</h1>
++<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
++<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
++</main></body></html>
+diff --git a/eval/fixtures/wide-stretched.html b/eval/fixtures/wide-stretched.html
+new file mode 100644
+index 0000000..68605e8
+--- /dev/null
++++ b/eval/fixtures/wide-stretched.html
+@@ -0,0 +1,20 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Stretched table fixture</title>
++<meta name="description" content="R29 fixture: a table and a strip of figures merely stretch at 1920">
++<style>
++body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#fff;color:#1b1b1b}
++main{padding:24px}
++.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 24px}
++.tile{border:1px solid #767676;padding:16px}
++.tile b{display:block;font-size:28px}
++table{width:100%;border-collapse:collapse}
++th,td{border-bottom:1px solid #767676;padding:10px 12px;text-align:left;white-space:nowrap}
++</style></head><body>
++<!-- flagged: the same three tiles and six columns stretch from 1232px to 1872px, with no column or figure added -->
++<main><h1>Overtime this week</h1>
++<div class="strip"><div class="tile">Hours logged<b>412</b></div><div class="tile">Overtime<b>38</b></div><div class="tile">Pending approvals<b>3</b></div></div>
++<table><thead><tr><th>Name</th><th>Role</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Total</th></tr></thead><tbody>
++<tr><td>Aiko Tanaka</td><td>Nurse</td><td>8.0</td><td>9.5</td><td>8.0</td><td>25.5</td></tr>
++<tr><td>Ben Ortiz</td><td>Reception</td><td>7.5</td><td>7.5</td><td>8.0</td><td>23.0</td></tr>
++<tr><td>Chloe Martin</td><td>Hygienist</td><td>8.0</td><td>8.0</td><td>10.0</td><td>26.0</td></tr>
++</tbody></table></main></body></html>
+diff --git a/eval/fixtures/wide-type.html b/eval/fixtures/wide-type.html
+new file mode 100644
+index 0000000..3ec21e2
+--- /dev/null
++++ b/eval/fixtures/wide-type.html
+@@ -0,0 +1,20 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Larger type fixture</title>
++<meta name="description" content="R29 fixture: root type scaled up from 1600px">
++<style>
++body{margin:0;font:1.0625rem/1.6 Georgia,serif;background:#f4f1ea;color:#1d1d1b}
++.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
++header{border-bottom:1px solid #6f6a5e;padding:16px 0}
++h1{font-size:2.5rem;line-height:1.15;margin:32px 0 16px}
++p{max-width:65ch}
++.card{background:#fff;border:1px solid #6f6a5e;padding:20px}
++.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:32px 0}
++@media (min-width:1600px){ html{font-size:125%} }
++</style></head><body>
++<!-- not flagged: from 1600px every size set in rem is a quarter larger -->
++<header><div class="wrap"><strong>Harbor Rowing Club</strong></div></header>
++<main class="wrap">
++<h1>Learn to row this autumn</h1>
++<p>Eight Saturday sessions take you from the dock to a steady crew stroke. Boats, oars and a coach are included; bring warm layers and a water bottle.</p>
++<div class="grid"><div class="card"><h2>Mornings</h2><p>Two crews on the water at 6:30, back by 8 for work or school.</p></div><div class="card"><h2>Evenings</h2><p>Calm water after 18:00 in summer; ergometer sessions in winter.</p></div><div class="card"><h2>Weekends</h2><p>Long rows on Saturday, technique clinic and coffee on Sunday.</p></div></div>
++</main></body></html>
+diff --git a/scripts/test.mjs b/scripts/test.mjs
+index 23ed408..933df6a 100644
+--- a/scripts/test.mjs
++++ b/scripts/test.mjs
+@@ -137,6 +137,17 @@ else {
+   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
+   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
++  // R29: at 1920 the 1280 arrangement sits centred or merely stretches; a page that gains something at 1920 is not counted.
++  const wide = (f, w = '1280,1920') => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', w).out.findings.filter((x) => x.id === 'R29');
++  const wc = wide('wide-centred.html');
++  check('render flags R29 when the 1280 frame sits centred at 1920, with the measured margins', wc.length === 1 && /sits centred/.test(wc[0].message) && /1200px wide \(1200px at 1280, ×1\.00\), 360px and 360px from the edges/.test(wc[0].message), JSON.stringify(wc));
++  const ws = wide('wide-stretched.html');
++  check('render flags R29 when a strip and a table merely stretch at 1920', ws.length === 1 && /merely stretch/.test(ws[0].message) && /×1\.52\), 24px and 24px/.test(ws[0].message), JSON.stringify(ws));
++  for (const [f, what] of [['wide-column.html', 'a side column set beside the main one from 1600px'], ['wide-figure.html', 'a main figure enlarged from 1600px'], ['wide-type.html', 'root type scaled up from 1600px'], ['wide-frame.html', 'a frame widened 1.27x from 1600px']]) {
++    const r29 = wide(f);
++    check(`R29 ignores ${what}`, r29.length === 0, JSON.stringify(r29));
++  }
++  check('R29 is measured only when 1920 is rendered', wide('wide-centred.html', '1280').length === 0);
+   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
+   const snap = path.join(ROOT, '.design-nexus/test-before.json');
+diff --git a/skills/design-nexus/references/checks.md b/skills/design-nexus/references/checks.md
+index e60e1c1..d6f4ccc 100644
+--- a/skills/design-nexus/references/checks.md
++++ b/skills/design-nexus/references/checks.md
+@@ -53,6 +53,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | R21 | Text drawn over other text at some width (a collapsed totals row, a label under a button), after clipping by overflow and visually-hidden containers; content scrolling under a fixed or sticky bar is not counted | render |
+ | R24 | At 768px or narrower, a sideways scroll box (not a nav, tab or chip strip) hides at least 20% of its width with text past its edge: a command's end, a table's columns, a date strip | render |
+ | R25 | At 1280 or 768, the first enabled filled action (a button or link with a solid fill that stands out from its surface) starts below the first screen (900px) | render |
++| R29 | At 1920 the 1280 arrangement is unchanged: it sits centred (content at most 1.2× its 1280 width, 200px or more of empty margin on each side) or its tracks merely stretch (1.3× or wider, reaching within 200px of an edge). Not counted when 1920 sets a block beside another (a side column, one more column of cards, a table column), shows text 1280 does not, widens the main figure 1.15× or more, or sets body type 1.08× larger. Measured only when both 1280 and 1920 are rendered | render |
+ 
+ ## Finish
+ 
+diff --git a/skills/design-nexus/references/craft.md b/skills/design-nexus/references/craft.md
+index 7a1fcdd..46e95e0 100644
+--- a/skills/design-nexus/references/craft.md
++++ b/skills/design-nexus/references/craft.md
+@@ -59,7 +59,7 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet
+   - Date strips and timelines become a grid that wraps (a month grid, a two-row week), not a strip that runs off the screen.
+   - Log or sample output may scroll, but shorten its lines so the meaningful part (level, message) shows first. The render check flags content a scroll box hides as R24. A table never escapes its panel (R17).
+ - **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
+-- **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
++- **1920 gains something.** Cap the line length of text blocks (about 70ch), not the page. From 1600px, add what a reader at 1280 scrolls to find: a side column with the next step, details, or the legend beside what it explains; one more column of cards or rows; or a larger main figure or table. Keep the change inside a `min-width: 1600px` query so 1280 stays as planned. The added part has content in the first two screens and never repeats or outranks the main action. A page whose 1280 arrangement sits centred between wide empty margins at 1920 is not designed for that width (R29).
+ 
+ ## Components and states
+ - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.
+diff --git a/skills/design-nexus/scripts/render-check.mjs b/skills/design-nexus/scripts/render-check.mjs
+index ade4080..55f896a 100755
+--- a/skills/design-nexus/scripts/render-check.mjs
++++ b/skills/design-nexus/scripts/render-check.mjs
+@@ -2,7 +2,7 @@
+ // design-nexus render check: screenshots at several widths plus rendered Floor checks.
+ // Needs Playwright (any install it can find). Without it, prints a skip notice and exits 0.
+ // Usage:
+-//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]
++//   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]   (R29 needs 1280 and 1920)
+ //        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
+ //        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
+ // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
+@@ -129,6 +129,7 @@ async function captureTiles(page, width) {
+   return { files, height, truncated: covered < height };
+ }
+ const textsAt = new Map();
++const wideAt = new Map(); // R29: the arrangement at 1280 and 1920
+ 
+ // Runs in the page. Returns raw measurements; judgement stays in Node.
+ function measure(minTap) {
+@@ -618,6 +619,80 @@ function overlaps() {
+   return out;
+ }
+ 
++// R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
++// The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
++// media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
++// edge, a full-bleed band, fixed overlays and aria-hidden decoration do not set the frame.
++function wideLayout() {
++  const vw = document.documentElement.clientWidth;
++  const sy = scrollY;
++  const all = [...document.querySelectorAll('body *')];
++  const fixed = all.filter((e) => getComputedStyle(e).position === 'fixed');
++  const away = (el) => el.closest('script, style, noscript, template, [aria-hidden="true"]') || fixed.some((f) => f.contains(el));
++  const shown = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0; };
++  // Elements are matched across the two widths by their place in the tree.
++  const key = (el) => { const p = []; for (let e = el; e && e !== document.body && e.parentElement; e = e.parentElement) p.push([...e.parentElement.children].indexOf(e)); return p.reverse().join('.'); };
++  const B = 8, cols = Array.from({ length: Math.ceil(vw / B) + 1 }, () => []);
++  const paint = (r) => {
++    const l = Math.max(0, r.left), rr = Math.min(vw, r.right);
++    if (rr - l < 1 || r.height < 1) return;
++    for (let i = Math.floor(l / B); i * B < rr; i++) cols[i].push([r.top + sy, r.bottom + sy]);
++  };
++  const sizes = [];
++  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
++  while (tw.nextNode()) {
++    const t = tw.currentNode, p = t.parentElement;
++    if (!t.data.trim() || !p || away(p) || !shown(p)) continue;
++    const rg = document.createRange();
++    rg.selectNodeContents(t);
++    for (const r of rg.getClientRects()) if (r.width > 0) paint(r);
++    sizes.push([parseFloat(getComputedStyle(p).fontSize), t.data.trim().length]);
++  }
++  const figs = [], rows = [];
++  for (const el of all) {
++    const tag = el.tagName.toLowerCase();
++    if (tag === 'svg' ? el.parentElement && el.parentElement.closest('svg') : el.closest('svg')) continue;
++    if (away(el) || !shown(el)) continue;
++    const r = el.getBoundingClientRect();
++    const cs = getComputedStyle(el);
++    const media = /^(img|svg|canvas|video|iframe|object|embed)$/.test(tag) || el.getAttribute('role') === 'img' || /url\(/.test(cs.backgroundImage);
++    const ruled = ['Left', 'Right', 'Top', 'Bottom'].some((s) => parseFloat(cs[`border${s}Width`]) > 0 && cs[`border${s}Style`] !== 'none');
++    const filled = !/^(rgba\(0, 0, 0, 0\)|transparent)$/.test(cs.backgroundColor) || cs.backgroundImage !== 'none' || cs.boxShadow !== 'none';
++    if ((media || ruled || filled || /^(input|select|textarea|button)$/.test(tag)) && r.width < vw * 0.95) paint(r);
++    // A figure that fills the viewport grows with it at every width; only one inside the page's frame can be planned larger.
++    if (media && r.width * r.height >= 160 * 120 && r.width < vw * 0.95) figs.push({ key: key(el), w: Math.round(r.width), h: Math.round(r.height) });
++    // Tracks: the in-flow children of each box at least 200px wide, as [index, left, top, right, bottom]. Node decides
++    // which children are blocks from their size at 1920 and counts how many of them sit side by side at each width.
++    if (rows.length < 2000 && r.width >= 200 && !/^(inline|contents)$/.test(cs.display) && el.children.length) {
++      const kids = [];
++      [...el.children].forEach((k, i) => {
++        const c = getComputedStyle(k);
++        if (kids.length >= 60 || c.position === 'absolute' || c.position === 'fixed' || !shown(k)) return;
++        const b = k.getBoundingClientRect();
++        kids.push([i, Math.round(b.left), Math.round(b.top + sy), Math.round(b.right), Math.round(b.bottom + sy)]);
++      });
++      if (kids.length) rows.push({ key: key(el), w: Math.round(r.width), cell: cs.display === 'table-row', kids });
++    }
++  }
++  const depth = cols.map((iv) => {
++    iv.sort((x, y) => x[0] - y[0]);
++    let d = 0, end = -Infinity;
++    for (const [t, b] of iv) if (b > end) { d += b - Math.max(t, end); end = b; }
++    return d;
++  });
++  const on = depth.filter((v) => v > 0).sort((x, y) => x - y);
++  const peak = on.length ? on[Math.floor(on.length * 0.8)] : 0;
++  const lo = depth.findIndex((v) => v > 0 && v >= peak * 0.1);
++  let left = 0, right = 0; // no content, no box
++  if (lo >= 0) { left = lo * B; for (let i = depth.length - 1; i >= 0; i--) if (depth[i] >= peak * 0.1) { right = Math.min(vw, (i + 1) * B); break; } }
++  // Body type: the size that half of the visible characters are set at or below.
++  sizes.sort((x, y) => x[0] - y[0]);
++  const chars = sizes.reduce((a, s) => a + s[1], 0);
++  let n = 0, body = 0;
++  for (const [s, c] of sizes) { n += c; if (n >= chars / 2) { body = s; break; } }
++  return { vw, left, right, body, figs, rows };
++}
++
+ const browser = await pw.chromium.launch();
+ try {
+   for (const width of opt.widths) {
+@@ -653,6 +728,7 @@ try {
+       capture.widths[width] = { tiles: t.files.length, page_height: t.height, truncated: t.truncated, flattened };
+     }
+     const m = await page.evaluate(measure, minTap);
++    if ((width === 1280 || width === 1920) && opt.widths.includes(1280) && opt.widths.includes(1920)) wideAt.set(width, await page.evaluate(wideLayout));
+     // Before any hover or focus moves the page: measured at the top, as the screenshot shows it.
+     for (const o of await page.evaluate(overlaps)) add('R21', `@${width}px`, `${o}; text drawn over text is unreadable: give each its own space at this width`);
+     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
+@@ -708,6 +784,44 @@ try {
+     }
+   }
+ 
++  // R29: 1920 shows the 1280 arrangement unchanged, either centred between wide empty margins or with the same tracks
++  // merely stretched. Not counted when 1920 gains something: a block that now sits beside another (a side column, one
++  // more column of cards, a table column), text that 1280 does not show, a larger main figure, or larger body type.
++  if (wideAt.has(1280) && wideAt.has(1920)) {
++    const a = wideAt.get(1280), b = wideAt.get(1920);
++    const wa = a.right - a.left, wb = b.right - b.left, ratio = wb / wa;
++    const L = b.left, R = b.vw - b.right;
++    const side = (kids) => { let n = 0; for (const k of kids) { const y = (k[2] + k[4]) / 2; n = Math.max(n, kids.filter((j) => j[2] <= y && j[4] >= y).length); } return n; };
++    const was = new Map(a.rows.map((r) => [r.key, r]));
++    const added = b.rows.some((r) => {
++      const old = was.get(r.key);
++      if (!old || r.w < wb * 0.3) return false;
++      const big = r.kids.filter((k) => r.cell || (k[3] - k[1] >= Math.max(96, r.w * 0.08) && k[4] - k[2] >= 56));
++      if (big.length < 2) return false;
++      const ids = new Set(big.map((k) => k[0]));
++      return side(big) > side(old.kids.filter((k) => ids.has(k[0])));
++    });
++    const key = (t) => t.replace(/\d/g, '0');
++    const left = new Map();
++    for (const t of textsAt.get(1280) || []) left.set(key(t), (left.get(key(t)) || 0) + 1);
++    let gained = 0;
++    for (const t of textsAt.get(1920) || []) {
++      if (left.get(key(t))) left.set(key(t), left.get(key(t)) - 1);
++      else gained += t.length + (t.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
++    }
++    // The main figure: the largest at 1280, or any at least half its area; the one that grew most counts.
++    const most = Math.max(0, ...a.figs.map((f) => f.w * f.h));
++    const at1920 = new Map(b.figs.map((f) => [f.key, f]));
++    const figure = Math.max(1, ...a.figs.filter((f) => f.w * f.h >= most / 2 && at1920.has(f.key)).map((f) => at1920.get(f.key).w / f.w));
++    const type = a.body ? b.body / a.body : 1;
++    if (wa > 0 && !added && gained < 40 && figure < 1.15 && type < 1.08) {
++      const box = `content ${wb}px wide (${wa}px at 1280, ×${ratio.toFixed(2)}), ${L}px and ${R}px from the edges`;
++      const fix = 'from 1600px add what a reader at 1280 scrolls to find: a side column with the next step, details or the legend, one more column of cards or rows, or a larger main figure or table, inside a min-width: 1600px query';
++      if (ratio <= 1.2 && Math.min(L, R) >= 200) add('R29', '@1920px', `the 1280 arrangement sits centred between empty margins: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
++      else if (ratio >= 1.3 && Math.min(L, R) < 200) add('R29', '@1920px', `the 1280 tracks merely stretch: ${box}, with the same columns, figures and ${b.body}px body type; ${fix}`);
++    }
++  }
++
+   // Reduced motion: anything still moving with the preference set?
+   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', ...(opt.tz ? { timezoneId: opt.tz } : {}) });
+   const page = await ctx.newPage();

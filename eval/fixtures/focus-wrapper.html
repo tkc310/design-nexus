@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus drawn around the control</title>
+<meta name="description" content="F02 fixture: focus drawn on a wrapper, a label, or the box of a visually hidden input counts; no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a part nobody sees do not.">
+<style>
+  :root { --bg: #FFFFFF; --ink: #1F2328; --line: #6B7280; --accent: #0B57D0; --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 Georgia, serif; }
+  main { max-width: 40rem; margin: 0 auto; padding: var(--s4) var(--s3); display: grid; gap: var(--s4); }
+  h1 { text-wrap: balance; }
+  input, textarea { font: inherit; color: inherit; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .wrap { display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s2); border: 2px solid var(--line); }
+  .wrap input, .wrap textarea, .field input { flex: 1; min-height: 44px; border: 0; background: transparent; outline: none; }
+  .opt { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: 44px; }
+  .opt input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; outline: none; }
+  .box { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--ink); }
+
+  /* Counted: the ring is drawn around the control. */
+  #search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }   /* a wrapper */
+  #q { transition: border-color 200ms; }
+  #q:focus-within { border-color: var(--ink); }                                         /* a wrapper, one color, through a transition */
+  .check input:focus-visible + .box { outline: 3px solid var(--ink); outline-offset: 2px; } /* the next sibling */
+  .face { padding: var(--s1) var(--s2); border: 2px solid var(--line); }
+  .plan input:focus-visible ~ .face { box-shadow: 0 0 0 3px var(--ink); }               /* a later sibling */
+  .seg { display: inline-flex; border: 2px solid var(--ink); }
+  .seg .opt { padding: 0 var(--s3); }
+  .seg label:has(input:focus-visible) { outline: 3px solid var(--ink); outline-offset: -6px; } /* the label */
+  .note input { outline: none; }
+  .note input:focus-visible + label .box { outline: 3px solid var(--ink); outline-offset: 2px; } /* inside the label for it */
+
+  /* Not counted: nothing shows which control has focus. */
+  #hover:hover { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }          /* hover only */
+  .card { display: grid; gap: var(--s2); padding: var(--s3); border: 2px solid var(--line); }
+  .card:focus-within { box-shadow: 0 0 0 3px var(--ink); }                              /* holds two fields: does not say which */
+  .field { display: grid; border-bottom: 2px solid var(--line); }
+  #ghost { border: 0; }
+  #ghost:focus-within { border-color: var(--accent); }                                  /* a border that is not drawn */
+  #undrawn { border-bottom: 2px solid var(--line); }
+  .copy label { display: inline-flex; align-items: center; min-height: 44px; }
+  .copy input { outline: none; }
+  .copy input:focus-visible + .sr-only { outline: 3px solid var(--ink); }               /* drawn on a part nobody sees */
+  @media (prefers-reduced-motion: reduce) { #q { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Route 12 timetable</h1>
+  <div class="wrap" id="search">
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    <input id="filter" type="search" aria-label="Filter stops">
+  </div>
+  <div class="wrap" id="q"><textarea id="query" rows="1" aria-label="Departures query">after 10:00</textarea></div>
+  <div class="opt check"><input type="checkbox" id="agree"><span class="box" aria-hidden="true"></span><label for="agree">Email me the timetable</label></div>
+  <fieldset class="plan"><legend>Pass</legend>
+    <label class="opt"><input type="radio" name="plan" id="plan-week" checked><span class="box" aria-hidden="true"></span><span class="face">Weekly</span></label>
+    <label class="opt"><input type="radio" name="plan" id="plan-month"><span class="box" aria-hidden="true"></span><span class="face">Monthly</span></label>
+  </fieldset>
+  <fieldset><legend>Day type</legend>
+    <div class="seg"><label class="opt"><input type="radio" name="day" id="day-wk" checked>Weekdays</label><label class="opt"><input type="radio" name="day" id="day-hol">Holidays</label></div>
+  </fieldset>
+  <div class="note"><input type="checkbox" id="opt-in" class="sr-only"><label for="opt-in" class="opt"><span class="box" aria-hidden="true"></span>Text me when the line is delayed</label></div>
+
+  <div class="wrap"><input id="plain" aria-label="Find a route"></div>
+  <div class="wrap" id="hover"><input id="hover-only" aria-label="Find a stop"></div>
+  <form class="card" aria-label="Contact">
+    <label class="field">Name<input id="name" autocomplete="name"></label>
+    <label class="field">Email<input id="email" type="email" autocomplete="email"></label>
+  </form>
+  <div class="wrap" id="ghost"><input id="undrawn" aria-label="Find a line"></div>
+  <label class="opt"><input type="checkbox" id="bare"><span class="box" aria-hidden="true"></span>Remind me the day before</label>
+  <p class="copy"><input type="checkbox" id="lost"><span class="sr-only">(a copy goes to your email)</span> <label for="lost">Send me a copy</label></p>
+</main>
+</body>
+</html>

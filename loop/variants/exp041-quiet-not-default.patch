@@ -1,0 +1,467 @@
+diff --git a/eval/fixtures/card-ground-dark.html b/eval/fixtures/card-ground-dark.html
+new file mode 100644
+index 0000000..479d484
+--- /dev/null
++++ b/eval/fixtures/card-ground-dark.html
+@@ -0,0 +1,23 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dark card ground fixture</title>
++<meta name="description" content="R33 fixture: lighter cards on a dark ground are not the light product default">
++<style>
++body{margin:0;font:15px/1.5 Georgia,serif;background:#1e2127;color:#e6e6e6}
++main{padding:24px 32px}
++h1{margin:0 0 16px;font-size:26px}
++.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
++.card{background:#282c34;border:1px solid #3a3f4b;border-radius:8px;padding:20px;min-height:220px}
++.card b{display:block;font-size:30px}
++</style></head><body>
++<main>
++<h1>Build queue</h1>
++<div class="grid">
++<section class="card"><span>Running</span><b>3</b></section>
++<section class="card"><span>Queued</span><b>12</b></section>
++<section class="card"><span>Failed today</span><b>1</b></section>
++<section class="card"><span>Median wait</span><b>48 s</b></section>
++<section class="card"><span>Runners online</span><b>9</b></section>
++<section class="card"><span>Cache hits</span><b>81%</b></section>
++</div>
++</main>
++</body></html>
+diff --git a/eval/fixtures/card-ground-hero.html b/eval/fixtures/card-ground-hero.html
+new file mode 100644
+index 0000000..bd9f6c8
+--- /dev/null
++++ b/eval/fixtures/card-ground-hero.html
+@@ -0,0 +1,19 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hero on grey fixture</title>
++<meta name="description" content="R33 fixture: a marketing page with one large white hero on a grey ground and a flat band below it">
++<style>
++body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f4f2;color:#1f2328}
++.top{display:flex;justify-content:space-between;align-items:center;padding:16px 24px}
++.top nav a{margin-left:20px;color:#1f2328}
++.hero{margin:8px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);padding:64px;min-height:440px}
++.hero h1{margin:0 0 16px;font-size:48px;line-height:1.1}
++.hero code{display:inline-block;margin-top:16px;padding:10px 14px;border:1px solid #c9c9c4;border-radius:6px}
++/* not counted: a flat band, lighter but with no edge */
++.band{background:#fbfbfa;padding:32px 24px;min-height:200px}
++</style></head><body>
++<div class="top"><strong>grepline</strong><nav aria-label="Main"><a href="#syntax">Syntax</a><a href="#formats">Formats</a><a href="#install">Install</a><a href="#source">Source</a></nav></div>
++<main>
++<section class="hero"><h1>Grep the fields, not the text.</h1><p>grepline reads JSON and logfmt lines from every file you point it at and keeps the ones that match a filter.</p><code>brew install grepline</code></section>
++<section class="band"><h2>One binary, two formats</h2><p>Written in Rust, MIT licensed.</p></section>
++</main>
++</body></html>
+diff --git a/eval/fixtures/card-ground-ledger.html b/eval/fixtures/card-ground-ledger.html
+new file mode 100644
+index 0000000..966698c
+--- /dev/null
++++ b/eval/fixtures/card-ground-ledger.html
+@@ -0,0 +1,38 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ledger ground fixture</title>
++<meta name="description" content="R33 fixture: one ledger ground whose regions are divided by rules, a band and a flat plate, not cards">
++<style>
++body{margin:0;font:15px/1.5 Georgia,serif;background:#f5f2ea;color:#22201b}
++main{padding:24px 32px}
++h1{margin:0;font-size:28px;padding-bottom:12px;border-bottom:2px solid #22201b}
++/* a band: lighter, ruled above and below, square, no shadow */
++.band{display:grid;grid-template-columns:repeat(4,1fr);background:#fbfaf6;border-top:1px solid #8d877a;border-bottom:1px solid #8d877a;margin:0 -32px;padding:20px 32px;min-height:120px}
++.band b{display:block;font-size:28px}
++.cols{display:grid;grid-template-columns:2fr 1fr;gap:32px;margin-top:24px}
++table{border-collapse:collapse;width:100%}
++th,td{padding:8px 4px;border-bottom:1px solid #c9c2b3;text-align:left}
++td.num{text-align:right;font-variant-numeric:tabular-nums}
++/* a flat plate: lighter, no border, radius or shadow */
++.plate{background:#fbfaf6;padding:20px;min-height:320px}
++/* a stub ruled on one side only */
++.stub{background:#fbfaf6;border-left:3px solid #22201b;padding:16px;margin-top:16px;min-height:140px}
++</style></head><body>
++<main>
++<h1>November payroll ledger</h1>
++<section class="band"><div><span>Days to cut-off</span><b>6</b></div><div><span>To approve</span><b>7</b></div><div><span>Gross</span><b>$97,300</b></div><div><span>Net</span><b>$84,120</b></div></section>
++<div class="cols">
++<table><thead><tr><th>Name</th><th>Role</th><th>Net pay</th></tr></thead><tbody>
++<tr><td>Mia Chen</td><td>Nurse</td><td class="num">$4,210</td></tr>
++<tr><td>Leo Park</td><td>Reception</td><td class="num">$2,980</td></tr>
++<tr><td>Ana Ruiz</td><td>Physio</td><td class="num">$3,640</td></tr>
++<tr><td>Sam Ito</td><td>Nurse</td><td class="num">$4,090</td></tr>
++<tr><td>Eve Lund</td><td>Radiographer</td><td class="num">$3,870</td></tr>
++<tr><td>Kai Moss</td><td>Admin</td><td class="num">$2,760</td></tr>
++<tr><td>Ida Berg</td><td>Nurse</td><td class="num">$4,150</td></tr>
++<tr><td>Noah Vale</td><td>Physio</td><td class="num">$3,560</td></tr>
++</tbody></table>
++<div><section class="plate"><h2>Waiting for approval</h2><p>Overtime, Oct 30: Mia Chen, 1.5 hours.</p><p>Late punch, Oct 28: Leo Park.</p></section>
++<section class="stub"><h2>Pay date</h2><p>Wednesday, November 25</p></section></div>
++</div>
++</main>
++</body></html>
+diff --git a/eval/fixtures/card-ground-one.html b/eval/fixtures/card-ground-one.html
+new file mode 100644
+index 0000000..71a0024
+--- /dev/null
++++ b/eval/fixtures/card-ground-one.html
+@@ -0,0 +1,32 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>One card on grey fixture</title>
++<meta name="description" content="R33 fixture: one white card on a grey ground with no left sidebar; tiles inside it, a white top bar, a fixed save bar and one-row navs are not counted">
++<style>
++body{margin:0;font:15px/1.5 Georgia,serif;background:#f2f2f0;color:#1f2328}
++header{display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}
++header nav a, .views a{margin-right:16px;color:#1f2328}
++main{display:grid;grid-template-columns:400px 1fr;gap:24px;padding:24px 24px 96px}
++h1{margin:0 0 8px;font-size:26px}
++.card{background:#fff;border:1px solid #e1e1dc;border-radius:10px;padding:24px}
++/* tiles sit on a grey inset inside the card: they belong to the card */
++.inset{display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#f2f2f0;border-radius:6px;padding:16px}
++.tile{background:#fff;border:1px solid #e1e1dc;border-radius:6px;padding:16px;min-height:150px}
++.tile b{display:block;font-size:28px}
++.savebar{position:fixed;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;justify-content:flex-end;padding:0 24px;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
++.savebar button{background:#1f4fd1;color:#fff;border:0;border-radius:6px;padding:10px 18px;font:inherit}
++</style></head><body>
++<!-- not counted: the white top bar; its nav is one row of links, not a sidebar -->
++<header><strong>Plotline</strong><nav aria-label="Main"><a href="#projects">Projects</a><a href="#tasks">My tasks</a><a href="#reports">Reports</a></nav></header>
++<main>
++<div><h1>Weekly report</h1><p>What moved in your projects, and what is late.</p>
++<nav class="views" aria-label="Range"><a href="#day">Day</a><a href="#week" aria-current="page">Week</a><a href="#month">Month</a></nav></div>
++<section class="card"><h2>This week</h2>
++<div class="inset">
++<div class="tile"><span>Tasks closed</span><b>42</b></div>
++<div class="tile"><span>Tasks late</span><b>5</b></div>
++</div>
++<p>Late tasks are listed under each project.</p></section>
++</main>
++<!-- not counted: a fixed save bar -->
++<div class="savebar"><button type="button">Send report</button></div>
++</body></html>
+diff --git a/eval/fixtures/card-ground-sidebar.html b/eval/fixtures/card-ground-sidebar.html
+new file mode 100644
+index 0000000..dc4aa4b
+--- /dev/null
++++ b/eval/fixtures/card-ground-sidebar.html
+@@ -0,0 +1,38 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Card ground beside a sidebar fixture</title>
++<meta name="description" content="R33 fixture: a settings page whose work area is one white card on a grey ground beside a left sidebar">
++<style>
++body{margin:0;font:15px/1.5 Georgia,serif;background:#f4f4f4;color:#1f2328}
++header{display:flex;align-items:center;height:56px;padding:0 24px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}
++.shell{display:grid;grid-template-columns:220px 1fr}
++nav.side{padding:24px 16px}
++nav.side a{display:block;padding:8px 12px;color:#1f2328}
++main{padding:32px;min-width:0}
++h1{margin:0;font-size:26px}
++main > p{margin:4px 0 24px}
++.card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:24px;min-height:700px;margin-bottom:24px}
++table{border-collapse:collapse;width:100%}
++th,td{padding:12px 8px;border-bottom:1px solid #e0e0e0;text-align:left}
++.savebar{position:fixed;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;justify-content:flex-end;padding:0 24px;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
++.savebar button{background:#7a1f4f;color:#fff;border:0;border-radius:6px;padding:10px 18px;font:inherit}
++</style></head><body>
++<header><strong>Fieldwork</strong></header>
++<div class="shell">
++<nav class="side" aria-label="Settings"><a href="#profile">Profile</a><a href="#notify" aria-current="page">Notifications</a><a href="#apps">Integrations</a><a href="#security">Security</a></nav>
++<main>
++<h1>Notifications</h1>
++<p>Pick which project events reach you, and where.</p>
++<!-- counted: one white card on the grey ground, beside the left sidebar -->
++<section class="card"><h2>Events by channel</h2>
++<table><thead><tr><th>Event</th><th>Email</th><th>Push</th><th>Slack</th></tr></thead><tbody>
++<tr><td>Mentions</td><td><input type="checkbox" aria-label="Mentions by email" checked></td><td><input type="checkbox" aria-label="Mentions by push" checked></td><td><input type="checkbox" aria-label="Mentions in Slack" disabled></td></tr>
++<tr><td>Assigned tasks</td><td><input type="checkbox" aria-label="Assigned tasks by email" checked></td><td><input type="checkbox" aria-label="Assigned tasks by push"></td><td><input type="checkbox" aria-label="Assigned tasks in Slack" disabled></td></tr>
++<tr><td>Due-date reminders</td><td><input type="checkbox" aria-label="Reminders by email"></td><td><input type="checkbox" aria-label="Reminders by push" checked></td><td><input type="checkbox" aria-label="Reminders in Slack" disabled></td></tr>
++<tr><td>Weekly digest</td><td><input type="checkbox" aria-label="Digest by email" checked></td><td><input type="checkbox" aria-label="Digest by push"></td><td><input type="checkbox" aria-label="Digest in Slack" disabled></td></tr>
++</tbody></table></section>
++<section class="card"><h2>Quiet hours</h2><p>Push and Slack hold until quiet hours end.</p></section>
++</main>
++</div>
++<!-- not counted: a fixed save bar is app chrome -->
++<div class="savebar"><button type="button">Save changes</button></div>
++</body></html>
+diff --git a/eval/fixtures/card-ground.html b/eval/fixtures/card-ground.html
+new file mode 100644
+index 0000000..4ea414b
+--- /dev/null
++++ b/eval/fixtures/card-ground.html
+@@ -0,0 +1,52 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Card ground fixture</title>
++<meta name="description" content="R33 fixture: a dashboard whose work area is white cards on a light grey ground">
++<style>
++body{margin:0;font:15px/1.5 Georgia,serif;background:#f3f3f1;color:#1f2328}
++header{display:flex;align-items:center;gap:24px;height:56px;padding:0 24px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}
++.shell{display:grid;grid-template-columns:216px 1fr}
++aside{background:#fff;box-shadow:1px 0 0 #d6d6d1;min-height:844px;padding:16px}
++aside a{display:block;padding:8px 12px;color:#1f2328}
++main{padding:24px;min-width:0}
++h1{margin:0 0 16px;font-size:26px}
++.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
++.card{background:#fff;border:1px solid #e1e1dc;border-radius:8px;padding:20px}
++.kpis .card{height:100px}
++.kpis b{display:block;font-size:30px}
++.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
++table{border-collapse:collapse;width:100%}
++th,td{padding:8px;border-bottom:1px solid #e1e1dc;text-align:left}
++td.num{text-align:right;font-variant-numeric:tabular-nums}
++#inner{background:#fff;border:1px solid #e1e1dc;border-radius:6px;padding:12px;margin-top:12px}
++</style></head><body>
++<header><strong>Clinipay</strong><span>Harbor Street Clinic</span></header>
++<div class="shell">
++<!-- not counted: the white left sidebar and the white top bar are app chrome -->
++<aside><a href="#pay">This month</a><a href="#staff">Staff</a><a href="#time">Time sheets</a><a href="#set">Settings</a></aside>
++<main>
++<h1>November payroll</h1>
++<!-- counted: three KPI cards, the table card and the side card, all white on the grey ground -->
++<div class="kpis">
++<section class="card"><span>Days to cut-off</span><b>6</b></section>
++<section class="card"><span>Requests to approve</span><b>7</b></section>
++<section class="card"><span>Net pay this month</span><b>$84,120</b></section>
++</div>
++<div class="row">
++<section class="card" id="staff-table"><h2>Pay by staff member</h2>
++<table><thead><tr><th>Name</th><th>Role</th><th>Net pay</th></tr></thead><tbody>
++<tr><td>Mia Chen</td><td>Nurse</td><td class="num">$4,210</td></tr>
++<tr><td>Leo Park</td><td>Reception</td><td class="num">$2,980</td></tr>
++<tr><td>Ana Ruiz</td><td>Physio</td><td class="num">$3,640</td></tr>
++<tr><td>Sam Ito</td><td>Nurse</td><td class="num">$4,090</td></tr>
++<tr><td>Eve Lund</td><td>Radiographer</td><td class="num">$3,870</td></tr>
++<tr><td>Kai Moss</td><td>Admin</td><td class="num">$2,760</td></tr>
++<tr><td>Ida Berg</td><td>Nurse</td><td class="num">$4,150</td></tr>
++<tr><td>Noah Vale</td><td>Physio</td><td class="num">$3,560</td></tr>
++</tbody></table></section>
++<!-- not counted twice: a white box inside a white card is part of that card -->
++<section class="card" id="queue"><h2>Waiting for approval</h2><p>Overtime, Oct 30: Mia Chen, 1.5 hours.</p>
++<div id="inner"><p>Late punch, Oct 28: Leo Park, 8:52 to 8:30.</p></div></section>
++</div>
++</main>
++</div>
++</body></html>
+diff --git a/scripts/test.mjs b/scripts/test.mjs
+index b7ca9bf..4dc03a0 100644
+--- a/scripts/test.mjs
++++ b/scripts/test.mjs
+@@ -184,6 +184,22 @@ else {
+     const r = r31(f);
+     check(`R31 ignores ${what}`, r.length === 0, JSON.stringify(r));
+   }
++  // R33: white cards on a grey page, the product default (R04 e). Each negative holds an exempt item that would fire if it slipped in.
++  const r33 = (f, ...more) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', ...more).out.findings.filter((x) => x.id === 'R33');
++  const cg = r33('card-ground.html');
++  check('render flags R33 when white cards sit on a light grey ground, naming the ground, the panel colour and the count, and leaves out the top bar and the sidebar', cg.length === 1 && /sets 5 panels lighter than the ground \(#FFFFFF ×5\) on a #F3F3F1 ground: /.test(cg[0].message) && !/header|aside/.test(cg[0].message), JSON.stringify(cg));
++  const cgs = r33('card-ground-sidebar.html');
++  check('render flags R33 for one white card on a grey ground beside a left sidebar, not counting the fixed save bar', cgs.length === 1 && /sets 1 panel lighter than the ground \(#FFFFFF\) on a #F4F4F4 ground beside the left sidebar nav\.side: section\.card/.test(cgs[0].message), JSON.stringify(cgs));
++  for (const [f, what] of [
++    ['card-ground-ledger.html', 'one ground divided by rules, a band, a flat plate and a stub ruled on one side'],
++    ['card-ground-dark.html', 'lighter cards on a dark ground'],
++    ['card-ground-hero.html', 'a marketing page with one large white hero and a flat band on grey'],
++    ['card-ground-one.html', 'one card on grey with tiles inside it, a shadowed top bar, a fixed save bar and one-row navs'],
++  ]) {
++    const r = r33(f);
++    check(`R33 ignores ${what}`, r.length === 0, JSON.stringify(r));
++  }
++  check('R33 is not measured on a mobile surface', r33('card-ground.html', '--surface', 'mobile').length === 0);
+   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
+   const snap = path.join(ROOT, '.design-nexus/test-before.json');
+diff --git a/skills/design-nexus/SKILL.md b/skills/design-nexus/SKILL.md
+index 94d946b..c0400f1 100644
+--- a/skills/design-nexus/SKILL.md
++++ b/skills/design-nexus/SKILL.md
+@@ -49,7 +49,7 @@ State the budget you chose in one line before starting.
+ 
+ 2. **Directions** (standard/deep). Propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Recommend one and proceed with it unless the user picks.
+ 3. **Token plan.** Before code, write: 4–6 named colors with hex, their role, and their source in the subject's world, with the accent and display face each chosen from three spread candidates (`references/direction.md` §3), type roles (display / body / utility) with families, a scale, and how each is loaded, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for, plus the unit it is built from and which other sections reuse that unit (`references/craft.md` *Layout and spacing*).
+-4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–d, including the agent house look).
++4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–e, including the agent house look).
+ 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
+ 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
+ 7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
+diff --git a/skills/design-nexus/references/checks.md b/skills/design-nexus/references/checks.md
+index 67a0083..e2ee903 100644
+--- a/skills/design-nexus/references/checks.md
++++ b/skills/design-nexus/references/checks.md
+@@ -33,7 +33,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | R01 | An overused default face as the primary family (Inter, Roboto, Arial, Helvetica, Open Sans, Poppins, Montserrat, Lato, bare system-ui; Japanese: Noto Sans JP alone with no other voice) | lint |
+ | R02 | Purple/indigo/violet gradient as default decoration | lint |
+ | R03 | Gradient-filled text | lint |
+-| R04 | One of the three default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band | audit, eval diversity |
++| R04 | One of the default looks, unless the brief asks for it: (a) warm cream background + high-contrast serif + terracotta accent; (b) near-black background + single acid-green or vermilion accent; (c) broadsheet hairlines, zero radius, dense columns; (d) the agent house look: pale cool paper, one ink-blue or teal accent plus highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px radius, no shadows, dark closing band; (e) product default: white cards on a light grey ground with a left sidebar, pill toggles, and stock checkboxes in the work area | audit, eval diversity |
+ | R05 | Emoji used as icons in headings, buttons, or list markers | lint |
+ | R06 | Large uniform radius on everything | lint |
+ | R07 | Glassmorphism (backdrop blur) on many surfaces | lint |
+@@ -56,6 +56,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other
+ | R29 | At 1920 the 1280 arrangement is unchanged: it sits centred (content at most 1.2× its 1280 width, 200px or more of empty margin on each side) or its tracks merely stretch (1.3× or wider, reaching within 200px of an edge). Not counted when 1920 sets a block beside another (a side column, one more column of cards, a table column), shows text 1280 does not, widens the main figure 1.15× or more, or sets body type 1.08× larger. Measured only when both 1280 and 1920 are rendered | render |
+ | R30 | At 1280 the action color also marks a state or decoration: two or more things nobody presses (a done, booked, saved, on, due or today mark, a data mark, an ornament) take the fill of the first filled action that has a hue, or a shade or tint of it, as text, fill, border, ring, underline, `::before`/`::after` or SVG paint. Not counted: controls and links, the brand mark, focus rings, the current selection (`aria-current` other than a date or time, `aria-selected`, the box a checked input draws, nav, tab, radio and listbox groups), and fills of 40,000px² or more (a band, a surface, the signature's ground). Not measured when the action color is the page's ink (a quarter or more of the text outside controls) | render |
+ | R31 | At some width, Japanese text breaks inside a phrase where it must not: text of one or two lines, or a heading, button, label, nav item, table cell, `dt`/`dd`, caption, or legend, breaks where the browser's own `auto-phrase` segmentation would not (駅か\|ら, 停留\|所, 基本\|給) or between a closing bracket and its particle (（土）\|の回を), or a Japanese label of up to 14 characters (not a heading) wraps and leaves 2 characters or fewer on its last line (予約を\|確認, 茶の\|色); a break at a space, punctuation, or `<wbr>` is not counted. Running text of three or more lines is not counted | render |
++| R33 | At 1280, white cards on a grey page (R04 e): on a light near-neutral ground behind `main` (OKLab lightness 0.9 or more, chroma 0.025 or less), the first screen shows two or more panels lighter than the ground (by 0.02 or more) that have a radius, a shadow, or a border on three or more sides and show 40,000px² or more each, or one such panel beside a left sidebar. App chrome is not counted (nav, a header or footer outside `main`, fixed and sticky bars, a bar across the top, a left sidebar), and a panel inside another counts once. Not measured with `--surface mobile` | render |
+ 
+ ## Finish
+ 
+diff --git a/skills/design-nexus/references/direction.md b/skills/design-nexus/references/direction.md
+index 561a969..4c61b47 100644
+--- a/skills/design-nexus/references/direction.md
++++ b/skills/design-nexus/references/direction.md
+@@ -88,7 +88,7 @@ Two plans that both pass this skill, to show the range. They describe where valu
+ 
+ ## 5. Challenge the plan
+ 
+-For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against R04 (the three default looks) and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
++For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against R04 (the default looks) and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
+ 
+ ## When the brief or DESIGN.md already decides
+ 
+diff --git a/skills/design-nexus/references/surface-product.md b/skills/design-nexus/references/surface-product.md
+index d269c8b..6460037 100644
+--- a/skills/design-nexus/references/surface-product.md
++++ b/skills/design-nexus/references/surface-product.md
+@@ -1,6 +1,6 @@
+ # Surface: product UI (dashboards, admin, settings, tools)
+ 
+-- **Quiet surfaces.** Neutral backgrounds, hairline or subtle-elevation separation, color reserved for status, selection, and data.
++- **Quiet, not default.** Keep the work area calm and dense, but build its surface from the subject's own working object (the ledger sheet, the patch panel, the timetable board, the order slip): one ground whose rules, bands, or plates divide the regions, not white cards on a grey page; elevation only for what floats (menus, dialogs, a dragged item). Draw a state the user sets (on, approved, booked) with the signature's unit in a status color sourced from the subject (a lit lamp, a stamp), never as a stock checkbox grid or pill switch; the action color stays on what is pressed (`direction.md` §3). Color stays reserved for status, selection, and data.
+ - **Density is a feature.** Default to compact rows (32–40px), tabular numerals, right-aligned numbers, left-aligned text. Offer a comfortable density only if users need it.
+ - **Alignment over decoration.** Shared column edges across panels; labels and values on a consistent baseline.
+ - **Navigation**: persistent and predictable (sidebar or top bar), current location always visible, breadcrumbs for depth > 2.
+diff --git a/skills/design-nexus/scripts/render-check.mjs b/skills/design-nexus/scripts/render-check.mjs
+index 4f0de47..4a42edf 100755
+--- a/skills/design-nexus/scripts/render-check.mjs
++++ b/skills/design-nexus/scripts/render-check.mjs
+@@ -1050,6 +1050,114 @@ function actionMarks(filled) {
+   return { action: { sel: action.sel, text: action.text, hex }, marks, chars, inked };
+ }
+ 
++// R33: the product default, white cards on a grey page. Runs in the page at rest. The ground is the background behind
++// main (behind body when there is no main); background images are not read, so a gradient that paints a sidebar strip
++// leaves the color under it. A panel is a box with a fill of its own that sits straight on that ground (what is behind it
++// is the ground's color) and is lighter than it, on the first screen (the top 900px of the page). Node counts the panels
++// with an edge (a radius of 2px or more, a shadow, or a border on three or more sides) that show 40,000px² or more. A
++// panel inside another counts once, as the outer one. App chrome is marked and not counted: nav, a banner or contentinfo,
++// a header or footer outside main and its sections, a fixed or sticky bar (as wide as most of the screen, or at most
++// 160px tall), a bar across the top, and a left sidebar (starting in the left quarter, at most 360px wide, and half the
++// screen tall, an aside, or holding a nav). Media and form controls are not panels. Also returns the left sidebar's
++// navigation, if there is one, so that a single panel beside it counts.
++function cardGround() {
++  const cv = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
++  const parse = (c) => {
++    if (!c || c === 'transparent' || c === 'none') return { r: 0, g: 0, b: 0, a: 0 };
++    const m = c.match(/^rgba?\(([^)]+)\)$/);
++    if (m) {
++      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
++      return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] };
++    }
++    cv.clearRect(0, 0, 1, 1);
++    cv.fillStyle = '#000'; cv.fillStyle = c;
++    cv.fillRect(0, 0, 1, 1);
++    const [r, g, b, a] = cv.getImageData(0, 0, 1, 1).data;
++    return { r, g, b, a: a / 255 };
++  };
++  const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
++  const memo = new Map();
++  const style = (el) => { let c = memo.get(el); if (!c) memo.set(el, (c = getComputedStyle(el))); return c; };
++  const seen = new Map();
++  const bgOf = (el) => {
++    if (seen.has(el)) return seen.get(el);
++    const layers = [];
++    for (let e = el; e; e = e.parentElement) {
++      const c = parse(style(e).backgroundColor);
++      if (c.a > 0) { layers.push(c); if (c.a >= 1) break; }
++    }
++    let base = { r: 255, g: 255, b: 255, a: 1 };
++    for (const c of layers.reverse()) base = blend(c, base);
++    seen.set(el, base);
++    return base;
++  };
++  // OKLab, so that lightness and chroma follow what the eye sees.
++  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
++  const lab = (c) => {
++    const R = lin(c.r), G = lin(c.g), B = lin(c.b);
++    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
++    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
++    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
++    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
++    return { L, a, b, C: Math.hypot(a, b) };
++  };
++  const dist = (x, y) => Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
++  const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
++  const sel = (el) => {
++    if (el.id) return `#${el.id}`;
++    const cls = [...el.classList].slice(0, 2).join('.');
++    return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
++  };
++  const vw = document.documentElement.clientWidth, vh = innerHeight, sy = scrollY;
++  const main = [...document.querySelectorAll('main, [role=main]')].find((m) => m.getClientRects().length > 0);
++  const ground = bgOf(main || document.body);
++  const G = lab(ground);
++  const out = { ground: hex(ground), L: +G.L.toFixed(3), C: +G.C.toFixed(3), panels: [] };
++  const NOT = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|IMG|PICTURE|VIDEO|AUDIO|CANVAS|IFRAME|OBJECT|EMBED|INPUT|SELECT|TEXTAREA|BUTTON|OPTION|METER|PROGRESS)$/;
++  const bar = (r) => r.width >= vw * 0.6 || r.height <= 160;
++  const found = [];
++  for (const el of document.body.querySelectorAll('*')) {
++    if (NOT.test(el.tagName) || el instanceof SVGElement) continue;
++    const r = el.getBoundingClientRect();
++    const top = r.top + sy;
++    const shown = Math.max(0, Math.min(vw, r.right) - Math.max(0, r.left)) * Math.max(0, Math.min(vh, top + r.height) - Math.max(0, top));
++    if (shown < 10000) continue;
++    const cs = style(el);
++    if (cs.display === 'inline' || (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))) continue;
++    const own = parse(cs.backgroundColor);
++    if (own.a <= 0) continue;
++    const behind = el.parentElement ? bgOf(el.parentElement) : { r: 255, g: 255, b: 255, a: 1 };
++    if (dist(lab(behind), G) > 0.02) continue;
++    const fill = blend(own, behind), F = lab(fill);
++    if (F.L <= G.L) continue;
++    const sides = ['Top', 'Right', 'Bottom', 'Left'].filter((s) => parseFloat(cs[`border${s}Width`]) >= 1 && !/none|hidden/.test(cs[`border${s}Style`])).length;
++    const radius = Math.max(...['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map((k) => parseFloat(cs[`border${k}Radius`]) || 0));
++    let chrome = null;
++    if (el.closest('nav, [role=navigation], [role=banner], [role=contentinfo]')) chrome = 'nav';
++    else {
++      const hf = el.closest('header, footer');
++      if (hf && !(hf.parentElement && hf.parentElement.closest('main, [role=main], article, section'))) chrome = hf.tagName.toLowerCase();
++    }
++    for (let a = el; !chrome && a && a !== document.body; a = a.parentElement) {
++      if (/^(fixed|sticky)$/.test(style(a).position) && bar(a.getBoundingClientRect())) chrome = 'fixed bar';
++    }
++    if (!chrome && top <= 1 && r.width >= vw * 0.9 && r.height <= 160) chrome = 'top bar';
++    if (!chrome && r.left < vw * 0.25 && r.width <= 360 && (r.height >= vh * 0.5 || el.matches('aside') || el.querySelector('nav, [role=navigation]'))) chrome = 'sidebar';
++    found.push({ el, sel: sel(el), x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), shown: Math.round(shown), fill: hex(fill), dL: +(F.L - G.L).toFixed(3), edge: radius >= 2 || cs.boxShadow !== 'none' || sides >= 3, chrome });
++  }
++  const panels = new Set(found.map((f) => f.el));
++  out.panels = found.filter((f) => { for (let a = f.el.parentElement; a; a = a.parentElement) if (panels.has(a)) return false; return true; }).map(({ el, ...f }) => f);
++  // The left sidebar, if any: navigation on the first screen that starts in the left quarter, at most 360px wide, with
++  // links or buttons stacked in three or more rows. Node lets one panel to the right of it count.
++  for (const n of document.querySelectorAll('nav, [role=navigation]')) {
++    const r = n.getBoundingClientRect();
++    if (!r.width || r.top + sy >= vh || r.left >= vw / 4 || r.width > 360) continue;
++    const rows = new Set([...n.querySelectorAll('a[href], button, [role=link], [role=tab]')].map((a) => a.getBoundingClientRect()).filter((b) => b.width > 0).map((b) => Math.round(b.top / 8)));
++    if (rows.size >= 3 && (!out.sidebar || r.right > out.sidebar.right)) out.sidebar = { sel: sel(n), right: Math.round(r.right) };
++  }
++  return out;
++}
++
+ // R29: the page's arrangement at 1280 and 1920, compared in Node. Runs in the page; returns raw geometry.
+ // The content box is the outermost 8px columns that hold at least a tenth of the typical depth of content (text lines,
+ // media, controls, filled or ruled boxes; overlapping boxes count once), so a thin full-width bar, a lone logo at the
+@@ -1182,6 +1290,23 @@ try {
+         add('R30', `@${width}px ${ac.action.sel}`, `the action color ${ac.action.hex} of "${ac.action.text}" also marks ${ac.marks.length} things nobody presses, in ${comps} component${comps === 1 ? '' : 's'}: ${list}${groups.size > 8 ? ', …' : ''}; the action color marks what is pressed and the current selection: give states a status color or a neutral mark (a current item marked with aria-current or aria-selected is not counted)`);
+       }
+     }
++    // R33: white cards on a grey page (R04 e). At 1280, on a light near-neutral ground (OKLab lightness 0.9 or more,
++    // chroma 0.025 or less), two or more panels lighter than it (by 0.02 or more) with an edge, each showing 40,000px² or
++    // more of the first screen, or one such panel beside a left sidebar. App chrome is not counted. Not measured on a
++    // mobile surface, whose 1280 view is a fallback.
++    if (width === 1280 && opt.surface !== 'mobile') {
++      const cg = await page.evaluate(cardGround).catch(() => null);
++      const panels = cg ? cg.panels.filter((p) => !p.chrome && p.edge && p.dL >= 0.02 && p.shown >= 40000) : [];
++      const beside = cg && cg.sidebar && panels.length === 1 && panels[0].x >= cg.sidebar.right - 8;
++      if (cg && cg.L >= 0.9 && cg.C <= 0.025 && (panels.length >= 2 || beside)) {
++        const fills = new Map();
++        for (const p of panels) fills.set(p.fill, (fills.get(p.fill) || 0) + 1);
++        const tones = [...fills].map(([f, n]) => `${f}${n > 1 ? ` ×${n}` : ''}`).join(', ');
++        const list = panels.slice(0, 6).map((p) => `${p.sel} ${p.w}×${p.h}`).join(', ') + (panels.length > 6 ? ', …' : '');
++        const what = beside ? `1 panel lighter than the ground (${tones}) on a ${cg.ground} ground beside the left sidebar ${cg.sidebar.sel}` : `${panels.length} panels lighter than the ground (${tones}) on a ${cg.ground} ground`;
++        add('R33', `@${width}px`, `the first screen sets ${what}: ${list}; white cards on a grey page are the product default: build the work area from the subject's own working object, one ground whose rules, bands or plates divide the regions, and keep elevation for what floats (menus, dialogs, a dragged item)`);
++      }
++    }
+     if (m.overflow) add('F08', `@${width}px`, `Horizontal scroll: page is ${m.overflow.scrollWidth}px in a ${m.overflow.vw}px viewport (${m.overflow.culprits.join(', ')})`);
+     for (const s of m.small) add('F12', `@${width}px ${s.sel}`, `${s.size}px text "${s.text}"`);
+     if (width === 1280 && m.fine.length >= 3) {

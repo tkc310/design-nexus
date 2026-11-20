@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hero on grey fixture</title>
+<meta name="description" content="R33 fixture: a marketing page with one large white hero on a grey ground and a flat band below it">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#f4f4f2;color:#1f2328}
+.top{display:flex;justify-content:space-between;align-items:center;padding:16px 24px}
+.top nav a{margin-left:20px;color:#1f2328}
+.hero{margin:8px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);padding:64px;min-height:440px}
+.hero h1{margin:0 0 16px;font-size:48px;line-height:1.1}
+.hero code{display:inline-block;margin-top:16px;padding:10px 14px;border:1px solid #c9c9c4;border-radius:6px}
+/* not counted: a flat band, lighter but with no edge */
+.band{background:#fbfbfa;padding:32px 24px;min-height:200px}
+</style></head><body>
+<div class="top"><strong>grepline</strong><nav aria-label="Main"><a href="#syntax">Syntax</a><a href="#formats">Formats</a><a href="#install">Install</a><a href="#source">Source</a></nav></div>
+<main>
+<section class="hero"><h1>Grep the fields, not the text.</h1><p>grepline reads JSON and logfmt lines from every file you point it at and keeps the ones that match a filter.</p><code>brew install grepline</code></section>
+<section class="band"><h2>One binary, two formats</h2><p>Written in Rust, MIT licensed.</p></section>
+</main>
+</body></html>

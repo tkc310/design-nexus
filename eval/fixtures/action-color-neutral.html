@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color neutral states fixture</title>
+<meta name="description" content="R30 fixture: states in status colors or neutral marks, pale washes, a large drawing and a band in the action color are not counted">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#fff;color:#1f2328}
+main{max-width:960px;margin:0 auto;padding:24px}
+.btn{background:#c43d1c;color:#fff;border:0;border-radius:6px;padding:12px 20px;font:inherit}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px 12px;border-bottom:1px solid #c9c6bd;text-align:left}
+.ok{color:#2f7d4f}
+.ok::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f7d4f;margin-right:6px}
+.due{color:#8a5a00}
+.late{color:#a8173f;border:1px solid #a8173f;border-radius:4px;padding:0 6px}
+.saved{color:#5d6470}
+.wash{background:#f6e9e5;padding:2px 8px;border-radius:4px}
+.note{color:#c43d1c}
+.band{background:#c43d1c;color:#fff;padding:48px 24px}
+.band h2{margin:0}
+</style></head><body>
+<main>
+<h1>Kiln shelf rentals</h1>
+<p>Each shelf holds one load for one firing. Pick up your pots within three days of the firing.</p>
+<p><button class="btn" type="button" id="rent">Rent a shelf</button></p>
+<!-- not counted: states in status colors and a neutral mark; the crimson of "Overdue" is 21° from the vermilion action -->
+<table><thead><tr><th>Shelf</th><th>Firing</th><th>State</th></tr></thead><tbody>
+<tr><td>Shelf 1</td><td>Tue 3</td><td><span class="ok">Booked</span></td></tr>
+<tr><td>Shelf 2</td><td>Wed 4</td><td><span class="due">Due</span></td></tr>
+<tr><td>Shelf 3</td><td>Thu 5</td><td><span class="late">Overdue</span></td></tr>
+<tr><td>Shelf 4</td><td>Fri 6</td><td><span class="saved">✓ Saved</span></td></tr>
+</tbody></table>
+<!-- not counted: pale washes toward the action hue read as tinted surfaces -->
+<p>Glazes this month: <span class="wash">Celadon</span> <span class="wash">Tenmoku</span> <span class="wash">Shino</span></p>
+<!-- the one mark outside: alone it is not enough -->
+<p class="note">Friday shelves fill first.</p>
+<!-- not counted: a large drawing in the action color -->
+<svg width="640" height="120" viewBox="0 0 640 120" aria-hidden="true"><path d="M0 100 Q160 0 320 60 T640 40" fill="none" stroke="#c43d1c" stroke-width="3"/></svg>
+</main>
+<!-- not counted: a band of 40,000px² or more in the action color -->
+<section class="band"><h2>Open studio on Saturday</h2><p>Bring a pot; we fire the best ones for free.</p></section>
+</body></html>

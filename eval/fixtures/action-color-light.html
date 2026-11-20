@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Light action color fixture</title>
+<meta name="description" content="R30 fixture: a yellow action that stands out by hue alone, below a filled toggle">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#fff;color:#1f2328}
+main{max-width:860px;margin:0 auto;padding:24px}
+.lamp{background:#1e7046;color:#fff;border:0;border-radius:6px;padding:10px 16px;font:inherit}
+.go{background:#ffd400;color:#1f2328;border:0;border-radius:6px;padding:12px 20px;font:inherit}
+.due{background:#ffd400;color:#1f2328;padding:0 4px}
+.on{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1e7046}
+</style></head><body>
+<main>
+<h1>Kiln schedule</h1>
+<!-- not the action: a filled toggle shows its state with its fill, so the finder looks past it -->
+<p><button class="lamp" type="button" aria-pressed="true">Kiln on</button></p>
+<p>Two firings are planned this week. Load the kiln by 17:00 on the day before a firing.</p>
+<!-- the action: yellow on white is under 2:1 but stands out by hue -->
+<p><button class="go" type="button" id="plan">Plan a firing</button></p>
+<!-- flagged: the action's yellow also marks what is due -->
+<ul>
+<li>Bisque firing, Tuesday: glazed pots <mark class="due">due Monday</mark></li>
+<li>Glaze firing, Friday: shelf labels <mark class="due">due Thursday</mark></li>
+</ul>
+<!-- not counted: the toggle's green is not the action color -->
+<p><span class="on" aria-hidden="true"></span> Kiln 1 is heating. <span class="on" aria-hidden="true"></span> Kiln 2 is heating.</p>
+</main></body></html>

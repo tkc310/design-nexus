@@ -1,0 +1,144 @@
+diff --git a/skills/design-nexus/SKILL.md b/skills/design-nexus/SKILL.md
+index 94d946b..2bd6561 100644
+--- a/skills/design-nexus/SKILL.md
++++ b/skills/design-nexus/SKILL.md
+@@ -47,16 +47,16 @@ State the budget you chose in one line before starting.
+ 
+    Before adopting any candidate, judge whether it helps this project: fit with purpose, audience, and brand; accessibility and performance impact; 確度 (低, 低〜中, and 未確認 are not grounds to adopt); status fading or dropped; `#mature` (not a reason to look new); `#anti-pattern` (do not apply the warned-against look; an item that is itself the warning, such as T01, may still be followed); and the item's 避ける場面. Adopt only items that pass. State in one line why each candidate was adopted or rejected. If none pass, adopt none.
+ 
+-2. **Directions** (standard/deep). Propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Recommend one and proceed with it unless the user picks.
+-3. **Token plan.** Before code, write: 4–6 named colors with hex, their role, and their source in the subject's world, with the accent and display face each chosen from three spread candidates (`references/direction.md` §3), type roles (display / body / utility) with families, a scale, and how each is loaded, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for, plus the unit it is built from and which other sections reuse that unit (`references/craft.md` *Layout and spacing*).
+-4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–d, including the agent house look).
++2. **Directions** (standard/deep). First write one line on how pages of this kind usually look: ground, type, the main control or data mark, surface. Then propose three directions that differ on structure, value, type genre, and surface (`references/direction.md` §3), each borrowing from one real object, at least one outside your habits. Each is two lines: a name, and what makes it belong to this subject. Recommend the one that does the job best among those that depart from the usual look on at least two of ground value, display genre, the look of the main control or data mark, and surface; proceed with it unless the user picks.
++3. **Token plan.** Before code, write the **source sheet** (`references/direction.md` §4): the object, the usual look it departs from, 4–6 of the object's visible properties each given to a part the page already needs (the display lettering, the states of the main control or data mark, one part of the frame, one habit), and the object's words that stay out of the copy. Then: 4–6 named colors with hex, their role, and their source in the subject's world, with the accent and display face each chosen from three spread candidates (`references/direction.md` §3), type roles (display / body / utility) with families, a scale, and how each is loaded, a spacing base, radius and elevation rules, a one-sentence layout concept with an ASCII wireframe, and the **signature**: the one element the page will be remembered for, plus the part of the object it is built from and which other sections reuse it (`references/craft.md` *Layout and spacing*).
++4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the usual look in the source sheet and against the default looks in `references/checks.md` (R04 a–d, including the agent house look).
+ 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
+ 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
+-7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
++7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot and write the one-line caption a reviewer would give the rest: if it describes the usual look from the source sheet, that is the first problem; give more of the object's properties to parts the page already has, never by adding a part. Read every visible label and message: none uses the object's words. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
+ 8. **Remove one accessory** before finishing: the least necessary decoration, effect, or label.
+ 9. **Record.** Update `DESIGN.md` with new tokens or patterns, add rejected ideas to its *Learnings*, and add one line to *Looks used* (value, ground and accent hue, type genre, surface), so later work doesn't repeat itself. Record what shipped, not what was planned: the lint flags DESIGN.md colors the code doesn't use (N09), and every claim in your report or notes (a removed shadow, a fixed state) must be true of the final code.
+ 
+-Report at the end: the direction, the signature, the lint and render results (counts by tier), and anything kept with a reason.
++Report at the end: the direction and its source object, the signature, the lint and render results (counts by tier), and anything kept with a reason.
+ 
+ ## Tools
+ 
+diff --git a/skills/design-nexus/references/craft.md b/skills/design-nexus/references/craft.md
+index 4848fcc..17582ca 100644
+--- a/skills/design-nexus/references/craft.md
++++ b/skills/design-nexus/references/craft.md
+@@ -28,7 +28,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
+ - Group by proximity: space inside a group is smaller than space between groups.
+ - Align to a grid; let one element break it on purpose (the signature).
+ - Vary section structure. A page where every section is "heading + 3 cards" is a template.
+-- **The signature is a system, not a widget.** Name the unit it is built from (the kiln shelf, the ticket stub, the ruled ledger line, the timetable row) and build at least two other sections from that same unit, grid, or material, so the page reads as one object. Test: cover the signature. If the rest could belong to any product, it is still a template.
++- **The signature is a system, not a widget.** Name the unit it is built from: a part of the source object (the kiln shelf, the ticket stub, the ruled ledger line, the timetable row), not a UI primitive such as a cell, card, chip, box, or slot. Build at least two other sections from that same unit, grid, or material, so the page reads as one object. Test: cover the signature and caption the rest (SKILL.md step 7). If the caption is the usual look of this kind of page, it is still a template.
+ - **Retire the default section frame.** "Small kicker + heading + intro paragraph, then content" on every section is the agent's template rhythm. Give each section the structure its content needs (a table, a sequence, a single large figure, a two-up comparison) and let headings sit inside that structure.
+ - **No half-empty rows at desktop.** At 1280 and 1920, every row either fills its width with content or is a deliberately narrow measure. When one column of a row is much shorter than the other, rebalance (move content, span the short one, or stack) instead of leaving a void.
+ - Cards only when content is genuinely a collection of comparable items.
+diff --git a/skills/design-nexus/references/direction.md b/skills/design-nexus/references/direction.md
+index 561a969..c4913b0 100644
+--- a/skills/design-nexus/references/direction.md
++++ b/skills/design-nexus/references/direction.md
+@@ -10,6 +10,8 @@ Write three sentences before anything visual:
+ 
+ If the brief is vague, choose a concrete subject and say you chose it. Pull from the subject's world: its materials, instruments, documents, units, rituals, and real artifacts. A tide-table app borrows from nautical almanacs; a tax tool borrows from forms and ledgers. That borrowed vernacular is where distinctiveness comes from, not from effects.
+ 
++When the subject is software, its own screens and the usual look of its category are not its world; they are the default to beat. Borrow from the thing that does the same job off screen, or from one named tool the user really works in, whose properties you can list. A genre ("a terminal app", "an admin screen") is not a source; one specific object is.
++
+ ## 2. Infer from the product type
+ 
+ Use these defaults only as a starting hypothesis, then argue with them.
+@@ -37,15 +39,18 @@ Directions must differ on at least three axes, not only palette:
+ | Surface | flat hairlines · cards with real elevation · photographic · illustrated · textured material |
+ | Density and energy | airy and calm · dense and precise · loud and maximal |
+ 
+-At least one of the three must be a direction you would not pick by habit (dark, saturated, maximal, photographic, or playful) and argued from the subject, not added for contrast. Format, two lines each:
++At least one of the three must be a direction you would not pick by habit (dark, saturated, maximal, photographic, or playful) and argued from the subject, not added for contrast. Start with one line on how pages of this kind usually look, then two lines per direction:
+ 
+ ```
+-A — "<name>": <what it borrows from the subject's world>; <what leads the page>.
++Usual look: <how pages of this kind usually look: ground, type, the main control or data mark, surface>
++A — "<name>": <the one real object it borrows from>; <what leads the page>.
+ B — …
+ C — …
+-Recommend <X> because <the subject-specific reason>.
++Recommend <X> because <the subject-specific reason>; it departs from the usual look on <two or more of: ground value, display genre, the look of the main control or data mark, surface>.
+ ```
+ 
++Among the directions that depart on two or more of those four (revise one if none does), recommend the one that does the job best. Departing is not being loud: a quiet product screen can keep a neutral ground and depart through its display lettering and the look of its main control or data mark.
++
+ ### Avoid the house look
+ 
+ Agents that follow rules like these drift into one recognizable look: pale cool paper, one ink-blue or teal accent plus a highlighter yellow, serif body with mono micro-labels, hairline rules, 2–4px corners, no shadows, and a dark closing band. It is tasteful and it is still a template (R04d). Use it only when the subject genuinely calls for a printed-document feel, and never as the default.
+@@ -57,15 +62,36 @@ Steering away from a named look tends to land on its nearest neighbor: cool pape
+ Sourcing a color from the subject is necessary, not sufficient: every subject contains something warm (lamp light, wood, clay, paper, signage, warning tape), so "sourced" picks still pile up on one amber-to-orange accent and one familiar display face. Decide by comparison, not by first association:
+ 
+ - **Accent**: name three candidates from the subject, at least 90° apart in hue or very different in chroma (a muted ink, a saturated signal, a near-neutral), each with its source. Choose the one that carries meaning here; it may be the signature's hue. It marks what the user presses and the current selection, never a state: done, approved, booked, on, saved, or due take a status color or a neutral mark. Write one line on why not the other two. If the winner is the warmest of the three, the reason must be specific to this subject, not "warm and friendly".
+-- **Display face**: name three candidates from different type genres (axis table above) and choose by what the subject's own lettering looks like (its signage, labels, documents, screens), not by legibility alone; legibility is the body face's job.
++- **Display face**: name three candidates from different type genres (axis table above) and choose the one whose letters come from the source object (its signage, labels, printed matter, engraving, handwriting), not by legibility alone; legibility is the body face's job. A product's own interface lettering is the usual look, not a source. If the right face seems too loud for the surface, use it in fewer places (the title, the labels the object itself would carry, key figures) and at smaller steps, not a quieter genre. Take other roles from its widths and weights before adding a family, and never set two roles (display, body, utility) in different faces of the same genre. Test: if swapping the display and body faces would go unnoticed, the page has no voice.
+ 
+ If `DESIGN.md` has a *Looks used* list, or you know earlier pages you built in this session, read it first and pick a direction that differs from the last two on value, ground hue, type genre, and surface.
+ 
+ ## 4. Token plan
+ 
+-Write the plan in this shape. The values are yours to choose; there are deliberately no example values here, so nothing anchors them.
++Start with the **source sheet**. Naming an object is not enough: unless its visible properties are given to the parts the page needs anyway, the build falls back to stock parts and the object survives only in one component.
++
++```
++Source sheet:
++  object   <one real thing, named exactly> — why it does this subject's job
++  usual    <how pages of this kind usually look: ground, type, the main control or data mark, surface>
++  borrow   4–6 visible properties, each given to a part the page already needs:
++             its lettering → the display face, and where it appears
++             its marks and their states (a flag raised or lowered, a hole punched or not) → the main control or data mark in each state
++             its frame, ruling, or material → one part of the page frame (header, dividers, table ruling, ground)
++             one habit (how it counts, how it marks an entry, how it shows a correction) → one element the brief already asks for
++  departs  from `usual` on two or more of: ground value, display genre, the look of the main control or data mark, surface
++  words    the object's own nouns that the product does not use, listed; they never appear in labels, help, or messages
++```
++
++- **Properties, not pictures.** Borrow what the object does visually. Never draw the object, add a part to display it, or spread its texture as decoration; a part the page does not need is not added because the object has one.
++- **Controls stay controls.** The main control stays its native element (button, checkbox, radio, input, select), restyled after the object, with its state, if it has one, in visible text, a 3:1 boundary, and visible focus.
++- **A mark keeps one meaning and the hierarchy.** A borrowed mark stands for one state of the product, and nothing else. Its full-strength form goes on what the user must look at or act on; repeated and finished items get a quieter form.
++- **The words stay the product's.** The object shapes the look; labels and messages name what the user controls ("On", "Save", "Share"), never the object's parts.
++
++Then write the plan in this shape. The values are yours to choose; there are deliberately no example values here, so nothing anchors them.
+ 
+ ```
++Source sheet: (as above)
+ Colors (4–6, named by role in the subject's vocabulary):
+   <name>  #RRGGBB  role (text / ground / surface / accent / status) — source: where in the subject's world it comes from
+   accent candidates: <three hues ≥90° apart, each with a source> → chosen: <one> because <subject-specific reason>
+@@ -78,7 +104,7 @@ Type:
+ Spacing: base and section rhythm
+ Shape: radius and elevation rules (shadows, borders, or neither, and why)
+ Layout: one-sentence concept + ASCII wireframe
+-Signature: the one element the page will be remembered for
++Signature: the one element the page will be remembered for, built from a part of the object
+ ```
+ 
+ Two plans that both pass this skill, to show the range. They describe where values come from, not the values, because example values get copied:
+@@ -88,7 +114,7 @@ Two plans that both pass this skill, to show the range. They describe where valu
+ 
+ ## 5. Challenge the plan
+ 
+-For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against R04 (the three default looks) and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
++For each line ask: would this appear on any similar page? If yes, change it and record why. Then compare against the source sheet's `usual` line, R04 (the default looks), and R01/R02 in `checks.md`. Finally confirm the token pairs pass contrast with `scripts/tokens-check.mjs`.
+ 
+ ## When the brief or DESIGN.md already decides
+ 
+diff --git a/skills/design-nexus/templates/DESIGN.md b/skills/design-nexus/templates/DESIGN.md
+index 40d258f..f747c6f 100644
+--- a/skills/design-nexus/templates/DESIGN.md
++++ b/skills/design-nexus/templates/DESIGN.md
+@@ -11,7 +11,7 @@ The single source of truth for this project's design. Agents read it before any
+ 
+ ## Direction
+ 
+-One paragraph: the concept, what it borrows from the subject's world, and the signature element.
++One paragraph: the concept; the source object and the usual look of this kind of page that it departs from; which of the object's properties appear where; the object's words kept out of the copy; and the signature element.
+ 
+ ## Tokens
+ 

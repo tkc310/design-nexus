@@ -17,7 +17,7 @@ Use these while building. They are defaults; the brief and DESIGN.md override th
 - Never fake bold or italic; load the weights you use. Use `font-display: swap`.
 
 ## Color
-- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach.
+- Build from roles (ink, surface, accent, status), not from a brand-color-everywhere approach; a status mark never borrows the action color, which stays on what is pressed and the current selection (R30).
 - Neutrals carry 80–90% of the surface. Accent is rare enough to mean something.
 - Tint neutrals slightly toward the accent hue rather than using pure gray.
 - Status colors (success, warning, danger) are reserved for status.
@@ -39,7 +39,7 @@ The page as loaded, before any scroll, click, or wait, is what reviewers, screen
 - **Time- or data-dependent views fall back to a representative state.** If the real clock or data would show an empty or edge state (a closed shop, zero results, an expired offer), show a typical state by default and make the edge state reachable, or pin the demo to a stated time.
 - **Sticky and fixed bars never cover content** at any checked width: keep them one line high at narrow widths, reserve their height with padding so the last field and paragraph stay visible, and check the screenshots for overlap.
 - **Required states live in the product, not in a gallery.** Reviewers and users judge a state by how it looks inside the component that owns it. Build each state the brief asks for into that component, on the same code path real data would take (a fetch that can fail, a filter that can return nothing, a save that can be rejected). Let the representative data carry partial states, so the default render shows them in place: one row that failed to sync, with its retry; one day with no shifts; one request awaiting approval; one bus cancelled. Whole-view states (first load, total failure, first-run empty) are reached through the real flow (type a filter with no match, press retry, go offline) and listed in NOTES.md with how to reach each. Never add a specimen gallery, a "Preview" or "Example" frame, a demo switch, or static copies of states; a static copy with `role="alert"` or `role="status"` announces something that never happened.
-- **The page never talks about itself.** It is the product, not a presentation of it. Notes to the owner or reviewer ("draft", "check before publishing", "placeholder name", "sample data", "replace with a real photo", "assumption", "not the real screen") go in NOTES.md and your report, never in visible copy or `alt` text. Write invented content so it would be safe to ship as an example: plausible names, round figures, no claims about real people or companies, no invented guarantees or prices presented as policy. List every invented fact in NOTES.md. The lint flags such notes as R19.
+- **The page never talks about itself.** It is the product, not a presentation of it. Notes to the owner or reviewer ("draft", "check before publishing", "placeholder name", "sample data", "replace with a real photo", "assumption", "not the real screen") go in NOTES.md and your report, never in visible copy or `alt` text. Write invented content so it would be safe to ship as an example: plausible names, round figures, no claims about real people or companies, no invented guarantees or prices presented as policy. List every invented sample (names, dates, rows, figures) in NOTES.md; product facts are never invented. The lint flags such notes as R19.
 
 ## Responsive
 Design each width; don't let it happen. The middle width (about 768px, a tablet or a narrow laptop window) breaks most often, because desktop layouts get squeezed there and mobile layouts get stretched. The tools catch overflow, not ugliness: a layout can pass every check and still be broken.
@@ -59,7 +59,7 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet 
   - Date strips and timelines become a grid that wraps (a month grid, a two-row week), not a strip that runs off the screen.
   - Log or sample output may scroll, but shorten its lines so the meaningful part (level, message) shows first. The render check flags content a scroll box hides as R24. A table never escapes its panel (R17).
 - **The primary action keeps a deliberate position** at every width, not wherever wrapping leaves it.
-- **Wide screens are designed too.** Above 1440px, cap the measure and let the layout use the space on purpose, not a narrow centered column floating in empty ground.
+- **1920 gains something.** Cap the line length of text blocks (about 70ch), not the page. From 1600px, add what a reader at 1280 scrolls to find: a side column with the next step, details, or the legend beside what it explains; one more column of cards or rows; or a larger main figure or table. Keep the change inside a `min-width: 1600px` query so 1280 stays as planned. The added part has content in the first two screens and never repeats or outranks the main action. A page whose 1280 arrangement sits centred between wide empty margins at 1920 is not designed for that width (R29).
 
 ## Components and states
 - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.

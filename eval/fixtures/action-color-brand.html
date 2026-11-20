@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Action color brand fixture</title>
+<meta name="description" content="R30 fixture: the brand mark, links, an outlined button and a focus ring may share the action color">
+<style>
+body{margin:0;font:17px/1.6 Georgia,serif;background:#fbfaf7;color:#1f2328}
+header{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid #c9c6bd}
+.brand{display:flex;align-items:center;gap:8px;color:#1f4fd1;font-weight:700}
+main{max-width:960px;margin:0 auto;padding:24px}
+a{color:#1f4fd1}
+.btn{display:inline-block;background:#1f4fd1;color:#fff;border-radius:6px;padding:12px 20px;text-decoration:none}
+.ghost{background:transparent;color:#1f4fd1;border:2px solid #1f4fd1;border-radius:6px;padding:10px 18px;font:inherit}
+.field{display:inline-block;border:1px solid #5d6470;border-radius:6px;padding:4px}
+.field:focus-within{box-shadow:0 0 0 3px #1f4fd1}
+.field input{border:0;font:inherit;padding:6px;background:transparent}
+footer{padding:24px;border-top:1px solid #c9c6bd}
+.wordmark{color:#1f4fd1;font-weight:700}
+.note{color:#1f4fd1}
+</style></head><body>
+<!-- not counted: the brand mark and its name -->
+<header><div class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="2" width="24" height="24" rx="4" fill="#1f4fd1"/></svg><span>Northline Studios</span></div></header>
+<main>
+<h1>Rehearsal rooms by the hour</h1>
+<p>Five soundproofed rooms by the river, each with a PA, two amps and a full kit. Rooms open at 9:00 and close at 23:00; a booking holds the room for two hours, and you can move it until the day before.</p>
+<!-- not counted: links, and an outlined button -->
+<p>Read the <a href="#rules">house rules</a> before your first visit, or <a href="#map">find us on the map</a>.</p>
+<p><a class="btn" href="#book" id="book">Book a room</a> <button class="ghost" type="button">See prices</button></p>
+<!-- not counted: the focus ring around a field that has focus when the page opens -->
+<p><span class="field"><input id="q" type="search" aria-label="Search rooms" placeholder="Search rooms"></span></p>
+<!-- the one mark outside: alone it is not enough -->
+<p class="note">Rooms are quiet after 21:00.</p>
+</main>
+<!-- not counted: a wordmark -->
+<footer><span class="wordmark">Northline</span>, 14 Dock Street</footer>
+<script>document.getElementById('q').focus();</script>
+</body></html>

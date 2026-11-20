@@ -11,6 +11,8 @@
 //   node eval/run.mjs feedback --run <dir>                       aggregate failures into feedback.md for the loop
 //   node eval/run.mjs pair     --base <dir>[,<dir>…] --run <dir> [--cases 01,03] [--swap]   M-008: one PAIR_PROMPT.md per case and base run,
 //                                                                pages shown as A/B in a fixed pseudo-random order; --swap adds the mirrored order
+//   node eval/run.mjs pair     … --neutral                       M-047: the rubric-free "which would you ship" prompt, under _neutral/
+//   node eval/run.mjs neutral-score --run <dir>[,<dir>…]         rubric-free wins, losses, ties; mirrored orders must agree
 //   node eval/run.mjs pair-score --run <dir> [--base <dir>]      candidate wins, losses, ties overall and per dimension
 //   node eval/run.mjs plateau                                    M-009: has the loop stalled since the last plan review?
 //                                                                (exit 3 = run the plan review in loop/plan-review.md)
@@ -34,7 +36,8 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SKILL = path.join(ROOT, 'skills/design-nexus');
+// DN_SKILL: score a run with another copy of the skill's tools (a tool-changing variant is scored with its own checks).
+const SKILL = process.env.DN_SKILL ? path.resolve(process.env.DN_SKILL) : path.join(ROOT, 'skills/design-nexus');
 const CASES = path.join(ROOT, 'eval/cases');
 const RUNS = path.join(ROOT, 'eval/runs');
 const HISTORY = path.join(ROOT, 'eval/history.jsonl');
@@ -113,10 +116,10 @@ function shotLines(dir) {
   return out;
 }
 // Pair copies keep the shots (the pair judge reads them) but never scores, judge files, or prompts.
-const NOT_PAIR = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|generate\.log|judge\.log)$/;
+const NOT_PAIR = /(^|\/)(\.blind|score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|generate\.log|judge\.log)$/;
 const tiled = (dir) => fs.existsSync(path.join(dir, 'shots')) && fs.readdirSync(path.join(dir, 'shots')).some((f) => /^w\d+-01\.png$/.test(f));
 // What a judge or pair judge must never see in a page copy: scores, judge files, prompts (PROMPT.md names the skill variant), shots of the generator.
-const NOT_PAGE = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|before\.json|generate\.log|judge\.log|feedback\.md|compare\.md|shots[^/]*|\.design-nexus)$/;
+const NOT_PAGE = /(^|\/)(score\.json|judge[^/]*\.json|pair\.[^/]*\.json|summary[^/]*|JUDGE_PROMPT[^/]*\.md|PROMPT\.md|before\.json|generate\.log|judge\.log|feedback\.md|compare\.md|shots[^/]*|\.design-nexus|\.blind)$/;
 function die(msg) { console.error(msg); process.exit(1); }
 
 function findEntry(dir) {
@@ -251,7 +254,8 @@ const commands = {
         `Use the design-nexus skill: read \`${skill}/SKILL.md\` and follow it (budget: ${c.budget}, surface: ${c.surface}). Its references, scripts, and templates are in that same folder.`,
         `Work only inside this folder (${dir}). Write the result as a single self-contained \`index.html\` (inline CSS/JS) unless the brief says otherwise. Do not look at other case folders or earlier runs.`,
         `Nobody will answer questions: state your assumptions and proceed.`,
-        `Run the skill's lint and render check on \`index.html\` (\`node ${skill}/scripts/lint.mjs index.html\`, \`node ${skill}/scripts/render-check.mjs index.html --out shots\`) and fix Floor findings before finishing.`,
+        // M-026(a): the generator's render check sees the same clock as `score` (M-006), so a time-dependent page is fixed in the state the judge will see.
+        `Run the skill's lint and render check on \`index.html\` (\`node ${skill}/scripts/lint.mjs index.html\`, \`node ${skill}/scripts/render-check.mjs index.html --out shots ${c.language === 'ja' ? '--time 2026-11-04T10:30:00+09:00 --tz Asia/Tokyo' : '--time 2026-11-04T10:30:00-05:00 --tz America/New_York'}\`) and fix Floor findings before finishing.`,
         `Treat this folder as the project root: if the skill's steps call for a \`DESIGN.md\`, write it here.`,
         `When done, write \`NOTES.md\` with: the three directions you considered, the chosen one, the signature element, and any Reflex findings kept with reasons.`,
         '', '## Brief', '', c.brief, '',
@@ -289,19 +293,30 @@ const commands = {
       const brief = meta ? meta.brief : '(brief missing)';
       if (v2 && !tiled(dir)) console.log(`warning: ${d} has no tiled screenshots; run \`score\` first so the judge can read every width`);
       const tools = fs.existsSync(path.join(dir, 'score.json')) ? JSON.parse(read(path.join(dir, 'score.json'))).tools : null;
+      // M-026(b): with --blind the judge works in a copy whose path carries no run name (version, date, "exp" label), as pair judges do (M-012).
+      // The prompt is written there too; `score` brings the replies (judge-v2.*.json) back into the case folder.
+      let seen = dir;
+      if (v2 && opt.blind) {
+        seen = path.join(RUNS, '_blind', 'p-' + createHash('sha1').update(`${path.basename(run)}/${d}`).digest('hex').slice(0, 8));
+        fs.mkdirSync(seen, { recursive: true });
+        for (const f of fs.readdirSync(seen)) if (!/^judge-v2.*\.json$/.test(f)) fs.rmSync(path.join(seen, f), { recursive: true, force: true });
+        fs.cpSync(dir, seen, { recursive: true, dereference: true, filter: (f) => !NOT_PAIR.test(path.relative(dir, f)) });
+        fs.writeFileSync(path.join(dir, '.blind'), seen + '\n');
+      }
       const prompt = [
         // M-022: the prompt's id travels with the judgement, so a v2 series is (judge model, prompt, capture).
         ...(v2 ? [`<!-- judge-prompt-v2 ${promptId()} -->`, ''] : []),
         base, '', '## BRIEF', '', brief, '',
-        '## Case directory', '', dir, '',
+        '## Case directory', '', seen, '',
         ...(meta?.url ? ['## Reference page', '', `Live site: ${meta.url} (see *Reference pages* above).`, ''] : []),
-        '## Screenshots', '', ...shotLines(dir), '',
+        '## Screenshots', '', ...shotLines(seen), '',
         '## Tool results', '', '```json', JSON.stringify(tools, null, 2), '```', '',
       ].join('\n');
       // A judgement belongs to the prompt it was made with: replacing the prompt under existing v2 judgements breaks the series.
       const prev = v2 && fs.existsSync(path.join(dir, promptName)) ? (read(path.join(dir, promptName)).match(/<!-- judge-prompt-v2 (\w+) -->/) || [])[1] : null;
       if (prev && prev !== promptId() && Object.keys(readJudgesV2(dir)).length) console.log(`warning: ${d} has v2 judgements made with prompt ${prev}; the new prompt is ${promptId()}. Judge the page again (and move the old judge-v2 files aside) before scoring.`);
       fs.writeFileSync(path.join(dir, promptName), prompt);
+      if (seen !== dir) fs.writeFileSync(path.join(seen, promptName), prompt);
       if (opt.cmd && opt.cmd !== true) {
         console.log(`judge ${d} …`);
         const r = spawnSync(opt.cmd, { cwd: dir, input: prompt, shell: true, encoding: 'utf8', maxBuffer: 16 << 20, timeout: 900000 });
@@ -324,8 +339,11 @@ const commands = {
     const cand = runDir(opt.run);
     const bases = String(opt.base || '').split(',').filter(Boolean).map(runDir);
     if (!bases.length) die('pair needs --base <dir>[,<dir>…]');
-    const base = read(path.join(ROOT, 'eval/pair-prompt.md'));
-    const pairsDir = path.join(cand, '_pairs');
+    // M-047: --neutral writes the rubric-free "which would you ship" prompt (M-039) under _neutral/, with its own key.
+    // Those copies carry no NOTES.md or DESIGN.md: the judge is the person who wrote the brief, looking at the page.
+    const neutral = !!opt.neutral;
+    const base = read(path.join(ROOT, neutral ? 'eval/neutral-prompt.md' : 'eval/pair-prompt.md'));
+    const pairsDir = path.join(cand, neutral ? '_neutral' : '_pairs');
     fs.mkdirSync(pairsDir, { recursive: true });
     const keyFile = path.join(pairsDir, 'key.json');
     const keys = fs.existsSync(keyFile) ? JSON.parse(read(keyFile)) : {};
@@ -339,30 +357,34 @@ const commands = {
         if (tiled(path.join(cand, d)) !== tiled(path.join(b, d))) die(`${d}: ${tiled(path.join(cand, d)) ? path.basename(b) : path.basename(cand)} was rendered without tiles; run \`score\` on both runs first`);
         const pid = `${d}--${path.basename(b)}`;
         // Fixed pseudo-random side, so re-running pair does not reshuffle a pair that was already judged.
-        const h = [...pid].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+        // M-042: the candidate's run name is part of the hash, so two candidates do not sit on the same side of one base.
+        const h = [...`${pid}--${path.basename(cand)}`].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
         // --swap also writes the mirrored order (id + "--swap"); pair-score keeps a verdict only when both orders agree.
         for (const swapped of opt.swap ? [false, true] : [false]) {
         const id = swapped ? `${pid}--swap` : pid;
-        const candIsA = (h % 2 === 0) !== swapped;
+        // A pair that already has a key keeps its side: re-running pair must not reshuffle a judged pair.
+        const candIsA = (keys[pid] ? keys[pid].A === 'cand' : h % 2 === 0) !== swapped;
         keys[id] = { A: candIsA ? 'cand' : 'base', base: path.relative(ROOT, b), pair: pid };
         const [srcA, srcB] = candIsA ? [path.join(cand, d), path.join(b, d)] : [path.join(b, d), path.join(cand, d)];
         // M-012: the judge sees copies named A and B, so run labels (dates, versions, "exp") never tell it which page is new.
         const [aDir, bDir] = [['A', srcA], ['B', srcB]].map(([side, src]) => {
           const dst = path.join(pairsDir, id, side);
           fs.rmSync(dst, { recursive: true, force: true });
-          fs.cpSync(src, dst, { recursive: true, dereference: true, filter: (f) => !NOT_PAIR.test(path.relative(src, f)) });
+          fs.cpSync(src, dst, { recursive: true, dereference: true, filter: (f) => !NOT_PAIR.test(path.relative(src, f)) && !(neutral && /^(NOTES|DESIGN)\.md$/.test(path.relative(src, f))) });
           return dst;
         });
         const brief = caseMeta(path.join(cand, d), d)?.brief ?? '(brief missing)';
         const prompt = [base, '', '## BRIEF', '', brief, '', '## Page A', '', aDir, '', ...shotLines(aDir), '', '## Page B', '', bDir, '', ...shotLines(bDir), ''].join('\n');
         fs.mkdirSync(path.join(pairsDir, id), { recursive: true });
-        fs.writeFileSync(path.join(pairsDir, id, 'PAIR_PROMPT.md'), prompt);
+        fs.writeFileSync(path.join(pairsDir, id, neutral ? 'NEUTRAL_PROMPT.md' : 'PAIR_PROMPT.md'), prompt);
         n++;
         }
       }
     }
     writeJSON(keyFile, keys);
-    console.log(`wrote ${n} PAIR_PROMPT.md under ${path.relative(ROOT, pairsDir)}/. Give each to a fresh-context judge and save its JSON as pair.<model>.json next to the prompt, then run \`pair-score\`.`);
+    console.log(neutral
+      ? `wrote ${n} NEUTRAL_PROMPT.md under ${path.relative(ROOT, pairsDir)}/. Give each to a fresh-context judge (it writes neutral.<model>.json next to the prompt), then run \`neutral-score\`.`
+      : `wrote ${n} PAIR_PROMPT.md under ${path.relative(ROOT, pairsDir)}/. Give each to a fresh-context judge and save its JSON as pair.<model>.json next to the prompt, then run \`pair-score\`.`);
   },
 
   // M-009: a stalled loop gets its plan reviewed by a fresh, maximum-effort agent instead of more of the same hypotheses.
@@ -370,16 +392,30 @@ const commands = {
     const log = read(path.join(ROOT, 'loop/experiments.md'));
     const planFile = path.join(ROOT, 'loop/plan.md');
     const since = fs.existsSync(planFile) ? Number((read(planFile).match(/reviewed-after:\s*EXP-(\d+)/) || [])[1] || 0) : 0;
+    // M-051: read the three verdict forms (`- verdict:`, `- decision:`, `- 判定:`), count in file order after the reviewed-after heading
+    // (numbers are assigned at planning time and are not in file order), and fold a re-measurement of the same variant
+    // (`- same-variant-as: EXP-NNN`) into one hypothesis. Instrument changes and measurements carry no ACCEPT/REJECT.
     const exps = [];
+    let after = since === 0;
     for (const sec of log.split(/^### /m).slice(1)) {
       const id = Number((sec.match(/^EXP-(\d+)/) || [])[1]);
-      const v = (sec.match(/^- verdict:\s*(.*)$/m) || [])[1];
-      if (!id || !v) continue;
-      const head = v.split('。')[0];
-      const last = [...head.matchAll(/ACCEPT|REJECT/g)].pop();
-      if (last) exps.push({ id, ok: last[0] === 'ACCEPT' });
+      if (!id) continue;
+      if (!after) { if (id === since) after = true; continue; }
+      const lines = [...sec.matchAll(/^- (?:verdict|decision|判定):\s*(.*)$/gm)].map((m) => m[1]);
+      let verdict = null;
+      for (const v of lines) {
+        const bold = [...v.matchAll(/\*\*[^*]*?(ACCEPT|REJECT)[^*]*?\*\*/g)].pop();
+        const plain = [...v.split('。')[0].matchAll(/ACCEPT|REJECT/g)].pop();
+        const hit = bold ? bold[1] : plain ? plain[0] : null;
+        if (hit) verdict = hit;
+      }
+      if (!verdict) continue;
+      const same = Number((sec.match(/^- same-variant-as:\s*EXP-(\d+)/m) || [])[1] || 0);
+      const prev = same ? exps.findIndex((e) => e.id === same) : -1;
+      if (prev >= 0) exps.splice(prev, 1);
+      exps.push({ id, ok: verdict === 'ACCEPT' });
     }
-    const recent = exps.filter((e) => e.id > since);
+    const recent = exps;
     let streak = 0;
     for (let i = recent.length - 1; i >= 0 && !recent[i].ok; i--) streak++;
     const last4 = recent.slice(-4);
@@ -389,6 +425,44 @@ const commands = {
       ? `STALLED: ${streak >= 3 ? `${streak} rejects in a row` : 'no accept in the last 4'}. Run the plan review in loop/plan-review.md (fresh context, Opus at max effort) before the next hypothesis.`
       : `not stalled (${streak} reject(s) in a row; the review runs at 3 in a row or no accept in 4).`);
     if (stalled) process.exitCode = 3;
+  },
+
+  // M-047: the rubric-free verdicts (M-039), in the candidate's view. With mirrored orders (--swap) a pair counts only
+  // when both orders pick the same page; otherwise it is a tie.
+  'neutral-score'() {
+    const out = [];
+    for (const r of String(opt.run || '').split(',').filter(Boolean)) {
+      const cand = runDir(r);
+      const dir = path.join(cand, '_neutral');
+      const keys = JSON.parse(read(path.join(dir, 'key.json')));
+      const byPair = {};
+      for (const [id, key] of Object.entries(keys)) {
+        if (!fs.existsSync(path.join(dir, id))) continue;
+        for (const f of fs.readdirSync(path.join(dir, id)).filter((x) => /^neutral\..+\.json$/.test(x))) {
+          let j; try { j = JSON.parse(read(path.join(dir, id, f))); } catch { console.log(`unreadable: ${path.join(dir, id, f)}`); continue; }
+          if (j.ship !== 'A' && j.ship !== 'B') continue;
+          (byPair[key.pair || id] ||= []).push({ win: (j.ship === 'A') === (key.A === 'cand'), clear: j.margin === 'clear' || j.margin === 'large', shownA: j.ship === 'A', swap: id.endsWith('--swap') });
+        }
+      }
+      const t = { win: 0, loss: 0, tie: 0, cwin: 0, closs: 0, A: 0, B: 0, flips: 0, both: 0 };
+      const byCase = {};
+      for (const [pid, vs] of Object.entries(byPair)) {
+        for (const v of vs) t[v.shownA ? 'A' : 'B']++;
+        const mirrored = vs.some((v) => v.swap) && vs.some((v) => !v.swap);
+        if (mirrored) { t.both++; if (!vs.every((v) => v.win === vs[0].win)) t.flips++; }
+        const agree = vs.every((v) => v.win === vs[0].win);
+        const res = !agree ? 'tie' : vs[0].win ? 'win' : 'loss';
+        t[res]++;
+        if (agree && vs.every((v) => v.clear)) t[vs[0].win ? 'cwin' : 'closs']++;
+        const c = pid.split('--')[0];
+        (byCase[c] ||= { win: 0, loss: 0, tie: 0 })[res]++;
+      }
+      const lines = [`${path.basename(cand)}: rubric-free ${t.win}–${t.loss}–${t.tie} (clear ${t.cwin}–${t.closs}). Position: A ${t.A}, B ${t.B}.${t.both ? ` Mirrored pairs ${t.both}, flipped ${t.flips}.` : ''}`,
+        ...Object.entries(byCase).map(([c, v]) => `  ${c}: ${v.win}–${v.loss}–${v.tie}`)];
+      console.log(lines.join('\n'));
+      out.push({ run: path.basename(cand), ...t, byCase });
+      writeJSON(path.join(dir, 'summary.json'), { ...t, byCase });
+    }
   },
 
   'pair-score'() {
@@ -453,6 +527,11 @@ const commands = {
     for (const d of caseDirs(run)) {
       const dir = path.join(run, d);
       const c = caseMeta(dir, d) || {};
+      // M-026(b): replies written next to a blinded prompt come back to the case folder.
+      if (fs.existsSync(path.join(dir, '.blind'))) {
+        const seen = read(path.join(dir, '.blind')).trim();
+        if (fs.existsSync(seen)) for (const f of fs.readdirSync(seen)) if (/^judge-v2.*\.json$/.test(f)) fs.copyFileSync(path.join(seen, f), path.join(dir, f));
+      }
       // A reference page (CASE.md with a url, V4) is rendered live; there is no file to lint.
       const entry = findEntry(dir) || (/^https?:\/\//.test(c.url || '') ? c.url : null);
       if (!entry) { rows.push({ case: d, missing: true }); continue; }

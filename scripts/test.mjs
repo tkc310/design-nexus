@@ -96,6 +96,11 @@ else {
   check('render flags F01 when a link loses contrast on hover', scF.some((f) => /hover/.test(f.where) && /Book a fitting/.test(f.message)), JSON.stringify(scF));
   check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
   check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
+  // F02 around the control. Two widths, so focus is checked at 320 before the 1280 state checks switch transitions off, as in a default run.
+  const fw = run('render-check.mjs', path.join(S2, 'focus-wrapper.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const fwF = fw.out.findings.filter((f) => f.id === 'F02').map((f) => f.where.trim());
+  check('F02 accepts focus drawn on a :focus-within wrapper, a label, or the box of a visually hidden input, through a transition too', !fwF.some((w) => /^#(filter|query|agree|plan-week|plan-month|day-wk|day-hol|opt-in)\b/.test(w)), JSON.stringify(fwF));
+  check('F02 still flags no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a hidden part', JSON.stringify(fwF.sort()) === JSON.stringify(['#bare', '#email', '#hover-only', '#lost', '#name', '#plain', '#undrawn']), JSON.stringify(fwF));
   const st = run('render-check.mjs', path.join(S2, 'small-text.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const r20 = st.out.findings.filter((f) => f.id === 'R20');
   check('render flags R20 when hints and metadata are set at 13px', r20.length === 1 && /3 text block/.test(r20[0].message), JSON.stringify(r20));
@@ -137,6 +142,64 @@ else {
   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
   const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
+  // R29: at 1920 the 1280 arrangement sits centred or merely stretches; a page that gains something at 1920 is not counted.
+  const wide = (f, w = '1280,1920') => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', w).out.findings.filter((x) => x.id === 'R29');
+  const wc = wide('wide-centred.html');
+  check('render flags R29 when the 1280 frame sits centred at 1920, with the measured margins', wc.length === 1 && /sits centred/.test(wc[0].message) && /1200px wide \(1200px at 1280, ×1\.00\), 360px and 360px from the edges/.test(wc[0].message), JSON.stringify(wc));
+  const ws = wide('wide-stretched.html');
+  check('render flags R29 when a strip and a table merely stretch at 1920', ws.length === 1 && /merely stretch/.test(ws[0].message) && /×1\.52\), 24px and 24px/.test(ws[0].message), JSON.stringify(ws));
+  for (const [f, what] of [['wide-column.html', 'a side column set beside the main one from 1600px'], ['wide-figure.html', 'a main figure enlarged from 1600px'], ['wide-type.html', 'root type scaled up from 1600px'], ['wide-frame.html', 'a frame widened 1.27x from 1600px']]) {
+    const r29 = wide(f);
+    check(`R29 ignores ${what}`, r29.length === 0, JSON.stringify(r29));
+  }
+  check('R29 is measured only when 1920 is rendered', wide('wide-centred.html', '1280').length === 0);
+  // R30: the action color on things nobody presses. Each negative holds one stray mark, so any exempt item that slipped in would fire.
+  const r30 = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280').out.findings.filter((x) => x.id === 'R30');
+  const ac = r30('action-color.html');
+  check('render flags R30 when the action color marks today, booked, saved, paid, confirmed, now and a status dot', ac.length === 1 && /#book/.test(ac[0].where) && /#1F4FD1/.test(ac[0].message) && /also marks 9 things nobody presses, in 4 components/.test(ac[0].message) && ['th.today "Wed 4"', 'span.booked "Booked" ×3', 'span.saved', 'span.chip "Deposit paid"', 'span.done "Confirmed"', 'div.line', 'svg'].every((s) => ac[0].message.includes(s)), JSON.stringify(ac));
+  const acl = r30('action-color-light.html');
+  check('R30 takes a yellow action that stands out by hue, not the filled toggle above it', acl.length === 1 && /#plan/.test(acl[0].where) && /#FFD400/.test(acl[0].message) && /also marks 2 things/.test(acl[0].message) && !/span\.on/.test(acl[0].message), JSON.stringify(acl));
+  for (const [f, what] of [
+    ['action-color-selection.html', 'the current selection: a nav item, the current step, a selected row, a checked box and option card, a tab bar'],
+    ['action-color-brand.html', 'the brand mark and wordmark, links, an outlined button and a focus ring'],
+    ['action-color-neutral.html', 'states in status colors or a neutral mark, a crimson 21° away, pale washes, a large drawing and a band'],
+    ['action-color-ink.html', 'an action filled with the ink the text is set in'],
+  ]) {
+    const r = r30(f);
+    check(`R30 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
+  // R31: short Japanese text that breaks inside a phrase, measured against the browser's own auto-phrase segmentation.
+  const r31 = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320').out.findings.filter((x) => x.id === 'R31');
+  const jb = r31('ja-phrase-breaks.html');
+  const at31 = (id) => jb.find((f) => f.where === `@320px #${id}`);
+  check('render flags R31 when a button, a table cell, a dd and a two-line note break inside a phrase, quoting each break and the width', [['book', '"（土）|の回を'], ['access', '"駅か|ら'], ['stop', '"停留|所'], ['note', '時刻|表']].every(([id, q]) => at31(id) && at31(id).message.includes(q) && /^at 320px Japanese text breaks inside a phrase/.test(at31(id).message)), JSON.stringify(jb));
+  check('render flags R31 when a Japanese label of up to 14 characters wraps between phrases and leaves two characters or fewer on its last line', !!at31('confirm') && /the 5-character Japanese label "予約を\|確認" wraps and leaves 2 characters on its last line/.test(at31('confirm').message), JSON.stringify(at31('confirm')));
+  check('R31 ignores a Japanese label that wraps between phrases and keeps three characters on its last line', !at31('hours'), JSON.stringify(at31('hours')));
+  check('R31 lists nothing else on that page (a heading set with auto-phrase, a one-line cell and term)', jb.length === 5, JSON.stringify(jb.map((f) => f.where)));
+  for (const [f, what] of [
+    ['ja-phrase-ok.html', 'the same text under the root rule (auto-phrase with the overflow-wrap fallback) with nowrap spans and room, cells and a balanced heading that break between phrases'],
+    ['ja-running-text.html', 'running text of three or more lines'],
+    ['en-narrow.html', 'a page whose language is not Japanese'],
+  ]) {
+    const r = r31(f);
+    check(`R31 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
+  // R33: white cards on a grey page, the product default (R04 e). Each negative holds an exempt item that would fire if it slipped in.
+  const r33 = (f, ...more) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', ...more).out.findings.filter((x) => x.id === 'R33');
+  const cg = r33('card-ground.html');
+  check('render flags R33 when white cards sit on a light grey ground, naming the ground, the panel colour and the count, and leaves out the top bar and the sidebar', cg.length === 1 && /sets 5 panels lighter than the ground \(#FFFFFF ×5\) on a #F3F3F1 ground: /.test(cg[0].message) && !/header|aside/.test(cg[0].message), JSON.stringify(cg));
+  const cgs = r33('card-ground-sidebar.html');
+  check('render flags R33 for one white card on a grey ground beside a left sidebar, not counting the fixed save bar', cgs.length === 1 && /sets 1 panel lighter than the ground \(#FFFFFF\) on a #F4F4F4 ground beside the left sidebar nav\.side: section\.card/.test(cgs[0].message), JSON.stringify(cgs));
+  for (const [f, what] of [
+    ['card-ground-ledger.html', 'one ground divided by rules, a band, a flat plate and a stub ruled on one side'],
+    ['card-ground-dark.html', 'lighter cards on a dark ground'],
+    ['card-ground-hero.html', 'a marketing page with one large white hero and a flat band on grey'],
+    ['card-ground-one.html', 'one card on grey with tiles inside it, a shadowed top bar, a fixed save bar and one-row navs'],
+  ]) {
+    const r = r33(f);
+    check(`R33 ignores ${what}`, r.length === 0, JSON.stringify(r));
+  }
+  check('R33 is not measured on a mobile surface', r33('card-ground.html', '--surface', 'mobile').length === 0);
   const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');
