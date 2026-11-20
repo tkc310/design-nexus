@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
 const args = process.argv.slice(2);
-const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null, first: false, tiles: false };
+const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null, first: true, tiles: true };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--out') opt.out = args[++i];
@@ -29,10 +29,11 @@ for (let i = 0; i < args.length; i++) {
   // fixed and sticky bars laid out in flow, so a judge can read every width and no bar covers content in a full-page shot.
   else if (a === '--first-screen') opt.first = true;
   else if (a === '--tiles') opt.tiles = true;
+  else if (a === '--no-tiles') { opt.tiles = false; opt.first = false; }
   else opt.target = a;
 }
 if (!opt.target) {
-  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--first-screen] [--tiles] [--json]');
+  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--no-tiles] [--json]');
   process.exit(1);
 }
 
@@ -1438,10 +1439,27 @@ try {
   await browser.close();
 }
 
+
+// What to open, per width. A viewer shrinks the uncut page until small text is unreadable (a 320px page of 5000px
+// is shown at about a third of its size), so the first screen and the 900px tiles are the ones to read.
+function shotList(shots) {
+  const dir = path.dirname(shots[0] || '');
+  const names = shots.map((f) => path.basename(f));
+  const lines = [`screenshots in ${dir}/ (read the first screen and the tiles; they are at native scale):`];
+  for (const w of opt.widths) {
+    const tiles = names.filter((n) => new RegExp(`^w${w}-\\d{2}\\.png$`).test(n));
+    const first = names.includes(`w${w}-first.png`) ? `w${w}-first.png` : null;
+    if (!tiles.length && !first) { lines.push(`  ${w}: w${w}.png`); continue; }
+    const range = tiles.length > 1 ? `${tiles[0]} … ${tiles[tiles.length - 1]} (${tiles.length} tiles, top to bottom)` : tiles[0] || '';
+    lines.push(`  ${w}: ${[first && `${first} (as loaded)`, range].filter(Boolean).join(' · ')} · overview only: w${w}.png`);
+  }
+  return lines.join('\n');
+}
+
 const counts = summarize(findings);
 if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(capture ? { capture } : {}) }, null, 2));
 else {
-  printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
+  printFindings(findings, `design-nexus render: ${url}\n${shotList(shots)}`);
   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
 }
 process.exit(counts.floor ? 2 : 0);

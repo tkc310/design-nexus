@@ -52,12 +52,22 @@ State the budget you chose in one line before starting.
 4. **Challenge the plan.** For every item ask "would this appear on any similar page?" Revise what would, and say what changed. Check the plan against the default looks in `references/checks.md` (R04 a–e, including the agent house look).
 5. **Build** exactly the revised plan. Every color and size comes from the tokens; express them as CSS custom properties or the project's theme. Spend boldness in one place, keep the rest quiet.
 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
-7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
+7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. The render check cuts each width into 900px tiles at native scale; read those, not the uncut `w<width>.png`, which a viewer shrinks until small text and tight gaps cannot be seen. First round: every tile at 320, 768, and 1280, and at 1920 the first tile plus any whose arrangement differs from 1280. After a fix, reopen only the tiles it touched. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
 8. **Remove one accessory** before finishing: the least necessary decoration, effect, or label.
 9. **Second look** (standard/deep). You have stopped seeing what is wrong with the page you just built. When the agent supports subagents, start one in a fresh context, give it the page's folder and the brief, and make `references/second-look.md` its whole task; it repeats steps 6 to 8 with new eyes and edits the page. When it cannot, say in your report that the second look is still owed, so the user can run that file in a new session.
 10. **Record.** Update `DESIGN.md` with new tokens or patterns, add rejected ideas to its *Learnings*, and add one line to *Looks used* (value, ground and accent hue, type genre, surface), so later work doesn't repeat itself. Record what shipped, not what was planned: the lint flags DESIGN.md colors the code doesn't use (N09), and every claim in your report or notes (a removed shadow, a fixed state) must be true of the final code.
 
 Report at the end: the direction, the signature, the lint and render results (counts by tier), and anything kept with a reason.
+
+## Economy
+
+Tokens are the user's money, and every round trip rereads everything so far. Spend them on looking and fixing, not on repetition.
+
+- Read the references your mode and surface call for once, in one step, before you start.
+- Write the directions and the token plan once, straight into `NOTES.md` and `DESIGN.md`. Do not also recite them in chat; one line per step is enough there.
+- Run the lint and the render check in one command. Fix everything that run reports, and everything you saw in the tiles, in one batch of edits before running again.
+- Change the page with targeted edits. Never rewrite the whole file to apply a fix.
+- Open the screenshots you need in one step, not one per turn.
 
 ## Tools
 
@@ -69,7 +79,7 @@ node scripts/render-check.mjs <file.html|url> [--out dir] [--json]  # needs Play
 node scripts/tokens-check.mjs DESIGN.md                             # contrast and coherence of the token plan
 ```
 
-Exit code 2 means Floor findings exist: the work is not done. If Node is unavailable, apply `references/checks.md` by reading the code yourself and say that the tools did not run.
+The render check writes, per width, `w<width>-first.png` (the page as loaded, bars in place), `w<width>-01.png …` (900px tiles, top to bottom, with fixed and sticky bars laid out in flow), and the uncut `w<width>.png` as an overview. Exit code 2 means Floor findings exist: the work is not done. If Node is unavailable, apply `references/checks.md` by reading the code yourself and say that the tools did not run.
 
 ## Non-negotiables (Floor)
 

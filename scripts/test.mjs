@@ -85,11 +85,11 @@ else {
   check('render ignores visually-hidden text', !lb.out.findings.some((f) => f.id === 'R17' && /visually hidden/.test(f.message)));
   const ok = run('render-check.mjs', path.join(S2, 'layout-ok.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   check('R17 ignores scroll containers, dropdowns, and decoration clipped by a hero', !ok.out.findings.some((f) => f.id === 'R17'), JSON.stringify(ok.out.findings.filter((f) => f.id === 'R17').map((f) => f.message)));
-  const hn = run('render-check.mjs', path.join(S2, 'hidden-narrow.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const hn = run('render-check.mjs', path.join(S2, 'hidden-narrow.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
   const r18 = hn.out.findings.filter((f) => f.id === 'R18');
   check('render flags R18 when a paragraph is display:none at 320px', r18.length === 1 && /Classes run twice/.test(r18[0].message), JSON.stringify(r18));
   check('R18 ignores a collapsed nav and text swapped for a narrow copy', r18.every((f) => !/Workshops|Saturday/.test(f.message)));
-  const hk = run('render-check.mjs', path.join(S2, 'hidden-narrow-kept.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const hk = run('render-check.mjs', path.join(S2, 'hidden-narrow-kept.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
   check('render honors a keep comment for R18', hk.out.findings.some((f) => f.id === 'R18' && f.kept) && hk.out.counts.kept >= 1, JSON.stringify(hk.out.findings.filter((f) => f.id === 'R18')));
   const sc = run('render-check.mjs', path.join(S2, 'state-contrast.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const scF = sc.out.findings.filter((f) => f.id === 'F01');
@@ -97,7 +97,7 @@ else {
   check('render flags F01 when a button loses contrast on focus', scF.some((f) => /focus/.test(f.where) && /Reserve a slot/.test(f.message)), JSON.stringify(scF));
   check('state contrast ignores states that keep contrast, including color-mix() and oklch() backgrounds', !scF.some((f) => /care guide|Join the list|Send the request|Open the map/.test(f.message)), JSON.stringify(scF));
   // F02 around the control. Two widths, so focus is checked at 320 before the 1280 state checks switch transitions off, as in a default run.
-  const fw = run('render-check.mjs', path.join(S2, 'focus-wrapper.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const fw = run('render-check.mjs', path.join(S2, 'focus-wrapper.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
   const fwF = fw.out.findings.filter((f) => f.id === 'F02').map((f) => f.where.trim());
   check('F02 accepts focus drawn on a :focus-within wrapper, a label, or the box of a visually hidden input, through a transition too', !fwF.some((w) => /^#(filter|query|agree|plan-week|plan-month|day-wk|day-hol|opt-in)\b/.test(w)), JSON.stringify(fwF));
   check('F02 still flags no indication anywhere, a hover-only wrapper, a ring on a form that holds two fields, an undrawn border, and a ring on a hidden part', JSON.stringify(fwF.sort()) === JSON.stringify(['#bare', '#email', '#hover-only', '#lost', '#name', '#plain', '#undrawn']), JSON.stringify(fwF));
@@ -121,7 +121,8 @@ else {
   const fbOut = path.join(ROOT, '.design-nexus/test-shots/fixed-bars');
   fs.rmSync(fbOut, { recursive: true, force: true });
   const fb = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', fbOut, '--widths', '320,1280', '--first-screen', '--tiles');
-  const fbPlain = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const fbPlain = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
+  const fbDefault = run('render-check.mjs', path.join(S2, 'fixed-bars.html'), '--out', path.join(ROOT, '.design-nexus/test-shots-default'), '--widths', '320');
   const pngSize = (f) => { const b = fs.readFileSync(f); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
   const fbCap = fb.out.capture?.widths?.['1280'];
   check('render --tiles lays out the sticky header and the fixed save bar in flow, not the off-canvas drawer or the empty layer', JSON.stringify(fbCap?.flattened) === JSON.stringify(['header', '#save']), JSON.stringify(fbCap));
@@ -130,7 +131,8 @@ else {
   check('render --first-screen saves the 1280×900 first screen', fs.existsSync(path.join(fbOut, 'w1280-first.png')) && JSON.stringify(pngSize(path.join(fbOut, 'w1280-first.png'))) === '[1280,900]');
   const ids = (o) => JSON.stringify(o.out.findings.map((f) => `${f.id} ${f.where}`).sort());
   check('render findings are the same with and without the evaluation captures', ids(fb) === ids(fbPlain), `${ids(fb)} vs ${ids(fbPlain)}`);
-  check('render without capture flags writes one full-page shot per width', fbPlain.out.shots.length === 2 && !fbPlain.out.capture, JSON.stringify(fbPlain.out.shots));
+  check('render --no-tiles writes one full-page shot per width', fbPlain.out.shots.length === 2 && !fbPlain.out.capture, JSON.stringify(fbPlain.out.shots));
+  check('render writes the first screen and native-scale tiles by default', fbDefault.out.capture?.tiles === true && fbDefault.out.shots.some((f) => /w320-first\.png$/.test(f)) && fbDefault.out.shots.some((f) => /w320-01\.png$/.test(f)), JSON.stringify(fbDefault.out.shots));
   const cn = run('render-check.mjs', path.join(S2, 'control-names.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const cnB = cn.out.findings.filter((f) => f.id === 'F01' && /field boundary/.test(f.message));
   check('render flags F01 when a field border or fill is below 3:1', ['#faint', '#filled', '#role'].every((id) => cnB.some((f) => f.where.includes(id))), JSON.stringify(cnB));
@@ -140,7 +142,7 @@ else {
   const tm = run('render-check.mjs', path.join(S2, 'table-misaligned.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280');
   const tmF = tm.out.findings.filter((f) => f.id === 'R17' && /column headings/.test(f.message));
   check('render flags R17 when a table foot keeps a column its head hides', tmF.length === 1 && /#bad/.test(tmF[0].message), JSON.stringify(tmF));
-  const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const clock = run('render-check.mjs', path.join(S2, 'live-clock.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
   check('R18 ignores a live clock whose digits changed between captures', !clock.out.findings.some((f) => f.id === 'R18'), JSON.stringify(clock.out.findings.filter((f) => f.id === 'R18')));
   // R29: at 1920 the 1280 arrangement sits centred or merely stretches; a page that gains something at 1920 is not counted.
   const wide = (f, w = '1280,1920') => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', w).out.findings.filter((x) => x.id === 'R29');
@@ -200,7 +202,7 @@ else {
     check(`R33 ignores ${what}`, r.length === 0, JSON.stringify(r));
   }
   check('R33 is not measured on a mobile surface', r33('card-ground.html', '--surface', 'mobile').length === 0);
-  const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280');
+  const goodR = run('render-check.mjs', path.join(S2, 'good.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '320,1280', '--no-tiles');
   check('render finds nothing on good.html', goodR.out.findings.length === 0, JSON.stringify(goodR.out.findings.map((f) => f.id)));
   const snap = path.join(ROOT, '.design-nexus/test-before.json');
   run('render-check.mjs', path.join(S2, 'redesign-before.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--snapshot', snap);
