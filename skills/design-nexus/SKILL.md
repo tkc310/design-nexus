@@ -35,7 +35,7 @@ State the budget you chose in one line before starting.
 
 - **quick** (one component, a small fix): skip the three directions; one render or lint pass.
 - **standard** (default; one page or screen): full build loop, up to 2 fix rounds, then the second look.
-- **deep** (flagship page, brand-defining work, or the user asks): full loop, hero reviewed alone first, fresh-context review, up to 3 fix rounds, then the second look three times.
+- **deep** (flagship page, brand-defining work, or the user asks): full loop, hero reviewed alone first, fresh-context review, up to 3 fix rounds, then the second look.
 
 ## Build loop
 
@@ -54,7 +54,7 @@ State the budget you chose in one line before starting.
 6. **Verify with tools.** Run the lint, then the render check if available (see Tools). Fix every Floor finding. A Reflex finding is either fixed or kept with a one-line reason written in a code comment `design-nexus: keep R03 because ...`.
 7. **Critique.** Check first that the default render, before any scroll or interaction, shows the signature in its meaningful state (`references/craft.md` *Default render*). Then look at the screenshots at 320, 768, 1280, and 1920 (or the code, if no render is possible) against `references/audit.md` and `references/craft.md` *Responsive*. Cover the signature in the 1280 screenshot: if the rest could belong to any product, that is the first problem. List the top three problems, fix them, re-verify. Repeat up to the budget's round limit. In **deep**, ask a fresh-context subagent to run the audit when the agent supports subagents.
 8. **Remove one accessory** before finishing: the least necessary decoration, effect, or label.
-9. **Second look** (standard/deep). You have stopped seeing what is wrong with the page you just built. When the agent supports subagents, start one in a fresh context, give it the page's folder and the brief, and make `references/second-look.md` its whole task; it repeats steps 6 to 8 with new eyes and edits the page. In **deep**, run it three times: each time one finishes, cut its `## Second look` section out of `NOTES.md` and keep the text, start another subagent in a new fresh context with the same task (it must not learn that an earlier pass happened, or it stops without editing), and at the end put the sections back in order. When it cannot, say in your report that the second look is still owed, so the user can run that file in a new session.
+9. **Second look** (standard/deep). You have stopped seeing what is wrong with the page you just built. When the agent supports subagents, start one in a fresh context, give it the page's folder and the brief, and make `references/second-look.md` its whole task; it repeats steps 6 to 8 with new eyes and edits the page. When it cannot, say in your report that the second look is still owed, so the user can run that file in a new session.
 10. **Record.** Update `DESIGN.md` with new tokens or patterns, add rejected ideas to its *Learnings*, and add one line to *Looks used* (value, ground and accent hue, type genre, surface), so later work doesn't repeat itself. Record what shipped, not what was planned: the lint flags DESIGN.md colors the code doesn't use (N09), and every claim in your report or notes (a removed shadow, a fixed state) must be true of the final code.
 
 Report at the end: the direction, the signature, the lint and render results (counts by tier), and anything kept with a reason.
