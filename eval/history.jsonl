@@ -356,3 +356,5 @@
 {"run":"20261121-0644-v0.15.4-acc66b","version":"0.15.4","at":"2026-11-21T06:54:06.068Z","scale":"v1","mean_auto":39.3,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261121-0701-v0.15.5-wrd66a0","version":"0.15.5","at":"2026-11-21T07:03:21.909Z","scale":"v1","mean_auto":39,"mean_judge":null,"mean_total":null,"gate_failures":0}
 {"run":"20261121-0701-v0.15.5-wrd66b0","version":"0.15.5","at":"2026-11-21T07:05:28.441Z","scale":"v1","mean_auto":39,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261121-0701-v0.15.5-wrd66a","version":"0.15.5","at":"2026-11-21T07:09:53.524Z","scale":"v1","mean_auto":39,"mean_judge":null,"mean_total":null,"gate_failures":0}
+{"run":"20261121-0701-v0.15.5-wrd66b","version":"0.15.5","at":"2026-11-21T07:11:51.267Z","scale":"v1","mean_auto":39,"mean_judge":null,"mean_total":null,"gate_failures":0}
