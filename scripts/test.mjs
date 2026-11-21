@@ -212,6 +212,19 @@ else {
   check('render --compare accepts improved fields', !improved.out.findings.some((f) => f.id === 'F11'), JSON.stringify(improved.out.findings));
   const lost = run('render-check.mjs', path.join(S2, 'redesign-lost.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
   check('render --compare flags a removed field', lost.out.findings.some((f) => f.id === 'F11' && /company/.test(f.message)) && lost.code === 2);
+  const holdSnap = path.join(ROOT, '.design-nexus/test-hold.json');
+  const hold = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', holdSnap);
+  run('render-check.mjs', path.join(S2, 'hold-before.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--snapshot', holdSnap, '--keep', '.seats');
+  const hAccent = hold('hold-accent.html');
+  check('--hold: a restyle that keeps words and places finds no R35 or R36', !hAccent.out.findings.some((f) => /R35|R36/.test(f.id)) && hAccent.out.hold.prose_blocks_changed === 0, JSON.stringify(hAccent.out.findings));
+  const hPushed = hold('hold-pushed.html');
+  check('--hold flags R36 when the main action and the kept element leave the first screen', hPushed.out.findings.filter((f) => f.id === 'R36').length >= 2 && hPushed.out.findings.some((f) => f.id === 'R36' && /\.seats/.test(f.message)), JSON.stringify(hPushed.out.findings));
+  const hWords = hold('hold-reworded.html');
+  check('--hold flags R35 for a reworded button', hWords.out.findings.some((f) => f.id === 'R35' && /Book a class/.test(f.message)), JSON.stringify(hWords.out.findings));
+  const hCut = hold('hold-cut.html');
+  check('--hold lets prose be cut and reports it, with no R35', !hCut.out.findings.some((f) => f.id === 'R35') && hCut.out.hold.prose_blocks_changed === 1 && hCut.out.hold.prose_after < hCut.out.hold.prose_before, JSON.stringify(hCut.out));
+  const plainSnap = run('render-check.mjs', path.join(S2, 'hold-reworded.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
+  check('a snapshot without --hold does not measure R35 or R36', !plainSnap.out.findings.some((f) => /R35|R36/.test(f.id)));
 }
 
 const build = spawnSync(process.execPath, [path.join(ROOT, 'scripts/build.mjs')], { encoding: 'utf8' });

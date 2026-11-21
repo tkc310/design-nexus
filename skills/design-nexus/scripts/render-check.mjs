@@ -3,7 +3,7 @@
 // Needs Playwright (any install it can find). Without it, prints a skip notice and exits 0.
 // Usage:
 //   node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280,1920]   (R29 needs 1280 and 1920)
-//        [--surface mobile] [--snapshot before.json] [--compare before.json] [--json]
+//        [--surface mobile] [--snapshot before.json [--hold] [--keep "selector"]] [--compare before.json] [--json]
 //        [--first-screen] [--tiles]   (evaluation captures; findings are the same with or without them)
 // Exit: 0 clean or skipped, 2 floor findings, 1 usage or load error.
 import fs from 'node:fs';
@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { printFindings, summarize, tierOf, unmatchedFields } from './lib.mjs';
 
 const args = process.argv.slice(2);
-const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null, first: false, tiles: false };
+const opt = { out: '.design-nexus/shots', widths: [320, 768, 1280, 1920], json: false, surface: null, snapshot: null, compare: null, target: null, time: null, tz: null, first: false, tiles: false, hold: false, keep: [] };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--out') opt.out = args[++i];
@@ -23,6 +23,8 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--surface') opt.surface = args[++i];
   else if (a === '--snapshot') opt.snapshot = args[++i];
   else if (a === '--compare') opt.compare = args[++i];
+  else if (a === '--hold') opt.hold = true;
+  else if (a === '--keep') { opt.keep.push(args[++i]); opt.hold = true; }
   else if (a === '--time') opt.time = args[++i]; // ISO instant, e.g. 2026-11-04T10:30:00+09:00: pins the page clock
   else if (a === '--tz') opt.tz = args[++i]; // IANA zone for the page, e.g. Asia/Tokyo
   // Evaluation captures (eval/run.mjs score): the first screen as a visitor sees it, and the page in 900px tiles with
@@ -32,7 +34,7 @@ for (let i = 0; i < args.length; i++) {
   else opt.target = a;
 }
 if (!opt.target) {
-  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json] [--compare f.json] [--time ISO] [--tz Zone] [--first-screen] [--tiles] [--json]');
+  console.log('usage: node render-check.mjs <file.html|url> [--out dir] [--widths 320,768,1280] [--surface mobile] [--snapshot f.json [--hold] [--keep "selector"]] [--compare f.json] [--time ISO] [--tz Zone] [--first-screen] [--tiles] [--json]');
   process.exit(1);
 }
 
@@ -82,6 +84,7 @@ const add = (id, where, message) => {
 };
 const shots = [];
 let look = null;
+let hold = null;
 // Evaluation captures: which widths were tiled, how tall the page was, and which bars were laid out in flow.
 const TILE = { height: 900, step: 840, max: 30 };
 const capture = opt.first || opt.tiles ? { first_screen: opt.first, tiles: opt.tiles, tile_height: TILE.height, tile_step: TILE.step, widths: {} } : null;
@@ -468,6 +471,134 @@ function snapshot() {
     handlers: [...document.querySelectorAll('[onclick], [onsubmit], [onchange], form[action]')].map((e) => `${e.tagName.toLowerCase()} ${e.getAttribute('action') || ''}`.trim()),
     headings: [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => `${h.tagName.toLowerCase()} ${txt(h)}`),
   };
+}
+
+// --hold: what a change that only restyles (an accent, a prose cut) must leave alone. Words are read once at 1280:
+// prose is the text of a p, li, blockquote, figcaption or dd outside forms, tables, navs and controls; functional text
+// is everything else a reader acts on or reads a value from (labels, buttons, links, headings, hints, messages, cells,
+// placeholders, alt text) plus every figure, wherever it stands. Anchors are the things that must stay on the first
+// screen if they were there: the first filled action, the h1, each --keep element, and large figures.
+function holdWords() {
+  const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
+  const shown = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return false;
+    const c = getComputedStyle(el);
+    return c.visibility !== 'hidden' && c.display !== 'none';
+  };
+  const described = new Set([...document.querySelectorAll('[aria-describedby]')].flatMap((e) => (e.getAttribute('aria-describedby') || '').split(/\s+/)));
+  const HOLDER = 'form, table, nav, label, button, legend, select, summary, [role=alert], [role=status], [role=button], [aria-live]';
+  const proseOf = (el) => {
+    const p = el.closest('p, li, blockquote, figcaption, dd');
+    if (!p || p.closest(HOLDER)) return null;
+    for (let a = el; a; a = a.parentElement) if (a.id && described.has(a.id)) return null;
+    return p;
+  };
+  const func = [], prose = new Map();
+  for (const el of document.querySelectorAll('body *')) {
+    if (el.closest('script, style, noscript, template, svg')) continue;
+    const own = norm([...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' '));
+    if (!own || !shown(el)) continue;
+    const p = proseOf(el);
+    if (p) { if (!prose.has(p)) prose.set(p, norm(p.innerText)); } else func.push(own);
+  }
+  for (const el of document.querySelectorAll('input[placeholder], textarea[placeholder], img[alt], [aria-label]')) {
+    const t = norm(el.getAttribute('placeholder') || el.getAttribute('alt') || el.getAttribute('aria-label'));
+    if (t && (shown(el) || el.tagName === 'IMG')) func.push(t);
+  }
+  const proseList = [...prose.values()].filter(Boolean);
+  const figures = proseList.flatMap((t) => t.match(/[¥$€£]?\d[\d,.:\/]*\d|\d/g) || []);
+  return { func, prose: proseList, figures };
+}
+
+function holdAnchors({ keep }) {
+  const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
+  const shown = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return false;
+    const c = getComputedStyle(el);
+    return c.visibility !== 'hidden' && c.display !== 'none';
+  };
+  const rgb = (v) => { const m = (v || '').match(/[\d.]+/g); return m && m.length >= 3 ? { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 } : null; };
+  const fill = (el) => { const c = rgb(getComputedStyle(el).backgroundColor); return c && c.a >= 0.6 ? c : null; };
+  const behind = (el) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = fill(e); if (c) return c; } return { r: 255, g: 255, b: 255 }; };
+  const top = (el) => Math.round(el.getBoundingClientRect().top + scrollY);
+  const out = [];
+  for (const el of document.querySelectorAll('a[href], button, [role="button"], input[type="submit"]')) {
+    if (!shown(el) || el.disabled) continue;
+    const r = el.getBoundingClientRect();
+    const c = fill(el);
+    if (r.width < 40 || r.height < 24 || !c) continue;
+    const b = behind(el);
+    if (Math.abs(c.r - b.r) + Math.abs(c.g - b.g) + Math.abs(c.b - b.b) < 90) continue;
+    out.push({ kind: 'action', key: norm(el.textContent || el.value).slice(0, 60), top: top(el) });
+    break;
+  }
+  const h1 = [...document.querySelectorAll('h1')].find(shown);
+  if (h1) out.push({ kind: 'h1', key: 'h1', top: top(h1) });
+  for (const k of keep) {
+    let el = null;
+    try { el = [...document.querySelectorAll(k)].find(shown) || null; } catch { /* bad selector: reported as missing */ }
+    out.push({ kind: 'keep', key: k, top: el ? top(el) : null });
+  }
+  const body = parseFloat(getComputedStyle(document.body).fontSize) || 16;
+  let n = 0;
+  for (const el of document.querySelectorAll('body *')) {
+    if (n >= 12) break;
+    if (el.closest('script, style, svg') || !shown(el)) continue;
+    const own = norm([...el.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join(' '));
+    if (!/\d/.test(own) || parseFloat(getComputedStyle(el).fontSize) < body * 1.5) continue;
+    out.push({ kind: 'figure', key: own.slice(0, 60), top: top(el) });
+    n++;
+  }
+  return out;
+}
+
+async function holdRead(page, keep) {
+  await page.evaluate(() => document.fonts.ready).catch(() => {});
+  const words = await page.evaluate(holdWords);
+  const anchors = {};
+  for (const [w, h] of [[1280, 900], [320, 640]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(200);
+    anchors[w] = await page.evaluate(holdAnchors, { keep });
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  return { keep, ...words, anchors };
+}
+
+// Multiset difference: what `a` has that `b` lacks.
+function lacking(a, b) {
+  const left = new Map();
+  for (const t of b) left.set(t, (left.get(t) || 0) + 1);
+  const out = [];
+  for (const t of a) { if (left.get(t)) left.set(t, left.get(t) - 1); else out.push(t); }
+  return out;
+}
+
+function holdCompare(was, now, add) {
+  const cut = (t) => (t.length > 70 ? t.slice(0, 67) + '…' : t);
+  const gone = lacking(was.func, now.func), came = lacking(now.func, was.func);
+  for (const t of gone.slice(0, 10)) add('R35', 'words', `functional text changed or gone: "${cut(t)}"; a label, button, heading, hint, message, cell or alt text is not shortened or reworded here: put it back`);
+  if (gone.length > 10) add('R35', 'words', `${gone.length - 10} more functional text(s) changed or gone`);
+  for (const t of came.slice(0, 6)) add('R35', 'words', `functional text added: "${cut(t)}"; this pass adds no words`);
+  const figGone = lacking(was.figures, now.figures), figCame = lacking(now.figures, was.figures);
+  if (figGone.length) add('R35', 'figures', `figure(s) gone from the prose: ${figGone.slice(0, 8).join(', ')}; a price, time, count or date the reader decides by stays`);
+  if (figCame.length) add('R35', 'figures', `figure(s) added to the prose: ${figCame.slice(0, 8).join(', ')}; do not add a figure the brief does not give`);
+  for (const [w, line] of [[1280, 900], [320, 640]]) {
+    const after = [...(now.anchors[w] || [])];
+    for (const a of was.anchors[w] || []) {
+      if (a.kind === 'keep' && a.top == null) continue;
+      const i = after.findIndex((b) => b.kind === a.kind && b.key === a.key);
+      const b = i >= 0 ? after.splice(i, 1)[0] : null;
+      const what = a.kind === 'action' ? `the main action "${a.key}"` : a.kind === 'h1' ? 'the h1' : a.kind === 'keep' ? `the kept element ${a.key}` : `the figure "${a.key}"`;
+      if (a.kind === 'keep' && (!b || b.top == null)) { add('R36', `@${w}px`, `${what} is no longer on the page`); continue; }
+      if (!b || a.top >= line) continue;
+      if (b.top >= line && b.top - a.top >= 24) add('R36', `@${w}px`, `${what} was on the first screen (${a.top}px) and now starts at ${b.top}px, below it (${line}px); nothing this pass adds may push it down: undo and make a smaller change`);
+    }
+  }
+  const chars = (l) => l.reduce((n, t) => n + t.length, 0);
+  return { prose_before: chars(was.prose), prose_after: chars(now.prose), prose_blocks_changed: lacking(was.prose, now.prose).length, prose_blocks_added: lacking(now.prose, was.prose).length };
 }
 
 // F02: each focusable element is focused in turn and compared before and after. The indication may also be drawn on a
@@ -1414,9 +1545,11 @@ try {
 
   if (opt.snapshot || opt.compare) {
     const snap = await page.evaluate(snapshot);
+    const before = opt.compare ? JSON.parse(fs.readFileSync(opt.compare, 'utf8')) : null;
+    if (opt.hold || before?.hold) snap.hold = await holdRead(page, opt.hold ? opt.keep : before.hold.keep || []);
     if (opt.snapshot) fs.writeFileSync(opt.snapshot, JSON.stringify(snap, null, 2));
     if (opt.compare) {
-      const before = JSON.parse(fs.readFileSync(opt.compare, 'utf8'));
+      if (before.hold) hold = holdCompare(before.hold, snap.hold, add);
       // Links must survive by href. Fields must survive, but a field may improve: gain a name or id,
       // move from type=text to a more specific text type, or get a real label. Buttons, headings, and handlers
       // may change form but not be dropped.
@@ -1439,9 +1572,10 @@ try {
 }
 
 const counts = summarize(findings);
-if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(capture ? { capture } : {}) }, null, 2));
+if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(hold ? { hold } : {}), ...(capture ? { capture } : {}) }, null, 2));
 else {
   printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
+  if (hold) console.log(`\nprose: ${hold.prose_before} → ${hold.prose_after} characters, ${hold.prose_blocks_changed} block(s) changed or cut, ${hold.prose_blocks_added} added`);
   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
 }
 process.exit(counts.floor ? 2 : 0);
