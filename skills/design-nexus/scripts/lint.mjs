@@ -54,8 +54,6 @@ const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
 const snip = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
 
 // Aggregate state across files.
-const JP_WEB_FONTS = /^(noto (sans|serif) jp|ibm plex sans jp|m plus (1p?|2|rounded 1c|1 code)|murecho|line seed jp|zen (kaku gothic (new|antique)|maru gothic|old mincho|antique( soft)?|kurenaido)|biz udp?(gothic|mincho)|kiwi maru|shippori (mincho( b1)?|antique( b1)?)|kaisei (tokumin|opti|decol|harunoumi)|hina mincho|klee one|yuji (syuku|boku|mai)|dela gothic one|rocknroll one|reggae one|stick|dotgothic16|rampart one|mochiy pop (one|p one)|sawarabi (gothic|mincho)|kosugi( maru)?|potta one|yusei magic|hachi maru pop|yomogi|new tegomin)$/i;
-const JP_SYSTEM_FONTS = /^(hiragino[\w ]*|ヒラギノ.*|yu ?(gothic|mincho)( ui| medium)?|游ゴシック.*|游明朝.*|meiryo( ui)?|メイリオ|ms p?(gothic|mincho)|noto (sans|serif) cjk jp)$/i;
 const agg = { hexes: new Map(), motionAt: null, hasReducedMotion: false, radiusBig: [], blur: [], kept: new Map(), darkScheme: false, fontsUsed: new Map(), fontsLoaded: new Set(), anyLoader: false, props: new Map() };
 
 // Faces that ship with common operating systems; declaring them needs no loader.
@@ -238,41 +236,6 @@ for (const file of files) {
     if (/noto sans jp/i.test(decl) && decl.split(',').length <= 2 && !seenFont.has('noto')) {
       seenFont.add('noto');
       add('R01', idx, 'Noto Sans JP alone; consider a Latin pairing or a family with more voice (see japanese.md)');
-    }
-  }
-
-  // R34 Japanese web fonts: heavy loading, no swap, or a stack with no same-genre system face behind the web font.
-  {
-    const jpFams = new Set(), jpPairs = new Set();
-    let noSwap = null;
-    for (const m of text.matchAll(/fonts\.googleapis\.com\/css2?\?([^"'\s)>]+)/g)) {
-      const q = m[1].replace(/&amp;/g, '&');
-      const fams = [...q.matchAll(/family=([^&]+)/g)].flatMap((f) => safeDecode(f[1]).split('|')).map((f) => f.replace(/\+/g, ' '));
-      const jp = fams.filter((f) => JP_WEB_FONTS.test(f.split(':')[0].trim()));
-      if (!jp.length) continue;
-      if (!/[?&]display=(swap|optional|fallback)\b/.test(q) && noSwap === null) noSwap = m.index;
-      if (/[?&]text=/.test(q)) continue; // a glyph subset for a few fixed strings costs a few kilobytes
-      for (const f of jp) {
-        const [name, axes = ''] = f.split(':');
-        jpFams.add(name.trim().toLowerCase());
-        const weights = (axes.split('@')[1] || '400').split(/[;,]/).filter(Boolean);
-        for (const w of weights) jpPairs.add(`${name.trim().toLowerCase()} ${w}`);
-      }
-    }
-    const firstJp = text.search(/fonts\.googleapis\.com\/css2?\?/);
-    if (jpFams.size > 2 || jpPairs.size > 3) add('R34', firstJp, `${jpFams.size} Japanese web families in ${jpPairs.size} family-weight pairs; keep to 2 families and 3 pairs (system stack for body, or a text= subset for a display face that sets a few fixed strings; see japanese.md)`);
-    if (noSwap !== null) add('R34', noSwap, 'Japanese web font loaded without display=swap; text stays invisible while the font downloads');
-    const stacks = [
-      ...[...text.matchAll(/font-family\s*:\s*([^;}{\n]+)/g)].map((m) => [m.index, m[1]]),
-      ...[...text.matchAll(/--[\w-]+\s*:\s*([^;}\n]+)/g)].map((m) => [m.index, m[1]]),
-    ];
-    for (const [idx, v] of stacks) {
-      if (!/,/.test(v) && !/["']/.test(v)) continue;
-      const names = v.split(',').map((x) => x.trim().replace(/^["']|["']$/g, ''));
-      if (!names.some((x) => JP_WEB_FONTS.test(x))) continue;
-      if (names.some((x) => JP_SYSTEM_FONTS.test(x))) continue;
-      add('R34', idx, 'A stack names a Japanese web font with no Japanese system face behind it; add system faces of the same genre (Hiragino Sans, Yu Gothic, Meiryo, or Hiragino Mincho ProN, Yu Mincho) before the generic family', v.trim().slice(0, 80));
-      break;
     }
   }
 

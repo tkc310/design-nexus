@@ -14,7 +14,7 @@ Short commands for adjusting an existing design. Each changes the smallest set o
 | de-animate | Remove motion | Delete decorative motion, keep feedback and continuity |
 | densify | More information per screen | Smaller spacing steps, compact rows, tabular data |
 | airy | More breathing room | Larger spacing steps, wider margins, fewer items per row |
-| polish | Finish-tier pass | Fix N-series and alignment, states; remove machine-made tells (`audit.md`); cut pass on the words (`craft.md` *Words*) |
+| polish | Finish-tier pass | Fix N-series and alignment, states, copy |
 | harden | Production readiness | Worst-case data (very long names, huge counts, empty lists, missing images), overflow, empty/error/loading states, i18n, a11y |
 
 After steering, update DESIGN.md if a token changed.

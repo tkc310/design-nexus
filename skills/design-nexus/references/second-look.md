@@ -4,7 +4,7 @@ You are the second look at a page somebody else has just built with this skill. 
 
 1. Read `SKILL.md` and the references its mode and surface call for. Read the brief and `DESIGN.md`.
 2. Do not redo steps 1 to 5. Do not change the direction, the roles of the tokens, or the signature. You are finishing this page, not designing another one.
-3. Carry out steps 6 to 8 on the page exactly as the skill and its references describe them: run the lint and the render check, fix every Floor finding, look at every screenshot against `references/audit.md` and `references/craft.md` *Responsive*, list the top three problems (check `references/audit.md` *Machine-made tells* first), fix them, re-verify, then remove one accessory and run the cut pass on the words. Stay inside the round limit of the budget.
+3. Carry out steps 6 to 8 on the page exactly as the skill and its references describe them: run the lint and the render check, fix every Floor finding, look at every screenshot against `references/audit.md` and `references/craft.md` *Responsive*, list the top three problems, fix them, re-verify, and remove one accessory. Stay inside the round limit of the budget.
 4. Keep the deliverable in the form it has (for example a single self-contained `index.html`).
 5. Append a section `## Second look` to `NOTES.md` that lists each change you made and why, or says "no changes". Update `DESIGN.md` only where a change made it untrue.
 

@@ -65,17 +65,6 @@ Design each width; don't let it happen. The middle width (about 768px, a tablet 
 - Every interactive element has: default, hover, focus-visible, active, disabled. Inputs also: error, with message tied by `aria-describedby`.
 - Every data view has: loading (skeleton matching final layout), empty (explains and invites), error (what happened + how to fix), and overflow (long names, many items).
 - Buttons say what they do ("Save changes", not "Submit").
-- **Plan the states of the main component before building it.** In NOTES.md, list each state of the component the job runs through (the filter, the form, the booking list, the table), the control that reaches it, and the way back. The control is one the product would really have (a month select, a search field, a retry button), never a demo switch. A state that only going offline or editing the code can show does not count as designed.
-- **Every empty, failed, or blocked state says why and carries its way out, in place**: retry beside the failure, "clear the filter" inside the empty result, the next open date beside the full one. A notice area with nothing to report says so instead of vanishing.
-- **A state is marked with words or shape, not color alone**: departed, full, done, and selected each have a label or a mark a screen reader and a monochrome print would keep.
-
-## Words
-Too much text is the plainest sign of a generated page, and every sentence costs the reader attention. Structure speaks first; words fill only what structure cannot say.
-- **Let structure say it.** Before writing a sentence, ask whether position, grouping, a heading, a label, a table header, a figure with its unit, an icon beside its name, or the control itself already says it. If so, there is no sentence. A step list replaces "first…, then…"; a table replaces a paragraph that compares; a status mark replaces "this item is currently…".
-- **Cut pass, before the first verify (step 6) and again at step 8.** Read every visible string and delete: the intro paragraph under a heading that the section's content already explains; a caption that repeats its heading; "here you can…", "this section shows…"; adjectives and reassurance ("simple", "powerful", "安心の", "こだわりの"); a second sentence that restates the first; a subhead under a headline that only rephrases it.
-- **What stays is short and plain.** One idea per string. A heading is a phrase, not a sentence with a clause (about 8 words, or 20 Japanese characters). A paragraph on a landing or product screen is at most two sentences. A button is one to three words. Write it the way a person at the counter would say it: no paired synonyms, no lists of three for rhythm, no "not only… but…", no question the page then answers itself.
-- **Never cut what a person needs to decide or act**: prices, limits, dates and times, what a state means, what went wrong and how to fix it, field labels, legal notes, `alt` text. Fewer words must not mean a missing fact; move a needed detail into a label, a table cell, or a disclosure instead of deleting it.
-- **Five-second test.** Look at the first screen for five seconds, then say what this is and what to do next. If the answer needed the paragraph, the structure is not doing its job: fix the structure, then delete the paragraph.
 
 ## Imagery and icons
 - Prefer real artifacts of the subject over stock. If using photos, credit them and size them (`width`/`height`) to avoid layout shift.
