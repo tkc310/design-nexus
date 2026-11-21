@@ -40,14 +40,23 @@ const JP_WEB = /^(noto (sans|serif) jp|ibm plex sans jp|m plus (1p?|2|rounded 1c
     const cdp = await ctx.newCDPSession(page);
     await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
     const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
-    const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: '[data-fp]' });
+    // Walk text nodes, not elements: an element's platform fonts include its descendants' text,
+    // which would count a child set in a system face as a leak of the parent's web font.
     const usage = {};
-    let leak = 0, jpWebGlyphs = 0;
-    for (const id of nodeIds.slice(0, 1500)) {
+    let leak = 0, jpWebGlyphs = 0, seen = 0;
+    const attr = (n, k) => { const a = n.attributes || []; const i = a.indexOf(k); return i >= 0 && i % 2 === 0 ? a[i + 1] : null; };
+    const texts = [];
+    const walk = (n, first) => {
+      const fp = n.nodeType === 1 ? attr(n, 'data-fp') : null;
+      const cur = fp != null ? fp : first;
+      if (n.nodeType === 3 && cur != null && n.nodeValue && n.nodeValue.trim()) texts.push([n.nodeId, cur]);
+      for (const c of n.children || []) walk(c, n.nodeType === 1 && fp == null ? null : cur);
+    };
+    walk(root, null);
+    for (const [id, first] of texts.slice(0, 3000)) {
       try {
-        const { attributes } = await cdp.send('DOM.getAttributes', { nodeId: id });
-        const first = attributes[attributes.indexOf('data-fp') + 1];
         const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId: id });
+        seen++;
         for (const ft of fonts) {
           const k = (ft.isCustomFont ? 'web:' : 'sys:') + ft.familyName;
           usage[k] = (usage[k] || 0) + ft.glyphCount;
@@ -56,7 +65,7 @@ const JP_WEB = /^(noto (sans|serif) jp|ibm plex sans jp|m plus (1p?|2|rounded 1c
       } catch {}
     }
     const name = f.includes('/runs/') ? f.split('/runs/')[1] : f;
-    console.log(JSON.stringify({ page: name, fontReqs, fontKB: Math.round(fontBytes / 1024), jpWebGlyphs, leak, usage }));
+    console.log(JSON.stringify({ page: name, textNodes: seen, fontReqs, fontKB: Math.round(fontBytes / 1024), jpWebGlyphs, leak, usage }));
     await ctx.close();
   }
   await browser.close();
