@@ -1,5 +1,5 @@
 // M-067: try a steer command on pages that already exist.
-//   node eval/steer.mjs <sourceRun> --label <name> --command <word> --skill <skillDir> [--task "<what to do; SKILL stands for the skill folder>"] [--ask "<the owner's sentence>"] [--cases 01,02]
+//   node eval/steer.mjs <sourceRun> --label <name> --command <word> --skill <skillDir> [--task "<what to do; SKILLDIR stands for the skill folder>"] [--ask "<the owner's sentence>"] [--cases 01,02]
 // Writes two runs: <stamp>-v<version>-<name> (each case folder holds the source page and a STEER_PROMPT.md for a
 // fresh-context agent) and <stamp>-v<version>-<name>0 (the same pages, untouched: the "before" side, to be scored and
 // rendered in today's environment). Then: run the agents, `score` both runs, `pair --base <name>0 --run <name>`.
@@ -9,7 +9,7 @@ const args = process.argv.slice(2);
 const src = path.resolve(args[0]);
 const get = (k) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : null; };
 const label = get('label'), command = get('command'), skillSrc = get('skill') && path.resolve(get('skill')), ask = get('ask'), task = get('task'), only = get('cases')?.split(',');
-if (!fs.existsSync(src) || !label || !command || !skillSrc) { console.error('usage: node eval/steer.mjs <sourceRun> --label <name> --command <word> --skill <skillDir> [--task "<what to do; SKILL stands for the skill folder>"] [--ask "..."] [--cases 01,02]'); process.exit(1); }
+if (!fs.existsSync(src) || !label || !command || !skillSrc) { console.error('usage: node eval/steer.mjs <sourceRun> --label <name> --command <word> --skill <skillDir> [--task "<what to do; SKILLDIR stands for the skill folder>"] [--ask "..."] [--cases 01,02]'); process.exit(1); }
 const version = fs.readFileSync(path.join(skillSrc, '../../VERSION'), 'utf8').trim();
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})(\d{4})$/, '$1-$2');
 const KEEP = /^(index\.html|DESIGN\.md|NOTES\.md|SOURCE\.html|[^/]+\.(png|jpg|jpeg|svg|webp))$/;
@@ -30,7 +30,7 @@ for (const suffix of ['', '0']) {
     const tools = s.split('\n').find((l) => l.startsWith('Run the skill\'s lint and render check')).split(old).join(skill);
     const brief = s.slice(s.indexOf('## Brief'));
     fs.writeFileSync(path.join(dir, 'STEER_PROMPT.md'), [
-      ...(task ? [`The page in this folder (${dir}) is finished: \`index.html\`, with its \`DESIGN.md\` and \`NOTES.md\`. The design-nexus skill is in \`${skill}\`. ${task.split('SKILL').join(skill)}`] : [
+      ...(task ? [`The page in this folder (${dir}) is finished: \`index.html\`, with its \`DESIGN.md\` and \`NOTES.md\`. The design-nexus skill is in \`${skill}\`. ${task.split('SKILLDIR').join(skill)}`] : [
       `The page in this folder (${dir}) is finished: \`index.html\`, with its \`DESIGN.md\` and \`NOTES.md\`. Its owner now asks for one adjustment, the design-nexus steer command \`${command}\`${ask ? `, in these words: "${ask}"` : ''}.`,
       `Use the design-nexus skill in \`${skill}\`: read \`${skill}/SKILL.md\` for how a steer runs, then \`${skill}/references/steer.md\` and whatever its \`${command}\` row points to, and carry out that one command on \`index.html\`. Do nothing else to the page.`]),
       `Work only inside this folder. Do not look at other case folders or earlier runs.`,
