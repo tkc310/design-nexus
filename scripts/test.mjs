@@ -33,6 +33,10 @@ const goodMobile = run('lint.mjs', path.join(ROOT, 'eval/fixtures/good.html'), '
 check('lint accepts --surface like render-check', goodMobile.code === 0 && goodMobile.out.findings.length === 0);
 
 const S2 = path.join(ROOT, 'eval/fixtures');
+const jaHeavy = run('lint.mjs', path.join(S2, 'ja-fonts-heavy.html')).out.findings.filter((f) => f.id === 'R34');
+check('lint flags R34 for too many Japanese web font files, a missing display=swap, and a stack with no Japanese system face', jaHeavy.length === 3 && jaHeavy.some((f) => /3 Japanese web families/.test(f.message)) && jaHeavy.some((f) => /display=swap/.test(f.message)) && jaHeavy.some((f) => /system face/.test(f.message)), JSON.stringify(jaHeavy.map((f) => f.message)));
+const jaLight = run('lint.mjs', path.join(S2, 'ja-fonts-light.html')).out.findings.filter((f) => f.id === 'R34');
+check('R34 ignores a text= glyph subset, Latin families and their weights, a system body stack, and non-font custom properties', jaLight.length === 0, JSON.stringify(jaLight.map((f) => f.message)));
 const unloaded = run('lint.mjs', path.join(S2, 'unloaded-font.css'));
 check('lint flags R16 for a font that is never loaded', unloaded.out.findings.some((f) => f.id === 'R16' && /fraunces/i.test(f.message)));
 check('lint does not flag system fonts as unloaded', !unloaded.out.findings.some((f) => f.id === 'R16' && /Hiragino/i.test(f.message)));
