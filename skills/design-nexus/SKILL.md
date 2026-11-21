@@ -23,7 +23,7 @@ When instructions disagree, the higher one wins. Never load another design skill
 | **build** | New page, screen, or component | `references/direction.md`, `references/craft.md`, surface reference |
 | **redesign** | Restyle or rebuild something that exists | `references/redesign.md`, then as build |
 | **audit** | "review", "critique", "what's wrong with" | `references/checks.md`, `references/audit.md` |
-| **steer** | One-word adjustments: bolder, quieter, distill, colorize, typeset, relayout, animate, de-animate, densify, airy, polish, harden | `references/steer.md` |
+| **steer** | One-word adjustments: bolder, quieter, distill, colorize, typeset, relayout, animate, de-animate, densify, airy, accent, polish, harden | `references/steer.md` |
 | **system** | No `DESIGN.md` yet and work will span several screens, or the user asks to set up a design system | `templates/DESIGN.md`, `references/direction.md` |
 | **retro** | After the user gives design feedback, or at the end of a session | `references/retro.md` |
 

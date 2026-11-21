@@ -14,6 +14,7 @@ Short commands for adjusting an existing design. Each changes the smallest set o
 | de-animate | Remove motion | Delete decorative motion, keep feedback and continuity |
 | densify | More information per screen | Smaller spacing steps, compact rows, tabular data |
 | airy | More breathing room | Larger spacing steps, wider margins, fewer items per row |
+| accent | One refined accent, on request (marketing surfaces) | Read `accent.md`: change how one thing already on the page looks (its ground, edge, setting, or crop); never its size, position, or words |
 | polish | Finish-tier pass | Fix N-series and alignment, states, copy |
 | harden | Production readiness | Worst-case data (very long names, huge counts, empty lists, missing images), overflow, empty/error/loading states, i18n, a11y |
 

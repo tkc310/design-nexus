@@ -33,6 +33,10 @@ const goodMobile = run('lint.mjs', path.join(ROOT, 'eval/fixtures/good.html'), '
 check('lint accepts --surface like render-check', goodMobile.code === 0 && goodMobile.out.findings.length === 0);
 
 const S2 = path.join(ROOT, 'eval/fixtures');
+const jaHeavy = run('lint.mjs', path.join(S2, 'ja-fonts-heavy.html')).out.findings.filter((f) => f.id === 'R34');
+check('lint flags R34 for too many Japanese web font files, a missing display=swap, and a stack with no Japanese system face', jaHeavy.length === 3 && jaHeavy.some((f) => /3 Japanese web families/.test(f.message)) && jaHeavy.some((f) => /display=swap/.test(f.message)) && jaHeavy.some((f) => /system face/.test(f.message)), JSON.stringify(jaHeavy.map((f) => f.message)));
+const jaLight = run('lint.mjs', path.join(S2, 'ja-fonts-light.html')).out.findings.filter((f) => f.id === 'R34');
+check('R34 ignores a text= glyph subset, Latin families and their weights, a system body stack, and non-font custom properties', jaLight.length === 0, JSON.stringify(jaLight.map((f) => f.message)));
 const unloaded = run('lint.mjs', path.join(S2, 'unloaded-font.css'));
 check('lint flags R16 for a font that is never loaded', unloaded.out.findings.some((f) => f.id === 'R16' && /fraunces/i.test(f.message)));
 check('lint does not flag system fonts as unloaded', !unloaded.out.findings.some((f) => f.id === 'R16' && /Hiragino/i.test(f.message)));
@@ -208,6 +212,19 @@ else {
   check('render --compare accepts improved fields', !improved.out.findings.some((f) => f.id === 'F11'), JSON.stringify(improved.out.findings));
   const lost = run('render-check.mjs', path.join(S2, 'redesign-lost.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
   check('render --compare flags a removed field', lost.out.findings.some((f) => f.id === 'F11' && /company/.test(f.message)) && lost.code === 2);
+  const holdSnap = path.join(ROOT, '.design-nexus/test-hold.json');
+  const hold = (f) => run('render-check.mjs', path.join(S2, f), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', holdSnap);
+  run('render-check.mjs', path.join(S2, 'hold-before.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--snapshot', holdSnap, '--keep', '.seats');
+  const hAccent = hold('hold-accent.html');
+  check('--hold: a restyle that keeps words and places finds no R35 or R36', !hAccent.out.findings.some((f) => /R35|R36/.test(f.id)) && hAccent.out.hold.prose_blocks_changed === 0, JSON.stringify(hAccent.out.findings));
+  const hPushed = hold('hold-pushed.html');
+  check('--hold flags R36 when the main action and the kept element leave the first screen', hPushed.out.findings.filter((f) => f.id === 'R36').length >= 2 && hPushed.out.findings.some((f) => f.id === 'R36' && /\.seats/.test(f.message)), JSON.stringify(hPushed.out.findings));
+  const hWords = hold('hold-reworded.html');
+  check('--hold flags R35 for a reworded button', hWords.out.findings.some((f) => f.id === 'R35' && /Book a class/.test(f.message)), JSON.stringify(hWords.out.findings));
+  const hCut = hold('hold-cut.html');
+  check('--hold lets prose be cut and reports it, with no R35', !hCut.out.findings.some((f) => f.id === 'R35') && hCut.out.hold.prose_blocks_changed === 1 && hCut.out.hold.prose_after < hCut.out.hold.prose_before, JSON.stringify(hCut.out));
+  const plainSnap = run('render-check.mjs', path.join(S2, 'hold-reworded.html'), '--out', path.join(ROOT, '.design-nexus/test-shots'), '--widths', '1280', '--compare', snap);
+  check('a snapshot without --hold does not measure R35 or R36', !plainSnap.out.findings.some((f) => /R35|R36/.test(f.id)));
 }
 
 const build = spawnSync(process.execPath, [path.join(ROOT, 'scripts/build.mjs')], { encoding: 'utf8' });
