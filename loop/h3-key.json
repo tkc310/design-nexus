@@ -1,0 +1,110 @@
+{
+ "p01": {
+  "group": "second",
+  "case": "01-lp-devtool",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1030-v0.15.0-exp077a",
+   "B": "20261115-2355-v0.15.0-exp066a"
+  }
+ },
+ "p02": {
+  "group": "second",
+  "case": "02-lp-ja-craft",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1030-v0.15.0-exp077a",
+   "B": "20261115-2355-v0.15.0-exp066a"
+  }
+ },
+ "p03": {
+  "group": "second",
+  "case": "03-dash-clinic",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1030-v0.15.0-exp077a",
+   "B": "20261115-2355-v0.15.0-exp066a"
+  }
+ },
+ "p04": {
+  "group": "second",
+  "case": "05-mobile-transit",
+  "A": "control",
+  "runs": {
+   "A": "20261115-2355-v0.15.0-exp066a",
+   "B": "20261127-1030-v0.15.0-exp077a"
+  }
+ },
+ "p05": {
+  "group": "tells",
+  "case": "02-lp-ja-craft",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1053-v0.15.5+tells-x078bA",
+   "B": "20261127-1053-v0.15.5-x078aA"
+  }
+ },
+ "p06": {
+  "group": "tells",
+  "case": "03-dash-clinic",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1053-v0.15.5+tells-x078bA",
+   "B": "20261127-1053-v0.15.5-x078aA"
+  }
+ },
+ "p07": {
+  "group": "tells",
+  "case": "06-redesign",
+  "A": "control",
+  "runs": {
+   "A": "20261127-1053-v0.15.5-x078aA",
+   "B": "20261127-1053-v0.15.5+tells-x078bA"
+  }
+ },
+ "p08": {
+  "group": "tells",
+  "case": "04-settings-form",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1053-v0.15.5+tells-x078bB",
+   "B": "20261127-1053-v0.15.5-x078aB"
+  }
+ },
+ "p09": {
+  "group": "once",
+  "case": "01-lp-devtool",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1253-v0.15.5-x081a",
+   "B": "20261127-1054-v0.15.5-x081ca"
+  }
+ },
+ "p10": {
+  "group": "once",
+  "case": "02-lp-ja-craft",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1253-v0.15.5-x081a",
+   "B": "20261127-1054-v0.15.5-x081ca"
+  }
+ },
+ "p11": {
+  "group": "once",
+  "case": "01-lp-devtool",
+  "A": "variant",
+  "runs": {
+   "A": "20261127-1253-v0.15.5-x081b",
+   "B": "20261127-1054-v0.15.5-x081cb"
+  }
+ },
+ "p12": {
+  "group": "once",
+  "case": "02-lp-ja-craft",
+  "A": "control",
+  "runs": {
+   "A": "20261127-1054-v0.15.5-x081cb",
+   "B": "20261127-1253-v0.15.5-x081b"
+  }
+ }
+}
