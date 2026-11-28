@@ -1415,6 +1415,9 @@ try {
   for (const width of opt.widths) {
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ...(opt.tz ? { timezoneId: opt.tz } : {}) });
     const page = await ctx.newPage();
+    // F14: an uncaught script error while the page loads (a syntax error can leave a list or a form empty).
+    const scriptErrors = [];
+    page.on('pageerror', (e) => scriptErrors.push(String(e.message || e).split('\n')[0].slice(0, 160)));
     if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
@@ -1427,6 +1430,7 @@ try {
       new Promise((r) => setTimeout(r, 5000)),
     ])).catch(() => {});
     await page.waitForTimeout(400);
+    if (width === opt.widths[0]) for (const m of [...new Set(scriptErrors)]) add('F14', 'script', `Uncaught error while the page loads: ${m}. Fix it; part of the page may not render.`);
     const file = path.join(opt.out, `w${width}.png`);
     if (opt.first) {
       const first = path.join(opt.out, `w${width}-first.png`);

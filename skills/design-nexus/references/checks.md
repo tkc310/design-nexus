@@ -25,6 +25,7 @@ Audit severity maps as: Floor → P0, Reflex that hurts the brief → P1, other 
 | F11 | Redesign lost a link, field, handler, or heading from the before-snapshot (a field that gained a name, id, label, or more specific text type still counts as kept) | render `--compare` |
 | F12 | Text smaller than 12px | lint, render |
 | F13 | A control's `aria-label` leaves out words it shows (WCAG 2.5.3 Label in Name); toggles' on/off state text is exempt | render |
+| F14 | An uncaught script error while the page loads (a syntax error or a failed call can leave a list, a form, or a state empty) | render |
 
 ## Reflex
 

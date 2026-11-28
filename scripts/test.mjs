@@ -253,5 +253,14 @@ if (repFact && !repFact.skipped) {
   check('--repeats ignores button, link and nav text and code samples', (repBtn.repeats || []).length === 0, JSON.stringify(repBtn.repeats));
 }
 
+const f14 = (f) => { const r = spawnSync(process.execPath, [path.join(S, 'render-check.mjs'), path.join(ROOT, 'eval/fixtures', f), '--widths', '320,1280', '--json', '--out', fs.mkdtempSync(path.join(os.tmpdir(), 'dn-f14-'))], { encoding: 'utf8' }); try { return JSON.parse(r.stdout); } catch { return null; } };
+const se = f14('script-error.html');
+if (se && !se.skipped) {
+  const n = se.findings.filter((f) => f.id === 'F14');
+  check('render flags F14 once for an uncaught script error', n.length === 1 && /Uncaught error/.test(n[0].message), JSON.stringify(n));
+  const ok = f14('repeats-fact.html');
+  check('render does not flag F14 on a page without script errors', !ok.findings.some((f) => f.id === 'F14'));
+}
+
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);
