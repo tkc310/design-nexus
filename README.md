@@ -8,7 +8,7 @@
 - **領域**: マーケ / プロダクトUI / モバイル を切り替え、和文組版にも対応
 - **改善ループ**: 評価ケース・ルーブリック・自動採点・審査エージェント・採用判定で、スキル自体を更新し続けられる
 
-調査と比較は [docs/comparison.md](docs/comparison.md)、X 上のスキルの検証（2026-10-31）は [docs/design-skills.md](docs/design-skills.md) にあります。流行りのデザイン手法は [docs/design-trends/](docs/design-trends/README.md) に、月次で更新する参照用データベースとして置いています。スキルが開くのは、ヒアリングで流行を取り入れたいと分かったときだけです。AGENTS.md と CLAUDE.md からは読み込みません。
+調査と比較は [docs/comparison.md](docs/comparison.md)、X 上のスキルの検証（2026-10-31）は [docs/design-skills.md](docs/design-skills.md) にあります。流行りのデザイン手法は [docs/design-trends/](docs/design-trends/README.md) に、月次で更新する参照用データベースとして置いています。standard と deep では、方向を提案する前にスキルが開き、デザイン表現のトレンド(`#expression`)のうち合うものを 3 案の 1 つに入れます。開発フローやデザイン原則の項目は候補にしません。不要なときは「トレンドはいらない」と伝えてください。AGENTS.md と CLAUDE.md からは読み込みません。
 
 ## スキルなしと比べた結果
 
@@ -114,7 +114,7 @@ scripts/test.mjs          チェックの回帰テスト
 install.sh                インストーラ
 docs/comparison.md        調査・比較レポート
 docs/design-skills.md     X上のスキル検証（2026-10-31）
-docs/design-trends/       デザイン手法の月次データベース（流行を求められたときだけスキルが読む）
+docs/design-trends/       デザイン手法の月次データベース（方向の提案のときにスキルが読む）
 .github/workflows/pages.yml  フィクスチャ HTML を Pages へ手動公開
 .github/assemble-fixture-pages.mjs  公開物の収集と index.html の生成
 ```
