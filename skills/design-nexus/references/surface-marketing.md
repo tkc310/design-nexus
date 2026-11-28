@@ -12,7 +12,7 @@
 
 ## Say it once
 
-Builder only, at step 8, before removing one accessory. The second look skips this section.
+Builder only, at step 8, before removing one accessory, on every surface (this section lives here because marketing pages restate the most). The second look skips this section.
 
 1. Run the render check with `--repeats` and take a snapshot (`--snapshot once.json --hold`). *repeats* lists figures and phrases that the visible text outside controls states three or more times.
 2. Delete restatements: a sentence, caption, or row that says again a fact the page already shows in a stronger place (a figure, a table row, a label–value pair, the signature), and a line that tells the reader what the figure or list beside it shows ("six cups, six seats").
