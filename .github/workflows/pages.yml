@@ -1,4 +1,4 @@
-name: Publish fixture pages
+name: Publish fixture pages and gallery
 
 on:
   workflow_dispatch:
@@ -29,6 +29,13 @@ jobs:
       - name: Assemble fixture site
         shell: bash
         run: node .github/assemble-fixture-pages.mjs
+
+      - name: Add the improvement-loop gallery
+        shell: bash
+        run: |
+          test -f eval/gallery/index.html
+          mkdir -p _site/gallery
+          cp -R eval/gallery/. _site/gallery/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>土と灯(つちとひ)|京都・五条坂の陶芸工房と手びねり体験教室</title>
+<meta name="description" content="京都・五条坂の小さな陶芸工房「土と灯」。職人2名で飯碗・湯呑・小皿など日常の器をつくり、月2回・各回6名までの手びねり体験教室を開いています。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  /* 生土: unfired grey clay */
+  --clay:#BDB5A9;
+  /* 素焼: bisque */
+  --bisque:#E8E2D8;
+  /* 鉄釉: iron glaze */
+  --ink:#221C18;
+  --ink-soft:#3F3731;
+  /* 呉須: cobalt underglaze — only on what is pressed */
+  --gosu:#1E3A8A;
+  --on-gosu:#FFFFFF;
+
+  --display:"Klee One","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --t16:1rem; --t20:1.25rem; --t25:1.5625rem; --t31:1.9375rem; --t39:2.4375rem; --t49:3.0625rem;
+
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:40px; --s6:48px; --s8:64px; --s12:96px;
+  --radius:6px;
+  --line:1.5px;
+  --wrap:1200px;
+  --gutter:var(--s2);
+}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+*{box-sizing:border-box}
+html{scroll-padding-top:var(--s2)}
+body{
+  margin:0;background:var(--clay);color:var(--ink);
+  font-family:var(--body);font-size:var(--t16);line-height:1.8;letter-spacing:.03em;
+  text-wrap:pretty;
+}
+h1,h2,h3{font-family:var(--display);font-weight:600;font-synthesis:none;line-height:1.35;letter-spacing:.02em;text-wrap:balance;margin:0;font-feature-settings:"palt"}
+p{margin:0}
+a{color:inherit}
+.nw{white-space:nowrap}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter)}
+@media (min-width:768px){:root{--gutter:var(--s4)}}
+
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);
+  min-height:44px;padding:0 var(--s2);border-radius:var(--radius);
+  font-family:var(--body);font-size:var(--t16);font-weight:700;letter-spacing:.04em;line-height:1.2;
+  text-decoration:none;white-space:nowrap;
+  border:2px solid var(--gosu);color:var(--gosu);background:transparent;
+  transition:background-color .15s ease,color .15s ease;
+}
+.btn:hover{background:var(--bisque)}
+.btn:active{transform:translateY(1px)}
+.btn--fill{background:var(--gosu);color:var(--on-gosu)}
+.btn--fill:hover{background:var(--ink);border-color:var(--ink);color:var(--on-gosu)}
+.btn:focus-visible{outline-color:var(--ink)}
+
+/* ---------- header ---------- */
+.site-head{padding:var(--s2) 0}
+.site-head .wrap{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.logo{font-family:var(--display);font-weight:600;font-size:var(--t25);line-height:1.2;text-decoration:none;display:flex;align-items:baseline;gap:var(--s1)}
+.logo small{font-family:var(--body);font-size:var(--t16);font-weight:400;color:var(--ink-soft)}
+.site-nav{margin-left:auto;display:flex;align-items:center;gap:var(--s3)}
+.site-nav ul{display:flex;gap:var(--s1);list-style:none;margin:0;padding:0}
+.site-nav ul a{text-decoration:none;white-space:nowrap;display:inline-block;padding:var(--s1);min-width:44px;text-align:center}
+.site-nav ul a:hover{text-decoration:underline;text-underline-offset:4px}
+@media (max-width:767px){
+  .site-nav ul{display:none}
+  .site-head .wrap{gap:var(--s1);flex-wrap:nowrap}
+  .logo{font-size:var(--t20);white-space:nowrap}
+  .logo small{font-size:.875rem}
+  .site-head .btn{min-height:44px;padding:0 12px}
+}
+
+/* ---------- hero ---------- */
+.hero{padding:var(--s3) 0 var(--s8)}
+.hero__grid{display:grid;gap:var(--s4);grid-template-columns:minmax(0,1fr)}
+.hero h1{font-size:var(--t31)}
+.hero__lead{margin-top:var(--s1);font-size:var(--t16)}
+@media (min-width:768px){
+  .hero h1{font-size:var(--t49)}
+  .hero__lead{font-size:var(--t20)}
+}
+@media (min-width:1100px){
+  .hero__grid{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--s6);align-items:start}
+}
+
+/* schedule = the signature: six cups on a shelf per session */
+.sched{margin-top:var(--s4);background:var(--bisque);padding:var(--s2) var(--s2) 0;border-bottom:var(--line) solid var(--ink)}
+@media (min-width:768px){.sched{padding:var(--s3) var(--s3) 0}}
+.sched__head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 var(--s2)}
+.sched__head h2{font-size:var(--t20)}
+.sched__head p{color:var(--ink-soft)}
+.sched ol{list-style:none;margin:var(--s1) 0 0;padding:0}
+.slot{
+  display:grid;align-items:center;gap:var(--s1) var(--s2);
+  grid-template-columns:auto 1fr auto;
+  grid-template-areas:"date date date" "seats left act";
+  padding:var(--s2) 0;border-top:1px solid var(--ink-soft);
+}
+.slot:first-child{border-top:0}
+.slot__date{grid-area:date;display:flex;align-items:baseline;gap:var(--s2);white-space:nowrap}
+.slot__date b{font-family:var(--display);font-weight:600;font-size:var(--t25);line-height:1.2;font-variant-numeric:tabular-nums}
+.slot__date span{font-variant-numeric:tabular-nums}
+.slot__seats{grid-area:seats}
+.slot__left{grid-area:left;white-space:nowrap;font-variant-numeric:tabular-nums}
+.slot__act{grid-area:act;justify-self:end}
+.slot--full .slot__left{color:var(--ink-soft);font-weight:700}
+.slot--full .slot__date b,.slot--full .slot__date span{color:var(--ink-soft)}
+@media (max-width:439px){
+  .slot{grid-template-columns:auto 1fr;grid-template-areas:"date date" "seats left" "act act";gap:var(--s1) var(--s2)}
+  .slot--full{grid-template-areas:"date date" "seats left"}
+  .slot__act{justify-self:stretch}
+  .slot__act .btn{width:100%}
+}
+@media (min-width:560px){
+  .slot{grid-template-columns:max-content max-content 1fr auto;grid-template-areas:"date seats left act"}
+}
+.sched__more{display:block;padding:var(--s2) 0;border-top:1px solid var(--ink-soft)}
+.sched__more a{color:var(--gosu);font-weight:700;text-underline-offset:4px;display:inline-flex;min-height:44px;align-items:center}
+
+.seats{display:block;width:150px;height:36px}
+.seats .shelf{stroke:var(--ink);stroke-width:1.5}
+.seat{stroke:var(--ink);stroke-width:1.4;stroke-linejoin:round}
+.seat.open{fill:var(--bisque)}
+.seat.taken{fill:var(--ink)}
+
+/* photo placeholders */
+.ph{
+  margin:0;background:var(--bisque);border:2px dashed var(--ink-soft);
+  display:flex;flex-direction:column;justify-content:flex-end;gap:var(--s1);
+  padding:var(--s3);color:var(--ink);
+}
+.ph__tag{font-weight:700;letter-spacing:.08em}
+.ph__what{color:var(--ink-soft)}
+.hero .ph{aspect-ratio:4/3}
+@media (min-width:600px){.hero .ph{aspect-ratio:16/9}}
+@media (min-width:1100px){.hero .ph{aspect-ratio:auto;align-self:stretch}}
+
+/* facts strip / side column at 1600 */
+.facts{margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:var(--line) solid var(--ink)}
+.facts div{padding:var(--s2) var(--s1) var(--s2) 0}
+@media (max-width:767px){.facts dd{font-size:var(--t20)}}
+@media (max-width:399px){.facts dd{white-space:normal}}
+.facts dt{color:var(--ink-soft)}
+@media (min-width:768px){.facts{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1100px){.facts{grid-column:1/-1;margin-top:0}}
+.facts dd{margin:0;font-family:var(--display);font-weight:600;font-size:var(--t25);line-height:1.3;white-space:nowrap}
+
+/* ---------- vessels: section drawings on the shelf ---------- */
+.ware{padding:var(--s8) 0;background:var(--bisque)}
+.ware h2,.how h2,.studio h2,.close h2{font-size:var(--t31)}
+@media (min-width:768px){.ware h2,.how h2,.studio h2,.close h2{font-size:var(--t39)}}
+.ware__intro{display:grid;gap:var(--s2);max-width:40em}
+.shelf{margin:var(--s6) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:minmax(0,1fr);border-bottom:none}
+.shelf li{display:grid;grid-template-rows:auto auto;gap:var(--s2)}
+.shelf li + li{margin-top:var(--s4)}
+.draw{display:block;width:100%;height:auto;max-height:42vh}
+.draw .axis{stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:6 4}
+.draw .out{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.draw .sec{fill:url(#hatch);stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.draw .board{stroke:var(--ink);stroke-width:3}
+.shelf h3{font-size:var(--t25)}
+@media (min-width:768px){
+  .shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 var(--s4)}
+  .shelf li + li{margin-top:0}
+}
+
+/* ---------- how: the pinch sequence ---------- */
+.how{padding:var(--s8) 0}
+.how__grid{display:grid;gap:var(--s6);grid-template-columns:minmax(0,1fr)}
+.how__intro{display:grid;gap:var(--s2);align-self:start;max-width:36em}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s4) var(--s3);counter-reset:step}
+.steps li{display:grid;gap:var(--s1);align-content:start}
+.how__body{display:grid;gap:var(--s6)}
+.steps .num{font-family:var(--display);font-weight:600;font-size:var(--t20);line-height:1}
+.steps .draw{max-height:none}
+.spec{margin:0;display:grid;grid-template-columns:auto 1fr;gap:0 var(--s3);border-top:var(--line) solid var(--ink)}
+.spec dt,.spec dd{padding:var(--s1) 0;border-bottom:1px solid var(--ink-soft);margin:0}
+.spec dt{color:var(--ink-soft);white-space:nowrap}
+@media (min-width:768px){.steps{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1100px){
+  .how__grid{grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:var(--s8)}
+  .how__body{display:grid;gap:var(--s6)}
+}
+
+/* ---------- studio ---------- */
+.studio{padding:var(--s8) 0;background:var(--bisque)}
+.studio__grid{display:grid;gap:var(--s4);grid-template-columns:minmax(0,1fr)}
+.studio__text{display:grid;gap:var(--s2);align-self:start;max-width:36em}
+.studio__ph{display:grid;gap:var(--s3);grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.studio .ph{aspect-ratio:3/4}
+@media (min-width:600px){.studio .ph{aspect-ratio:4/3}}
+@media (min-width:1100px){.studio__grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:var(--s8)}.studio .ph{aspect-ratio:4/3}}
+
+/* ---------- close ---------- */
+.close{padding:var(--s8) 0 var(--s12)}
+.close__grid{display:grid;gap:var(--s4);grid-template-columns:minmax(0,1fr);align-items:end}
+.close .close__grid h2{font-size:var(--t25)}
+@media (min-width:400px){.close .close__grid h2{font-size:var(--t31)}}
+@media (min-width:768px){.close .close__grid h2{font-size:var(--t39)}}
+.close .btn{min-height:56px;padding:0 var(--s4);font-size:var(--t20)}
+@media (min-width:900px){.close__grid{grid-template-columns:minmax(0,1fr) auto}}
+.foot{padding:var(--s4) 0 var(--s6)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);justify-content:space-between}
+.foot p{color:var(--ink-soft)}
+
+/* ---------- 1920 gains a side column ---------- */
+@media (min-width:1600px){
+  :root{--wrap:1680px}
+  .hero__grid{grid-template-columns:minmax(0,6fr) minmax(0,4fr) minmax(0,2.4fr)}
+  .facts{margin:0;grid-column:auto;grid-template-columns:minmax(0,1fr);align-self:stretch}
+  .facts div{border-bottom:1px solid var(--ink-soft)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+  .btn:active{transform:none}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="5" class="hl"/>
+    </pattern>
+    <symbol id="cup" viewBox="0 0 22 24">
+      <path d="M2.5 3 H19.5 L17.6 19 H14 V22 H8 V19 H4.4 Z"/>
+    </symbol>
+  </defs>
+</svg>
+<style>.hl{stroke:var(--ink);stroke-width:1.1}</style>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="#top" id="top">土と灯<small>つちとひ</small></a>
+    <nav class="site-nav" aria-label="ページ内">
+      <ul>
+        <li><a href="#ware">器</a></li>
+        <li><a href="#how">体験教室</a></li>
+        <li><a href="#studio">工房</a></li>
+        <li><a href="#access">アクセス</a></li>
+      </ul>
+      <a class="btn" href="/reserve/">予約ページへ</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap hero__grid">
+      <div>
+        <h1 id="hero-h">手でつくる、<wbr>毎日の器。</h1>
+        <p class="hero__lead">五条坂の工房で、手びねり体験を。</p>
+
+        <div class="sched" id="schedule">
+          <div class="sched__head">
+            <h2>次の体験教室</h2>
+            <p>各回<span class="nw">6名まで</span></p>
+          </div>
+          <ol>
+            <li class="slot slot--full">
+              <p class="slot__date"><b>11月14日(土)</b><span>10:00〜</span></p>
+              <svg class="seats slot__seats" viewBox="0 0 150 36" role="img" aria-label="6席すべて予約済み">
+                <use href="#cup" class="seat taken" x="2" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="26" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="50" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="74" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="98" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="122" y="4" width="20" height="22"/>
+                <line class="shelf" x1="0" y1="27" x2="150" y2="27"/>
+              </svg>
+              <p class="slot__left">満席</p>
+            </li>
+            <li class="slot">
+              <p class="slot__date"><b>11月28日(土)</b><span>10:00〜</span></p>
+              <svg class="seats slot__seats" viewBox="0 0 150 36" role="img" aria-label="6席中4席が予約済み、空き2席">
+                <use href="#cup" class="seat taken" x="2" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="26" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="50" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat taken" x="74" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="98" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="122" y="4" width="20" height="22"/>
+                <line class="shelf" x1="0" y1="27" x2="150" y2="27"/>
+              </svg>
+              <p class="slot__left"><strong>残り2席</strong></p>
+              <p class="slot__act"><a class="btn btn--fill" href="/reserve/?date=2026-11-28">予約する<span class="vh">(11月28日の回)</span></a></p>
+            </li>
+            <li class="slot">
+              <p class="slot__date"><b>12月12日(土)</b><span>10:00〜</span></p>
+              <svg class="seats slot__seats" viewBox="0 0 150 36" role="img" aria-label="6席中1席が予約済み、空き5席">
+                <use href="#cup" class="seat taken" x="2" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="26" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="50" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="74" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="98" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="122" y="4" width="20" height="22"/>
+                <line class="shelf" x1="0" y1="27" x2="150" y2="27"/>
+              </svg>
+              <p class="slot__left">残り5席</p>
+              <p class="slot__act"><a class="btn" href="/reserve/?date=2026-12-12">予約する<span class="vh">(12月12日の回)</span></a></p>
+            </li>
+            <li class="slot">
+              <p class="slot__date"><b>12月26日(土)</b><span>10:00〜</span></p>
+              <svg class="seats slot__seats" viewBox="0 0 150 36" role="img" aria-label="6席すべて空き">
+                <use href="#cup" class="seat open" x="2" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="26" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="50" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="74" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="98" y="4" width="20" height="22"/>
+                <use href="#cup" class="seat open" x="122" y="4" width="20" height="22"/>
+                <line class="shelf" x1="0" y1="27" x2="150" y2="27"/>
+              </svg>
+              <p class="slot__left">残り6席</p>
+              <p class="slot__act"><a class="btn" href="/reserve/?date=2026-12-26">予約する<span class="vh">(12月26日の回)</span></a></p>
+            </li>
+          </ol>
+          <p class="sched__more"><a href="/reserve/">1月以降の日程を予約ページで見る</a></p>
+        </div>
+      </div>
+
+      <figure class="ph" aria-label="写真の準備中枠:作業台で土を扱う手元">
+        <span class="ph__tag">写真 準備中</span>
+        <figcaption class="ph__what">作業台で、土を両手で包んでいる手元</figcaption>
+      </figure>
+
+      <dl class="facts">
+        <div><dt>教室</dt><dd>手びねり</dd></div>
+        <div><dt>開催</dt><dd>月に2回</dd></div>
+        <div><dt>職人</dt><dd>2名</dd></div>
+        <div id="access"><dt>場所</dt><dd>京都・<wbr>五条坂</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="ware" id="ware" aria-labelledby="ware-h">
+    <div class="wrap">
+      <div class="ware__intro">
+        <h2 id="ware-h">つくっているのは、<wbr>日常の器です。</h2>
+        <p>飯碗、湯呑、小皿。台所と食卓で、毎日手に取るものを中心につくっています。</p>
+      </div>
+      <ul class="shelf">
+        <li>
+          <svg class="draw" viewBox="0 0 200 140" role="img" aria-label="飯碗の図。左半分が外形、右半分が断面">
+            <line class="axis" x1="100" y1="58" x2="100" y2="136"/>
+            <path class="out" d="M100 70 H40 C42 100 60 120 78 122 V130 H100"/>
+            <path class="sec" d="M160 70 C158 100 140 120 122 122 V130 H113 V124 H100 V116 H110 C132 114 152 98 155 70 Z"/>
+            <line class="board" x1="0" y1="131.5" x2="200" y2="131.5"/>
+          </svg>
+          <div><h3>飯碗</h3><p>朝と夜、両手におさまる深さ。</p></div>
+        </li>
+        <li>
+          <svg class="draw" viewBox="0 0 200 140" role="img" aria-label="湯呑の図。左半分が外形、右半分が断面">
+            <line class="axis" x1="100" y1="28" x2="100" y2="136"/>
+            <path class="out" d="M100 40 H68 C69 80 72 110 74 122 H78 V130 H100"/>
+            <path class="sec" d="M132 40 C131 80 128 110 126 122 H122 V130 H114 V124 H100 V114 H120 C122 100 126 70 127 40 Z"/>
+            <line class="board" x1="0" y1="131.5" x2="200" y2="131.5"/>
+          </svg>
+          <div><h3>湯呑</h3><p>お茶にも、白湯にも。</p></div>
+        </li>
+        <li>
+          <svg class="draw" viewBox="0 0 200 140" role="img" aria-label="小皿の図。左半分が外形、右半分が断面">
+            <line class="axis" x1="100" y1="98" x2="100" y2="136"/>
+            <path class="out" d="M100 110 H30 C40 122 60 124 72 124 V130 H100"/>
+            <path class="sec" d="M170 110 C160 122 140 124 128 124 V130 H120 V126 H100 V121 H128 C145 119 160 116 166 110 Z"/>
+            <line class="board" x1="0" y1="131.5" x2="200" y2="131.5"/>
+          </svg>
+          <div><h3>小皿</h3><p>香の物、取り分け、醤油皿に。</p></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="how" id="how" aria-labelledby="how-h">
+    <div class="wrap how__grid">
+      <div class="how__intro">
+        <h2 id="how-h">ろくろを使わず、<wbr>手だけでかたちに。</h2>
+        <p>手びねりは、土の玉を指でつまみ、少しずつ壁を立ち上げてつくる<span class="nw">方法です。</span>初めての方も、手の感覚だけで器のかたちまで進めます。</p>
+      </div>
+      <div class="how__body">
+        <ol class="steps">
+          <li>
+            <svg class="draw" viewBox="0 0 120 100" role="img" aria-label="土の玉の断面図">
+              <line class="axis" x1="60" y1="32" x2="60" y2="98"/>
+              <path class="out" d="M60 40 A26 26 0 0 0 60 92"/>
+              <path class="sec" d="M60 40 A26 26 0 0 1 60 92 Z"/>
+              <line class="board" x1="0" y1="93.5" x2="120" y2="93.5"/>
+            </svg>
+            <span class="num">1</span>
+            <p>土を丸める</p>
+          </li>
+          <li>
+            <svg class="draw" viewBox="0 0 120 100" role="img" aria-label="中央をくぼませた土の断面図">
+              <line class="axis" x1="60" y1="42" x2="60" y2="98"/>
+              <path class="out" d="M60 50 H32 C30 70 40 90 52 92 H60"/>
+              <path class="sec" d="M88 50 C90 70 80 90 68 92 H60 V80 C70 80 76 70 76 50 Z"/>
+              <line class="board" x1="0" y1="93.5" x2="120" y2="93.5"/>
+            </svg>
+            <span class="num">2</span>
+            <p>親指で、まん中をくぼませる</p>
+          </li>
+          <li>
+            <svg class="draw" viewBox="0 0 120 100" role="img" aria-label="壁を立ち上げた土の断面図">
+              <line class="axis" x1="60" y1="22" x2="60" y2="98"/>
+              <path class="out" d="M60 30 H36 C34 60 42 88 52 92 H60"/>
+              <path class="sec" d="M84 30 C86 60 78 88 68 92 H60 V85 C70 85 78 62 78 30 Z"/>
+              <line class="board" x1="0" y1="93.5" x2="120" y2="93.5"/>
+            </svg>
+            <span class="num">3</span>
+            <p>指でつまんで、壁を立ち上げる</p>
+          </li>
+          <li>
+            <svg class="draw" viewBox="0 0 120 100" role="img" aria-label="縁を整えた器の断面図">
+              <line class="axis" x1="60" y1="30" x2="60" y2="98"/>
+              <path class="out" d="M60 38 H26 C28 66 40 86 52 88 V92 H60"/>
+              <path class="sec" d="M94 38 C92 66 80 86 68 88 V92 H60 V84 H66 C80 82 88 64 90 38 Z"/>
+              <line class="board" x1="0" y1="93.5" x2="120" y2="93.5"/>
+            </svg>
+            <span class="num">4</span>
+            <p>縁を整える</p>
+          </li>
+        </ol>
+        <dl class="spec">
+          <dt>定員</dt><dd>各回<span class="nw">6名まで</span></dd>
+          <dt>開催</dt><dd><span class="nw">月に2回</span></dd>
+          <dt>料金・時間</dt><dd>予約ページに掲載しています</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="studio" id="studio" aria-labelledby="studio-h">
+    <div class="wrap studio__grid">
+      <div class="studio__text">
+        <h2 id="studio-h">ふたりの職人の、<wbr>小さな工房です。</h2>
+        <p>清水寺へ続く五条坂の工房で、職人ふたりが器をつくっています。教室は、その作業場で開きます。</p>
+      </div>
+      <div class="studio__ph">
+        <figure class="ph" aria-label="写真の準備中枠:職人ひとり目">
+          <span class="ph__tag">写真 準備中</span>
+          <figcaption class="ph__what">職人ひとり目、作業台の前で</figcaption>
+        </figure>
+        <figure class="ph" aria-label="写真の準備中枠:職人ふたり目">
+          <span class="ph__tag">写真 準備中</span>
+          <figcaption class="ph__what">職人ふたり目、棚に器を並べるところ</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" aria-labelledby="close-h">
+    <div class="wrap">
+      <div class="close__grid">
+        <div>
+          <h2 id="close-h">次の空きは、<wbr><span class="nw">11月28日(土)の回。</span></h2>
+        </div>
+        <a class="btn btn--fill" href="/reserve/?date=2026-11-28">体験教室を予約する</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>土と灯(つちとひ)・京都市東山区 五条坂</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handoff — a shared board for small teams</title>
+<meta name="description" content="Handoff is a shared task board for small teams. Every task has one owner, one status and one date.">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231f2a33'/%3E%3Cpath d='M4 4v8M12 4v8M4 8h8' stroke='%23f3f1ea' stroke-width='1.8'/%3E%3C/svg%3E">
+<!--
+  ASSUMPTIONS (nobody was available to ask)
+  - The source names no product. "Handoff" is a placeholder name; swap it in the header, title and footer.
+  - Everything said about the product is read off hero.png (columns, counts, filters, owners).
+    No customer numbers, prices, testimonials or security claims are invented. "Fast / Secure /
+    Scalable" had nothing behind them, so the three numbered items now describe what the
+    screenshot shows.
+  - go() was called but never defined in the source. It now opens the screenshot at full size.
+  - "Request an invite" moves to the invite form; "What to notice" moves to the notes on the board.
+  - The email field and its icon button are an invite request. There is no backend here, so the
+    form validates and confirms on the page only; point the submit handler at a real endpoint.
+  - The Google Fonts request is gone (the file must be self-contained); type uses system stacks.
+    design-nexus: keep R16 because the page must stay self-contained; the serif stack falls back to Palatino, then Georgia.
+  - The screenshot is light-only, so the page is light-only.
+-->
+<style>
+  :root {
+    --paper: #f3f1ea;
+    --paper-2: #e9e6dc;
+    --card: #fbfaf6;
+    --ink: #1f2a33;
+    --ink-2: #4a545c;
+    --rule: #cfcabd;
+    --rule-strong: #8d887b;
+    --mark: #a63a14;
+    --error: #9b1c1c;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+  }
+
+  img { display: block; max-width: 100%; height: auto; }
+
+  h1, h2, h3, p, ol, figure { margin: 0; }
+  p, figcaption { text-wrap: pretty; }
+  ol { padding: 0; list-style: none; }
+
+  :focus-visible { outline: 3px solid var(--mark); outline-offset: 3px; }
+
+  .skip {
+    position: absolute; left: var(--gutter); top: -100px;
+    background: var(--ink); color: var(--paper);
+    padding: 12px 16px; z-index: 10;
+  }
+  .skip:focus { top: 8px; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    position: relative;
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px;
+    padding-top: 20px; padding-bottom: 14px;
+  }
+  /* rule sits on the content edge, in line with the notes' top rule */
+  .masthead::after {
+    content: ""; position: absolute; left: var(--gutter); right: var(--gutter); bottom: 0;
+    border-bottom: 1px solid var(--ink);
+  }
+  .wordmark {
+    font-family: var(--serif); font-size: 1.375rem; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .masthead p { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-2); white-space: nowrap; }
+
+  /* ---------- intro ---------- */
+  .intro {
+    display: grid; gap: 28px;
+    padding-top: clamp(40px, 8vw, 96px);
+    padding-bottom: clamp(36px, 6vw, 72px);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(2.5rem, 7.2vw, 5.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+  h1 em { font-style: italic; color: var(--mark); }
+  .lede { max-width: 34em; color: var(--ink-2); }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+  @media (min-width: 900px) {
+    .intro { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); column-gap: 56px; align-items: end; }
+    .intro-side { padding-bottom: 10px; }
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    font: inherit; font-size: 1rem; font-weight: 600;
+    min-height: 48px; padding: 10px 20px;
+    border: 1.5px solid var(--ink); border-radius: 4px;
+    background: transparent; color: var(--ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  .btn:hover { background: var(--paper-2); }
+  .btn:active { transform: translateY(1px); }
+  .btn-solid { background: var(--ink); color: var(--paper); }
+  .btn-solid:hover { background: #33424e; }
+  .btn svg { flex: none; }
+
+  /* ---------- the board ---------- */
+  .board { padding-bottom: clamp(48px, 8vw, 104px); }
+  .shot {
+    position: relative;
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .pin {
+    position: absolute;
+    width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border-radius: 50%;
+    background: var(--mark); color: var(--card);
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 700; line-height: 24px; text-align: center;
+    box-shadow: 0 0 0 2px var(--card);
+  }
+  @media (max-width: 640px) {
+    .pin { width: 18px; height: 18px; margin: -9px 0 0 -9px; line-height: 18px; box-shadow: 0 0 0 1px var(--card); }
+  }
+  .shot-foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+    padding-top: 14px;
+  }
+  figcaption { font-size: 0.9375rem; color: var(--ink-2); max-width: 44em; }
+  .btn-open { min-height: 44px; padding: 8px 14px; font-size: 0.9375rem; }
+
+  .notes {
+    display: grid; gap: 0;
+    margin-top: clamp(32px, 5vw, 56px);
+    border-top: 1px solid var(--ink);
+  }
+  .note { padding: 22px 0 24px; border-bottom: 1px solid var(--rule); }
+  /* same badge as the pins on the screenshot, so each note points at its spot */
+  .note-num {
+    display: block; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--mark); color: var(--card);
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 700; line-height: 24px; text-align: center;
+    margin-bottom: 12px;
+  }
+  .note h3 { font-family: var(--serif); font-size: 1.5rem; font-weight: 500; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 8px; text-wrap: balance; }
+  .note p { color: var(--ink-2); font-size: 1rem; max-width: 30em; }
+  @media (min-width: 820px) {
+    .notes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .note { padding: 24px 32px 8px 0; border-bottom: 0; }
+    .note + .note { padding-left: 32px; border-left: 1px solid var(--rule); }
+    .note:last-child { padding-right: 0; }
+  }
+
+  /* ---------- invite ---------- */
+  .invite { background: var(--paper-2); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .invite-in {
+    display: grid; gap: 28px;
+    padding-top: clamp(40px, 6vw, 72px); padding-bottom: clamp(40px, 6vw, 72px);
+  }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(1.75rem, 3.6vw, 2.5rem); line-height: 1.12; letter-spacing: -0.015em; text-wrap: balance; }
+  .invite-copy p { margin-top: 12px; color: var(--ink-2); max-width: 30em; }
+  @media (min-width: 900px) {
+    .invite-in { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 56px; align-items: start; }
+  }
+
+  label { display: block; font-weight: 600; font-size: 0.9375rem; margin-bottom: 8px; }
+  .field-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  input[type="email"] {
+    flex: 1 1 240px; min-width: 0;
+    font: inherit; font-size: 1rem; /* 16px keeps iOS from zooming */
+    min-height: 48px; padding: 10px 14px;
+    color: var(--ink); background: var(--card);
+    border: 1.5px solid var(--rule-strong); border-radius: 4px;
+  }
+  input[type="email"]::placeholder { color: #6a7278; }
+  input[type="email"]:hover { border-color: var(--ink-2); }
+  input[type="email"][aria-invalid="true"] { border-color: var(--error); }
+  input[type="email"][aria-invalid="true"]:focus-visible { outline-color: var(--error); }
+  .hint, .msg { font-size: 0.9375rem; margin-top: 10px; }
+  .hint { color: var(--ink-2); }
+  .msg { min-height: 1.5em; }
+  .msg.is-error { color: var(--error); font-weight: 600; }
+  .msg.is-ok { color: var(--ink); font-weight: 600; }
+
+  /* ---------- footer ---------- */
+  footer { padding-top: 24px; padding-bottom: 40px; font-size: 0.9375rem; color: var(--ink-2); }
+
+  /* ---------- full-size viewer ---------- */
+  dialog {
+    width: min(1640px, calc(100vw - 24px)); max-width: none;
+    max-height: calc(100dvh - 24px);
+    padding: 0; border: 1px solid var(--ink); border-radius: 6px;
+    background: var(--card); color: var(--ink);
+  }
+  dialog[open] { display: flex; flex-direction: column; }
+  dialog::backdrop { background: rgba(31, 42, 51, .72); }
+  .dlg-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--rule);
+  }
+  .dlg-bar h2 { font-family: var(--sans); font-size: 1rem; font-weight: 600; letter-spacing: 0; }
+  .dlg-scroll { overflow: auto; overscroll-behavior: contain; }
+  .dlg-scroll img { width: 1600px; max-width: none; }
+  .btn-close { min-height: 44px; padding: 8px 14px; font-size: 0.9375rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: none; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="wrap masthead">
+    <span class="wordmark">Handoff</span>
+    <p>A shared board for small teams</p>
+  </header>
+
+  <main id="main">
+    <section class="wrap intro" aria-labelledby="h-intro">
+      <h1 id="h-intro">Stop asking who&rsquo;s <em>got it.</em></h1>
+      <div class="intro-side">
+        <p class="lede">Handoff is one board your whole team keeps open. <strong>Every task has one owner, one column and one date</strong>, so the Monday meeting can be about the work and not about where the work is.</p>
+        <div class="actions">
+          <button type="button" class="btn btn-solid" id="btn-start">Request an invite</button>
+          <button type="button" class="btn" id="btn-more">What to notice</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap board" aria-labelledby="h-board">
+      <h2 id="h-board" hidden>The board</h2>
+      <figure>
+        <div class="shot">
+          <img src="hero.png" width="1600" height="800"
+               alt="The Handoff board for a six-person studio's website refresh. A sidebar lists Inbox, My work, Board, Calendar, Docs and three projects. Four columns hold task cards: To do with 5, In progress with 4, Review with 3 and Done with 5. Each card shows a label, a date or comment count, and its owner's initials.">
+          <span class="pin" style="left:57.2%;top:14.2%" aria-hidden="true">1</span>
+          <span class="pin" style="left:78%;top:27.1%" aria-hidden="true">2</span>
+          <span class="pin" style="left:40%;top:13%" aria-hidden="true">3</span>
+        </div>
+        <div class="shot-foot">
+          <figcaption>A six-person studio, mid-way through a website refresh: 17 tasks, four columns, nobody wondering.</figcaption>
+          <button type="button" class="btn btn-open" onclick="go()" aria-haspopup="dialog">Open at full size</button>
+        </div>
+      </figure>
+
+      <ol class="notes" id="notes" tabindex="-1" aria-label="Three things to notice on the board">
+        <li class="note">
+          <span class="note-num" aria-hidden="true">1</span>
+          <h3>Columns keep count</h3>
+          <p>Each column says how much is sitting in it. Three in Review and four In progress tells you where the queue is before anyone opens a card.</p>
+        </li>
+        <li class="note">
+          <span class="note-num" aria-hidden="true">2</span>
+          <h3>One owner per card</h3>
+          <p>A card carries one set of initials. Not a team, not &ldquo;everyone&rdquo;. When it moves to Review, the next person finds it in their inbox.</p>
+        </li>
+        <li class="note">
+          <span class="note-num" aria-hidden="true">3</span>
+          <h3>Filters you can read aloud</h3>
+          <p>Assignee: anyone. Due: this month. Label: any. Three plain choices narrow the board, and no query language is involved.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="invite" aria-labelledby="h-invite">
+      <div class="wrap invite-in">
+        <div class="invite-copy">
+          <h2 id="h-invite">Bring your team&rsquo;s next project.</h2>
+          <p>Leave an address and we&rsquo;ll send an invite link for you and your teammates. One email, and no newsletter after it.</p>
+        </div>
+        <form id="invite-form" novalidate>
+          <label for="email">Work email</label>
+          <div class="field-row">
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email"
+                   autocapitalize="none" spellcheck="false" required
+                   placeholder="you@studio.example" aria-describedby="email-hint email-msg">
+            <button type="submit" class="btn btn-solid">
+              Request invite
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+            </button>
+          </div>
+          <p class="hint" id="email-hint">We use it for the invite and nothing else.</p>
+          <p class="msg" id="email-msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>&copy; 2026 Handoff</p>
+  </footer>
+
+  <dialog id="viewer" aria-labelledby="viewer-title">
+    <div class="dlg-bar">
+      <h2 id="viewer-title">Board, full size</h2>
+      <button type="button" class="btn btn-close" id="viewer-close">Close</button>
+    </div>
+    <div class="dlg-scroll" tabindex="0" role="group" aria-label="Screenshot, scrollable">
+      <img src="hero.png" width="1600" height="800" loading="lazy"
+           alt="The same board at full size: sidebar on the left, then the To do, In progress, Review and Done columns.">
+    </div>
+  </dialog>
+
+<script>
+  var viewer = document.getElementById('viewer');
+
+  // The source called go() without defining it. It opens the screenshot at full size.
+  function go() {
+    if (typeof viewer.showModal === 'function') {
+      if (!viewer.open) viewer.showModal();
+    } else {
+      window.open('hero.png', '_blank', 'noopener');
+    }
+  }
+
+  document.getElementById('viewer-close').addEventListener('click', function () { viewer.close(); });
+  viewer.addEventListener('click', function (e) { if (e.target === viewer) viewer.close(); });
+
+  function reduced() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  function moveTo(el, focusEl) {
+    el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
+    (focusEl || el).focus({ preventScroll: true });
+  }
+
+  var email = document.getElementById('email');
+  var msg = document.getElementById('email-msg');
+
+  document.getElementById('btn-start').addEventListener('click', function () {
+    moveTo(document.getElementById('invite-form'), email);
+  });
+  document.getElementById('btn-more').addEventListener('click', function () {
+    var notes = document.getElementById('notes');
+    notes.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+    notes.focus({ preventScroll: true });
+  });
+
+  function setMsg(text, kind) {
+    msg.textContent = text;
+    msg.className = 'msg' + (kind ? ' is-' + kind : '');
+  }
+
+  email.addEventListener('input', function () {
+    if (email.getAttribute('aria-invalid') === 'true') {
+      email.removeAttribute('aria-invalid');
+      setMsg('', '');
+    }
+  });
+
+  document.getElementById('invite-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var value = email.value.trim();
+    if (!value) {
+      email.setAttribute('aria-invalid', 'true');
+      setMsg('Enter an email address so we know where to send the invite.', 'error');
+      email.focus();
+      return;
+    }
+    if (!email.checkValidity()) {
+      email.setAttribute('aria-invalid', 'true');
+      setMsg('That address looks incomplete. It should read like name@company.com.', 'error');
+      email.focus();
+      return;
+    }
+    email.removeAttribute('aria-invalid');
+    // No endpoint is wired up in this static page; send `value` to the real one here.
+    setMsg('Noted. The invite will go to ' + value + '.', 'ok');
+  });
+</script>
+</body>
+</html>

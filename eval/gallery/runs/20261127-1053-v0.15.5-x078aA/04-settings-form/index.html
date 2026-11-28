@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Settings · Fieldnote</title>
+<meta name="description" content="Choose which Fieldnote events notify you by email, push, and Slack, and set quiet hours.">
+<!--
+  Assumptions (nobody was available to answer questions):
+  - Product is a fictional project-management app, "Fieldnote". Signed-in user: Ada Okafor.
+  - Preferences are saved explicitly with one Save button (not autosaved), so there is a dirty state.
+  - Connecting Slack and sending a test are immediate actions, separate from Save.
+  - Slack starts disconnected. Slack choices stay editable-looking but locked, and are kept for when it connects.
+  - Weekly digest is a summary, so it is not offered as a push notification.
+  - Quiet hours hold back push and Slack only; email is never held back. A range may cross midnight.
+  - There is no backend: network calls are simulated with timers. The "Prototype controls" panel at the
+    bottom of the page forces the failure paths so they can be reviewed.
+-->
+<!--
+  design-nexus: keep R08 because the count spans two schemes (light + dark, ~15 named tokens each, all via custom properties); consolidating is a palette change, not a polish pass
+  design-nexus: keep R29 because a wider 1920 arrangement is a relayout, outside the requested polish steer
+  design-nexus: keep R33 because replacing the card panels is a relayout, outside the requested polish steer
+-->
+<style>
+  :root {
+    --bg: #f3f1ea;
+    --surface: #fffefa;
+    --sunken: #ebe8df;
+    --ink: #1b1a17;
+    --muted: #5f5b52;
+    --line: #d9d4c7;
+    --line-strong: #8d887c;
+    --accent: #1d5c48;
+    --accent-ink: #ffffff;
+    --accent-soft: #dfece6;
+    --danger: #a8261d;
+    --danger-soft: #fbe9e6;
+    --ok: #1c6a41;
+    --note: #f5ecd2;
+    --note-line: #d9c78d;
+    --radius: 10px;
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1d1c19;
+      --sunken: #262521;
+      --ink: #edebe5;
+      --muted: #aaa59a;
+      --line: #35332d;
+      --line-strong: #7b776c;
+      --accent: #84d3b3;
+      --accent-ink: #0c2a20;
+      --accent-soft: #1f342c;
+      --danger: #ff9086;
+      --danger-soft: #3a1d1a;
+      --ok: #84d3b3;
+      --note: #2e2917;
+      --note-line: #5d5226;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 var(--font);
+  }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { text-wrap: balance; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .skip {
+    position: absolute; left: 16px; top: -60px; z-index: 10;
+    background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 8px;
+  }
+  .skip:focus { top: 12px; }
+
+  /* App chrome */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+  .brand-mark { width: 18px; height: 18px; border-radius: 5px 5px 5px 0; background: var(--accent); }
+  .crumbs { color: var(--muted); font-size: 14px; }
+  .crumbs span[aria-current] { color: var(--ink); }
+  .me {
+    margin-left: auto; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--sunken); display: grid; place-items: center;
+    font-size: 13px; font-weight: 600;
+  }
+
+  .shell {
+    max-width: 1080px; margin: 0 auto; padding: 32px 24px 0;
+    display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px;
+  }
+  .sidenav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .sidenav h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; padding: 0 12px; }
+  .sidenav a {
+    display: block; padding: 8px 12px; border-radius: 8px; text-decoration: none; color: var(--muted);
+  }
+  .sidenav a:hover { background: var(--sunken); color: var(--ink); }
+  .sidenav a[aria-current="page"] { background: var(--sunken); color: var(--ink); font-weight: 600; }
+
+  /* Page */
+  main { min-width: 0; }
+  .page-head { margin-bottom: 28px; }
+  h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; }
+  .page-head p { color: var(--muted); margin-top: 8px; max-width: 58ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .card-head { padding: 20px 24px 0; }
+  .card-body { padding: 16px 24px 24px; }
+  h2.card-title { font-size: 18px; letter-spacing: -0.01em; }
+  .card-head p { color: var(--muted); font-size: 15px; margin-top: 4px; max-width: 60ch; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 40px; padding: 8px 16px;
+    border-radius: 8px; border: 1px solid var(--line-strong);
+    background: transparent; cursor: pointer; font-weight: 600; font-size: 15px;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { background: var(--sunken); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+  .btn-quiet { border-color: transparent; color: var(--muted); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 2.5s; }
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* Event x channel matrix */
+  .matrix-wrap { padding: 8px 0 0; }
+  table.matrix { width: 100%; border-collapse: collapse; }
+  .matrix th, .matrix td { padding: 0; }
+  .matrix thead th {
+    font-size: 14px; font-weight: 600; text-align: center; vertical-align: bottom;
+    padding: 12px 4px; border-bottom: 1px solid var(--line); width: 112px;
+  }
+  .matrix thead th:first-child { width: auto; text-align: left; padding-left: 24px; color: var(--muted); font-weight: 500; }
+  .matrix thead th:last-child { padding-right: 12px; }
+  .ch-status { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .ch-status.is-off { color: var(--danger); }
+  .matrix tbody th {
+    text-align: left; font-weight: 500; padding: 14px 12px 14px 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .matrix tbody tr:last-child th, .matrix tbody tr:last-child td { border-bottom: 0; }
+  .ev-desc { display: block; color: var(--muted); font-size: 14px; font-weight: 400; }
+  .matrix tbody td { text-align: center; border-bottom: 1px solid var(--line); }
+  .matrix tbody td:last-child { padding-right: 12px; }
+  .matrix .col-off { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--sunken) 6px 7px); }
+  .cell {
+    display: grid; place-items: center; min-height: 56px; min-width: 44px; cursor: pointer;
+  }
+  .cell:has(input:disabled) { cursor: not-allowed; }
+  .na { color: var(--muted); }
+
+  input[type="checkbox"].box {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 1.5px solid var(--line-strong); background: var(--surface);
+    display: grid; place-items: center; cursor: pointer;
+  }
+  input.box::after {
+    content: ""; width: 11px; height: 6px; margin-top: -2px;
+    border-left: 2.5px solid var(--accent-ink); border-bottom: 2.5px solid var(--accent-ink);
+    transform: rotate(-45deg) scale(0); transition: transform 0.12s ease-out;
+  }
+  input.box:checked { background: var(--accent); border-color: var(--accent); }
+  input.box:checked::after { transform: rotate(-45deg) scale(1); }
+  input.box:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Slack callout */
+  .callout {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    margin: 16px 24px 0; padding: 14px 16px;
+    background: var(--note); border: 1px solid var(--note-line); border-radius: 8px;
+  }
+  .callout-text { flex: 1 1 260px; font-size: 15px; }
+  .callout-text strong { display: block; }
+  .callout.is-connected { background: var(--accent-soft); border-color: transparent; }
+  .callout.is-error { background: var(--danger-soft); border-color: var(--danger); }
+  .slack-glyph { width: 20px; height: 20px; flex: none; }
+
+  /* Quiet hours */
+  .switch-row { display: flex; align-items: flex-start; gap: 14px; }
+  .switch-row label { display: inline-block; min-height: 24px; font-weight: 600; cursor: pointer; }
+  .switch-row .hint { color: var(--muted); font-size: 15px; }
+  input.switch {
+    appearance: none; -webkit-appearance: none; margin: 2px 0 0; flex: none;
+    width: 44px; height: 26px; border-radius: 13px;
+    background: var(--line-strong); position: relative; cursor: pointer;
+    transition: background 0.15s;
+  }
+  input.switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%; background: var(--surface);
+    transition: transform 0.15s ease-out;
+  }
+  input.switch:checked { background: var(--accent); }
+  input.switch:checked::after { transform: translateX(18px); }
+
+  .fields {
+    display: grid; grid-template-columns: 150px 150px minmax(0, 1fr); gap: 16px;
+    margin-top: 20px; padding: 0; border: 0; min-width: 0;
+  }
+  .fields:disabled { opacity: 0.5; }
+  .field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; min-height: 44px; padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .field [aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+  .field-error {
+    grid-column: 1 / -1; color: var(--danger); font-size: 14px; font-weight: 500;
+    display: flex; gap: 8px; align-items: flex-start; margin-top: -4px;
+  }
+  .field-error[hidden] { display: none; }
+  .field-error svg { flex: none; margin-top: 3px; }
+  .summary {
+    margin-top: 16px; font-size: 15px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .summary strong { color: var(--ink); font-weight: 600; }
+
+  /* Test notification */
+  .test-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; padding: 2px; margin: 0; }
+  .seg label { position: relative; }
+  .seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .seg span {
+    display: block; padding: 7px 16px; border-radius: 6px; font-size: 15px; font-weight: 500; min-height: 36px;
+  }
+  .seg input:checked + span { background: var(--ink); color: var(--bg); }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .seg input:disabled { cursor: not-allowed; }
+  .seg input:disabled + span { color: var(--muted); text-decoration: line-through; opacity: 0.7; }
+  .test-result { margin-top: 12px; font-size: 15px; min-height: 24px; }
+  .test-result.is-ok { color: var(--ok); }
+  .test-result.is-err { color: var(--danger); }
+
+  /* Save bar */
+  .savebar {
+    position: sticky; bottom: 0; z-index: 5;
+    margin: 28px -24px 0; padding: 12px 24px;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  }
+  .save-status { flex: 1 1 220px; font-size: 15px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .save-status.is-dirty { color: var(--ink); font-weight: 500; }
+  .save-status.is-ok { color: var(--ok); font-weight: 500; }
+  .save-status.is-err { color: var(--danger); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+  .save-actions { display: flex; gap: 8px; }
+
+  /* Prototype panel */
+  .proto {
+    margin: 24px 0 40px; padding: 14px 16px; border: 1px dashed var(--line-strong); border-radius: 8px;
+    font-size: 14px; color: var(--muted);
+  }
+  .proto summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .proto label { display: flex; gap: 8px; align-items: center; margin-top: 10px; min-height: 28px; }
+  .proto-lede { margin-top: 8px; }
+  .proto ul { margin: 10px 0 0; padding-left: 18px; }
+
+  @media (max-width: 820px) {
+    .topbar { padding: 12px 16px; }
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 16px 16px 0; }
+    .sidenav h2 { display: none; }
+    .sidenav ul { display: flex; overflow-x: auto; gap: 4px; margin: 0 -16px; padding: 0 16px 4px; }
+    .sidenav a { white-space: nowrap; min-height: 40px; }
+    h1 { font-size: 26px; }
+    .card-head { padding: 16px 16px 0; }
+    .card-body { padding: 14px 16px 18px; }
+    .callout { margin: 14px 16px 0; }
+    .matrix thead th { width: 64px; font-size: 13px; }
+    .matrix thead th:first-child, .matrix tbody th { padding-left: 16px; }
+    .matrix thead th:last-child, .matrix tbody td:last-child { padding-right: 6px; }
+    .ch-status { display: none; }
+    .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field input, .field select { min-width: 0; }
+    .field-tz { grid-column: 1 / -1; grid-row: 3; }
+    .savebar { margin: 20px -16px 0; padding: 10px 16px; }
+    .save-actions { flex: 1 1 auto; }
+    .save-actions .btn-primary { flex: 1; }
+  }
+  @media (max-width: 380px) {
+    .crumbs { display: none; }
+    .ev-desc { font-size: 13px; }
+    .matrix thead th { width: 52px; }
+    .fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to settings</a>
+
+<header class="topbar">
+  <a class="brand" href="#"><span class="brand-mark" aria-hidden="true"></span>Fieldnote</a>
+  <nav class="crumbs" aria-label="Breadcrumb">Settings / <span aria-current="page">Notifications</span></nav>
+  <div class="me" aria-label="Signed in as Ada Okafor" role="img">AO</div>
+</header>
+
+<div class="shell">
+  <nav class="sidenav" aria-label="Settings">
+    <h2>Settings</h2>
+    <ul>
+      <li><a href="#">Profile</a></li>
+      <li><a href="#">Account</a></li>
+      <li><a href="#" aria-current="page">Notifications</a></li>
+      <li><a href="#">Integrations</a></li>
+      <li><a href="#">Billing</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <div class="page-head">
+      <h1>Notifications</h1>
+      <p>Choose what reaches you and where. These settings apply to you only, across every project in the Northwind workspace.</p>
+    </div>
+
+    <form id="form" novalidate>
+
+      <!-- Events x channels -->
+      <section class="card" aria-labelledby="t-events">
+        <div class="card-head">
+          <h2 class="card-title" id="t-events">What notifies you</h2>
+          <p>Tick a box to get that event on that channel.</p>
+        </div>
+
+        <div class="callout" id="slackCallout"></div>
+
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th scope="col">Event</th>
+                <th scope="col" id="h-email">Email <span class="ch-status">ada@northwind.example</span></th>
+                <th scope="col" id="h-push">Push <span class="ch-status">This browser, phone</span></th>
+                <th scope="col" id="h-slack">Slack <span class="ch-status" id="slackStatus"></span></th>
+              </tr>
+            </thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Quiet hours -->
+      <section class="card" aria-labelledby="t-quiet">
+        <div class="card-head">
+          <h2 class="card-title" id="t-quiet">Quiet hours</h2>
+          <p>Push and Slack notifications are held during quiet hours and delivered when they end. Email is never held.</p>
+        </div>
+        <div class="card-body">
+          <div class="switch-row">
+            <input class="switch" type="checkbox" role="switch" id="quietOn">
+            <div>
+              <label for="quietOn">Hold notifications every day</label>
+              <div class="hint" id="quietHint"></div>
+            </div>
+          </div>
+
+          <fieldset class="fields" id="quietFields">
+            <legend class="sr-only">Quiet hours time range</legend>
+            <div class="field">
+              <label for="qStart">Start</label>
+              <input type="time" id="qStart" required aria-describedby="qErr">
+            </div>
+            <div class="field">
+              <label for="qEnd">End</label>
+              <input type="time" id="qEnd" required aria-describedby="qErr">
+            </div>
+            <div class="field field-tz">
+              <label for="qTz">Time zone</label>
+              <select id="qTz"></select>
+            </div>
+            <p class="field-error" id="qErr" hidden>
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="7" fill="currentColor"/><path d="M7 3.5v4.2M7 10.2v.3" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span id="qErrText"></span>
+            </p>
+          </fieldset>
+
+          <p class="summary" id="quietSummary" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <!-- Test -->
+      <section class="card" aria-labelledby="t-test">
+        <div class="card-head">
+          <h2 class="card-title" id="t-test">Check that it works</h2>
+          <p>Send yourself a sample notification. It goes out right away, even during quiet hours, and doesn't need a save first.</p>
+        </div>
+        <div class="card-body">
+          <div class="test-row">
+            <fieldset class="seg">
+              <legend class="sr-only">Channel for the test</legend>
+              <label><input type="radio" name="testCh" value="email" checked><span>Email</span></label>
+              <label><input type="radio" name="testCh" value="push"><span>Push</span></label>
+              <label><input type="radio" name="testCh" value="slack" id="testSlack"><span>Slack</span></label>
+            </fieldset>
+            <button type="button" class="btn" id="testBtn">Send test notification</button>
+          </div>
+          <p class="test-result" id="testResult" role="status"></p>
+        </div>
+      </section>
+
+      <!-- Save -->
+      <div class="savebar">
+        <div class="save-status" id="saveStatus" role="status"></div>
+        <div class="save-actions">
+          <button type="button" class="btn btn-quiet" id="discardBtn">Discard</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save changes</button>
+        </div>
+      </div>
+      <div id="saveAlert" role="alert" class="sr-only"></div>
+    </form>
+
+    <details class="proto">
+      <summary>Prototype controls and assumptions</summary>
+      <p class="proto-lede">This is a front-end prototype with no server. Use these to review the failure paths.</p>
+      <label><input type="checkbox" id="failSave"> Make the next save fail</label>
+      <label><input type="checkbox" id="failTest"> Make the next test notification fail</label>
+      <label><input type="checkbox" id="failSlack"> Make the next Slack connection fail</label>
+      <ul>
+        <li>Preferences are saved with the Save button; connecting Slack and sending a test happen immediately.</li>
+        <li>Slack starts disconnected. Slack choices are kept and take effect once it is connected.</li>
+        <li>The weekly digest is not offered as a push notification.</li>
+        <li>Quiet hours may cross midnight; only an identical start and end is invalid.</li>
+      </ul>
+    </details>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var EVENTS = [
+    { id: 'mention',  name: 'Mentions',           desc: 'Someone @mentions you in a comment or description.' },
+    { id: 'assigned', name: 'Assigned tasks',     desc: 'A task is assigned to you or reassigned away.' },
+    { id: 'due',      name: 'Due-date reminders', desc: 'The day before a task of yours is due, and when it goes overdue.' },
+    { id: 'digest',   name: 'Weekly digest',      desc: 'A summary of your projects, sent Mondays at 9:00.' }
+  ];
+  var CHANNELS = [
+    { id: 'email', name: 'Email' },
+    { id: 'push',  name: 'Push' },
+    { id: 'slack', name: 'Slack' }
+  ];
+  var UNAVAILABLE = { 'digest:push': true };
+
+  var localTz = 'UTC';
+  try { localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
+
+  function defaults() {
+    return {
+      prefs: {
+        'mention:email': true,  'mention:push': true,  'mention:slack': true,
+        'assigned:email': true, 'assigned:push': true, 'assigned:slack': false,
+        'due:email': false,     'due:push': true,      'due:slack': false,
+        'digest:email': true,                          'digest:slack': false
+      },
+      quietOn: true, start: '22:00', end: '07:00', tz: localTz
+    };
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  var saved = defaults();
+  var draft = clone(saved);
+  var slack = { state: 'disconnected' };   // disconnected | connecting | connected | error
+  var saving = false;
+  var saveMsg = null;                       // { kind: 'ok'|'err', text }
+  var quietTouched = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var body = $('matrixBody'), qOn = $('quietOn'), qStart = $('qStart'), qEnd = $('qEnd'), qTz = $('qTz');
+
+  /* ---------- Build static parts ---------- */
+  EVENTS.forEach(function (ev) {
+    var tr = document.createElement('tr');
+    var th = document.createElement('th');
+    th.scope = 'row';
+    th.innerHTML = ev.name + '<span class="ev-desc">' + ev.desc + '</span>';
+    tr.appendChild(th);
+    CHANNELS.forEach(function (ch) {
+      var td = document.createElement('td');
+      td.dataset.ch = ch.id;
+      var key = ev.id + ':' + ch.id;
+      if (UNAVAILABLE[key]) {
+        td.innerHTML = '<span class="cell na"><span aria-hidden="true">–</span><span class="sr-only">Not available for ' + ch.name + '</span></span>';
+      } else {
+        var label = document.createElement('label');
+        label.className = 'cell';
+        var input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'box';
+        input.dataset.key = key;
+        input.setAttribute('aria-label', ev.name + ' by ' + ch.name);
+        label.appendChild(input);
+        td.appendChild(label);
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  function tzOffset(tz) {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+      for (var i = 0; i < parts.length; i++) if (parts[i].type === 'timeZoneName') return parts[i].value;
+    } catch (e) {}
+    return '';
+  }
+  function tzCity(tz) { return tz.split('/').slice(1).join(' / ').replace(/_/g, ' ') || tz; }
+
+  (function buildTz() {
+    var zones;
+    try { zones = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+    if (!zones || !zones.length) {
+      zones = ['Pacific/Honolulu', 'America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York',
+        'America/Sao_Paulo', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Africa/Lagos', 'Africa/Johannesburg',
+        'Asia/Dubai', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland'];
+    }
+    if (zones.indexOf(localTz) === -1) zones.push(localTz);
+    if (zones.indexOf('UTC') === -1) zones.push('UTC');
+    var groups = {};
+    zones.forEach(function (z) {
+      var region = z.indexOf('/') > -1 ? z.split('/')[0] : 'Other';
+      (groups[region] = groups[region] || []).push(z);
+    });
+    Object.keys(groups).sort().forEach(function (region) {
+      var og = document.createElement('optgroup');
+      og.label = region;
+      groups[region].forEach(function (z) {
+        var o = document.createElement('option');
+        o.value = z;
+        var off = tzOffset(z);
+        o.textContent = tzCity(z) + (off ? ' (' + off + ')' : '');
+        og.appendChild(o);
+      });
+      qTz.appendChild(og);
+    });
+  })();
+
+  /* ---------- Helpers ---------- */
+  function mins(t) { var p = t.split(':'); return (+p[0]) * 60 + (+p[1]); }
+  function nowIn(tz) {
+    try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()); }
+    catch (e) { return ''; }
+  }
+  function clock() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function quietError() {
+    if (!draft.quietOn) return '';
+    if (!draft.start) return 'Enter a start time.';
+    if (!draft.end) return 'Enter an end time.';
+    if (draft.start === draft.end) return 'End time is the same as the start time. Pick a different end time, or turn quiet hours off.';
+    return '';
+  }
+  function changeCount() {
+    var n = 0;
+    Object.keys(saved.prefs).forEach(function (k) { if (saved.prefs[k] !== draft.prefs[k]) n++; });
+    ['quietOn', 'start', 'end', 'tz'].forEach(function (k) { if (saved[k] !== draft[k]) n++; });
+    return n;
+  }
+
+  /* ---------- Render ---------- */
+  function renderSlack() {
+    var c = $('slackCallout'), st = $('slackStatus');
+    var connected = slack.state === 'connected';
+    var glyph = '<svg class="slack-glyph" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7.5 2.5v9M12.5 8.5v9M2.5 12.5h9M8.5 7.5h9"/></svg>';
+    c.className = 'callout' + (connected ? ' is-connected' : slack.state === 'error' ? ' is-error' : '');
+    if (connected) {
+      c.innerHTML = glyph + '<div class="callout-text"><strong>Slack is connected</strong>Notifications go to you as direct messages in the Northwind workspace.</div>' +
+        '<button type="button" class="btn" id="slackBtn">Disconnect</button>';
+      st.textContent = 'Northwind';
+      st.className = 'ch-status';
+    } else if (slack.state === 'error') {
+      c.innerHTML = glyph + '<div class="callout-text" role="alert"><strong>Slack didn’t connect</strong>The authorisation was cancelled or timed out. Nothing was changed.</div>' +
+        '<button type="button" class="btn" id="slackBtn">Try again</button>';
+      st.textContent = 'Not connected';
+      st.className = 'ch-status is-off';
+    } else {
+      var busy = slack.state === 'connecting';
+      c.innerHTML = glyph + '<div class="callout-text"><strong>Slack isn’t connected</strong>Connect it to get notifications as direct messages. Your Slack choices below are kept and start working once you connect.</div>' +
+        '<button type="button" class="btn btn-primary" id="slackBtn"' + (busy ? ' disabled' : '') + '>' +
+        (busy ? '<span class="spinner" aria-hidden="true"></span>Connecting…' : 'Connect Slack') + '</button>';
+      st.textContent = 'Not connected';
+      st.className = 'ch-status is-off';
+    }
+    $('slackBtn').addEventListener('click', onSlackClick);
+
+    body.querySelectorAll('td[data-ch="slack"]').forEach(function (td) {
+      td.classList.toggle('col-off', !connected);
+      var input = td.querySelector('input');
+      if (input) {
+        input.disabled = !connected;
+        if (connected) input.removeAttribute('title'); else input.title = 'Connect Slack to change this';
+      }
+    });
+    var ts = $('testSlack');
+    ts.disabled = !connected;
+    if (!connected && ts.checked) document.querySelector('input[name="testCh"][value="email"]').checked = true;
+  }
+
+  function renderQuiet() {
+    qOn.checked = draft.quietOn;
+    if (document.activeElement !== qStart) qStart.value = draft.start;
+    if (document.activeElement !== qEnd) qEnd.value = draft.end;
+    qTz.value = draft.tz;
+    $('quietFields').disabled = !draft.quietOn;
+    $('quietHint').textContent = draft.quietOn ? 'On. Mentions and everything else wait until quiet hours end.' : 'Off. Notifications arrive at any time.';
+
+    var err = quietTouched ? quietError() : '';
+    var endBad = err && draft.end && draft.start;       // same-time error belongs to End
+    qEnd.setAttribute('aria-invalid', err && (endBad || !draft.end) ? 'true' : 'false');
+    qStart.setAttribute('aria-invalid', err && !draft.start ? 'true' : 'false');
+    $('qErr').hidden = !err;
+    $('qErrText').textContent = err;
+
+    var s = $('quietSummary');
+    if (!draft.quietOn) { s.textContent = ''; return; }
+    if (quietError()) { s.textContent = ''; return; }
+    var d = (mins(draft.end) - mins(draft.start) + 1440) % 1440;
+    var h = Math.floor(d / 60), m = d % 60;
+    var dur = (h ? h + ' h' : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
+    var next = mins(draft.end) < mins(draft.start) ? ' the next day' : '';
+    var now = nowIn(draft.tz);
+    s.innerHTML = 'Quiet from <strong>' + draft.start + '</strong> to <strong>' + draft.end + '</strong>' + next + ', ' + dur + ' each day.' +
+      (now ? ' It’s ' + now + ' in ' + tzCity(draft.tz) + ' now.' : '');
+  }
+
+  function renderSave() {
+    var n = changeCount();
+    var st = $('saveStatus');
+    $('saveBtn').disabled = saving || n === 0;
+    $('discardBtn').disabled = saving || n === 0;
+    $('saveBtn').innerHTML = saving ? '<span class="spinner" aria-hidden="true"></span>Saving…' : 'Save changes';
+    var cls = 'save-status', html;
+    if (saving) {
+      html = 'Saving your changes…';
+    } else if (saveMsg && saveMsg.kind === 'err') {
+      cls += ' is-err';
+      html = '<span class="dot" aria-hidden="true"></span>' + saveMsg.text;
+      if (saveMsg.retry) $('saveBtn').textContent = 'Try again';
+    } else if (n > 0) {
+      cls += ' is-dirty';
+      html = '<span class="dot" aria-hidden="true"></span>' + n + (n === 1 ? ' unsaved change' : ' unsaved changes');
+    } else if (saveMsg && saveMsg.kind === 'ok') {
+      cls += ' is-ok';
+      html = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>' + saveMsg.text;
+    } else {
+      html = 'No unsaved changes';
+    }
+    st.className = cls;
+    if (st.innerHTML !== html) st.innerHTML = html;
+  }
+
+  function render() {
+    body.querySelectorAll('input[data-key]').forEach(function (i) { i.checked = !!draft.prefs[i.dataset.key]; });
+    renderSlack();
+    renderQuiet();
+    renderSave();
+  }
+
+  /* ---------- Events ---------- */
+  function edited() {
+    saveMsg = null;
+    renderQuiet();
+    renderSave();
+  }
+
+  body.addEventListener('change', function (e) {
+    var k = e.target.dataset.key;
+    if (!k) return;
+    draft.prefs[k] = e.target.checked;
+    edited();
+  });
+  qOn.addEventListener('change', function () { draft.quietOn = qOn.checked; edited(); });
+  qStart.addEventListener('input', function () { draft.start = qStart.value; quietTouched = true; edited(); });
+  qEnd.addEventListener('input', function () { draft.end = qEnd.value; quietTouched = true; edited(); });
+  qTz.addEventListener('change', function () { draft.tz = qTz.value; edited(); });
+
+  function onSlackClick() {
+    if (slack.state === 'connected') {
+      slack.state = 'disconnected';
+      renderSlack();
+      $('slackBtn').focus();
+      return;
+    }
+    slack.state = 'connecting';
+    renderSlack();
+    setTimeout(function () {
+      var fail = $('failSlack').checked;
+      $('failSlack').checked = false;
+      slack.state = fail ? 'error' : 'connected';
+      renderSlack();
+      $('slackBtn').focus();
+    }, 1300);
+  }
+
+  $('testBtn').addEventListener('click', function () {
+    var btn = $('testBtn'), out = $('testResult');
+    var ch = document.querySelector('input[name="testCh"]:checked').value;
+    var where = { email: 'ada@northwind.example', push: 'your devices', slack: 'your Slack direct messages' }[ch];
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Sending…';
+    out.className = 'test-result';
+    out.textContent = '';
+    setTimeout(function () {
+      var fail = $('failTest').checked;
+      $('failTest').checked = false;
+      btn.disabled = false;
+      btn.textContent = fail ? 'Send again' : 'Send test notification';
+      if (fail) {
+        out.className = 'test-result is-err';
+        out.textContent = 'The test didn’t go out. ' + (ch === 'push'
+          ? 'Check that notifications are allowed for Fieldnote in your browser or phone settings, then send again.'
+          : 'Our ' + (ch === 'slack' ? 'Slack' : 'email') + ' service didn’t respond. Send again in a moment.');
+      } else {
+        out.className = 'test-result is-ok';
+        out.textContent = 'Test sent to ' + where + ' at ' + clock() + '. It can take a minute to arrive.';
+      }
+    }, 1100);
+  });
+
+  $('discardBtn').addEventListener('click', function () {
+    draft = clone(saved);
+    saveMsg = null;
+    quietTouched = false;
+    render();
+  });
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (saving || changeCount() === 0) return;
+    quietTouched = true;
+    var err = quietError();
+    if (err) {
+      renderQuiet();
+      saveMsg = { kind: 'err', text: 'Fix the quiet hours time range before saving.' };
+      renderSave();
+      (draft.start ? qEnd : qStart).focus();
+      return;
+    }
+    saving = true;
+    saveMsg = null;
+    $('saveAlert').textContent = '';
+    renderSave();
+    var attempt = clone(draft);
+    setTimeout(function () {
+      saving = false;
+      var fail = $('failSave').checked;
+      $('failSave').checked = false;
+      if (fail) {
+        saveMsg = { kind: 'err', retry: true, text: 'Couldn’t save. We lost the connection to the server. Your changes are still here.' };
+        $('saveAlert').textContent = saveMsg.text + ' Try again.';
+      } else {
+        saved = attempt;
+        saveMsg = { kind: 'ok', text: 'Saved at ' + clock() };
+      }
+      renderSave();
+      if (fail) $('saveBtn').focus();
+    }, 1200);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      $('form').requestSubmit ? $('form').requestSubmit() : $('saveBtn').click();
+    }
+  });
+  window.addEventListener('beforeunload', function (e) {
+    if (changeCount() > 0) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

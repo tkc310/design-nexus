@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ひばり号 時刻表｜みずほ市コミュニティバス</title>
+<meta name="description" content="みずほ市コミュニティバス「ひばり号」の時刻表。停留所を選ぶと、次のバスの発車時刻とあと何分かを大きく表示します。">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700;800&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 標識の白: the enamel plate the stop timetable is printed on */
+  --plate:#FFFFFF;
+  /* 墨: timetable print ink */
+  --ink:#1A1C1A;
+  --muted:#525652;
+  --rule:#6E736C;
+  /* 車体の緑: the bus livery — what you press, what is selected */
+  --livery:#00684A;
+  --on-livery:#FFFFFF;
+  /* 休日赤: Japanese timetables print the holiday schedule in red */
+  --holiday:#C4122F;
+  /* 工事黄: road-works sign yellow — 運休 status only */
+  --works:#FFD100;
+  --on-works:#1A1C1A;
+
+  --font: "Atkinson Hyperlegible Next","BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --t1:.889rem;  /* 16px: floor for older readers */
+  --t2:1rem;     /* 18px */
+  --t3:1.333rem; /* 24px */
+  --t4:1.777rem; /* 32px */
+  --t5:2.369rem; /* 43px */
+  --t6:3.157rem; /* 57px */
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px; --s12:48px;
+  --r:6px;
+  --frame:3px;
+  --band:3.25rem;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --plate:#121412;
+    --ink:#ECEDE8;
+    --muted:#B5B9B2;
+    --rule:#8C918A;
+    --livery:#62CFA0;
+    --on-livery:#08261A;
+    --holiday:#FF8C8C;
+  }
+}
+html{font-size:112.5%;-webkit-text-size-adjust:100%}
+html.large{font-size:137.5%}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0;background:var(--plate);color:var(--ink);
+  font-family:var(--font);font-size:var(--t2);line-height:1.7;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2{margin:0;line-height:1.3;text-wrap:balance;font-weight:700}
+p{margin:0}
+.nw{white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:4px solid var(--livery);outline-offset:3px}
+button,select,input{font:inherit;color:inherit}
+
+/* ---------- header ---------- */
+.bar{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  padding:var(--s3) max(var(--s4),env(safe-area-inset-right)) var(--s3) max(var(--s4),env(safe-area-inset-left));
+  border-bottom:var(--frame) solid var(--ink);
+}
+.brand{min-width:0}
+.org{font-size:var(--t1);color:var(--muted);line-height:1.4}
+h1{font-size:var(--t3)}
+.size{
+  flex:none;min-height:48px;padding:0 var(--s3);border:2px solid var(--ink);border-radius:var(--r);
+  background:var(--plate);cursor:pointer;font-weight:700;font-size:var(--t1);white-space:nowrap;
+}
+.size[aria-pressed="true"]{background:var(--livery);border-color:var(--livery);color:var(--on-livery)}
+.size:hover{border-color:var(--livery)}
+
+/* ---------- layout ---------- */
+main{
+  max-width:40rem;margin:0 auto;
+  padding:var(--s4) max(var(--s4),env(safe-area-inset-right)) var(--s12) max(var(--s4),env(safe-area-inset-left));
+  display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s8);
+}
+main>*{min-width:0}
+.col-a{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s6);align-content:start;min-width:0}
+
+/* ---------- stop picker ---------- */
+.pick label{display:block;font-weight:700;margin-bottom:var(--s1)}
+.select-wrap{position:relative}
+.select-wrap::after{
+  content:"";position:absolute;right:var(--s4);top:50%;width:.7rem;height:.7rem;
+  border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);
+  transform:translateY(-70%) rotate(45deg);pointer-events:none;
+}
+select{
+  appearance:none;width:100%;min-height:3.5rem;padding:var(--s2) var(--s12) var(--s2) var(--s4);
+  font-size:var(--t3);font-weight:700;background:var(--plate);
+  border:var(--frame) solid var(--ink);border-radius:var(--r);cursor:pointer;
+}
+select:hover{border-color:var(--livery)}
+.dir{margin-top:var(--s2);color:var(--muted)}
+.dir b{color:var(--ink)}
+
+/* ---------- next buses: the signature plate ---------- */
+.next{border:var(--frame) solid var(--ink)}
+.next-h{
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 var(--s3);
+  padding:var(--s2) var(--s4);background:var(--ink);color:var(--plate);
+}
+.next-h h2{font-size:var(--t3)}
+.next-h p{font-size:var(--t1)}
+.deps{list-style:none;margin:0;padding:0}
+.dep{
+  position:relative;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 var(--s3);
+  padding:var(--s3) var(--s4) var(--s3) calc(var(--s2) + var(--s3));border-top:2px solid var(--rule);
+}
+.dep:first-child{border-top:0}
+.dep::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--s2);background:var(--day)}
+.dep .t{font-weight:800;font-size:var(--t5);line-height:1.1;white-space:nowrap;letter-spacing:0}
+.dep .t small{font-size:var(--t2);font-weight:700;margin-left:var(--s1)}
+.dep .left{margin-left:auto;text-align:right;font-weight:700;line-height:1.2;white-space:nowrap}
+.dep .left b{font-size:var(--t5);font-weight:800;letter-spacing:0}
+.dep .left .soon{font-size:var(--t4)}
+.dep.first .t{font-size:var(--t6)}
+.dep.first .left b{font-size:var(--t6)}
+.dep.off .t{text-decoration:line-through;text-decoration-thickness:4px;font-size:var(--t4);color:var(--muted)}
+.dep.off .why{flex-basis:100%;font-size:var(--t1);color:var(--ink)}
+.tag{
+  display:inline-block;padding:0 var(--s2);background:var(--works);color:var(--on-works);
+  font-weight:700;font-size:var(--t1);line-height:1.6;border-radius:2px;white-space:nowrap;letter-spacing:.05em;
+}
+.dep.off .tag{align-self:center}
+.end{padding:var(--s4);display:grid;gap:var(--s2)}
+.end strong{font-size:var(--t3)}
+
+/* ---------- notice ---------- */
+.notice{border-left:var(--s2) solid var(--works);padding:var(--s1) 0 var(--s1) var(--s4)}
+.notice h2{font-size:var(--t3);margin-bottom:var(--s2)}
+.notice ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+.notice li p+p{margin-top:var(--s1)}
+.notice .when{font-weight:700}
+.notice .none{color:var(--muted)}
+
+/* ---------- full timetable ---------- */
+.tt-head{display:grid;gap:var(--s3);margin-bottom:var(--s4)}
+.tt-head h2{font-size:var(--t4)}
+.seg{border:0;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.seg legend{font-weight:700;margin-bottom:var(--s1);padding:0}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{
+  display:flex;align-items:center;justify-content:center;gap:var(--s2);min-height:3.25rem;padding:0 var(--s3);
+  border:var(--frame) solid var(--ink);border-radius:var(--r);font-weight:700;font-size:var(--t3);white-space:nowrap;
+}
+.seg span::before{content:"";width:.9rem;height:.9rem;border-radius:2px;background:var(--sw)}
+.seg .wd span{--sw:var(--ink)}
+.seg .hd span{--sw:var(--holiday)}
+.seg label:hover span{border-color:var(--livery)}
+.seg input:checked+span{background:var(--livery);border-color:var(--livery);color:var(--on-livery)}
+.seg input:focus-visible+span{outline:4px solid var(--livery);outline-offset:3px}
+.tt-note{color:var(--muted)}
+.tt-note b{color:var(--ink)}
+
+.tt{width:100%;border-collapse:collapse;border:var(--frame) solid var(--ink)}
+.tt thead th{
+  background:var(--ink);color:var(--plate);font-size:var(--t1);font-weight:700;text-align:left;padding:var(--s1) var(--s3);
+}
+.tt thead th:first-child{text-align:center;width:var(--band)}
+.tt tbody tr+tr th,.tt tbody tr+tr td{border-top:2px solid var(--rule)}
+.tt th[scope=row]{
+  width:var(--band);background:var(--day);color:var(--plate);
+  font-size:var(--t3);font-weight:800;text-align:center;vertical-align:middle;padding:var(--s2) 0;letter-spacing:0;
+}
+.tt td{padding:var(--s2) var(--s3)}
+.mins{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center}
+.m{font-size:var(--t3);font-weight:700;line-height:1.3;min-width:2ch;white-space:nowrap;letter-spacing:0}
+.m.past{color:var(--muted);font-weight:400}
+.m.nx{background:var(--ink);color:var(--plate);padding:0 var(--s2);border-radius:2px}
+.m.off s{text-decoration-thickness:3px;color:var(--muted)}
+.m.off .tag{margin-left:var(--s1);vertical-align:middle}
+.tt-foot{margin-top:var(--s3);color:var(--muted)}
+
+body{--day:var(--ink)}
+body.hd-view .tt{--day:var(--holiday)}
+body.today-hd .next{--day:var(--holiday)}
+
+/* ---------- route ---------- */
+.route h2{font-size:var(--t3);margin-bottom:var(--s3)}
+.route ol{list-style:none;margin:0;padding:0;position:relative}
+.route ol::before{content:"";position:absolute;left:calc(var(--s4) + 5px);top:var(--s6);bottom:var(--s6);width:4px;background:var(--ink)}
+.route button{
+  position:relative;display:flex;align-items:center;gap:var(--s3);width:100%;min-height:3.25rem;
+  padding:var(--s1) var(--s4);border:0;background:transparent;cursor:pointer;text-align:left;border-radius:var(--r);
+}
+.route button::before{
+  content:"";flex:none;width:14px;height:14px;border-radius:50%;background:var(--plate);border:3px solid var(--ink);
+}
+.route .lbl{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 var(--s3);line-height:1.4}
+.route .nm{font-weight:700;white-space:nowrap}
+.route .off{color:var(--muted);font-size:var(--t1);white-space:nowrap}
+.route button:hover .nm{text-decoration:underline;text-underline-offset:4px}
+.route button[aria-current="true"]{box-shadow:inset 0 0 0 var(--frame) var(--livery)}
+.route button[aria-current="true"]::before{width:20px;height:20px;margin:0 -3px;border-color:var(--livery);background:var(--livery)}
+
+footer{
+  border-top:var(--frame) solid var(--ink);padding:var(--s4);
+  color:var(--muted);text-align:center;
+}
+
+@media (max-width:559px){ .route .lbl{flex-direction:column;align-items:flex-start} }
+/* ---------- wider screens ---------- */
+@media (min-width:960px){
+  main{max-width:68rem;grid-template-columns:minmax(0,26rem) minmax(0,1fr);column-gap:var(--s12);padding-top:var(--s8)}
+  .col-a{position:sticky;top:var(--s4);align-self:start}
+  .route{grid-column:2}
+}
+@media (min-width:1600px){
+  main{max-width:96rem;grid-template-columns:minmax(0,28rem) minmax(0,1fr) minmax(0,20rem)}
+  .route{grid-column:3;grid-row:1;position:sticky;top:var(--s4);align-self:start}
+}
+@media (prefers-reduced-motion:no-preference){
+  .seg span,.size,select{transition:background-color .15s,border-color .15s,color .15s}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <div>
+      <p class="org"><span class="nw">みずほ市</span><wbr><span class="nw">コミュニティバス</span></p>
+      <h1><span class="nw">ひばり号</span> <span class="nw">時刻表</span></h1>
+    </div>
+  </div>
+  <button class="size" id="sizeBtn" type="button" aria-pressed="false">文字を大きく</button>
+</header>
+
+<main>
+  <div class="col-a">
+    <section class="pick">
+      <label for="stop">乗る停留所</label>
+      <div class="select-wrap"><select id="stop"></select></div>
+      <p class="dir" id="dir"></p>
+    </section>
+
+    <section class="next" aria-labelledby="nextH">
+      <div class="next-h">
+        <h2 id="nextH">つぎのバス</h2>
+        <p id="nowLine"></p>
+      </div>
+      <div id="nextBody"></div>
+    </section>
+
+    <section class="notice" aria-labelledby="noticeH">
+      <h2 id="noticeH">運休のお知らせ</h2>
+      <ul id="noticeList"></ul>
+    </section>
+  </div>
+
+  <section class="table" aria-labelledby="ttH">
+    <div class="tt-head">
+      <h2 id="ttH"></h2>
+      <fieldset class="seg">
+        <legend>ダイヤ</legend>
+        <label class="wd"><input type="radio" name="day" value="wd"><span>平日</span></label>
+        <label class="hd"><input type="radio" name="day" value="hd"><span>土日祝</span></label>
+      </fieldset>
+      <p class="tt-note" id="ttNote"></p>
+    </div>
+    <table class="tt">
+      <thead><tr><th scope="col">時</th><th scope="col">分</th></tr></thead>
+      <tbody id="ttBody"></tbody>
+    </table>
+    <p class="tt-foot">2026年4月1日改正。道路の混み具合により、遅れることがあります。</p>
+  </section>
+
+  <section class="route" aria-labelledby="routeH">
+    <h2 id="routeH">停留所一覧（右回り）</h2>
+    <ol id="routeList"></ol>
+  </section>
+</main>
+
+<footer>
+  <p>お問い合わせ：<span class="nw">みずほ市役所</span> <span class="nw">交通政策課</span></p>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  // Loop route, one direction. Offset = minutes after leaving 市役所前.
+  var STOPS = [
+    {id:"shiyakusho", name:"市役所前", off:0},
+    {id:"eki",        name:"みずほ駅前", off:4},
+    {id:"byoin",      name:"中央病院", off:9},
+    {id:"toshokan",   name:"図書館・公民館", off:13},
+    {id:"sakuradai",  name:"さくら台団地", off:18},
+    {id:"fureai",     name:"ふれあいセンター", off:22},
+    {id:"nishisho",   name:"西小学校前", off:27},
+    {id:"nishimachi", name:"西町商店街", off:31}
+  ];
+  function hm(s){var p=s.split(":");return +p[0]*60+ +p[1];}
+  var ORIGIN = {
+    wd:["7:10","7:50","8:30","9:10","9:50","10:30","11:10","11:50","12:50","13:30","14:10","14:50","15:30","16:10","16:50","17:30","18:10","18:50"].map(hm),
+    hd:["8:30","9:30","10:30","11:30","13:00","14:00","15:00","16:00","17:00"].map(hm)
+  };
+  // 運休: whole trips (by 市役所前 departure) on a date range.
+  var NOTICES = [
+    {from:"2026-11-04", to:"2026-11-06", day:"wd", trips:[hm("11:10")],
+     when:["11月4日（水）","〜6日（金）"],
+     text:"道路工事のため、市役所前 11:10発の便を運休します。この便は全部の停留所で運休です。",
+     why:"道路工事のため"},
+    {from:"2026-12-29", to:"2027-01-03", day:"all", trips:"all",
+     when:["12月29日（火）","〜1月3日（日）"],
+     text:"年末年始のため、全部の便を運休します。",
+     why:"年末年始のため"}
+  ];
+  var HOLIDAYS = ["2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29","2026-05-03","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11","2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23","2027-01-01","2027-01-11"];
+  var WD = ["日","月","火","水","木","金","土"];
+
+  function jstNow(){
+    var d = new Date(Date.now() + 9*3600*1000);
+    return {y:d.getUTCFullYear(), mo:d.getUTCMonth()+1, d:d.getUTCDate(), w:d.getUTCDay(),
+            min:d.getUTCHours()*60+d.getUTCMinutes(), ms:d.getTime()};
+  }
+  function pad(n){return (n<10?"0":"")+n;}
+  function iso(t){return t.y+"-"+pad(t.mo)+"-"+pad(t.d);}
+  function addDay(t){var d=new Date(t.ms+86400000);return {y:d.getUTCFullYear(),mo:d.getUTCMonth()+1,d:d.getUTCDate(),w:d.getUTCDay(),min:0,ms:d.getTime()};}
+  function dayType(t){return (t.w===0||t.w===6||HOLIDAYS.indexOf(iso(t))>=0)?"hd":"wd";}
+  function clock(m){return Math.floor(m/60)+":"+pad(m%60);}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+
+  function cancelOf(t, type, originMin){
+    var key=iso(t);
+    for(var i=0;i<NOTICES.length;i++){
+      var n=NOTICES[i];
+      if(key<n.from||key>n.to) continue;
+      if(n.day!=="all"&&n.day!==type) continue;
+      if(n.trips==="all"||n.trips.indexOf(originMin)>=0) return n;
+    }
+    return null;
+  }
+  function deps(stop, type, t){
+    return ORIGIN[type].map(function(o){
+      return {at:o+stop.off, off:t?cancelOf(t,type,o):null};
+    });
+  }
+
+  var stopSel=document.getElementById("stop");
+  var state={stop:"byoin", view:null};
+  try{
+    var saved=localStorage.getItem("hibari-stop"); if(saved&&STOPS.some(function(s){return s.id===saved;})) state.stop=saved;
+    if(localStorage.getItem("hibari-large")==="1") setLarge(true);
+  }catch(e){}
+  var q=location.hash.replace("#","");
+  if(STOPS.some(function(s){return s.id===q;})) state.stop=q;
+
+  STOPS.forEach(function(s){
+    var o=document.createElement("option"); o.value=s.id; o.textContent=s.name; stopSel.appendChild(o);
+  });
+  var routeList=document.getElementById("routeList");
+  STOPS.forEach(function(s){
+    var li=document.createElement("li");
+    li.innerHTML='<button type="button" data-stop="'+s.id+'"><span class="lbl"><span class="nm">'+esc(s.name)+'</span><span class="off">'+(s.off?"市役所前から"+s.off+"分":"始発")+'</span></span></button>';
+    routeList.appendChild(li);
+  });
+  routeList.addEventListener("click",function(e){
+    var b=e.target.closest("button[data-stop]"); if(!b) return;
+    choose(b.getAttribute("data-stop"));
+    document.getElementById("nextH").scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  });
+  stopSel.addEventListener("change",function(){choose(stopSel.value);});
+  document.querySelectorAll('input[name=day]').forEach(function(r){
+    r.addEventListener("change",function(){state.view=r.value;render();});
+  });
+  var sizeBtn=document.getElementById("sizeBtn");
+  sizeBtn.addEventListener("click",function(){
+    var on=sizeBtn.getAttribute("aria-pressed")!=="true"; setLarge(on);
+    try{localStorage.setItem("hibari-large",on?"1":"0");}catch(e){}
+  });
+  function setLarge(on){
+    document.documentElement.classList.toggle("large",on);
+    document.getElementById("sizeBtn").setAttribute("aria-pressed",on?"true":"false");
+  }
+  function choose(id){
+    state.stop=id;
+    try{localStorage.setItem("hibari-stop",id);}catch(e){}
+    if(history.replaceState) history.replaceState(null,"","#"+id);
+    render();
+  }
+
+  function leftText(diff){
+    if(diff<=0) return '<span class="soon">まもなく</span>';
+    if(diff<60) return 'あと<b>'+diff+'</b>分';
+    return 'あと<b>'+Math.floor(diff/60)+'</b>時間<b>'+(diff%60)+'</b>分';
+  }
+
+  function render(){
+    var t=jstNow(), today=dayType(t);
+    if(!state.view) state.view=today;
+    var idx=0; STOPS.forEach(function(s,i){if(s.id===state.stop) idx=i;});
+    var stop=STOPS[idx], nextStop=STOPS[(idx+1)%STOPS.length];
+    stopSel.value=stop.id;
+    document.getElementById("dir").innerHTML='右回り　次は<b class="nw">「'+esc(nextStop.name)+'」</b>';
+    document.body.classList.toggle("today-hd",today==="hd");
+    document.body.classList.toggle("hd-view",state.view==="hd");
+    document.getElementById("nowLine").innerHTML='<span class="nw">いま '+clock(t.min)+'</span>　<span class="nw">'+t.mo+'月'+t.d+'日（'+WD[t.w]+'）</span><span class="nw">'+(today==="hd"?"土日祝ダイヤ":"平日ダイヤ")+'</span>';
+
+    // next three running buses, with any cancelled bus between them shown in place
+    var list=deps(stop,today,t), rows=[], running=0;
+    for(var i=0;i<list.length&&running<3;i++){
+      if(list[i].at<t.min) continue;
+      rows.push(list[i]); if(!list[i].off) running++;
+    }
+    var body=document.getElementById("nextBody");
+    if(!running){
+      var tm=addDay(t), tt=dayType(tm), first=deps(stop,tt,tm).filter(function(d){return !d.off;})[0];
+      body.innerHTML='<div class="end"><strong>きょうの運行は終わりました。</strong><p>'+(first?'あした（'+tm.mo+'月'+tm.d+'日）の始発は <b class="nw">'+clock(first.at)+'</b> です。':'あしたは運休です。お知らせをご覧ください。')+'</p></div>';
+    } else {
+      var firstDone=false;
+      body.innerHTML='<ol class="deps">'+rows.map(function(d){
+        if(d.off){
+          return '<li class="dep off"><span class="t"><span class="sr">運休の便 </span>'+clock(d.at)+'</span><span class="tag">運休</span><span class="why">'+esc(d.off.why)+'</span></li>';
+        }
+        var cls=firstDone?"dep":"dep first"; firstDone=true;
+        return '<li class="'+cls+'"><span class="t">'+clock(d.at)+'<small>発</small></span><span class="left">'+leftText(d.at-t.min)+'</span></li>';
+      }).join("")+'</ol>';
+    }
+
+    // notices active today or upcoming within 60 days
+    var key=iso(t), limit=iso({y:new Date(t.ms+60*86400000).getUTCFullYear(),mo:new Date(t.ms+60*86400000).getUTCMonth()+1,d:new Date(t.ms+60*86400000).getUTCDate()});
+    var active=NOTICES.filter(function(n){return n.to>=key&&n.from<=limit;});
+    document.getElementById("noticeList").innerHTML=active.length?active.map(function(n){
+      return '<li><p class="when">'+(n.from<=key?'<span class="tag">本日運休あり</span> ':'')+n.when.map(function(s){return '<span class="nw">'+esc(s)+'</span>';}).join("<wbr>")+'</p><p>'+esc(n.text)+'</p></li>';
+    }).join(""):'<li><p class="none">いま、運休のお知らせはありません。</p></li>';
+
+    // full timetable
+    var view=state.view, isToday=view===today;
+    document.querySelectorAll('input[name=day]').forEach(function(r){r.checked=r.value===view;});
+    document.getElementById("ttH").innerHTML='<span class="nw">'+esc(stop.name)+'</span>の時刻表';
+    document.getElementById("ttNote").innerHTML=isToday
+      ? 'きょうは<b>'+(today==="hd"?"土日祝":"平日")+'</b>ダイヤです。黒く囲んだ時刻が次のバスです。'
+      : 'きょうは<b>'+(today==="hd"?"土日祝":"平日")+'</b>ダイヤです。いまは<b>'+(view==="hd"?"土日祝":"平日")+'</b>の時刻表を表示しています。';
+    var all=deps(stop,view,isToday?t:null), byHour={}, hours=[], nextAt=null;
+    if(isToday){ for(var k=0;k<all.length;k++){ if(all[k].at>=t.min&&!all[k].off){nextAt=all[k].at;break;} } }
+    all.forEach(function(d){var h=Math.floor(d.at/60); if(!byHour[h]){byHour[h]=[];hours.push(h);} byHour[h].push(d);});
+    document.getElementById("ttBody").innerHTML=hours.map(function(h){
+      return '<tr><th scope="row">'+h+'<span class="sr">時</span></th><td><div class="mins">'+byHour[h].map(function(d){
+        var mm=pad(d.at%60);
+        if(d.off) return '<span class="m off"><s>'+mm+'</s><span class="sr">分</span><span class="tag">運休</span></span>';
+        var c="m"; if(isToday&&d.at<t.min) c+=" past"; if(d.at===nextAt) c+=" nx";
+        return '<span class="'+c+'">'+mm+'<span class="sr">分'+(d.at===nextAt?"（次のバス）":"")+'</span></span>';
+      }).join("")+'</div></td></tr>';
+    }).join("");
+
+    document.querySelectorAll("#routeList button").forEach(function(b){
+      if(b.getAttribute("data-stop")===stop.id) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current");
+    });
+  }
+
+  render();
+  setInterval(render,30000);
+  document.addEventListener("visibilitychange",function(){if(!document.hidden) render();});
+})();
+</script>
+</body>
+</html>

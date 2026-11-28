@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今月の給与 — さくら通りクリニック</title>
+<meta name="description" content="11月分の給与。締め日までの残り日数、未承認の勤怠、スタッフ別の支給額と前月比を確認し、勤怠の承認と給与の確定を行います。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@700&family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAFAF7;        /* 紙: 帳票の上質紙 */
+  --surface: #FFFFFF;
+  --text: #1F2328;      /* 墨: 明細書の印字 */
+  --muted: #565C66;
+  --accent: #1D4E9E;    /* 藍: 押すもの・選択中 */
+  --accent-press: #163D7C;
+  --row-hover: #F3F6F4;
+  --err-tint: #FBF1EE;
+  --on-accent: #FFFFFF;
+  --border: #767C86;    /* 入力欄・無効ボタンの枠 */
+  --danger: #B23A1E;    /* 朱: 朱肉。済印とエラー */
+  --rule: #A9BDB5;      /* 罫: 連続帳票の緑罫 */
+  --band: #EAF1EE;      /* 帯: 見出し帯 */
+  --pending: #7A5200;   /* 黄土: 付箋。未承認 */
+
+  --f-display: "BIZ UDPMincho", "Hiragino Mincho ProN", serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", sans-serif;
+  --f-num: "IBM Plex Sans", "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+
+  --t-14: 0.875rem;
+  --t-16: 1rem;
+  --t-20: 1.25rem;
+  --t-25: 1.5625rem;
+  --t-39: 2.4375rem;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px; --s8: 32px; --s12: 48px;
+  --r: 6px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  color-scheme: light;
+}
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: var(--f-body); font-size: var(--t-16); line-height: 1.75; letter-spacing: 0.02em;
+}
+h1, h2, h3 { line-height: 1.35; text-wrap: balance; margin: 0; font-feature-settings: "palt"; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; letter-spacing: 0; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- top bar ---------- */
+.bar { background: var(--surface); border-bottom: 1px solid var(--rule); }
+.bar-in { max-width: 1240px; margin: 0 auto; padding: 0 var(--s4); display: flex; align-items: center; gap: var(--s6); min-height: 56px; flex-wrap: wrap; }
+.clinic { font-weight: 700; white-space: nowrap; }
+.bar nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s1); }
+.bar nav a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--s3); color: var(--text); text-decoration: none; border-radius: var(--r); white-space: nowrap; }
+.bar nav a:hover { background: var(--band); }
+.bar nav a[aria-current="page"] { color: var(--accent); font-weight: 700; box-shadow: inset 0 -3px 0 var(--accent); border-radius: 0; }
+.who { margin-left: auto; color: var(--muted); white-space: nowrap; }
+
+/* ---------- layout ---------- */
+.page { max-width: 1240px; margin: 0 auto; padding: var(--s6) var(--s4) var(--s12); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+.main-col { min-width: 0; }
+
+.head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s4) var(--s6); margin-bottom: var(--s6); }
+.title-row { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-size: var(--t-25); font-weight: 700; }
+.month-nav { display: inline-flex; gap: var(--s1); }
+.icon-btn { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+.icon-btn:hover:not(:disabled) { background: var(--band); }
+.icon-btn:disabled { color: var(--muted); border-style: dashed; cursor: not-allowed; }
+.icon-btn svg { width: 18px; height: 18px; }
+.subline { color: var(--muted); margin-top: var(--s1); }
+
+.actions { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s2); }
+.btns { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; }
+.btn {
+  font: inherit; font-weight: 700; min-height: 44px; padding: 0 var(--s4); border-radius: var(--r);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap;
+  transition: background-color .15s ease, transform .12s var(--ease-out);
+}
+.btn:hover:not(:disabled) { background: var(--band); }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover:not(:disabled) { background: var(--accent-press); }
+.btn:disabled { color: var(--muted); border-style: dashed; background: transparent; cursor: not-allowed; }
+.btn.link { border-color: transparent; background: transparent; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; padding: 0 var(--s2); min-height: 36px; }
+.reason { color: var(--text); font-size: var(--t-14); text-align: right; max-width: 34em; }
+.reason b { color: var(--pending); }
+.reason .blk { display: inline-block; max-width: 100%; }
+.sort-sel { display: none; }
+
+/* ---------- 帳票の升 (the unit) ---------- */
+.ledger { display: grid; grid-template-columns: 4fr 4fr; gap: var(--s4); margin-bottom: var(--s6); }
+.frame { border: 1px solid var(--rule); border-radius: var(--r); background: var(--surface); overflow: hidden; min-width: 0; }
+.frame > h2 { font-family: var(--f-body); font-size: var(--t-14); font-weight: 700; padding: var(--s1) var(--s3); background: var(--band); border-bottom: 1px solid var(--rule); letter-spacing: 0.08em; }
+.cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cell { border-left: 1px solid var(--rule); min-width: 0; display: flex; flex-direction: column; }
+.cell:first-child { border-left: 0; }
+.cell-h { font-size: var(--t-14); text-align: center; padding: 2px var(--s2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.cell-b { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: var(--s1); padding: var(--s3) var(--s2); min-height: 132px; }
+.big { font-family: var(--f-num); font-weight: 600; font-size: var(--t-39); line-height: 1; font-variant-numeric: tabular-nums; }
+.big small { font-family: var(--f-body); font-size: var(--t-16); font-weight: 700; margin-left: 2px; }
+.cell-b .note { font-size: var(--t-14); }
+.cell-b .amount { font-family: var(--f-num); font-weight: 600; font-size: var(--t-20); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cell.total .amount { font-size: var(--t-25); }
+.pending-t { color: var(--pending); font-weight: 700; }
+
+/* 日付印 (date stamp) */
+.stamp {
+  width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--danger); color: var(--danger);
+  display: grid; grid-template-rows: 1fr auto 1fr; align-items: center; justify-items: center;
+  font-size: 12px; line-height: 1.1; letter-spacing: 0.05em; transform: rotate(-8deg); overflow: hidden; flex: none;
+}
+.stamp span { display: block; width: 100%; text-align: center; }
+.stamp .d { border-top: 1px solid var(--danger); border-bottom: 1px solid var(--danger); padding: 3px 0; font-family: var(--f-num); font-weight: 600; font-size: 14px; letter-spacing: 0; }
+.stamp .t { font-weight: 700; font-size: 14px; align-self: end; padding-bottom: 2px; }
+.stamp .n { align-self: start; padding-top: 2px; }
+.stamp-slot { width: 76px; height: 76px; border-radius: 50%; border: 2px dashed var(--rule); display: grid; place-items: center; color: var(--muted); font-size: var(--t-14); flex: none; }
+.stamp.fresh { animation: press .22s var(--ease-out); }
+@keyframes press { from { transform: rotate(-8deg) scale(1.25); opacity: 0; } to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+
+/* ---------- table ---------- */
+.list-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s3) var(--s4); padding: var(--s3); border-bottom: 1px solid var(--rule); }
+.list-head h2 { font-size: var(--t-20); font-family: var(--f-display); }
+.filter { display: flex; flex-direction: column; gap: 2px; }
+.filter label { font-size: var(--t-14); }
+.filter input { font: inherit; min-height: 40px; width: 16em; max-width: 100%; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--text); }
+.count { color: var(--muted); }
+.table-frame { border: 1px solid var(--rule); border-radius: var(--r); background: var(--surface); min-width: 0; }
+table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 15px; }
+thead th { position: sticky; top: 0; z-index: 2; background: var(--band); font-size: var(--t-14); font-weight: 700; text-align: left; padding: var(--s1) var(--s3); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th.r, td.r { text-align: right; }
+th.c, td.c { text-align: center; }
+tbody td { padding: var(--s1) var(--s3); height: 44px; border-bottom: 1px solid var(--band); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--row-hover); }
+td.net { font-weight: 600; font-size: var(--t-16); }
+td.name { font-weight: 700; white-space: nowrap; }
+td.role { white-space: nowrap; }
+.sort { font: inherit; font-weight: 700; background: none; border: 0; padding: 4px 2px; color: var(--text); cursor: pointer; display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+.sort .ar { color: var(--muted); }
+th[aria-sort] .sort { color: var(--accent); }
+th[aria-sort] .sort .ar { color: var(--accent); }
+.diff { white-space: nowrap; }
+.mini { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--danger); color: var(--danger); font-size: 14px; font-weight: 700; transform: rotate(-8deg); vertical-align: middle; }
+.mini.wait { border: 1.5px dashed var(--pending); color: var(--pending); transform: none; }
+.att { display: inline-flex; align-items: center; gap: var(--s2); white-space: nowrap; }
+.att .pending-t { font-size: var(--t-14); }
+tr.err td { background: var(--err-tint); }
+tr.err td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.errmsg { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; font-size: var(--t-14); }
+.errmsg strong { color: var(--danger); white-space: nowrap; }
+
+.state { padding: var(--s12) var(--s4); text-align: center; display: grid; gap: var(--s3); justify-items: center; }
+.state h3 { font-size: var(--t-20); }
+.state.error { box-shadow: inset 3px 0 0 var(--danger); }
+.skel td span { display: block; height: 14px; border-radius: 3px; background: var(--band); animation: pulse 1.2s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: .45; } }
+
+.foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s2) var(--s4); padding: var(--s3); border-top: 1px solid var(--rule); background: var(--band); font-weight: 700; }
+
+/* side column (wide screens only) */
+.side { display: none; }
+
+/* ---------- dialogs & toast ---------- */
+dialog { border: 1px solid var(--rule); border-radius: var(--r); padding: 0; width: min(520px, calc(100vw - 32px)); color: var(--text); background: var(--surface); box-shadow: 0 16px 40px rgba(31,35,40,.22); }
+dialog::backdrop { background: rgba(31,35,40,.4); }
+dialog[open] { animation: rise .2s var(--ease-out); }
+@keyframes rise { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+.dlg-h { padding: var(--s3) var(--s4); background: var(--band); border-bottom: 1px solid var(--rule); }
+.dlg-h h2 { font-size: var(--t-20); font-family: var(--f-display); }
+.dlg-b { padding: var(--s4); display: grid; gap: var(--s3); }
+.dlg-f { padding: var(--s3) var(--s4); border-top: 1px solid var(--rule); display: flex; justify-content: flex-end; gap: var(--s2); flex-wrap: wrap; }
+.req { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); align-items: start; padding: var(--s3); border: 1px solid var(--rule); border-radius: var(--r); cursor: pointer; }
+.req input { width: 20px; height: 20px; margin: 4px 0 0; accent-color: var(--accent); }
+.req .meta { grid-column: 2; }
+.field { display: grid; gap: 4px; }
+.field select { font: inherit; min-height: 44px; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--text); max-width: 12em; }
+.help { font-size: var(--t-14); }
+.sum { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s4); margin: 0; }
+.sum dt { color: var(--muted); }
+.sum dd { margin: 0; text-align: right; }
+.toast { position: fixed; left: 50%; bottom: var(--s6); transform: translateX(-50%); background: var(--text); color: var(--surface); padding: var(--s2) var(--s4); border-radius: var(--r); font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 20; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .ledger { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .head { flex-direction: column; }
+  .actions { align-items: flex-start; }
+  .btns { justify-content: flex-start; }
+  .reason { text-align: left; }
+}
+@media (max-width: 760px) {
+  .actions { align-items: stretch; width: 100%; }
+  .btns { justify-content: stretch; flex-direction: column-reverse; }
+  .btn { width: 100%; }
+  .reason { text-align: left; }
+  .who { display: none; }
+  .bar-in { gap: 0 var(--s4); padding-top: var(--s2); }
+}
+@media (max-width: 640px) {
+  .page { padding-top: var(--s4); }
+  .cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cell:nth-child(3) { border-left: 0; }
+  .cell:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .cell-b { min-height: 112px; padding: var(--s2); }
+  .big { font-size: 2rem; }
+  .ledger { margin-bottom: var(--s4); }
+}
+@media (max-width: 900px) {
+  /* table → labelled blocks */
+  table, thead, tbody, tr, td { display: block; }
+  /* header kept for screen readers; its sort buttons leave the tab order (JS) and .sort-sel takes over */
+  thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  td.net::before { content: "差引支給額"; display: block; font-family: var(--f-body); font-size: var(--t-14); font-weight: 400; color: var(--muted); line-height: 1.4; }
+  td.diff::before { content: "前月比 "; color: var(--muted); font-family: var(--f-body); font-size: var(--t-14); }
+  .skel td.net::before, .skel td.diff::before { content: none; }
+  .sort-sel { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+  .sort-sel label { font-size: var(--t-14); }
+  .sort-sel select { font: inherit; min-height: 44px; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--text); }
+  tbody tr { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--s3); padding: var(--s3); border-bottom: 1px solid var(--rule); }
+  tbody tr:last-child { border-bottom: 0; }
+  tbody td { height: auto; padding: 0; border: 0; text-align: left; }
+  tbody tr:hover td { background: none; }
+  tr.err { background: var(--err-tint); box-shadow: inset 3px 0 0 var(--danger); }
+  tr.err td, tr.err td:first-child { background: none; box-shadow: none; }
+  td.name { grid-column: 1; grid-row: 1; }
+  td.net { grid-column: 2; grid-row: 1; text-align: right; font-size: var(--t-20); }
+  td.role { grid-column: 1; grid-row: 2; color: var(--muted); }
+  td.diff { grid-column: 2; grid-row: 2; text-align: right; }
+  td.lab { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: var(--s3); }
+  td.lab::before { content: attr(data-label); }
+  td.att-cell { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-top: var(--s1); }
+  td.att-cell::before { content: "勤怠承認"; }
+  td.state-cell { grid-column: 1 / -1; }
+  tbody tr.state-row { display: block; padding: 0; }
+  .skel td.lab::before, .skel td.att-cell::before { content: none; }
+  .errmsg { justify-content: flex-start; }
+  .filter input { width: 100%; }
+  .filter { width: 100%; }
+}
+@media (min-width: 641px) and (max-width: 900px) {
+  tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  tbody tr:nth-child(odd) { border-right: 1px solid var(--rule); }
+  tbody tr:nth-last-child(2):nth-child(odd) { border-bottom: 0; }
+  tbody tr.state-row { grid-column: 1 / -1; border-right: 0; }
+}
+@media (min-width: 1600px) {
+  .page { max-width: 1680px; }
+  .bar-in { max-width: 1680px; }
+  .layout { grid-template-columns: minmax(0, 1fr) 340px; }
+  .side { display: block; }
+  .side .frame + .frame { margin-top: var(--s4); }
+  .side ul { list-style: none; margin: 0; padding: 0; }
+  .side li { padding: var(--s3); border-top: 1px solid var(--band); }
+  .side li:first-child { border-top: 0; }
+  .side .who-l { font-weight: 700; }
+  .side .row2 { display: flex; justify-content: space-between; gap: var(--s3); }
+  .side .empty { padding: var(--s3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <span class="clinic">さくら通りクリニック</span>
+    <nav aria-label="メイン">
+      <ul>
+        <li><a href="#" aria-current="page">今月の給与</a></li>
+        <li><a href="#">勤怠</a></li>
+        <li><a href="#">スタッフ</a></li>
+      </ul>
+    </nav>
+    <span class="who">事務長 佐藤 恵子</span>
+  </div>
+</header>
+
+<main class="page">
+  <div class="layout">
+  <div class="main-col">
+    <div class="head">
+      <div>
+        <div class="title-row">
+          <h1 id="title"><span class="nw">2026年11月分</span>の<span class="nw">給与</span></h1>
+          <div class="month-nav">
+            <button class="icon-btn" id="prev" type="button" aria-label="前の月（10月分）を表示">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            </button>
+            <button class="icon-btn" id="next" type="button" aria-label="次の月（12月分）を表示">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="subline" id="subline">支給対象 <span class="num">24</span>名</p>
+      </div>
+      <div class="actions" id="actions"></div>
+    </div>
+
+    <!-- signature: 決裁印欄 + 支給の欄, built from one unit (見出し帯付きの升) -->
+    <div class="ledger">
+      <section class="frame" aria-labelledby="h-steps">
+        <h2 id="h-steps">決裁</h2>
+        <div class="cells" id="steps"></div>
+      </section>
+      <section class="frame" aria-labelledby="h-totals">
+        <h2 id="h-totals">支給の合計</h2>
+        <div class="cells" id="totals"></div>
+      </section>
+    </div>
+
+    <section class="table-frame" aria-labelledby="h-list">
+      <div class="list-head">
+        <div>
+          <h2 id="h-list">スタッフ別の支給額</h2>
+          <p class="count" id="count"></p>
+        </div>
+        <div class="filter">
+          <label for="q">氏名・職種で絞り込む</label>
+          <input id="q" type="search" autocomplete="off">
+        </div>
+        <div class="sort-sel">
+          <label for="sort-sel">並べ替え</label>
+          <select id="sort-sel">
+            <option value="">登録順</option>
+            <option value="name:1">氏名順</option>
+            <option value="net:-1">差引支給額の多い順</option>
+            <option value="diff:-1">前月比の大きい順</option>
+            <option value="diff:1">前月比の小さい順</option>
+          </select>
+        </div>
+      </div>
+      <table aria-labelledby="h-list">
+        <colgroup><col style="width:13%"><col style="width:14%"><col style="width:11%"><col style="width:10%"><col style="width:11%"><col style="width:13%"><col style="width:10%"><col style="width:18%"></colgroup>
+        <thead>
+          <tr>
+            <th scope="col" data-key="name"><button class="sort" type="button" data-sort="name">氏名<span class="ar" aria-hidden="true">↕</span></button></th>
+            <th scope="col">職種</th>
+            <th scope="col" class="r">基本給</th>
+            <th scope="col" class="r">残業代</th>
+            <th scope="col" class="r">控除</th>
+            <th scope="col" class="r" data-key="net"><button class="sort" type="button" data-sort="net">差引支給額<span class="ar" aria-hidden="true">↕</span></button></th>
+            <th scope="col" class="r" data-key="diff"><button class="sort" type="button" data-sort="diff">前月比<span class="ar" aria-hidden="true">↕</span></button></th>
+            <th scope="col" class="c">勤怠承認</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="foot" id="foot"></div>
+    </section>
+  </div>
+
+  <aside class="side" aria-label="補足">
+    <section class="frame" aria-labelledby="h-side-req">
+      <h2 id="h-side-req">未承認の勤怠申請</h2>
+      <div id="side-req"></div>
+    </section>
+  </aside>
+  </div>
+</main>
+
+<dialog id="dlg-approve" aria-labelledby="dlg-approve-h">
+  <form method="dialog" id="form-approve">
+    <div class="dlg-h"><h2 id="dlg-approve-h">勤怠を承認する</h2></div>
+    <div class="dlg-b">
+      <p>承認する申請を選んでください。承認した残業は今月の残業代に入ります。</p>
+      <div id="req-list" class="dlg-b" style="padding:0"></div>
+    </div>
+    <div class="dlg-f">
+      <button class="btn" type="button" data-close>やめる</button>
+      <button class="btn primary" type="submit" id="approve-go">承認する</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-dep" aria-labelledby="dlg-dep-h">
+  <form method="dialog" id="form-dep">
+    <div class="dlg-h"><h2 id="dlg-dep-h">扶養人数を入力する</h2></div>
+    <div class="dlg-b">
+      <p id="dep-who"></p>
+      <div class="field">
+        <label for="dep">扶養人数</label>
+        <select id="dep" aria-describedby="dep-help">
+          <option value="0">0人</option><option value="1">1人</option><option value="2">2人</option>
+          <option value="3">3人</option><option value="4">4人</option><option value="5">5人以上</option>
+        </select>
+        <p class="help" id="dep-help">扶養控除等申告書に書かれた人数です。保存すると控除と差引支給額を計算し直します。</p>
+      </div>
+    </div>
+    <div class="dlg-f">
+      <button class="btn" type="button" data-close>やめる</button>
+      <button class="btn primary" type="submit">保存して控除を計算する</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-confirm" aria-labelledby="dlg-confirm-h">
+  <form method="dialog" id="form-confirm">
+    <div class="dlg-h"><h2 id="dlg-confirm-h">11月分の給与を確定する</h2></div>
+    <div class="dlg-b">
+      <dl class="sum" id="confirm-sum"></dl>
+      <p>確定すると、11月分の勤怠と支給額は変更できなくなり、この金額で支給日に振り込まれます。</p>
+    </div>
+    <div class="dlg-f">
+      <button class="btn" type="button" data-close>やめる</button>
+      <button class="btn primary" type="submit">この内容で確定する</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const ME = '佐藤';
+  const yen = n => '¥' + n.toLocaleString('ja-JP');
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const WD = '日月火水木金土';
+
+  // Today in Asia/Tokyo
+  function jstNow() {
+    const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+    const g = t => +p.find(x => x.type === t).value;
+    return { y: g('year'), m: g('month'), d: g('day'), hh: g('hour') % 24, mm: g('minute') };
+  }
+  const today = jstNow();
+  const dayNum = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / 864e5);
+  const wd = (y, m, d) => WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  const stampDate = () => String(today.y).slice(2) + '.' + String(today.m).padStart(2, '0') + '.' + String(today.d).padStart(2, '0');
+
+  // ---- data (one record per staff) ----
+  const R = (name, role, base, ot, ded, prev) => ({ name, role, base, ot, ded, prev });
+  const NOV = [
+    R('高橋 健一', '医師', 720000, 0, 171300, 541200),
+    R('森田 彩', '医師', 640000, 0, 148900, 486300),
+    R('渡辺 真理子', '看護師', 290000, 12400, 66800, 239800),
+    R('田中 美咲', '看護師', 285000, 28400, 64200, 236900),
+    R('小林 由紀', '看護師', 278000, 15600, 61800, 229500),
+    R('山本 さやか', '看護師', 272000, 21300, 62300, 224100),
+    R('中村 恵', '看護師', 268000, 9800, 58900, 221300),
+    R('加藤 千尋', '看護師', 265000, 18700, 60100, 211900),
+    R('吉田 奈々', '看護師', 262000, 0, 56300, 209900),
+    R('伊藤 舞', '看護師', 258000, 6200, 55700, 204100),
+    R('斎藤 久美子', '准看護師', 236000, 8100, 50200, 190400),
+    R('松本 麻衣', '准看護師', 230000, 0, 47900, 179600),
+    R('井上 智子', '医療事務', 228000, 11900, 49800, 186600),
+    R('木村 遥', '医療事務', 215000, 4300, 45600, 171200),
+    R('林 美穂', '医療事務', 212000, 14700, 46900, 168400),
+    R('清水 亜美', '医療事務', 208000, 0, 43100, 166800),
+    R('山口 恵理', '医療事務', 205000, 2600, null, 162800),
+    R('池田 早苗', '受付', 198000, 0, 40600, 154900),
+    R('橋本 莉子', '受付', 192000, 3100, 39800, 155300),
+    R('石川 拓也', '診療放射線技師', 268000, 10200, 58700, 214600),
+    R('前田 優子', '臨床検査技師', 255000, 5400, 54100, 203700),
+    R('藤田 翔', '理学療法士', 262000, 13800, 57900, 214200),
+    R('岡田 直人', '理学療法士', 248000, 7700, 52300, 199100),
+    R('後藤 和子', '看護助手', 182000, 0, 36800, 143100),
+  ];
+  const REQS = [
+    { id: 'r1', name: '田中 美咲', role: '看護師', what: '残業 2時間', when: '11月2日（月）18:30〜20:30' },
+    { id: 'r2', name: '加藤 千尋', role: '看護師', what: '残業 1.5時間', when: '10月31日（土）13:00〜14:30' },
+    { id: 'r3', name: '林 美穂', role: '医療事務', what: '残業 1時間', when: '11月2日（月）18:30〜19:30' },
+  ];
+
+  const MONTHS = {
+    '2026-10': {
+      label: '10月', y: 2026, m: 10, close: [2026, 10, 20], pay: [2026, 10, 26],
+      approvedOn: '26.10.19', confirmedOn: '26.10.20', confirmedText: '10月20日', confirmedBy: '佐藤',
+      rows: NOV.map(r => { const ded = r.ded ?? 42400; return { ...r, ded, ot: Math.max(0, r.prev - r.base + ded), prev: null, pending: 0 }; }),
+    },
+    '2026-11': {
+      label: '11月', y: 2026, m: 11, close: [2026, 11, 20], pay: [2026, 11, 25],
+      rows: NOV.map(r => ({ ...r, pending: REQS.filter(q => q.name === r.name).length })),
+      reqs: REQS.slice(), approvedOn: null, confirmedOn: null,
+    },
+    '2026-12': { label: '12月', y: 2026, m: 12, close: [2026, 12, 18], pay: [2026, 12, 25], rows: [], reqs: [] },
+  };
+  const ORDER = ['2026-10', '2026-11', '2026-12'];
+  let cur = '2026-11';
+  let view = 'ready'; // ready | loading | error
+  let sort = { key: null, dir: 1 };
+  let depTarget = null;
+
+  const net = r => r.ded == null ? null : r.base + r.ot - r.ded;
+  const diffPct = r => (r.prev && net(r) != null) ? (net(r) - r.prev) / r.prev * 100 : null;
+  const fmtPct = p => (p > 0 ? '+' : p < 0 ? '−' : '±') + Math.abs(p).toFixed(1) + '%';
+  const fmtDiffYen = d => (d > 0 ? '+' : d < 0 ? '−' : '±') + '¥' + Math.abs(d).toLocaleString('ja-JP');
+
+  function state() {
+    const M = MONTHS[cur];
+    const pending = (M.reqs || []).length;
+    const errs = M.rows.filter(r => r.ded == null);
+    return { M, pending, errs, confirmed: !!M.confirmedOn };
+  }
+
+  // ---- 決裁 cells ----
+  function stamp(t, d, n, fresh) {
+    return `<div class="stamp${fresh ? ' fresh' : ''}" role="img" aria-label="${t}済み ${d} ${n}"><span class="t">${t}</span><span class="d">${d}</span><span class="n">${n}</span></div>`;
+  }
+  let freshStep = null;
+  function renderSteps() {
+    const { M, pending, errs, confirmed } = state();
+    const [cy, cm, cd] = M.close, [py, pm, pd] = M.pay;
+    const left = dayNum(cy, cm, cd) - dayNum(today.y, today.m, today.d);
+    const closeBody = left > 0
+      ? `<div class="big" aria-label="締め日まであと${left}日"><span aria-hidden="true">${left}<small>日</small></span></div><p class="note"><span class="nw">${cm}月${cd}日（${wd(cy, cm, cd)}）</span></p>`
+      : left === 0
+        ? `<div class="big">今日</div><p class="note"><span class="nw">${cm}月${cd}日（${wd(cy, cm, cd)}）</span></p>`
+        : `<p class="note"><span class="nw">${cm}月${cd}日（${wd(cy, cm, cd)}）</span>に締めました</p>`;
+    let appr;
+    if (M.approvedOn) appr = stamp('承認', M.approvedOn, M.confirmedBy || ME, freshStep === 'approve');
+    else if (!M.rows.length) appr = `<div class="stamp-slot" aria-hidden="true"></div><p class="note">申請なし</p>`;
+    else appr = `<div class="stamp-slot" aria-hidden="true"></div><p class="note pending-t">未承認 <span class="num">${pending}</span>件</p>`;
+    let conf;
+    if (confirmed) conf = stamp('確定', M.confirmedOn, M.confirmedBy || ME, freshStep === 'confirm');
+    else conf = `<div class="stamp-slot" aria-hidden="true"></div><p class="note">確定前</p>`;
+    $('#steps').innerHTML = `
+      <div class="cell"><div class="cell-h">締め日まで</div><div class="cell-b">${closeBody}</div></div>
+      <div class="cell"><div class="cell-h">勤怠承認</div><div class="cell-b">${appr}</div></div>
+      <div class="cell"><div class="cell-h">給与確定</div><div class="cell-b">${conf}</div></div>
+      <div class="cell"><div class="cell-h">支給日</div><div class="cell-b"><div class="amount">${pm}月${pd}日</div><p class="note">${wd(py, pm, pd)}曜日</p></div></div>`;
+    freshStep = null;
+  }
+
+  function totals(rows) {
+    const ok = rows.filter(r => r.ded != null);
+    const sum = f => ok.reduce((a, r) => a + f(r), 0);
+    const gross = sum(r => r.base + r.ot), ded = sum(r => r.ded), nt = gross - ded;
+    const prevOk = ok.filter(r => r.prev);
+    const prev = prevOk.reduce((a, r) => a + r.prev, 0);
+    const cmp = prevOk.reduce((a, r) => a + net(r), 0);
+    return { gross, ded, net: nt, missing: rows.length - ok.length, diff: prev ? cmp - prev : null, pct: prev ? (cmp - prev) / prev * 100 : null };
+  }
+  function renderTotals() {
+    const { M } = state();
+    const el = $('#totals');
+    if (view === 'loading') { el.innerHTML = ['支給合計', '控除合計', '差引支給合計', '前月比'].map(h => `<div class="cell"><div class="cell-h">${h}</div><div class="cell-b"><p class="note">読み込み中</p></div></div>`).join(''); return; }
+    if (view === 'error' || !M.rows.length) { el.innerHTML = ['支給合計', '控除合計', '差引支給合計', '前月比'].map(h => `<div class="cell"><div class="cell-h">${h}</div><div class="cell-b"><p class="note">—</p></div></div>`).join(''); return; }
+    const t = totals(M.rows);
+    const miss = t.missing ? `<p class="note">${t.missing}名を除く</p>` : `<p class="note">${M.rows.length}名</p>`;
+    el.innerHTML = `
+      <div class="cell"><div class="cell-h">支給合計</div><div class="cell-b"><div class="amount">${yen(t.gross)}</div>${miss}</div></div>
+      <div class="cell"><div class="cell-h">控除合計</div><div class="cell-b"><div class="amount">${yen(t.ded)}</div>${miss}</div></div>
+      <div class="cell total"><div class="cell-h">差引支給合計</div><div class="cell-b"><div class="amount">${yen(t.net)}</div>${miss}</div></div>
+      <div class="cell"><div class="cell-h">前月比</div><div class="cell-b">${t.pct == null ? '<p class="note">前月のデータなし</p>' : `<div class="amount">${fmtPct(t.pct)}</div><p class="note num">${fmtDiffYen(t.diff)}</p>`}</div></div>`;
+  }
+
+  // ---- actions (one filled button: the next step) ----
+  function renderActions() {
+    const { M, pending, errs, confirmed } = state();
+    const el = $('#actions');
+    if (view !== 'ready' || !M.rows.length) { el.innerHTML = ''; return; }
+    if (confirmed) {
+      el.innerHTML = `<p class="reason">${M.label}分の給与は<span class="nw">${M.confirmedText}</span>に確定しました。</p>`;
+      return;
+    }
+    const blockers = [];
+    if (pending) blockers.push(`<span class="blk">未承認の勤怠が<b><span class="nw">${pending}件</span></b>あります。</span>`);
+    if (errs.length) blockers.push(`<span class="blk">控除を計算できないスタッフが<b><span class="nw">${errs.length}名</span></b>います。</span>`);
+    const canConfirm = !blockers.length;
+    let btns = '';
+    if (pending) btns += `<button class="btn primary" type="button" id="go-approve">勤怠を承認する（${pending}件）</button>`;
+    else if (errs.length) btns += `<button class="btn primary" type="button" id="go-fix">扶養人数を入力する（${errs.length}名）</button>`;
+    btns = `<button class="btn${canConfirm ? ' primary' : ''}" type="button" id="go-confirm" ${canConfirm ? '' : 'disabled aria-describedby="why"'}>給与を確定する</button>` + btns;
+    el.innerHTML = `<div class="btns">${btns}</div>` + (blockers.length ? `<p class="reason" id="why"><span class="blk">確定する前に：</span>${blockers.join('')}</p>` : '');
+    $('#go-approve')?.addEventListener('click', openApprove);
+    $('#go-fix')?.addEventListener('click', () => openDep(errs[0].name));
+    $('#go-confirm')?.addEventListener('click', openConfirm);
+  }
+
+  // ---- table ----
+  const q = $('#q');
+  function attCell(r, M) {
+    if (r.pending) return `<span class="att"><span class="mini wait" aria-hidden="true">未</span><span class="pending-t">未承認 ${r.pending}件</span></span>`;
+    return `<span class="att"><span class="mini" aria-hidden="true">済</span><span class="vh">承認済み</span></span>`;
+  }
+  function rowHTML(r, M) {
+    const n = net(r), p = diffPct(r);
+    const otNote = r.pending ? '<span class="vh">（未承認の残業を含む）</span>' : '';
+    if (n == null) {
+      return `<tr class="err">
+        <td class="name">${esc(r.name)}</td><td class="role">${esc(r.role)}</td>
+        <td class="r num lab" data-label="基本給">${yen(r.base)}</td>
+        <td class="r num lab" data-label="残業代">${yen(r.ot)}</td>
+        <td class="r lab state-cell" colspan="3" data-label=""><div class="errmsg"><strong>控除を計算できません</strong><span class="nw">扶養人数が未入力です</span><button class="btn link" type="button" data-dep="${esc(r.name)}">扶養人数を入力する</button></div></td>
+        <td class="c att-cell">${attCell(r, M)}</td></tr>`;
+    }
+    return `<tr>
+      <td class="name">${esc(r.name)}</td><td class="role">${esc(r.role)}</td>
+      <td class="r num lab" data-label="基本給">${yen(r.base)}</td>
+      <td class="r num lab" data-label="残業代">${yen(r.ot)}${otNote}</td>
+      <td class="r num lab" data-label="控除">${yen(r.ded)}</td>
+      <td class="r num net">${yen(n)}</td>
+      <td class="r num diff">${p == null ? '<span aria-label="前月のデータなし">—</span>' : fmtPct(p)}</td>
+      <td class="c att-cell">${attCell(r, M)}</td></tr>`;
+  }
+  function renderRows() {
+    const { M } = state();
+    const body = $('#rows');
+    const foot = $('#foot');
+    q.disabled = sortSel.disabled = view !== 'ready' || !M.rows.length;
+    if (view === 'loading') {
+      body.innerHTML = Array.from({ length: 6 }, () => `<tr class="skel" aria-hidden="true">${['name', 'role', 'r lab', 'r lab', 'r lab', 'r net', 'r diff', 'c att-cell'].map(c => `<td class="${c}"><span></span></td>`).join('')}</tr>`).join('');
+      $('#count').textContent = '読み込み中…';
+      foot.hidden = true;
+      return;
+    }
+    if (view === 'error') {
+      body.innerHTML = `<tr class="state-row"><td class="state-cell" colspan="8"><div class="state error" role="alert"><h3>${M.label}分の給与を読み込めませんでした</h3><p>インターネットに接続できていません。接続を確かめてから、もう一度読み込んでください。</p><button class="btn" type="button" id="retry">もう一度読み込む</button></div></td></tr>`;
+      $('#count').textContent = '';
+      foot.hidden = true;
+      $('#retry').addEventListener('click', () => load(cur));
+      return;
+    }
+    if (!M.rows.length) {
+      body.innerHTML = `<tr class="state-row"><td class="state-cell" colspan="8"><div class="state"><h3>${M.label}分の給与はまだありません</h3><p>スタッフの${M.label}の勤怠が入力されると、ここに支給額が並びます。</p><button class="btn" type="button" id="back-cur">11月分の給与を開く</button></div></td></tr>`;
+      $('#count').textContent = '0名';
+      foot.hidden = true;
+      $('#back-cur').addEventListener('click', () => load('2026-11'));
+      return;
+    }
+    const term = q.value.trim();
+    let rows = M.rows.filter(r => !term || r.name.replace(/\s/g, '').includes(term.replace(/\s/g, '')) || r.role.includes(term));
+    if (sort.key) {
+      const f = { name: r => r.name, net: r => net(r) ?? -1, diff: r => diffPct(r) ?? -999 }[sort.key];
+      rows = rows.slice().sort((a, b) => { const x = f(a), y = f(b); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; });
+    }
+    $('#count').innerHTML = term ? `<span class="num">${M.rows.length}</span>名中 <span class="num">${rows.length}</span>名` : `<span class="num">${M.rows.length}</span>名`;
+    if (!rows.length) {
+      body.innerHTML = `<tr class="state-row"><td class="state-cell" colspan="8"><div class="state"><h3>「${esc(term)}」に当てはまるスタッフはいません</h3><p>氏名は姓だけ、職種は「看護師」のように入力できます。</p><button class="btn" type="button" id="clear-q">絞り込みを解除する</button></div></td></tr>`;
+      foot.hidden = true;
+      $('#clear-q').addEventListener('click', () => { q.value = ''; renderRows(); q.focus(); });
+      return;
+    }
+    body.innerHTML = rows.map(r => rowHTML(r, M)).join('');
+    body.querySelectorAll('[data-dep]').forEach(b => b.addEventListener('click', () => openDep(b.dataset.dep)));
+    const t = totals(rows);
+    foot.hidden = false;
+    foot.innerHTML = `<span>${term ? '表示中の' : ''}差引支給合計${t.missing ? `（${t.missing}名を除く）` : ''}</span><span class="num">${yen(t.net)}</span>`;
+  }
+  q.addEventListener('input', renderRows);
+  const sortSel = $('#sort-sel');
+  function syncSort() {
+    const v = sort.key ? `${sort.key}:${sort.dir}` : '';
+    sortSel.value = [...sortSel.options].some(o => o.value === v) ? v : '';
+    document.querySelectorAll('th[data-key]').forEach(th => {
+      const on = th.dataset.key === sort.key;
+      if (on) th.setAttribute('aria-sort', sort.dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+      th.querySelector('.ar').textContent = on ? (sort.dir > 0 ? '↑' : '↓') : '↕';
+    });
+  }
+  document.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.sort;
+    sort = sort.key === k ? { key: k, dir: -sort.dir } : { key: k, dir: k === 'name' ? 1 : -1 };
+    syncSort(); renderRows();
+  }));
+  const narrow = matchMedia('(max-width: 900px)');
+  const tabSort = () => document.querySelectorAll('th .sort').forEach(b => b.tabIndex = narrow.matches ? -1 : 0);
+  narrow.addEventListener('change', tabSort); tabSort();
+  sortSel.addEventListener('change', () => {
+    const [k, d] = sortSel.value.split(':');
+    sort = k ? { key: k, dir: +d } : { key: null, dir: 1 };
+    syncSort(); renderRows();
+  });
+
+  // ---- side column ----
+  function renderSide() {
+    const { M } = state();
+    const reqs = view === 'ready' ? (M.reqs || []) : [];
+    $('#side-req').innerHTML = reqs.length
+      ? `<ul>${reqs.map(r => `<li><div class="row2"><span class="who-l">${esc(r.name)}</span><span>${esc(r.role)}</span></div><div class="row2"><span>${esc(r.what)}</span><span class="nw">${esc(r.when.split('）')[0])}）</span></div></li>`).join('')}</ul>`
+      : `<p class="empty">未承認の申請はありません。</p>`;
+  }
+
+  function renderHead() {
+    const { M } = state();
+    $('#title').innerHTML = `<span class="nw">${M.y}年${M.label}分</span>の<span class="nw">給与</span>`;
+    document.title = `${M.label}分の給与 — さくら通りクリニック`;
+    const i = ORDER.indexOf(cur);
+    $('#prev').disabled = i === 0; $('#next').disabled = i === ORDER.length - 1;
+    $('#prev').setAttribute('aria-label', i > 0 ? `前の月（${MONTHS[ORDER[i - 1]].label}分）を表示` : '前の月はありません');
+    $('#next').setAttribute('aria-label', i < ORDER.length - 1 ? `次の月（${MONTHS[ORDER[i + 1]].label}分）を表示` : '次の月はありません');
+    const [py, pm, pd] = M.pay;
+    $('#subline').innerHTML = view === 'ready'
+      ? `支給対象 <span class="num">${M.rows.length}</span>名・<span class="nw">支給日 ${pm}月${pd}日（${wd(py, pm, pd)}）</span>`
+      : view === 'loading' ? '読み込み中…' : '読み込めませんでした';
+  }
+
+  function render() { renderHead(); renderSteps(); renderTotals(); renderActions(); renderRows(); renderSide(); }
+
+  // ---- fetch (same path for every month) ----
+  function fetchMonth(key) {
+    return new Promise((res, rej) => setTimeout(() => navigator.onLine ? res(MONTHS[key]) : rej(new Error('offline')), 650));
+  }
+  let token = 0;
+  function load(key) {
+    cur = key; view = 'loading'; q.value = ''; render();
+    const my = ++token;
+    fetchMonth(key).then(() => { if (my === token) { view = 'ready'; render(); } })
+      .catch(() => { if (my === token) { view = 'error'; render(); } });
+  }
+  $('#prev').addEventListener('click', () => { const i = ORDER.indexOf(cur); if (i > 0) load(ORDER[i - 1]); });
+  $('#next').addEventListener('click', () => { const i = ORDER.indexOf(cur); if (i < ORDER.length - 1) load(ORDER[i + 1]); });
+
+  // ---- dialogs ----
+  document.querySelectorAll('dialog [data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  const toastEl = $('#toast'); let tt;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 2600); }
+
+  function openApprove() {
+    const { M } = state();
+    $('#req-list').innerHTML = M.reqs.map(r => `<label class="req"><input type="checkbox" name="req" value="${r.id}" checked><span><b>${esc(r.name)}</b>（${esc(r.role)}）・${esc(r.what)}</span><span class="meta">${esc(r.when)}</span></label>`).join('');
+    const upd = () => { const n = $('#req-list').querySelectorAll('input:checked').length; const b = $('#approve-go'); b.textContent = n ? `選んだ${n}件を承認する` : '承認する申請を選んでください'; b.disabled = !n; };
+    $('#req-list').addEventListener('change', upd); upd();
+    $('#dlg-approve').showModal();
+  }
+  $('#form-approve').addEventListener('submit', () => {
+    const { M } = state();
+    const ids = [...$('#req-list').querySelectorAll('input:checked')].map(i => i.value);
+    const done = M.reqs.filter(r => ids.includes(r.id));
+    M.reqs = M.reqs.filter(r => !ids.includes(r.id));
+    done.forEach(d => { const row = M.rows.find(r => r.name === d.name); if (row) row.pending--; });
+    if (!M.reqs.length) { M.approvedOn = stampDate(); freshStep = 'approve'; }
+    render();
+    toast(`${done.length}件の勤怠を承認しました`);
+    $('#go-fix, #go-confirm')?.focus();
+  });
+
+  function openDep(name) {
+    depTarget = name;
+    $('#dep-who').textContent = `${name} さんの扶養人数が入力されていないため、所得税と控除を計算できません。`;
+    $('#dep').value = '0';
+    $('#dlg-dep').showModal();
+  }
+  $('#form-dep').addEventListener('submit', () => {
+    const { M } = state();
+    const row = M.rows.find(r => r.name === depTarget);
+    if (row) row.ded = 42400 - (+$('#dep').value) * 1200;
+    render();
+    toast('扶養人数を保存しました');
+    $('#go-approve, #go-confirm')?.focus();
+  });
+
+  function openConfirm() {
+    const { M } = state();
+    const t = totals(M.rows); const [py, pm, pd] = M.pay;
+    $('#confirm-sum').innerHTML = `<dt>支給対象</dt><dd class="num">${M.rows.length}名</dd><dt>差引支給合計</dt><dd class="num">${yen(t.net)}</dd><dt>支給日</dt><dd class="nw">${pm}月${pd}日（${wd(py, pm, pd)}）</dd>`;
+    $('#dlg-confirm').showModal();
+  }
+  $('#form-confirm').addEventListener('submit', () => {
+    const { M } = state();
+    M.confirmedOn = stampDate(); M.confirmedText = `${today.m}月${today.d}日`; M.confirmedBy = ME; freshStep = 'confirm';
+    render();
+    toast('11月分の給与を確定しました');
+  });
+
+  // First paint: current month is already in the page, no loading flash.
+  render();
+})();
+</script>
+</body>
+</html>

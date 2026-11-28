@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laneway — one board for who's on it and when it's due</title>
+<meta name="description" content="Laneway puts every task your team has in one of four lanes, with a label, a due date and a name on it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,700..800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1f272e;
+    --surface: #283239;
+    --text: #eceee9;
+    --muted: #a7b1b8;
+    --accent: #f2d54a;
+    --on-accent: #1f272e;
+    --border: #8996a0;
+    --line: #3d4952;
+    --danger: #ff9c8a;
+    --well: #151b20;
+
+    --display: "Archivo", "Arial Narrow", sans-serif;
+    --body: "Instrument Sans", system-ui, sans-serif;
+
+    /* 1.333 scale from 16 */
+    --t0: 1rem;
+    --t1: 1.333rem;
+    --t2: 1.777rem;
+    --t3: 2.369rem;
+    --t4: 3.157rem;
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --radius: 6px;
+    --wrap: 1200px;
+    --gutter: 40px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+    /* Lane grid measured from hero.png (1600px wide): 260px sidebar,
+       four 316px lanes with 16px gaps, 28px right margin. */
+    --lanes: 260fr 316fr 16fr 316fr 16fr 316fr 16fr 316fr 28fr;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 var(--t0)/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { text-wrap: pretty; margin: 0; }
+
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  .wrap { width: min(var(--wrap), 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+  /* ---------- header ---------- */
+  .top {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+    padding-block: var(--s3);
+  }
+  .mark {
+    font: 800 var(--t2)/1 var(--display);
+    font-stretch: 62%;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    text-decoration: none;
+  }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--s6);
+    align-items: end;
+    padding-block: var(--s6) var(--s6);
+  }
+  .hero h1 {
+    font: 800 var(--t4)/1.02 var(--display);
+    font-stretch: 75%;
+    letter-spacing: -.005em;
+  }
+  .hero .lede {
+    margin-top: var(--s3);
+    font-size: var(--t1);
+    line-height: 1.45;
+    color: var(--muted);
+    max-width: 34ch;
+  }
+
+  .signup { display: grid; gap: var(--s1); }
+  .signup label { font-weight: 600; }
+  .field-row { display: flex; gap: var(--s1); }
+  .field-row input {
+    flex: 1 1 auto; min-width: 0;
+    height: 48px;
+    padding: 0 var(--s2);
+    font: inherit; color: var(--text);
+    background: var(--well);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .field-row input::placeholder { color: var(--muted); opacity: 1; }
+  .field-row input[aria-invalid="true"] { border-color: var(--danger); }
+  .hint { color: var(--muted); font-size: var(--t0); min-height: 1.6em; }
+  .hint.is-error { color: var(--danger); }
+  .hint.is-done { color: var(--text); }
+
+  .btn {
+    text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    height: 48px; padding: 0 var(--s3);
+    font: 600 var(--t0)/1 var(--body);
+    white-space: nowrap;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease, transform .12s var(--ease-out);
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: var(--on-accent); border: 2px solid var(--accent); }
+  .btn-primary:hover { background: var(--text); border-color: var(--text); }
+  .btn-quiet { background: transparent; color: var(--text); border: 2px solid var(--border); }
+  .btn-quiet:hover { border-color: var(--text); }
+  .more { margin-top: var(--s2); }
+
+  /* ---------- the lane rail (signature) ---------- */
+  .board { container-type: inline-size; padding-bottom: var(--s8); }
+  .rail {
+    display: grid;
+    grid-template-columns: var(--lanes);
+    align-items: end;
+    margin: 0 0 var(--s2);
+    padding: 0;
+    list-style: none;
+  }
+  .rail-meta {
+    grid-column: 1;
+    padding-right: var(--s2);
+    color: var(--muted);
+    font-size: var(--t0);
+    line-height: 1.4;
+  }
+  .lane-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: var(--s1);
+    padding-bottom: 6px;
+    border-bottom: 4px solid var(--text);
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .lane-name {
+    font: 800 3.1cqi/1 var(--display);
+    font-stretch: 62%;
+    text-transform: uppercase;
+    letter-spacing: .01em;
+  }
+  .lane-count {
+    font: 700 max(var(--t0), 1.6cqi)/1 var(--display);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .rail > :nth-child(2) { grid-column: 2; }
+  .rail > :nth-child(3) { grid-column: 4; }
+  .rail > :nth-child(4) { grid-column: 6; }
+  .rail > :nth-child(5) { grid-column: 8; }
+
+  .shot { margin: 0; }
+  /* Crop the empty board floor below the last card (cards end ~610px of 800). */
+  .shot-frame { border-radius: var(--radius); overflow: hidden; background: var(--text); aspect-ratio: 1600 / 625; }
+  .shot-frame img { width: 100%; }
+  .shot-b { display: none; }
+  .shot figcaption {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2);
+    margin-top: var(--s2);
+    color: var(--muted);
+  }
+
+  /* ---------- how a week moves: same rail, same columns ---------- */
+  .week { container-type: inline-size; padding-block: var(--s8) var(--s12); border-top: 1px solid var(--line); }
+  .week-grid { display: grid; grid-template-columns: var(--lanes); row-gap: var(--s3); }
+  .week h2 {
+    grid-column: 1; grid-row: 1 / span 2; align-self: start;
+    padding-right: var(--s3);
+    font: 800 var(--t2)/1.1 var(--display);
+    font-stretch: 75%;
+  }
+  .week .lane-head { grid-row: 1; }
+  .week .lane-name { font-size: 2.4cqi; }
+  .week p { grid-row: 2; padding-right: var(--s1); }
+  /* Each lane wrapper vanishes from layout at desktop so its head and text sit on the shared rail columns. */
+  .week .lane { display: contents; }
+  .week .c2 > * { grid-column: 2; } .week .c4 > * { grid-column: 4; }
+  .week .c6 > * { grid-column: 6; } .week .c8 > * { grid-column: 8; }
+
+  /* ---------- footer ---------- */
+  .foot {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s2);
+    padding-block: var(--s4) var(--s6);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .foot .btn { height: 44px; }
+
+  /* ---------- full-board dialog ---------- */
+  dialog {
+    width: min(1640px, 100vw - 32px);
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+  }
+  dialog::backdrop { background: rgb(21 27 32 / .85); }
+  .dlg-bar {
+    display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
+    padding: var(--s1) var(--s1) var(--s1) var(--s3);
+  }
+  .dlg-bar h2 { font: 800 var(--t1)/1.2 var(--display); font-stretch: 75%; }
+  .icon-btn {
+    width: 44px; height: 44px; display: grid; place-items: center;
+    background: transparent; color: var(--text);
+    border: 2px solid var(--border); border-radius: var(--radius); cursor: pointer;
+    transition: border-color .15s ease;
+  }
+  .icon-btn:hover { border-color: var(--text); }
+  .dlg-body { overflow: auto; padding: 0 var(--s2) var(--s2); }
+  .dlg-body img { border-radius: var(--radius); min-width: 960px; }
+
+  /* ---------- 1920: the board gets wider ---------- */
+  @media (min-width: 1600px) {
+    :root { --wrap: 1640px; }
+    .hero h1 { font-size: 4.2rem; }
+    .hero .lede { font-size: var(--t2); }
+  }
+
+  /* ---------- tablet ---------- */
+  @media (max-width: 960px) {
+    :root { --gutter: 24px; }
+    .hero { grid-template-columns: 1fr; gap: var(--s4); align-items: start; }
+    .rail > .rail-meta { grid-column: 1 / -1; padding: 0 0 var(--s2); }
+    .week-grid { grid-template-columns: 1fr 1fr; gap: var(--s4); }
+    .week h2 { grid-column: 1 / -1; grid-row: auto; }
+    .week .lane { display: block; }
+    .week .lane-head { margin-bottom: var(--s2); }
+    .week .lane-name { font-size: var(--t2); }
+  }
+
+  /* ---------- phone ---------- */
+  @media (max-width: 720px) {
+    :root { --gutter: 16px; }
+    .hero { padding-top: var(--s3); }
+    .hero h1 { font-size: var(--t3); }
+    .hero .lede { font-size: var(--t0); }
+    .field-row { flex-direction: column; }
+    .field-row .btn { width: 100%; }
+
+    /* Two lanes per crop, each pair under its own heads. Columns are the crop's
+       own proportions: 316px lane, 16px gap, 308px of the next lane (of 640px shown). */
+    .board { display: grid; grid-template-columns: 316fr 16fr 308fr; row-gap: var(--s2); }
+    .rail, .shot { display: contents; }
+    .rail > .rail-meta { grid-column: 1 / -1; padding: 0; order: 0; }
+    .rail > :nth-child(2) { grid-column: 1; order: 1; }
+    .rail > :nth-child(3) { grid-column: 3; order: 1; }
+    .shot-a { grid-column: 1 / -1; order: 2; }
+    .rail > :nth-child(4) { grid-column: 1; order: 3; margin-top: var(--s3); }
+    .rail > :nth-child(5) { grid-column: 3; order: 3; margin-top: var(--s3); }
+    .shot-b { display: block; grid-column: 1 / -1; order: 4; }
+    .shot figcaption { grid-column: 1 / -1; order: 5; margin-top: 0; }
+    .lane-name { font-size: var(--t1); }
+    .lane-count { font-size: var(--t0); }
+
+    /* Crops at 2.5x: image x 260–900 (To do, In progress) and 924–1564 (Review, Done). */
+    .shot-frame { aspect-ratio: 1 / 1; }
+    .shot-frame img { width: 250%; max-width: none; margin-left: -40.625%; }
+    .shot-b img { margin-left: -144.375%; }
+
+    .week-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .icon-btn { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="wrap top">
+    <a class="mark" href="#top" id="top">Laneway</a>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <h1 id="hero-title">Who's on it, and when it's due. On one board.</h1>
+        <p class="lede">Laneway puts every task a small team has on one board, with a label, a date and a name on each card.</p>
+      </div>
+
+      <div>
+        <form class="signup" id="signup" novalidate>
+          <label for="email">Work email</label>
+          <div class="field-row">
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@studio.com" aria-describedby="email-msg" required>
+            <button class="btn btn-primary" type="submit">Start a board</button>
+          </div>
+          <p class="hint" id="email-msg" role="status">We'll email you a link to set up your team's board.</p>
+        </form>
+        <button class="btn btn-quiet more" type="button" data-scroll="lanes">See how a week moves</button>
+      </div>
+    </section>
+
+    <section class="wrap board" id="board" aria-label="The board">
+      <ul class="rail" aria-label="Lanes on the Website refresh board">
+        <li class="rail-meta">Website refresh<br>Studio team, 6 people</li>
+        <li class="lane-head"><span class="lane-name">To do</span> <span class="lane-count">5</span></li>
+        <li class="lane-head"><span class="lane-name">In progress</span> <span class="lane-count">4</span></li>
+        <li class="lane-head"><span class="lane-name">Review</span> <span class="lane-count">3</span></li>
+        <li class="lane-head"><span class="lane-name">Done</span> <span class="lane-count">5</span></li>
+      </ul>
+      <figure class="shot">
+        <div class="shot-frame shot-a">
+          <img src="hero.png" width="1600" height="800" alt="The Laneway board for a project called Website refresh. Tasks sit in four lanes: To do, In progress, Review and Done. Each card shows a label such as Content, Design or Ops, a due date, and the owner's initials; cards in progress have a bar showing how far along they are.">
+        </div>
+        <!-- Phones only: the Review and Done lanes of the same screenshot, under their own rail heads. -->
+        <div class="shot-frame shot-b">
+          <img src="hero.png" width="1600" height="800" loading="lazy" alt="">
+        </div>
+        <figcaption>
+          <span>Seventeen tasks, grouped by status, filtered by assignee, due date or label.</span>
+          <button class="btn btn-quiet" type="button" onclick="go()">Open the full board</button>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="wrap week" id="lanes" aria-labelledby="lanes-title">
+      <div class="week-grid">
+        <h2 id="lanes-title">How a week moves</h2>
+
+        <div class="lane c2">
+          <h3 class="lane-head"><span class="lane-name">To do</span></h3>
+          <p>Write the task down with an owner and a date. When the lane gets long, filter it by who, when, or which label.</p>
+        </div>
+        <div class="lane c4">
+          <h3 class="lane-head"><span class="lane-name">In progress</span></h3>
+          <p>A bar under each card shows how far along it is, and a card due tomorrow says so, so nobody has to ask.</p>
+        </div>
+        <div class="lane c6">
+          <h3 class="lane-head"><span class="lane-name">Review</span></h3>
+          <p>Work waiting on someone else's eyes. The comment count is on the front of the card.</p>
+        </div>
+        <div class="lane c8">
+          <h3 class="lane-head"><span class="lane-name">Done</span></h3>
+          <p>Finished cards keep their date, so on Friday you can see what the team actually shipped.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>© 2026 Laneway</p>
+    <a class="btn btn-quiet" href="#signup">Back to sign-up</a>
+  </footer>
+
+  <dialog id="full-board" aria-labelledby="full-board-title">
+    <div class="dlg-bar">
+      <h2 id="full-board-title">Website refresh — full board</h2>
+      <button class="icon-btn" type="button" aria-label="Close" data-close>
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="dlg-body">
+      <img src="hero.png" width="1600" height="800" loading="lazy" alt="The Website refresh board at full size: five cards in To do, four in In progress, three in Review and five in Done.">
+    </div>
+  </dialog>
+
+<script>
+  // Opens the full-size board (the source page's "Open" handler).
+  function go() {
+    const dlg = document.getElementById('full-board');
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open', '');
+  }
+
+  (function () {
+    const dlg = document.getElementById('full-board');
+    dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+    document.querySelectorAll('[data-scroll]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const target = document.getElementById(b.dataset.scroll);
+        target.scrollIntoView();
+        target.querySelector('h2').setAttribute('tabindex', '-1');
+        target.querySelector('h2').focus({ preventScroll: true });
+      });
+    });
+
+    const form = document.getElementById('signup');
+    const input = document.getElementById('email');
+    const msg = document.getElementById('email-msg');
+    const defaultHint = msg.textContent;
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = input.value.trim();
+      msg.classList.remove('is-error', 'is-done');
+      if (!value) {
+        input.setAttribute('aria-invalid', 'true');
+        msg.classList.add('is-error');
+        msg.textContent = 'Enter your work email so we know where to send the board link.';
+        input.focus();
+        return;
+      }
+      if (!pattern.test(value)) {
+        input.setAttribute('aria-invalid', 'true');
+        msg.classList.add('is-error');
+        msg.textContent = '"' + value + '" is missing part of an address. Try the form name@studio.com.';
+        input.focus();
+        return;
+      }
+      input.removeAttribute('aria-invalid');
+      msg.classList.add('is-done');
+      msg.textContent = 'Done. The link to set up your board is on its way to ' + value + '.';
+      form.reset();
+    });
+
+    input.addEventListener('input', () => {
+      if (input.getAttribute('aria-invalid') === 'true') {
+        input.removeAttribute('aria-invalid');
+        msg.classList.remove('is-error');
+        msg.textContent = defaultHint;
+      }
+    });
+  })();
+</script>
+</body>
+</html>

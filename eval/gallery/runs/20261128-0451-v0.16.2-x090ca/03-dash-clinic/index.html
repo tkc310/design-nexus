@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今月の給与 | さくら内科クリニック 給与計算</title>
+<meta name="description" content="今月の給与の締め日、未承認の勤怠申請、スタッフ別の差引支給額と前月比を確認し、勤怠を承認して給与を確定する画面。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPMincho:wght@700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 紙: the pay-slip paper; 墨/鉛筆: printed and pencilled figures; 罫/枠: the slip's ruling and boxes */
+  --paper:#FFFFFF;
+  --sumi:#1F1D1A;
+  --namari:#5B5750;
+  --kei:#DCD7CD;
+  --waku:#8A857B;
+  /* 朱: the vermilion of the approval hanko — the act of 承認 and 確定 */
+  --shu:#C23B1E;
+  --shu-press:color-mix(in oklab, var(--shu) 82%, var(--sumi));
+  /* 封筒: kraft pay envelope — what each person actually takes home (差引支給) */
+  --fuutou:#F0E6D4;
+  /* status */
+  --ok:#2D6A3E;
+  --machi:#8A5300;
+  --ayamari:#A3123A;
+
+  --f-display:"BIZ UDPMincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"IBM Plex Sans","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  /* type: base 16, ratio 1.25 */
+  --t-s:14px; --t-m:16px; --t-l:20px; --t-xl:25px; --t-2xl:31px; --t-3xl:39px;
+  /* space: base 8 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --r-ctl:6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+body{margin:0;background:var(--paper);color:var(--sumi);font:400 var(--t-m)/1.7 var(--f-body);letter-spacing:.02em;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;font-synthesis:none;line-height:1.35;text-wrap:balance;margin:0;font-feature-settings:"palt";letter-spacing:.02em}
+.num,td.n,.fig{font-variant-numeric:tabular-nums;white-space:nowrap;overflow-wrap:normal}
+.nw{white-space:nowrap}
+[hidden]{display:none !important}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--sumi);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;gap:var(--s5);padding:0 var(--s6);border-bottom:1px solid var(--kei);min-height:56px;flex-wrap:wrap}
+.brand{font-weight:600;white-space:nowrap}
+.brand span{color:var(--namari);font-weight:400;margin-left:var(--s2)}
+.bar nav ul{display:flex;gap:var(--s1);list-style:none;margin:0;padding:0}
+.bar nav a{display:block;padding:var(--s3) var(--s3);text-decoration:none;white-space:nowrap;color:var(--namari)}
+.bar nav a[aria-current="page"]{color:var(--sumi);font-weight:600;box-shadow:inset 0 -2px 0 var(--sumi)}
+@media (hover:hover) and (pointer:fine){.bar nav a:hover{color:var(--sumi)}}
+.who{margin-left:auto;color:var(--namari);white-space:nowrap}
+
+/* ---------- page ---------- */
+main{padding:var(--s5) var(--s6) var(--s7)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s5);flex-wrap:wrap;margin-bottom:var(--s5)}
+.head h1{font-size:var(--t-2xl)}
+.head h1 .m{font-size:var(--t-l);margin-left:var(--s3);color:var(--namari)}
+.meta{margin:var(--s1) 0 0;color:var(--namari)}
+.meta b{color:var(--sumi);font-weight:600}
+.acts{display:flex;flex-direction:column;align-items:flex-end;gap:var(--s2);max-width:520px}
+.acts .row{display:flex;gap:var(--s3);flex-wrap:wrap;justify-content:flex-end}
+.why{margin:0;font-size:var(--t-s);color:var(--sumi);text-align:right}
+.why li{list-style:none}
+.why ul{margin:0;padding:0}
+.done-mark{color:var(--ok);font-weight:600}
+
+/* buttons */
+.btn{font:600 var(--t-m)/1 var(--f-body);letter-spacing:.04em;white-space:nowrap;min-height:44px;padding:0 var(--s5);border-radius:var(--r-ctl);border:1px solid var(--waku);background:var(--paper);color:var(--sumi);cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .12s var(--ease-out)}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn.fill{background:var(--shu);border-color:var(--shu);color:var(--paper)}
+@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){border-color:var(--sumi)} .btn.fill:hover:not(:disabled){background:var(--shu-press);border-color:var(--shu-press)}}
+.btn:disabled{cursor:not-allowed;color:var(--namari);background:var(--paper);border-color:var(--waku);border-style:dashed}
+.btn.small{min-height:32px;padding:0 var(--s3);font-size:var(--t-s)}
+.btn.link{border:0;background:none;padding:0 var(--s1);min-height:32px;text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.btn[aria-busy="true"]{cursor:progress}
+
+/* ---------- signature: the clinic-wide pay slip ---------- */
+.slip{border:2px solid var(--sumi);display:grid;grid-template-columns:minmax(0,1.25fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1.25fr)}
+.slip-title{grid-column:1/-1;display:flex;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;padding:var(--s2) var(--s4);border-bottom:1px solid var(--sumi)}
+.slip-title h2{font-size:var(--t-m);letter-spacing:.12em}
+.sec{min-width:0;display:flex;flex-direction:column}
+.band{font-family:var(--f-display);font-weight:700;font-synthesis:none;font-size:var(--t-s);letter-spacing:.3em;text-align:center;padding:var(--s1) var(--s3);border-bottom:1px solid var(--sumi);white-space:nowrap}
+.sec.net .band,.sec.net .cell{background:var(--fuutou)}
+.cells{display:flex;flex:1}
+.cell{flex:1;min-width:0;padding:var(--s3) var(--s4) var(--s4)}
+.cell + .cell{border-left:1px solid var(--kei)}
+.cell .lab{display:block;color:var(--namari);white-space:nowrap}
+.cell .fig{display:block;font-size:var(--t-2xl);font-weight:600;line-height:1.2;margin-top:var(--s1)}
+.cell .fig small{font-size:var(--t-m);font-weight:400;margin-left:2px}
+.sec.net .fig{font-size:var(--t-3xl)}
+.op{display:flex;align-items:center;justify-content:center;padding:0 var(--s2);font-family:var(--f-display);font-weight:700;font-size:var(--t-xl);color:var(--namari);border-left:1px solid var(--kei);border-right:1px solid var(--kei);padding-top:28px}
+.op.gap{border-left:1px solid var(--sumi);border-right:0;padding:0;width:0}
+.sec.att{border-right:1px solid var(--sumi)}
+.diff{margin:var(--s1) 0 0;font-size:var(--t-s)}
+.diff b{font-weight:600}
+.period{margin-top:var(--s2)}
+.track{height:8px;border:1px solid var(--waku);border-radius:4px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--sumi);transform-origin:left;transition:transform .3s var(--ease-out)}
+.ends{display:flex;justify-content:space-between;font-size:var(--t-s);color:var(--sumi);margin-top:2px}
+.cell .go{font-size:var(--t-s);font-weight:600;display:inline-block;margin-top:var(--s1);padding:var(--s1) 0}
+.cell .fig.zero{color:var(--ok)}
+.slip-foot{grid-column:1/-1;margin:0;padding:var(--s2) var(--s4);border-top:1px solid var(--kei);font-size:var(--t-s)}
+.slip-foot:empty{display:none}
+
+/* ---------- work area ---------- */
+.work{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:var(--s6);margin-top:var(--s6);align-items:start}
+.side{display:grid;gap:var(--s6);min-width:0}
+.panel{min-width:0}
+.panel > header{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);border-bottom:2px solid var(--sumi);padding-bottom:var(--s2);margin-bottom:0;flex-wrap:wrap}
+.panel h2{font-size:var(--t-l)}
+.panel h2 .step{font-family:var(--f-body);font-size:var(--t-s);font-weight:600;color:var(--namari);margin-right:var(--s2);letter-spacing:.06em}
+.count{color:var(--namari);white-space:nowrap}
+
+/* approvals list */
+.reqs{list-style:none;margin:0;padding:0}
+.req{padding:var(--s3) 0;border-bottom:1px solid var(--kei)}
+.req label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 var(--s3)}
+.req label > :not(input){grid-column:2}
+.req input{grid-row:1/4}
+.req input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--shu)}
+.req label{cursor:pointer;display:block}
+.req .who2{font-weight:600}
+.req .who2 span{font-weight:400;color:var(--namari);margin-left:var(--s2)}
+.req .what{display:block}
+.req .eff{display:block;font-size:var(--t-s);color:var(--sumi)}
+.tag{display:inline-block;font-size:var(--t-s);line-height:1.4;padding:0 var(--s2);border:1px solid currentColor;border-radius:3px;white-space:nowrap;font-weight:600}
+.tag.wait{color:var(--machi)}
+.tag.ok{color:var(--ok)}
+.reqs-foot{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);padding-top:var(--s3);flex-wrap:wrap}
+.note{margin:0;padding:var(--s4) 0;color:var(--sumi)}
+.note strong{display:block;font-family:var(--f-display);font-size:var(--t-m)}
+
+/* breakdown */
+.bd{width:100%;border-collapse:collapse}
+.bd th,.bd td{padding:var(--s2) 0;border-bottom:1px solid var(--kei);text-align:left;font-weight:400}
+.bd td.n{text-align:right}
+.bd thead th{font-size:var(--t-s);color:var(--sumi);font-weight:600}
+.bd thead th.n{text-align:right}
+.bd tfoot td,.bd tfoot th{font-weight:600;border-bottom:0;border-top:1px solid var(--sumi)}
+
+/* ledger tools */
+.tools{display:flex;gap:var(--s4);flex-wrap:wrap;align-items:flex-end;padding:var(--s3) 0}
+.field{display:flex;flex-direction:column;gap:2px}
+.field label{font-size:var(--t-s);font-weight:600}
+.field input,.field select{font:inherit;min-height:40px;padding:0 var(--s3);border:1px solid var(--waku);border-radius:var(--r-ctl);background:var(--paper);color:var(--sumi);min-width:0}
+.field input{width:220px}
+
+/* ledger table */
+.ledger{width:100%;border-collapse:collapse}
+.ledger thead{position:sticky;top:0;z-index:2;background:var(--paper)}
+.ledger th{font-weight:600;text-align:left;padding:0;white-space:nowrap}
+.ledger .grp th{font-family:var(--f-display);font-weight:700;font-synthesis:none;font-size:var(--t-s);letter-spacing:.3em;text-align:center;padding:var(--s1) var(--s2);border-top:2px solid var(--sumi);border-bottom:1px solid var(--sumi)}
+.ledger .grp th + th{border-left:1px solid var(--sumi)}
+.ledger .grp th.net,.ledger td.net{background:var(--fuutou)}
+.ledger .cols th{border-bottom:1px solid var(--sumi);font-size:var(--t-s)}
+.ledger .cols th.n{text-align:right}
+.ledger .cols th.bl,.ledger td.bl{border-left:1px solid var(--sumi)}
+.sort{all:unset;box-sizing:border-box;display:flex;gap:var(--s1);align-items:center;width:100%;min-height:36px;padding:0 var(--s2);cursor:pointer;justify-content:inherit}
+.cols th.n .sort{justify-content:flex-end}
+.sort:focus-visible{outline:2px solid var(--sumi);outline-offset:-2px}
+.sort .ar{display:inline-block;width:10px;color:var(--namari)}
+.ledger td{padding:var(--s2);border-bottom:1px solid var(--kei);vertical-align:top}
+.ledger td.n{text-align:right}
+.ledger td.name{font-weight:600;white-space:nowrap}
+.ledger td.role{color:var(--sumi);white-space:nowrap}
+.ledger td.net{font-weight:600}
+@media (hover:hover) and (pointer:fine){.ledger tbody tr:hover td{background:color-mix(in srgb,var(--fuutou) 45%,var(--paper))} .ledger tbody tr:hover td.net{background:var(--fuutou)}}
+.ledger td .sub{display:block;font-size:var(--t-s);font-weight:400;margin-top:2px}
+.ledger td .sub.wait{color:var(--machi)}
+.ledger td .err{display:block;color:var(--ayamari);font-size:var(--t-s);font-weight:600;white-space:normal;text-align:right}
+.ledger tfoot td{font-weight:600;border-top:2px solid var(--sumi);border-bottom:0}
+.ledger .empty td{padding:var(--s6) var(--s4);text-align:center}
+.minus::before{content:"−"}
+
+/* skeleton */
+.sk{display:inline-block;height:.9em;width:88px;max-width:100%;border-radius:3px;background:var(--kei);vertical-align:middle}
+.sk.w2{width:48px}.sk.w8{width:160px}
+@media (prefers-reduced-motion:no-preference){.sk{animation:pulse 1.2s ease-in-out infinite alternate}}
+@keyframes pulse{from{opacity:1}to{opacity:.45}}
+
+/* whole-view states */
+.state{border:2px solid var(--sumi);padding:var(--s6);max-width:640px;margin:var(--s6) 0}
+.state h2{font-size:var(--t-xl);margin-bottom:var(--s2)}
+.state p{margin:0 0 var(--s4)}
+.state.err{border-color:var(--ayamari)}
+.state.err h2{color:var(--ayamari)}
+
+/* dialog + toast */
+dialog{border:2px solid var(--sumi);border-radius:var(--r-ctl);padding:0;max-width:min(520px,calc(100vw - 32px));color:var(--sumi);background:var(--paper);box-shadow:0 16px 40px color-mix(in srgb,var(--sumi) 30%,transparent)}
+dialog::backdrop{background:color-mix(in srgb,var(--sumi) 40%,transparent)}
+.dlg{padding:var(--s5)}
+.dlg h2{font-size:var(--t-xl);margin-bottom:var(--s3)}
+/* the confirm breakdown reuses the slip's bands: 支給 / 控除 / 差引支給 */
+.dlg dl{display:grid;grid-template-columns:5.5em minmax(0,1fr);margin:0 0 var(--s4);border:2px solid var(--sumi)}
+.dlg dt{display:flex;align-items:center;justify-content:center;padding:var(--s2);border-right:1px solid var(--sumi);font-family:var(--f-display);font-weight:700;font-synthesis:none;font-size:var(--t-s);letter-spacing:.15em;white-space:nowrap}
+.dlg dd{margin:0;padding:var(--s2) var(--s4);text-align:right;font-weight:600}
+.dlg dt + dd ~ dt,.dlg dt + dd ~ dt + dd{border-top:1px solid var(--sumi)}
+.dlg .net{background:var(--fuutou)}
+.dlg dd.netv{font-size:var(--t-l)}
+.dlg .dacts{display:flex;gap:var(--s3);justify-content:flex-end;flex-wrap:wrap;margin-top:var(--s4)}
+.toast{position:fixed;left:50%;bottom:var(--s5);transform:translate(-50%,0);background:var(--sumi);color:var(--paper);padding:var(--s3) var(--s5);border-radius:var(--r-ctl);font-weight:600;max-width:calc(100vw - 32px);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s var(--ease-out)}
+.toast.on{opacity:1;transform:translate(-50%,-4px)}
+@media (prefers-reduced-motion:reduce){.toast,.toast.on{transform:translate(-50%,0)} .btn,.track i{transition:background-color .15s ease,border-color .15s ease}}
+
+/* ---------- 1600+: the breakdown moves beside the ledger ---------- */
+@media (min-width:1600px){
+  .work{grid-template-columns:minmax(0,400px) minmax(0,1fr) minmax(0,320px)}
+  .side{display:contents}
+  #approvals{grid-column:1;grid-row:1}
+  #ledger{grid-column:2;grid-row:1}
+  #breakdown{grid-column:3;grid-row:1}
+  body{font-size:17.5px}
+}
+
+/* ---------- tablet ---------- */
+@media (max-width:1100px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .side{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .slip{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1.2fr)}
+  .sec.att{grid-column:1/-1;border-right:0;border-bottom:1px solid var(--sumi)}
+  .op.gap{display:none}
+  .ledger td{padding:var(--s2) var(--s1);font-size:15px}
+  .sort{padding:0 var(--s1)}
+  .acts{align-items:flex-start}
+  .acts .row{justify-content:flex-start}
+  .why{text-align:left}
+}
+@media (max-width:760px){
+  .side{grid-template-columns:minmax(0,1fr)}
+  .acts{align-items:stretch;max-width:none;width:100%}
+  .acts .row{justify-content:flex-start}
+  .why{text-align:left}
+  .head{margin-bottom:var(--s4)}
+}
+
+/* ---------- phone ---------- */
+@media (max-width:639px){
+  .bar{padding:var(--s2) var(--s4);gap:var(--s2) var(--s4)}
+  .bar nav{order:3;width:100%}
+  .bar nav a{padding:var(--s2) var(--s2)}
+  .who{font-size:var(--t-s)}
+  main{padding:var(--s4) var(--s4) var(--s7)}
+  .head h1{font-size:var(--t-xl)}
+  .acts .row .btn{flex:1}
+  .slip{grid-template-columns:minmax(0,1fr)}
+  .op{display:none}
+  .sec + .sec, .sec.att{border-bottom:0}
+  .sec:not(.att){border-top:1px solid var(--sumi);display:grid;grid-template-columns:4.5em minmax(0,1fr)}
+  .sec:not(.att) .band{border-bottom:0;border-right:1px solid var(--sumi);display:flex;align-items:center;justify-content:center;letter-spacing:.15em}
+  .sec:not(.att) .cell{padding:var(--s2) var(--s3)}
+  .cell .fig{font-size:var(--t-xl)}
+  .sec.net .fig{font-size:var(--t-xl)}
+  .sec:not(.att) .band{letter-spacing:.05em;padding:var(--s1)}
+  .sec.att .lab{white-space:normal;line-height:1.4}
+  .sec.att .cell{padding:var(--s3)}
+  .field input{width:100%}
+  .tools .field{flex:1 1 140px}
+
+  .ledger thead{position:static}
+  .ledger thead .grp{display:none}
+  .ledger .cols{display:flex;flex-wrap:wrap;gap:0 var(--s2);border-bottom:1px solid var(--sumi)}
+  .ledger .cols th{border:0}
+  .ledger .cols th.bl{border:0}
+  .sort{padding:0 var(--s1)}
+  .ledger tbody, .ledger tfoot{display:block}
+  .ledger tbody tr, .ledger tfoot tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 var(--s3);border-bottom:1px solid var(--kei);padding:var(--s3) 0}
+  .ledger td{border:0;padding:2px 0;display:block}
+  .ledger td.bl{border:0}
+  .ledger td.name{grid-column:1;grid-row:1}
+  .ledger td.role{grid-column:1;grid-row:2}
+  .ledger td.net{grid-column:2;grid-row:1/3;text-align:right;padding:var(--s1) var(--s2);font-size:var(--t-l)}
+  .ledger td[data-l]::before{content:attr(data-l);display:block;font-size:var(--t-s);font-weight:600;text-align:left;font-variant-numeric:normal}
+  .ledger td.n[data-l]{display:flex;justify-content:space-between;gap:var(--s2);flex-wrap:wrap;align-items:baseline}
+  .ledger td.n[data-l]::before{display:inline}
+  .ledger td.net[data-l]{display:block}
+  .ledger td.net[data-l]::before{text-align:right;display:block}
+  .ledger td .sub{width:100%;text-align:right}
+  .ledger tfoot tr{border-bottom:0;border-top:2px solid var(--sumi)}
+  .ledger tfoot td.fl{grid-column:1/-1;grid-row:1}
+  .ledger tfoot td.net{grid-column:1/-1;grid-row:auto}
+  .ledger, .ledger thead{display:block}
+  .ledger .empty td{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">さくら内科クリニック<span>給与計算</span></div>
+  <nav aria-label="メイン">
+    <ul>
+      <li><a href="#" aria-current="page">今月の給与</a></li>
+      <li><a href="#">スタッフ</a></li>
+      <li><a href="#">勤怠申請</a></li>
+    </ul>
+  </nav>
+  <div class="who">事務長 山本 和子</div>
+</header>
+
+<main id="main">
+  <div class="head">
+    <div>
+      <h1>今月の給与<span class="m" id="month"></span></h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div class="acts">
+      <div class="row" id="actRow">
+        <button type="button" class="btn fill" id="approveBtn">勤怠を承認する</button>
+        <button type="button" class="btn" id="confirmBtn" disabled aria-describedby="why">給与を確定する</button>
+      </div>
+      <div class="why" id="why"></div>
+    </div>
+  </div>
+
+  <div id="view">
+    <section class="slip" aria-labelledby="slipTitle" id="slip">
+      <div class="slip-title">
+        <h2 id="slipTitle">給与明細　クリニック合計</h2>
+      </div>
+      <div class="sec att">
+        <div class="band">勤　怠</div>
+        <div class="cells">
+          <div class="cell">
+            <span class="lab">締め日まで</span>
+            <span class="fig" id="daysLeft"><span class="sk w2"></span></span>
+            <div class="period" id="period"></div>
+          </div>
+          <div class="cell">
+            <span class="lab">未承認の勤怠申請</span>
+            <span class="fig" id="pendingCount"><span class="sk w2"></span></span>
+            <a class="go" href="#approvals" id="pendingLink" hidden>申請の内容を見る</a>
+          </div>
+        </div>
+      </div>
+      <div class="op gap" aria-hidden="true"></div>
+      <div class="sec pay">
+        <div class="band">支　給</div>
+        <div class="cell"><span class="lab">支給総額</span><span class="fig" id="sumPay"><span class="sk"></span></span></div>
+      </div>
+      <div class="op" aria-hidden="true">−</div>
+      <div class="sec ded">
+        <div class="band">控　除</div>
+        <div class="cell"><span class="lab">控除総額</span><span class="fig" id="sumDed"><span class="sk"></span></span></div>
+      </div>
+      <div class="op" aria-hidden="true">＝</div>
+      <div class="sec net">
+        <div class="band">差引支給</div>
+        <div class="cell"><span class="lab">差引支給総額</span><span class="fig" id="sumNet"><span class="sk w8"></span></span><p class="diff" id="sumDiff"></p></div>
+      </div>
+      <p class="slip-foot" id="slipFoot"></p>
+    </section>
+
+    <div class="work">
+      <div class="side">
+        <section class="panel" id="approvals" aria-labelledby="apTitle">
+          <header>
+            <h2 id="apTitle"><span class="step">手順 1</span>勤怠申請の承認</h2>
+            <span class="count" id="apCount"></span>
+          </header>
+          <div id="apBody" aria-live="polite"></div>
+        </section>
+        <section class="panel" id="breakdown" aria-labelledby="bdTitle">
+          <header><h2 id="bdTitle">職種別の差引支給額</h2></header>
+          <table class="bd">
+            <thead><tr><th scope="col">職種</th><th scope="col" class="n">人数</th><th scope="col" class="n">差引支給額（円）</th></tr></thead>
+            <tbody id="bdBody"></tbody>
+            <tfoot id="bdFoot"></tfoot>
+          </table>
+        </section>
+      </div>
+
+      <section class="panel" id="ledger" aria-labelledby="lgTitle">
+        <header>
+          <h2 id="lgTitle"><span class="step">手順 2</span>スタッフ別の支給額</h2>
+          <span class="count" id="lgCount"></span>
+        </header>
+        <div class="tools">
+          <div class="field">
+            <label for="q">氏名で探す</label>
+            <input id="q" type="search" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="role">職種</label>
+            <select id="role"><option value="">すべての職種</option></select>
+          </div>
+        </div>
+        <table class="ledger" aria-describedby="lgTitle">
+          <thead>
+            <tr class="grp">
+              <th colspan="2" scope="colgroup">スタッフ</th>
+              <th colspan="2" scope="colgroup">支　給</th>
+              <th scope="colgroup">控　除</th>
+              <th colspan="2" scope="colgroup" class="net">差引支給</th>
+            </tr>
+            <tr class="cols" id="cols"></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+          <tfoot id="foot"></tfoot>
+        </table>
+      </section>
+    </div>
+  </div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="dlgTitle"></h2>
+    <p id="dlgLead" style="margin:0 0 12px"></p>
+    <dl id="dlgList"></dl>
+    <p style="margin:0">確定した内容でスタッフ全員の差引支給額が決まります。内容に誤りがないか確認してください。</p>
+    <div class="dacts">
+      <button class="btn" value="cancel" type="submit">戻って見直す</button>
+      <button class="btn fill" value="ok" type="submit" id="dlgOk">給与を確定する</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const yen = (n) => Math.round(n).toLocaleString('ja-JP');
+  const WD = '日月火水木金土';
+  const md = (d) => `${d.getMonth() + 1}月${d.getDate()}日`;
+  const mdw = (d) => `${md(d)}（${WD[d.getDay()]}）`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ---- pay period: 20日締め・25日支給 ---- */
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const closeM = today.getDate() <= 20 ? today.getMonth() : today.getMonth() + 1;
+  const close = new Date(today.getFullYear(), closeM, 20);
+  const start = new Date(close.getFullYear(), close.getMonth() - 1, 21);
+  const payday = new Date(close.getFullYear(), close.getMonth(), 25);
+  const DAY = 86400000;
+  const daysLeft = Math.round((close - today) / DAY);
+  const total = Math.round((close - start) / DAY) + 1;
+  const elapsed = Math.round((today - start) / DAY) + 1;
+  const ago = (n) => new Date(today.getTime() - n * DAY);
+
+  $('month').textContent = `${close.getFullYear()}年${close.getMonth() + 1}月分`;
+  $('meta').innerHTML = `支給対象 <b class="nw">${md(start)}〜${md(close)}</b> の勤務分　支給日 <b class="nw">${mdw(payday)}</b>`;
+
+  /* ---- mock API ---- */
+  const RAW = [
+    ['高橋 誠一', '医師', 820000, 0, 0.27, 6800],
+    ['中川 由紀', '医師', 760000, 0, 0.27, -4200],
+    ['佐藤 美穂', '看護師', 312000, 14620, 0.21, 9800],
+    ['田村 彩', '看護師', 298000, 9320, 0.21, -3100],
+    ['小林 綾乃', '看護師', 286000, 22340, 0.21, 12400],
+    ['石井 真由美', '看護師', 305000, 4770, 0.21, 0],
+    ['吉田 千尋', '看護師', 274000, 17130, 0.2, 5200],
+    ['村上 葵', '看護師', 268000, 0, 0.2, -8400],
+    ['加藤 久美子', '准看護師', 246000, 7690, 0.2, 2600],
+    ['松本 里奈', '准看護師', 238000, 11160, 0.2, -1800],
+    ['森田 健', '臨床検査技師', 262000, null, 0.2, 0],
+    ['西村 優花', '臨床検査技師', 251000, 3920, 0.2, 4100],
+    ['岡田 拓海', '診療放射線技師', 279000, 8720, 0.21, -6200],
+    ['山口 恵', '医療事務', 224000, 21000, 0.19, 15300],
+    ['斎藤 由香里', '医療事務', 218000, 6810, 0.19, 1200],
+    ['清水 舞', '医療事務', 212000, 0, 0.19, -2400],
+    ['長谷川 瞳', '医療事務', 230000, 10780, 0.19, 3600],
+    ['前田 沙織', '医療事務', 206000, 3220, 0.19, 0],
+    ['藤井 京子', '看護助手', 188000, 0, 0.17, -1500],
+    ['後藤 春菜', '看護助手', 182000, 2840, 0.17, 2200],
+    ['近藤 典子', '受付（パート）', 118400, 0, 0.11, -9600],
+    ['遠藤 さやか', '受付（パート）', 96800, 0, 0.1, 4800],
+  ];
+  const MORITA_OT = 6140;
+  const hourly = (base) => Math.round(base / 160 * 1.25);
+  // last month's net is fixed when the data arrives; approving overtime or reloading a row moves this month's net, not last month's
+  const mkStaff = () => RAW.map(([name, role, base, ot, rate, dprev], i) => {
+    const s = { id: i, name, role, base, ot, rate, pendH: 0 };
+    s.prevNet = calc(s).net - dprev;
+    return s;
+  });
+  const mkReqs = (staff) => {
+    const by = (n) => staff.find((s) => s.name === n);
+    const list = [
+      { who: '佐藤 美穂', kind: '残業', date: ago(4), what: '1.5時間　午後診療の延長', h: 1.5 },
+      { who: '山口 恵', kind: '残業', date: ago(2), what: '2時間　レセプト点検', h: 2 },
+      { who: '岡田 拓海', kind: '残業', date: ago(5), what: '1時間　検査の延長対応', h: 1 },
+      { who: '吉田 千尋', kind: '打刻修正', date: ago(2), what: '出勤 8:30 → 8:15', h: 0 },
+      { who: '近藤 典子', kind: '有給休暇', date: ago(7), what: '1日', h: 0 },
+    ];
+    return list.map((r, i) => {
+      const s = by(r.who);
+      if (r.h) s.pendH += r.h;
+      return { id: 'r' + i, sid: s.id, role: s.role, ...r, amt: r.h ? Math.round(hourly(s.base) * r.h / 10) * 10 : 0 };
+    });
+  };
+  function fetchPayroll() {
+    const p = new URLSearchParams(location.search).get('data'); // fixture switch for the mock API
+    return new Promise((res, rej) => setTimeout(() => {
+      if (p === 'error' || navigator.onLine === false) return rej(new Error('network'));
+      if (p === 'empty') return res({ staff: [], reqs: [] });
+      const staff = mkStaff();
+      res({ staff, reqs: mkReqs(staff) });
+    }, p === 'slow' ? 4000 : 200));
+  }
+
+  /* ---- state ---- */
+  const S = { staff: [], reqs: [], sel: new Set(), sort: { k: 'id', d: 1 }, q: '', role: '', confirmed: null, busy: false, retrying: false };
+  const calc = (s) => {
+    const ot = s.ot == null ? null : s.ot;
+    const pay = s.base + (ot || 0);
+    const ded = Math.round(pay * s.rate / 10) * 10;
+    const net = pay - ded;
+    return { ot, pay, ded, net, prev: s.prevNet };
+  };
+
+  const COLS = [
+    { k: 'name', t: '氏名' }, { k: 'role', t: '職種' },
+    { k: 'base', t: '基本給', n: 1, bl: 1 }, { k: 'ot', t: '残業代', n: 1 },
+    { k: 'ded', t: '控除', n: 1, bl: 1 },
+    { k: 'net', t: '差引支給額', n: 1, bl: 1, net: 1 }, { k: 'diff', t: '前月比', n: 1, net: 1 },
+  ];
+  function renderCols() {
+    $('cols').innerHTML = COLS.map((c) => {
+      const on = S.sort.k === c.k;
+      const aria = on ? (S.sort.d > 0 ? 'ascending' : 'descending') : 'none';
+      return `<th scope="col" class="${c.n ? 'n' : ''} ${c.bl ? 'bl' : ''} ${c.net ? 'net' : ''}" aria-sort="${aria}"><button type="button" class="sort" data-k="${c.k}">${c.t}<span class="ar" aria-hidden="true">${on ? (S.sort.d > 0 ? '▲' : '▼') : ''}</span></button></th>`;
+    }).join('');
+  }
+
+  function skeleton() {
+    renderCols();
+    $('rows').innerHTML = Array.from({ length: 8 }, () => `<tr>${COLS.map((c) => `<td class="${c.n ? 'n' : ''} ${c.bl ? 'bl' : ''} ${c.net ? 'net' : ''}"><span class="sk ${c.k === 'name' ? '' : 'w2'}"></span></td>`).join('')}</tr>`).join('');
+    $('apBody').innerHTML = `<ul class="reqs">${'<li class="req"><span class="sk"></span><br><span class="sk w8"></span></li>'.repeat(4)}</ul>`;
+    $('bdBody').innerHTML = '<tr><td><span class="sk"></span></td><td class="n"><span class="sk w2"></span></td><td class="n"><span class="sk"></span></td></tr>'.repeat(4);
+    $('main').setAttribute('aria-busy', 'true');
+  }
+
+  function renderHead() {
+    const pend = S.reqs.length;
+    const failed = S.staff.filter((s) => s.ot == null).length;
+    const ab = $('approveBtn'), cb = $('confirmBtn');
+    const why = $('why');
+    if (S.confirmed) {
+      ab.hidden = true;
+      cb.disabled = true; cb.classList.remove('fill'); cb.textContent = '確定済み';
+      why.innerHTML = `<p class="done-mark">${md(S.confirmed)} ${String(S.confirmed.getHours()).padStart(2, '0')}:${String(S.confirmed.getMinutes()).padStart(2, '0')} に確定しました</p>`;
+      return;
+    }
+    ab.hidden = pend === 0;
+    const n = [...S.sel].length;
+    ab.textContent = S.busy ? '承認しています…' : `勤怠を承認する（${n}件）`;
+    ab.disabled = n === 0 || S.busy;
+    ab.setAttribute('aria-busy', S.busy ? 'true' : 'false');
+    const reasons = [];
+    if (pend) reasons.push(`未承認の勤怠申請が${pend}件あります`);
+    if (failed) reasons.push(`${failed}名の勤怠データを読み込めていません`);
+    const can = reasons.length === 0 && S.staff.length > 0;
+    cb.disabled = !can;
+    cb.classList.toggle('fill', can);
+    if (!S.staff.length) why.innerHTML = '<p>スタッフを登録すると給与を確定できます</p>';
+    else why.innerHTML = can ? '<p>すべての勤怠がそろいました。内容を確認して確定してください</p>'
+      : `<ul>${reasons.map((r) => `<li>${r}</li>`).join('')}</ul>`;
+  }
+
+  function totals() {
+    let pay = 0, ded = 0, net = 0, prev = 0;
+    S.staff.forEach((s) => { const c = calc(s); pay += c.pay; ded += c.ded; net += c.net; prev += c.prev; });
+    return { pay, ded, net, prev };
+  }
+  const diffHtml = (d, base) => {
+    const sign = d > 0 ? '+' : d < 0 ? '−' : '±';
+    const pct = base ? Math.abs(d / base * 100).toFixed(1) : '0.0';
+    return `<span class="nw">${sign}${yen(Math.abs(d))}</span> <span class="nw">（${sign}${pct}%）</span>`;
+  };
+
+  function renderSlip() {
+    const t = totals();
+    const pend = S.reqs.length;
+    $('daysLeft').innerHTML = daysLeft === 0 ? '今日が締め日' : `あと${daysLeft}<small>日</small>`;
+    $('period').innerHTML = `<div class="track" role="img" aria-label="支給対象期間${total}日のうち${elapsed}日目"><i style="transform:scaleX(${Math.min(1, elapsed / total)})"></i></div><div class="ends"><span class="nw">${start.getMonth() + 1}/${start.getDate()}</span><span class="nw">締め ${close.getMonth() + 1}/${close.getDate()}</span></div>`;
+    const pc = $('pendingCount');
+    pc.innerHTML = `${pend}<small>件</small>`;
+    pc.classList.toggle('zero', pend === 0);
+    $('pendingLink').hidden = pend === 0;
+    $('sumPay').innerHTML = `${yen(t.pay)}<small>円</small>`;
+    $('sumDed').innerHTML = `${yen(t.ded)}<small>円</small>`;
+    $('sumNet').innerHTML = `${yen(t.net)}<small>円</small>`;
+    $('sumDiff').innerHTML = S.staff.length ? `前月比 <b>${diffHtml(t.net - t.prev, t.prev)}</b>` : '';
+    const failed = S.staff.filter((s) => s.ot == null);
+    const pendAmt = S.reqs.reduce((a, r) => a + r.amt, 0);
+    const notes = [];
+    if (pendAmt) notes.push(`未承認の残業代 ${yen(pendAmt)}円 は含まれていません。`);
+    if (failed.length) notes.push(`${failed.map((s) => s.name).join('、')}さんの残業代は未反映です。`);
+    $('slipFoot').textContent = notes.join(' ');
+  }
+
+  function renderReqs() {
+    const box = $('apBody');
+    const pend = S.reqs.length;
+    $('apCount').textContent = pend ? `未承認 ${pend}件` : '';
+    if (!pend) {
+      box.innerHTML = S.confirmed
+        ? '<p class="note"><strong>今月の勤怠はすべて承認済みです</strong>給与は確定しています。</p>'
+        : `<p class="note"><strong>未承認の勤怠申請はありません</strong>${S.staff.length ? 'スタッフ別の支給額を確認して、給与を確定してください。' : 'スタッフを登録すると、勤怠申請がここに届きます。'}</p>`;
+      return;
+    }
+    const allOn = S.reqs.every((r) => S.sel.has(r.id));
+    box.innerHTML = `<ul class="reqs">${S.reqs.map((r) => `
+      <li class="req">
+        <label>
+          <input type="checkbox" data-r="${r.id}" ${S.sel.has(r.id) ? 'checked' : ''} ${S.busy ? 'disabled' : ''}>
+          <span class="who2">${esc(r.who)}<span>${esc(r.role)}</span></span>
+          <span class="what"><span class="nw">${mdw(r.date)}</span>　${esc(r.kind)}　<span class="nw">${esc(r.what.split('　')[0])}</span>${r.what.includes('　') ? '　' + esc(r.what.split('　')[1]) : ''}</span>
+          <span class="eff">${r.amt ? `残業代 <span class="num">+${yen(r.amt)}円</span>` : '支給額は変わりません'}</span>
+        </label>
+      </li>`).join('')}</ul>
+      <div class="reqs-foot">
+        <span class="count">${S.sel.size}件を選択中</span>
+        <button type="button" class="btn link" id="toggleAll" ${S.busy ? 'disabled' : ''}>${allOn ? 'すべての選択を外す' : 'すべて選択する'}</button>
+      </div>`;
+  }
+
+  function sortedRows() {
+    const q = S.q.trim();
+    let list = S.staff.filter((s) => (!q || s.name.replace(/\s/g, '').includes(q.replace(/\s/g, ''))) && (!S.role || s.role === S.role));
+    const key = (s) => {
+      const c = calc(s);
+      return { id: s.id, name: s.name, role: s.role, base: s.base, ot: c.ot ?? -1, ded: c.ded, net: c.net, diff: c.net - c.prev }[S.sort.k];
+    };
+    return list.sort((a, b) => {
+      const x = key(a), y = key(b);
+      return (typeof x === 'string' ? x.localeCompare(y, 'ja') : x - y) * S.sort.d;
+    });
+  }
+
+  function renderTable() {
+    renderCols();
+    const list = sortedRows();
+    $('lgCount').textContent = S.staff.length ? (list.length === S.staff.length ? `${S.staff.length}名` : `${S.staff.length}名中 ${list.length}名を表示`) : '';
+    if (!S.staff.length) {
+      $('rows').innerHTML = `<tr class="empty"><td colspan="7"><strong>スタッフが登録されていません</strong><br>スタッフを登録すると、ここに支給額が並びます。<br><a href="#">スタッフを登録する</a></td></tr>`;
+      $('foot').innerHTML = '';
+      return;
+    }
+    if (!list.length) {
+      $('rows').innerHTML = `<tr class="empty"><td colspan="7">条件に合うスタッフはいません。<br><button type="button" class="btn small" id="clearF">絞り込みを解除する</button></td></tr>`;
+      $('foot').innerHTML = '';
+      return;
+    }
+    $('rows').innerHTML = list.map((s) => {
+      const c = calc(s);
+      const d = c.net - c.prev;
+      const otCell = c.ot == null
+        ? `<span class="err">読み込めませんでした</span><button type="button" class="btn small" data-retry="${s.id}" ${S.retrying ? 'disabled aria-busy="true"' : ''}>${S.retrying ? '読み込み中…' : '再読み込み'}</button>`
+        : `${yen(c.ot)}${s.pendH ? `<span class="sub wait">申請中 ${s.pendH}時間</span>` : ''}`;
+      return `<tr>
+        <td class="name" data-l="">${esc(s.name)}</td>
+        <td class="role">${esc(s.role)}</td>
+        <td class="n bl" data-l="基本給">${yen(s.base)}</td>
+        <td class="n" data-l="残業代">${otCell}</td>
+        <td class="n bl" data-l="控除"><span class="minus">${yen(c.ded)}</span></td>
+        <td class="n bl net" data-l="差引支給額">${yen(c.net)}${c.ot == null ? '<span class="sub">残業代を除く</span>' : ''}</td>
+        <td class="n" data-l="前月比">${c.ot == null ? '<span aria-hidden="true">—</span><span class="vh">残業代の読み込み後に表示</span>' : d === 0 ? '±0' : (d > 0 ? '+' : '−') + yen(Math.abs(d))}</td>
+      </tr>`;
+    }).join('').replace(/ data-l=""/g, '');
+    const t = list.reduce((a, s) => { const c = calc(s); a.base += s.base; a.ot += c.ot || 0; a.ded += c.ded; a.net += c.net; a.prev += c.prev; return a; }, { base: 0, ot: 0, ded: 0, net: 0, prev: 0 });
+    const d = t.net - t.prev;
+    $('foot').innerHTML = `<tr>
+      <td colspan="2" class="fl">合計（${list.length}名）</td>
+      <td class="n bl" data-l="基本給">${yen(t.base)}</td>
+      <td class="n" data-l="残業代">${yen(t.ot)}</td>
+      <td class="n bl" data-l="控除"><span class="minus">${yen(t.ded)}</span></td>
+      <td class="n bl net" data-l="差引支給額">${yen(t.net)}</td>
+      <td class="n" data-l="前月比">${(d >= 0 ? '+' : '−') + yen(Math.abs(d))}</td>
+    </tr>`;
+  }
+
+  function renderBreakdown() {
+    const m = new Map();
+    S.staff.forEach((s) => { const c = calc(s); const e = m.get(s.role) || { n: 0, net: 0 }; e.n++; e.net += c.net; m.set(s.role, e); });
+    if (!m.size) { $('bdBody').innerHTML = '<tr><td colspan="3">スタッフを登録すると職種ごとの合計が出ます。</td></tr>'; $('bdFoot').innerHTML = ''; return; }
+    $('bdBody').innerHTML = [...m].map(([r, e]) => `<tr><th scope="row">${esc(r)}</th><td class="n">${e.n}名</td><td class="n">${yen(e.net)}</td></tr>`).join('');
+    const t = totals();
+    $('bdFoot').innerHTML = `<tr><th scope="row">合計</th><td class="n">${S.staff.length}名</td><td class="n">${yen(t.net)}</td></tr>`;
+    const sel = $('role');
+    if (sel.options.length === 1) [...m.keys()].forEach((r) => sel.add(new Option(r, r)));
+  }
+
+  function renderAll() { renderHead(); renderSlip(); renderReqs(); renderTable(); renderBreakdown(); }
+
+  let toastT;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200);
+  }
+
+  /* ---- load ---- */
+  const viewHtml = $('view').innerHTML;
+  function load() {
+    $('view').innerHTML = viewHtml;
+    bindView();
+    skeleton();
+    $('approveBtn').disabled = true; $('approveBtn').textContent = '勤怠を承認する';
+    $('confirmBtn').disabled = true;
+    fetchPayroll().then((d) => {
+      S.staff = d.staff; S.reqs = d.reqs; S.sel = new Set(d.reqs.map((r) => r.id));
+      $('main').removeAttribute('aria-busy');
+      renderAll();
+    }).catch(() => {
+      $('main').removeAttribute('aria-busy');
+      $('approveBtn').hidden = true;
+      $('why').innerHTML = '<p>給与データを読み込むまで操作できません</p>';
+      $('view').innerHTML = `<section class="state err" role="alert" aria-labelledby="eT">
+        <h2 id="eT">給与データを読み込めませんでした</h2>
+        <p>通信が途切れたため、今月の勤怠と支給額を取得できませんでした。インターネット接続を確認してから、もう一度読み込んでください。</p>
+        <button type="button" class="btn fill" id="reload">もう一度読み込む</button>
+      </section>`;
+      $('reload').addEventListener('click', () => { $('approveBtn').hidden = false; load(); });
+    });
+  }
+
+  /* ---- events ---- */
+  function bindView() {
+    $('apBody').addEventListener('change', (e) => {
+      const id = e.target.dataset.r; if (!id) return;
+      e.target.checked ? S.sel.add(id) : S.sel.delete(id);
+      renderHead(); const f = document.querySelector('.reqs-foot .count'); if (f) f.textContent = `${S.sel.size}件を選択中`;
+      const tg = $('toggleAll'); if (tg) tg.textContent = S.reqs.every((r) => S.sel.has(r.id)) ? 'すべての選択を外す' : 'すべて選択する';
+    });
+    $('apBody').addEventListener('click', (e) => {
+      if (e.target.id !== 'toggleAll') return;
+      const allOn = S.reqs.every((r) => S.sel.has(r.id));
+      S.sel = allOn ? new Set() : new Set(S.reqs.map((r) => r.id));
+      renderHead(); renderReqs(); $('toggleAll').focus();
+    });
+    $('cols').addEventListener('click', (e) => {
+      const b = e.target.closest('.sort'); if (!b) return;
+      const k = b.dataset.k;
+      S.sort = S.sort.k === k ? { k, d: -S.sort.d } : { k, d: ['name', 'role'].includes(k) ? 1 : -1 };
+      renderTable();
+      document.querySelector(`.sort[data-k="${k}"]`).focus();
+    });
+    $('rows').addEventListener('click', (e) => {
+      if (e.target.id === 'clearF') { S.q = ''; S.role = ''; $('q').value = ''; $('role').value = ''; renderTable(); $('q').focus(); return; }
+      const id = e.target.dataset.retry; if (id == null || S.retrying) return;
+      S.retrying = true; renderTable();
+      setTimeout(() => {
+        S.retrying = false;
+        const s = S.staff[+id]; s.ot = MORITA_OT;
+        renderAll(); toast(`${s.name}さんの勤怠を読み込みました`);
+      }, 700);
+    });
+    $('q').addEventListener('input', (e) => { S.q = e.target.value; renderTable(); });
+    $('role').addEventListener('change', (e) => { S.role = e.target.value; renderTable(); });
+  }
+
+  $('approveBtn').addEventListener('click', () => {
+    const ids = [...S.sel]; if (!ids.length || S.busy) return;
+    S.busy = true; renderHead(); renderReqs();
+    setTimeout(() => {
+      ids.forEach((id) => {
+        const r = S.reqs.find((x) => x.id === id);
+        const s = S.staff[r.sid];
+        if (r.h) { s.ot += r.amt; s.pendH -= r.h; }
+      });
+      S.reqs = S.reqs.filter((r) => !ids.includes(r.id));
+      S.sel = new Set(); S.busy = false;
+      renderAll();
+      toast(`勤怠申請を${ids.length}件承認しました`);
+      const cb = $('confirmBtn'); (cb.disabled ? $('apTitle') : cb).focus?.();
+    }, 500);
+  });
+
+  $('confirmBtn').addEventListener('click', () => {
+    const t = totals();
+    $('dlgTitle').textContent = `${close.getMonth() + 1}月分の給与を確定します`;
+    $('dlgLead').textContent = `${S.staff.length}名分、支給日は${mdw(payday)}です。`;
+    $('dlgList').innerHTML = `<dt>支　給</dt><dd class="num">${yen(t.pay)}円</dd><dt>控　除</dt><dd class="num">−${yen(t.ded)}円</dd><dt class="net">差引支給</dt><dd class="num netv net">${yen(t.net)}円</dd>`;
+    $('dlg').showModal();
+  });
+  $('dlg').addEventListener('close', () => {
+    if ($('dlg').returnValue !== 'ok') { $('confirmBtn').focus(); return; }
+    S.confirmed = new Date();
+    renderAll();
+    toast(`${close.getMonth() + 1}月分の給与を確定しました`);
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laneway — a shared board for small teams</title>
+<meta name="description" content="Laneway puts every task your team has in one of four lanes: To do, In progress, Review, Done. Everyone can see which.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EFEEEB;
+    --surface: #FFFFFF;
+    --text: #1E2228;
+    --muted: #57554F;
+    --accent: #1E2228;
+    --on-accent: #FFFFFF;
+    --border: #8A877F;
+    --danger: #A3261B;
+    --note: #F7D64A;
+
+    --display: "Archivo", "Arial Narrow", sans-serif;
+    --body: "Source Sans 3", "Segoe UI", sans-serif;
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+    --t-sm: 15px; --t-base: 17px; --t-md: 21px; --t-lg: 27px; --t-xl: 42px; --t-xxl: 66px;
+    --radius: 6px;
+    --lift: 0 1px 0 rgb(30 34 40 / .14), 0 2px 6px rgb(30 34 40 / .08);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--body); font-size: var(--t-base); line-height: 1.55;
+  }
+  h1, h2, h3 { font-family: var(--display); font-stretch: 75%; font-weight: 800; line-height: 1.08; margin: 0; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: inherit; }
+
+  :focus-visible { outline: 3px solid var(--text); outline-offset: 3px; box-shadow: 0 0 0 6px var(--surface); }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 var(--s3); }
+
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- header ---------- */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s2) 0; flex-wrap: wrap; }
+  .mark { font-family: var(--display); font-weight: 800; font-stretch: 100%; font-size: var(--t-md); text-decoration: none; display: inline-flex; align-items: center; gap: var(--s1); min-height: 44px; }
+  .mark svg { flex: none; }
+  .top nav { display: flex; gap: var(--s3); }
+  .top nav a { font-weight: 600; text-decoration: none; white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; border-bottom: 2px solid transparent; }
+  .top nav a:hover { border-bottom-color: var(--text); }
+
+  /* ---------- hero band ---------- */
+  .hero { background: var(--note); padding-bottom: var(--s6); }
+  .hero-grid { display: grid; gap: var(--s5); padding-top: var(--s5); }
+  .hero h1 { font-size: clamp(38px, 6.4vw, var(--t-xxl)); max-width: 15ch; }
+  .lead { font-size: var(--t-md); max-width: 46ch; margin-top: var(--s3); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s4); }
+
+  .btn {
+    font: 600 var(--t-base)/1 var(--body); min-height: 48px; padding: 0 var(--s3);
+    border-radius: var(--radius); border: 2px solid var(--accent); cursor: pointer; white-space: nowrap;
+    transition: transform 120ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { box-shadow: inset 0 -3px 0 var(--note); }
+  .btn-quiet { background: transparent; color: var(--text); }
+  .btn-quiet:hover { background: var(--text); color: var(--note); }
+
+  /* ---------- lane unit (signature) ---------- */
+  .lanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); }
+  .lane-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--s1);
+    font-family: var(--display); font-stretch: 75%; font-weight: 800; font-size: var(--t-sm);
+    letter-spacing: .08em; text-transform: uppercase;
+    padding-bottom: var(--s1); border-bottom: 2px solid var(--text); margin: 0 0 var(--s2);
+  }
+  .lane-head .n { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+  .lane ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1); }
+
+  .task {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--lift);
+    padding: 12px var(--s2) var(--s1);
+  }
+  .task b { display: block; font-weight: 600; line-height: 1.3; }
+  .meta { display: flex; align-items: center; gap: var(--s1); flex-wrap: wrap; margin-top: var(--s1); font-size: var(--t-sm); }
+  .chip { border: 1px solid var(--border); border-radius: 3px; padding: 0 6px; white-space: nowrap; }
+  .date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .who {
+    margin-left: auto; width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center;
+    font: 800 12px/1 var(--display); font-stretch: 100%; background: var(--bg); border: 1px solid var(--border);
+  }
+
+  .rail { background: var(--bg); border-radius: var(--radius); padding: var(--s3); }
+  .rail-foot { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s3); }
+  .rail-foot p { font-size: var(--t-sm); }
+  .task.moving { background: var(--note); box-shadow: 0 0 0 2px var(--text), var(--lift); view-transition-name: moving-card; }
+  .task.moving .who { background: var(--surface); }
+  ::view-transition-group(moving-card) { animation-duration: 280ms; animation-timing-function: var(--ease-out); }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+    .btn { transition: background-color 160ms ease, color 160ms ease; }
+    .btn:active { transform: none; }
+  }
+
+  /* ---------- screenshot ---------- */
+  .board { padding: var(--s7) 0 var(--s6); }
+  .board-head { display: flex; justify-content: space-between; align-items: end; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s3); }
+  .board-head h2 { font-size: var(--t-xl); max-width: 20ch; }
+  .board-head p { max-width: 44ch; margin-top: var(--s1); }
+  .shot { margin: 0; border-radius: var(--radius); overflow: hidden; box-shadow: 0 0 0 1px var(--border); background: var(--surface); }
+  /* crop the screenshot's empty lower canvas; "Open full size" shows all of it */
+  .shot img { width: 100%; aspect-ratio: 1600 / 640; object-fit: cover; object-position: left top; }
+
+  dialog { border: 0; padding: 0; max-width: min(1600px, 96vw); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+  dialog::backdrop { background: rgb(30 34 40 / .72); }
+  .dlg-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); padding: var(--s1) var(--s2); }
+  .dlg-title { font-size: var(--t-md); }
+  .dlg-scroll { overflow: auto; max-height: 82vh; }
+  .dlg-scroll img { max-width: none; width: 1600px; }
+
+  /* ---------- how a task moves ---------- */
+  .how { padding: var(--s6) 0 var(--s7); }
+  .how h2 { font-size: var(--t-xl); margin-bottom: var(--s5); max-width: 22ch; }
+  .how .lane p { max-width: 34ch; }
+
+  /* ---------- sign-up as a To do card ---------- */
+  .join { padding: 0 0 var(--s7); }
+  .join .lanes { align-items: start; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); }
+  .join .task { padding: var(--s3); }
+  .join h2 { font-size: var(--t-lg); }
+  .join form { margin-top: var(--s2); }
+  .join label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .field { display: flex; gap: var(--s1); }
+  .field input {
+    flex: 1; min-width: 0; min-height: 48px; padding: 0 12px; font: inherit; color: var(--text);
+    background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  }
+  .field input:focus-visible { border-color: var(--text); }
+  .field input[aria-invalid="true"] { border-color: var(--danger); }
+  .icon-btn { width: 48px; padding: 0; display: inline-grid; place-items: center; flex: none; }
+  .msg { min-height: 1.5em; margin-top: var(--s1); font-size: var(--t-sm); }
+  .msg.err { color: var(--danger); font-weight: 600; }
+  .ghost { border: 2px dashed var(--border); border-radius: var(--radius); min-height: 120px; padding: var(--s2); color: var(--muted); }
+
+  footer { border-top: 2px solid var(--text); padding: var(--s3) 0 var(--s5); }
+  footer p { font-size: var(--t-sm); }
+
+  /* ---------- widths ---------- */
+  @media (max-width: 900px) {
+    .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s3); }
+    .join .lanes > :nth-child(n+2) { display: none; } /* empty decorative lanes only */
+    .join .lanes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 var(--s2); }
+    .hero-grid { padding-top: var(--s3); gap: var(--s4); }
+    .lead { font-size: var(--t-base); margin-top: var(--s2); }
+    .actions { margin-top: var(--s3); }
+    .rail { padding: var(--s2) 12px; }
+    .lanes { gap: 12px; }
+    .rail .task { padding: var(--s1) 10px; }
+    .rail .task b { font-size: var(--t-sm); }
+    .top nav { gap: var(--s2); }
+    .board { padding-top: var(--s6); }
+    .how .lanes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (min-width: 1000px) and (max-width: 1599px) {
+    .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s5); align-items: end; }
+    .intro .lead { margin-top: 0; }
+  }
+  @media (min-width: 1600px) {
+    .wrap { max-width: 1680px; }
+    .hero-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 8fr); align-items: center; gap: var(--s6); }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="top">
+      <a class="mark" href="#top" id="top">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="2" width="4" height="18" rx="1" fill="#1E2228"/><rect x="7" y="2" width="4" height="12" rx="1" fill="#1E2228"/><rect x="13" y="2" width="4" height="8" rx="1" fill="#1E2228"/><rect x="19" y="2" width="2" height="4" rx="1" fill="#1E2228"/></svg>
+        Laneway
+      </a>
+      <nav aria-label="Page">
+        <a href="#board">The board</a>
+        <a href="#how">How a task moves</a>
+      </nav>
+    </div>
+
+    <div class="hero-grid">
+      <div class="intro">
+        <h1>Four lanes. Every task is in one of them.</h1>
+        <div>
+          <p class="lead">Laneway is a shared board for small teams. Each card shows the task, its label, its due date and whose it is.</p>
+          <div class="actions">
+            <button class="btn btn-primary" type="button" id="start">Start a board for your team</button>
+            <button class="btn btn-quiet" type="button" id="more">See how a task moves</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="rail" aria-labelledby="rail-title">
+        <h2 id="rail-title" class="vh">Website refresh board</h2>
+        <div class="lanes" id="lanes"><div class="lane"><h3 class="lane-head"><span>To do</span><span class="n">2</span></h3><ol><li class="task"><b>Write copy for the pricing page</b><span class="meta"><span class="chip">Content</span><span class="date">Nov 12</span><span class="who" aria-label="Owner AK">AK</span></span></li><li class="task"><b>Book the venue for the team offsite</b><span class="meta"><span class="chip">Ops</span><span class="date">Dec 1</span><span class="who" aria-label="Owner MR">MR</span></span></li></ol></div><div class="lane"><h3 class="lane-head"><span>In progress</span><span class="n">1</span></h3><ol><li class="task"><b>Fix CSV export for time reports</b><span class="meta"><span class="chip">Bug</span><span class="date">Nov 9</span><span class="who" aria-label="Owner TD">TD</span></span></li></ol></div><div class="lane"><h3 class="lane-head"><span>Review</span><span class="n">2</span></h3><ol><li class="task moving"><b>Rebuild the signup form</b><span class="meta"><span class="chip">Design</span><span class="date">Nov 5</span><span class="who" aria-label="Owner SO">SO</span></span></li><li class="task"><b>Proposal for the Brightline account</b><span class="meta"><span class="chip">Sales</span><span class="date">Nov 10</span><span class="who" aria-label="Owner PN">PN</span></span></li></ol></div><div class="lane"><h3 class="lane-head"><span>Done</span><span class="n">1</span></h3><ol><li class="task"><b>Move the blog to the new domain</b><span class="meta"><span class="chip">Ops</span><span class="date">Nov 3</span><span class="who" aria-label="Owner TD">TD</span></span></li></ol></div></div>
+        <div class="rail-foot">
+          <button class="btn btn-quiet" type="button" id="step">Move to Done</button>
+          <p id="rail-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="board" id="board" aria-labelledby="board-title">
+    <div class="wrap">
+      <div>
+        <div class="board-head">
+          <div>
+            <h2 id="board-title">The whole month on one screen</h2>
+            <p>Filter by assignee, due date or label, and group the lanes by status.</p>
+          </div>
+          <button class="btn btn-quiet" type="button" onclick="go()">Open full size</button>
+        </div>
+        <figure class="shot">
+          <img src="hero.png" width="1600" height="800" loading="lazy" alt="A Laneway board for a studio team's website refresh: 17 task cards across To do, In progress, Review and Done, each with a label, a date and the owner's initials.">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <h2 id="how-title">How a task moves</h2>
+      <div class="lanes">
+        <div class="lane">
+          <h3 class="lane-head">To do</h3>
+          <p>Write the task down, give it a label and a due date, and put someone's initials on it.</p>
+        </div>
+        <div class="lane">
+          <h3 class="lane-head">In progress</h3>
+          <p>A bar on the card shows how far along it is.</p>
+        </div>
+        <div class="lane">
+          <h3 class="lane-head">Review</h3>
+          <p>Comments collect on the card, so feedback stays next to the work it is about.</p>
+        </div>
+        <div class="lane">
+          <h3 class="lane-head">Done</h3>
+          <p>Finished cards keep their date, so the month's work is still on the board when you look back.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="join" id="join" aria-labelledby="join-title">
+    <div class="wrap">
+      <div class="lanes">
+        <div class="lane">
+          <p class="lane-head" aria-hidden="true"><span>To do</span><span class="n">1</span></p>
+          <div class="task">
+            <h2 id="join-title">Try Laneway with your team</h2>
+            <form id="join-form" novalidate>
+              <label for="email">Work email</label>
+              <div class="field">
+                <input id="email" name="email" type="email" autocomplete="email" placeholder="Email" aria-describedby="email-msg">
+                <button class="btn btn-primary icon-btn" type="submit" aria-label="Send">
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8h11M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <p class="msg" id="email-msg" aria-live="polite"></p>
+            </form>
+          </div>
+        </div>
+        <div class="lane" aria-hidden="true"><p class="lane-head"><span>In progress</span><span class="n">0</span></p><div class="ghost"></div></div>
+        <div class="lane" aria-hidden="true"><p class="lane-head"><span>Review</span><span class="n">0</span></p><div class="ghost"></div></div>
+        <div class="lane" aria-hidden="true"><p class="lane-head"><span>Done</span><span class="n">0</span></p><div class="ghost"></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><p>© 2026 Laneway</p></div>
+</footer>
+
+<dialog id="full" aria-labelledby="full-title">
+  <div class="dlg-bar">
+    <h2 id="full-title" class="dlg-title">Website refresh board</h2>
+    <button class="btn btn-quiet" type="button" id="close">Close</button>
+  </div>
+  <div class="dlg-scroll">
+    <img src="hero.png" width="1600" height="800" alt="The same board at full size.">
+  </div>
+</dialog>
+
+<script>
+  const LANES = ["To do", "In progress", "Review", "Done"];
+  const tasks = [
+    { t: "Write copy for the pricing page", l: "Content", d: "Nov 12", w: "AK", s: 0 },
+    { t: "Book the venue for the team offsite", l: "Ops", d: "Dec 1", w: "MR", s: 0 },
+    { t: "Fix CSV export for time reports", l: "Bug", d: "Nov 9", w: "TD", s: 1 },
+    { t: "Rebuild the signup form", l: "Design", d: "Nov 5", w: "SO", s: 2, moving: true },
+    { t: "Proposal for the Brightline account", l: "Sales", d: "Nov 10", w: "PN", s: 2 },
+    { t: "Move the blog to the new domain", l: "Ops", d: "Nov 3", w: "TD", s: 3 }
+  ];
+  const lanesEl = document.getElementById("lanes");
+  const stepBtn = document.getElementById("step");
+  const statusEl = document.getElementById("rail-status");
+  const mover = tasks.find(x => x.moving);
+
+  function render() {
+    lanesEl.innerHTML = LANES.map((name, i) => {
+      const inLane = tasks.filter(x => x.s === i);
+      return `<div class="lane"><h3 class="lane-head"><span>${name}</span><span class="n">${inLane.length}</span></h3><ol>` +
+        inLane.map(x => `<li class="task${x.moving ? " moving" : ""}"><b>${x.t}</b><span class="meta"><span class="chip">${x.l}</span><span class="date">${x.d}</span><span class="who" aria-label="Owner ${x.w}">${x.w}</span></span></li>`).join("") +
+        `</ol></div>`;
+    }).join("");
+    stepBtn.textContent = mover.s === 3 ? "Back to To do" : "Move to " + LANES[mover.s + 1];
+  }
+  render();
+
+  stepBtn.addEventListener("click", () => {
+    const update = () => { mover.s = mover.s === 3 ? 0 : mover.s + 1; render(); };
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (document.startViewTransition && !reduce) document.startViewTransition(update); else update();
+    statusEl.textContent = "“" + mover.t + "” is now in " + LANES[mover.s] + ".";
+  });
+
+  // Original click handler, kept: opens the board screenshot at full size.
+  function go() {
+    const dlg = document.getElementById("full");
+    if (dlg.showModal) dlg.showModal(); else window.open("hero.png");
+  }
+  document.getElementById("close").addEventListener("click", () => document.getElementById("full").close());
+
+  const email = document.getElementById("email");
+  document.getElementById("start").addEventListener("click", () => {
+    document.getElementById("join").scrollIntoView({ block: "center" });
+    email.focus({ preventScroll: true });
+  });
+  document.getElementById("more").addEventListener("click", () => {
+    document.getElementById("how").scrollIntoView();
+    document.getElementById("how-title").setAttribute("tabindex", "-1");
+    document.getElementById("how-title").focus({ preventScroll: true });
+  });
+
+  document.getElementById("join-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const msg = document.getElementById("email-msg");
+    const v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      email.setAttribute("aria-invalid", "true");
+      msg.className = "msg err";
+      msg.textContent = v ? "That address looks incomplete. Enter it like ana@studio.com." : "Enter your work email, like ana@studio.com.";
+      email.focus();
+      return;
+    }
+    email.removeAttribute("aria-invalid");
+    msg.className = "msg";
+    msg.textContent = "Thanks. We'll write to " + v + " with your team's board.";
+  });
+</script>
+</body>
+</html>

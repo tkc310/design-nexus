@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末限定パンの予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンを、金曜18時まで予約できます。土曜8時と11時の焼き上がりを、お店で受け取れます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  /* 紙袋・伝票・墨・藍のスタンプ・天板 */
+  --kraft:#D6BC8F;
+  --slip:#FFFDF7;
+  --ink:#2B2118;
+  --tea:#4A3826;
+  --ai:#24407A;
+  --on-ai:#FFFFFF;
+  --rule:#7A6448;
+  --danger:#A3271B;
+  --tray:#3B3631;
+  --crust:#B8763A;
+
+  --display:"Klee One","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --fs-s:16px;
+  --fs-0:17px;
+  --fs-1:21px;
+  --fs-2:26px;
+  --fs-3:33px;
+  --fs-4:41px;
+
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r:6px;
+  --paper:0 1px 0 rgb(43 33 24 / .10), 0 14px 28px -14px rgb(43 33 24 / .55);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+body{
+  margin:0;background:var(--kraft);color:var(--ink);
+  font-family:var(--body);font-size:var(--fs-0);line-height:1.8;letter-spacing:.03em;
+  text-wrap:pretty;
+}
+h1,h2,h3{font-family:var(--display);font-weight:600;font-synthesis:none;margin:0;line-height:1.4;text-wrap:balance;font-feature-settings:"palt";letter-spacing:.02em}
+p{margin:0}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+:focus-visible{outline:3px solid var(--ai);outline-offset:3px}
+
+.wrap{max-width:1200px;margin-inline:auto;padding-inline:clamp(16px,4vw,40px)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);padding-block:var(--s2)}
+.logo{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:600;font-size:var(--fs-1);line-height:1.2;white-space:nowrap}
+.logo svg{flex:none}
+.clock{font-size:var(--fs-s);line-height:1.5;text-align:right}
+.clock b{font-weight:700}
+.clock .left{display:block;font-family:var(--display);font-weight:600;font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+
+.hero{padding-block:var(--s3) var(--s4);display:grid;gap:var(--s1)}
+.hero h1{font-size:var(--fs-4);line-height:1.3}
+.hero p{font-size:var(--fs-1);line-height:1.6}
+
+/* the slip */
+.slip{background:var(--slip);border-radius:var(--r);box-shadow:var(--paper);padding:var(--s3) clamp(16px,3vw,40px) var(--s4)}
+.order{display:grid;gap:var(--s4)}
+.order > *{min-width:0}
+
+.section-h{font-size:var(--fs-2);margin-bottom:var(--s2)}
+
+/* bake times */
+.batches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:0;margin:0;padding:0;min-width:0}
+.batches legend{padding:0;margin-bottom:var(--s2);font-family:var(--display);font-weight:600;font-size:var(--fs-2);line-height:1.4}
+.batch{position:relative;display:block;cursor:pointer;min-width:0}
+.batch input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.batch .box{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;min-height:84px;padding:12px 16px;border:2px solid var(--rule);border-radius:var(--r);background:var(--slip);transition:border-color .15s ease, box-shadow .15s ease}
+.batch .time{font-family:var(--display);font-weight:600;font-size:var(--fs-2);line-height:1.2;white-space:nowrap}
+.batch .meta{grid-column:2;font-size:var(--fs-s);line-height:1.5;white-space:nowrap}
+.batch .dot{grid-row:span 2;width:26px;height:26px;border-radius:50%;background:var(--slip);box-shadow:inset 0 0 0 2px var(--rule)}
+.batch input:checked + .box{border-color:var(--ai);box-shadow:inset 0 0 0 2px var(--ai)}
+.batch input:checked + .box .dot{background:var(--ai);box-shadow:inset 0 0 0 5px var(--slip),0 0 0 2px var(--ai)}
+.batch input:focus-visible + .box{outline:3px solid var(--ai);outline-offset:3px}
+.batch input:disabled + .box{cursor:not-allowed;border-style:dashed}
+.batch input:disabled:checked + .box{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.batch input:disabled:checked + .box .dot{background:var(--ink);box-shadow:inset 0 0 0 5px var(--slip),0 0 0 2px var(--ink)}
+@media (hover:hover) and (pointer:fine){.batch:hover input:not(:disabled):not(:checked) + .box{border-color:var(--ink)}}
+
+.msg{font-size:var(--fs-s);line-height:1.6;margin-top:12px}
+.msg:empty{display:none}
+
+/* bread rows */
+.items{list-style:none;margin:var(--s3) 0 0;padding:0}
+.item{display:grid;grid-template-columns:72px minmax(0,1fr) auto;grid-template-areas:"f t s";align-items:center;column-gap:var(--s2);row-gap:var(--s1);padding-block:var(--s2);border-top:1px dashed var(--rule)}
+.item:last-child{border-bottom:1px dashed var(--rule)}
+.frame{grid-area:f;position:relative;width:72px;aspect-ratio:1;border-radius:var(--r);background:var(--kraft);display:grid;place-items:center;overflow:hidden}
+.frame svg{width:56px;height:56px}
+.item-text{grid-area:t;min-width:0}
+.item-name{font-size:var(--fs-1);line-height:1.4}
+.stock{font-size:var(--fs-s);line-height:1.5}
+.stepper{grid-area:s;display:flex;align-items:center;gap:4px}
+.step{width:48px;height:48px;display:grid;place-items:center;border:2px solid var(--rule);border-radius:var(--r);background:var(--slip);font-size:var(--fs-1);line-height:1;cursor:pointer;transition:transform .12s var(--ease-out), border-color .15s ease}
+.step:active:not(:disabled){transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.step:hover:not(:disabled){border-color:var(--ink)}}
+.step:disabled{cursor:not-allowed;color:var(--tea);border-style:dashed}
+.qty{min-width:2.2em;text-align:center;font-family:var(--display);font-weight:600;font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+.sold{grid-area:s;display:none;justify-items:end;gap:4px;text-align:right}
+.sold-mark{font-weight:700}
+.linkbtn{background:none;border:0;padding:4px 0;min-height:44px;color:var(--ai);font-size:var(--fs-s);font-weight:700;text-decoration:underline;text-underline-offset:4px;cursor:pointer;white-space:nowrap}
+.item.is-sold .stepper,.item.is-sold .stock{display:none}
+.item.is-sold .sold{display:grid}
+.item.is-sold .frame svg{opacity:.4}
+.item.is-sold .frame::after{content:"完売";position:absolute;font-family:var(--display);font-weight:600;font-size:var(--fs-s);line-height:1;padding:6px 8px;border:2px solid var(--ink);border-radius:4px;background:var(--slip);transform:rotate(-12deg)}
+
+/* tray — the signature */
+.details{display:grid;gap:var(--s3);align-content:start}
+.tray-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2)}
+.tray-head h2{font-size:var(--fs-2)}
+.count{font-family:var(--display);font-weight:600;font-size:var(--fs-3);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count small{font-size:var(--fs-1)}
+.tray{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px;border-radius:10px;background:var(--tray);box-shadow:var(--paper)}
+.well{position:relative;aspect-ratio:1;border-radius:50%;background:var(--tray);box-shadow:inset 0 4px 8px rgb(0 0 0 / .6), inset 0 -2px 0 rgb(255 253 247 / .12)}
+.bun{position:absolute;inset:9%;border-radius:50%;background:var(--crust);box-shadow:inset -4px -5px 0 rgb(43 33 24 / .28), inset 3px 3px 0 rgb(255 253 247 / .22)}
+.bun::after{content:"";position:absolute;left:28%;right:28%;top:46%;height:3px;border-radius:2px;background:rgb(255 253 247 / .45);transform:rotate(-20deg)}
+.bun.new{animation:drop .22s var(--ease-out) both}
+@keyframes drop{from{transform:translateY(-14px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+.picked{font-size:var(--fs-s);line-height:1.7;margin-top:12px}
+.picked b{font-weight:700}
+
+.field{display:grid;gap:6px;align-content:start}
+.field label{font-weight:700}
+.field input{height:52px;padding:0 14px;border:2px solid var(--rule);border-radius:var(--r);background:var(--slip);font-size:var(--fs-0);width:100%;min-width:0}
+.field input:focus-visible{outline:3px solid var(--ai);outline-offset:2px;border-color:var(--ai)}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
+.hint{font-size:var(--fs-s);line-height:1.5}
+.err{font-size:var(--fs-s);line-height:1.5;color:var(--danger);font-weight:700}
+.err:empty{display:none}
+.errors{border:2px solid var(--danger);border-radius:var(--r);padding:12px 16px;color:var(--danger)}
+.errors p{font-weight:700}
+.errors ul{margin:4px 0 0;padding-left:1.2em;font-size:var(--fs-s)}
+.errors[hidden]{display:none}
+
+.submit{display:grid;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;padding:0 24px;border:0;border-radius:var(--r);background:var(--ai);color:var(--on-ai);font-weight:700;font-size:var(--fs-1);letter-spacing:.06em;text-decoration:none;cursor:pointer;white-space:nowrap;transition:transform .12s var(--ease-out)}
+.btn:active:not(:disabled){transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.btn:hover:not(:disabled){text-decoration:underline;text-underline-offset:5px}}
+.btn:disabled{background:var(--slip);color:var(--tea);border:2px dashed var(--rule);cursor:not-allowed}
+.btn-ghost{background:var(--slip);color:var(--ink);border:2px solid var(--rule)}
+.note{font-size:var(--fs-s);line-height:1.6;color:var(--tea)}
+.reason{font-weight:700}
+.reason:empty{display:none}
+
+/* closed */
+.closed{display:none;border:2px solid var(--ink);border-radius:var(--r);padding:var(--s2) var(--s3)}
+.closed h2{font-size:var(--fs-2);margin-bottom:var(--s1)}
+.is-closed .closed{display:block}
+
+/* done */
+.done{display:grid;gap:var(--s3);max-width:640px}
+.done[hidden]{display:none}
+.done h2{font-size:var(--fs-3)}
+.done dl{display:grid;grid-template-columns:auto 1fr;gap:8px var(--s3);margin:0}
+.done dt{font-weight:700;white-space:nowrap}
+.done dd{margin:0}
+.done .no{font-family:var(--display);font-weight:600;font-size:var(--fs-2);font-variant-numeric:tabular-nums;letter-spacing:.12em}
+.done .tray{max-width:420px}
+.done-actions{display:flex;flex-wrap:wrap;gap:12px}
+
+/* weekend flow */
+.flow{padding-block:var(--s6) var(--s5)}
+.flow h2{font-size:var(--fs-2);margin-bottom:var(--s3)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3);position:relative}
+.steps li{display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:var(--s2);position:relative;align-content:start}
+.steps li::before{content:"";grid-row:span 2;width:26px;height:26px;border-radius:50%;background:var(--tray);box-shadow:inset 0 3px 6px rgb(0 0 0 / .6);margin-top:4px}
+.steps li.bake::before{background:var(--crust);box-shadow:inset -3px -4px 0 rgb(43 33 24 / .28), 0 0 0 5px var(--tray)}
+.steps li:not(:last-child)::after{content:"";position:absolute;left:12px;top:36px;bottom:calc(-1 * var(--s3) + 4px);width:2px;background:var(--tray)}
+.steps .when{font-family:var(--display);font-weight:600;font-size:var(--fs-1);line-height:1.5}
+.steps .what{grid-column:2}
+
+footer{padding-block:var(--s4) 120px;border-top:2px solid var(--tray);font-size:var(--fs-s)}
+footer .name{font-family:var(--display);font-weight:600;font-size:var(--fs-1)}
+
+/* phone sticky bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--slip);border-top:2px solid var(--tray)}
+.bar .mini{display:flex;gap:4px}
+.bar .mini i{width:16px;height:16px;border-radius:50%;background:var(--slip);box-shadow:inset 0 0 0 2px var(--tray)}
+.bar .mini i.on{background:var(--crust)}
+.bar .n{font-family:var(--display);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar .btn{margin-left:auto;min-height:48px;font-size:var(--fs-0);padding:0 18px}
+.bar .shut{margin-left:auto;font-weight:700;font-size:var(--fs-s)}
+.bar .shut,.is-closed .bar .btn{display:none}
+.is-closed .bar .shut{display:block}
+.is-done .bar{display:none}
+
+@media (max-width:759px){
+  .hero{padding-block:var(--s1) var(--s3)}
+  .hero h1{font-size:var(--fs-2)}
+  .hero p{font-size:var(--fs-0)}
+  .clock .left{font-size:var(--fs-0)}
+  .logo{font-size:var(--fs-0)}
+  .logo svg{width:40px;height:40px}
+}
+@media (max-width:459px){
+  .item{grid-template-columns:64px minmax(0,1fr);grid-template-areas:"f t" "f s"}
+  .frame{width:64px}
+  .stepper,.sold{justify-self:start}
+  .sold{justify-items:start;text-align:left}
+  .batch .box{grid-template-columns:auto 1fr;grid-template-areas:"t t" "d m";column-gap:8px;padding:10px 12px}
+  .batch .time{grid-area:t}
+  .batch .dot{grid-area:d;grid-row:auto;width:18px;height:18px}
+  .batch .meta{grid-area:m}
+  .batch .time{font-size:var(--fs-1)}
+  .linkbtn{white-space:normal;text-align:left}
+}
+@media (min-width:1000px){
+  .bar{display:none}
+  footer{padding-bottom:var(--s5)}
+  .order{grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);column-gap:clamp(32px,4vw,56px);align-items:start}
+  .details{position:sticky;top:var(--s3)}
+}
+@media (min-width:760px) and (max-width:999px){
+  .details{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--s4)}
+  .details > div:first-child,.details .errors,.details .submit{grid-column:1 / -1}
+  .details > div:first-child{max-width:440px}
+  .details .submit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;column-gap:var(--s3)}
+}
+@media (min-width:760px){
+  .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+  .steps li{grid-template-columns:1fr;row-gap:var(--s1)}
+  .steps li::before{grid-row:auto;margin-top:0}
+  .steps li:not(:last-child)::after{left:36px;right:calc(-1 * var(--s3) + 10px);top:16px;bottom:auto;width:auto;height:2px}
+  .steps .what{grid-column:1}
+}
+@media (min-width:1600px){
+  .wrap{max-width:1680px}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;column-gap:var(--s5);align-items:start}
+  .layout{padding-bottom:var(--s6)}
+  .flow{padding-block:var(--s3) 0;position:sticky;top:var(--s3)}
+  .steps{grid-template-columns:1fr}
+  .steps li{grid-template-columns:26px minmax(0,1fr);row-gap:0}
+  .steps li::before{grid-row:span 2;margin-top:4px}
+  .steps li:not(:last-child)::after{left:12px;right:auto;top:36px;bottom:calc(-1 * var(--s3) + 4px);width:2px;height:auto}
+  .steps .what{grid-column:2}
+  body{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bun.new{animation:fade .2s ease both}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .step,.btn{transition:none}
+  .step:active:not(:disabled),.btn:active:not(:disabled){transform:none}
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <div class="logo">
+    <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke="#24407A" stroke-width="3"/><path d="M24 11v26M24 17c-4-1-6-4-6-6 3 0 6 2 6 6zm0 0c4-1 6-4 6-6-3 0-6 2-6 6zm0 7c-4-1-6-4-6-6 3 0 6 2 6 6zm0 0c4-1 6-4 6-6-3 0-6 2-6 6zm0 7c-4-1-6-4-6-6 3 0 6 2 6 6zm0 0c4-1 6-4 6-6-3 0-6 2-6 6z" fill="none" stroke="#24407A" stroke-width="2" stroke-linejoin="round"/></svg>
+    <span>こむぎ舎</span>
+  </div>
+  <p class="clock" id="clock"><b id="clock-label">予約の締め切りまで</b><span class="left" id="countdown">あと2日7時間30分</span></p>
+</header>
+
+<main class="wrap layout">
+  <div>
+    <div class="hero">
+      <h1>土曜に焼くパンを、<wbr><span class="nw">金曜18時まで</span><wbr>予約できます</h1>
+      <p>自家製酵母で仕込み、土曜の朝に2回焼きます。</p>
+    </div>
+
+    <div class="slip" id="slip">
+      <form class="order" id="order" novalidate>
+        <div class="pick">
+          <div class="closed" id="closed" tabindex="-1">
+            <h2>今週の予約は締め切りました</h2>
+            <p id="closed-text"><span class="nw">11月7日（土）</span>受け取りの予約は、<span class="nw">11月6日（金）18時</span>で受け付けを終えました。<span class="nw">11月14日（土）</span>受け取りの分は、<span class="nw">11月8日（日）</span>から予約できます。</p>
+          </div>
+
+          <fieldset class="batches" id="batches">
+            <legend><span class="nw">受け取る回・</span><wbr><span class="nw target-date">11月7日（土）</span></legend>
+            <label class="batch">
+              <input type="radio" name="batch" value="8" checked>
+              <span class="box"><span class="dot" aria-hidden="true"></span><span class="time">8時の回</span><span class="meta" data-meta="8">残り30個</span></span>
+            </label>
+            <label class="batch">
+              <input type="radio" name="batch" value="11">
+              <span class="box"><span class="dot" aria-hidden="true"></span><span class="time">11時の回</span><span class="meta" data-meta="11">残り38個</span></span>
+            </label>
+          </fieldset>
+          <p class="msg" id="batch-msg" role="status"></p>
+
+          <h2 class="vh">パンをえらぶ</h2>
+          <ul class="items" id="items">
+            <li class="item" data-id="campagne" data-name="カンパーニュ" data-s8="6" data-s11="9">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="33" r="23" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2"/><path d="M20 24c8 5 16 11 24 18M44 24c-8 5-16 11-24 18" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="item-text"><h3 class="item-name">カンパーニュ</h3><p class="stock">残り<span class="n nw">6個</span></p></div>
+              <div class="stepper" role="group" aria-label="カンパーニュの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">カンパーニュを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus"><span aria-hidden="true">＋</span><span class="vh">カンパーニュを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p></div>
+            </li>
+            <li class="item" data-id="zenryu" data-name="全粒粉の食パン" data-s8="4" data-s11="5">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M12 52V30c0-10 6-15 13-13 4-7 10-7 14 0 7-2 13 3 13 13v22z" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2" stroke-linejoin="round"/><path d="M25 17c-3 3-4 7-4 12M39 17c3 3 4 7 4 12" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="item-text"><h3 class="item-name">全粒粉の食パン</h3><p class="stock">残り<span class="n nw">4個</span></p></div>
+              <div class="stepper" role="group" aria-label="全粒粉の食パンの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">全粒粉の食パンを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus"><span aria-hidden="true">＋</span><span class="vh">全粒粉の食パンを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p></div>
+            </li>
+            <li class="item is-sold" data-id="kurumi" data-name="くるみとレーズンのパン" data-s8="0" data-s11="2">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="33" rx="26" ry="16" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2"/><g fill="#2B2118"><circle cx="21" cy="30" r="2.2"/><circle cx="30" cy="37" r="2.2"/><circle cx="38" cy="28" r="2.2"/><circle cx="45" cy="36" r="2.2"/><circle cx="26" cy="41" r="1.6"/></g></svg></div>
+              <div class="item-text"><h3 class="item-name">くるみとレーズンのパン</h3><p class="stock">残り<span class="n nw">0個</span></p></div>
+              <div class="stepper" role="group" aria-label="くるみとレーズンのパンの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">くるみとレーズンのパンを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus" disabled><span aria-hidden="true">＋</span><span class="vh">くるみとレーズンのパンを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p><button type="button" class="linkbtn switch" data-to="11">11時の回にする（残り2個）</button></div>
+            </li>
+            <li class="item is-sold" data-id="ichijiku" data-name="いちじくのパン" data-s8="0" data-s11="0">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="34" r="21" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2"/><path d="M22 31c6-6 14-6 20 0M26 40c4-2 8-2 12 0" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="item-text"><h3 class="item-name">いちじくのパン</h3><p class="stock">残り<span class="n nw">0個</span></p></div>
+              <div class="stepper" role="group" aria-label="いちじくのパンの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">いちじくのパンを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus" disabled><span aria-hidden="true">＋</span><span class="vh">いちじくのパンを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p></div>
+            </li>
+            <li class="item" data-id="shio" data-name="塩バターロール" data-s8="12" data-s11="15">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M8 40c2-12 14-20 24-20s22 8 24 20c-6 4-14 6-24 6S14 44 8 40z" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2" stroke-linejoin="round"/><path d="M20 25c2 6 2 13 0 19M32 21v24M44 25c-2 6-2 13 0 19" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="item-text"><h3 class="item-name">塩バターロール</h3><p class="stock">残り<span class="n nw">12個</span></p></div>
+              <div class="stepper" role="group" aria-label="塩バターロールの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">塩バターロールを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus"><span aria-hidden="true">＋</span><span class="vh">塩バターロールを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p></div>
+            </li>
+            <li class="item" data-id="cinnamon" data-name="シナモンロール" data-s8="8" data-s11="7">
+              <div class="frame" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="33" r="22" fill="#B8763A" fill-opacity=".35" stroke="#2B2118" stroke-width="2"/><path d="M32 33c0-3 4-3 4 0 0 5-8 6-9 0-1-7 9-10 13-4 4 7-2 15-9 15-9 0-14-8-11-16" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="item-text"><h3 class="item-name">シナモンロール</h3><p class="stock">残り<span class="n nw">8個</span></p></div>
+              <div class="stepper" role="group" aria-label="シナモンロールの数">
+                <button type="button" class="step minus" disabled><span aria-hidden="true">−</span><span class="vh">シナモンロールを1つ減らす</span></button>
+                <output class="qty">0</output>
+                <button type="button" class="step plus"><span aria-hidden="true">＋</span><span class="vh">シナモンロールを1つ増やす</span></button>
+              </div>
+              <div class="sold"><p class="sold-mark">この回は完売しました</p></div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="details" id="details">
+          <div>
+            <div class="tray-head">
+              <h2>えらんだパン</h2>
+              <p class="count" aria-hidden="true"><span id="count">0</span><small> / 5点</small></p>
+            </div>
+            <div class="tray" id="tray" aria-hidden="true">
+              <span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span>
+            </div>
+            <p class="picked" id="picked" aria-live="polite">まだえらんでいません。<b class="nw">1人5点まで</b>えらべます。</p>
+          </div>
+
+          <div class="errors" id="errors" role="alert" tabindex="-1" hidden>
+            <p>予約はまだ届いていません。次を直してください。</p>
+            <ul id="error-list"></ul>
+          </div>
+
+          <div class="field">
+            <label for="name">お名前</label>
+            <input id="name" name="name" type="text" autocomplete="name" aria-describedby="name-hint name-err" required>
+            <p class="hint" id="name-hint">受け取りのとき、このお名前でお呼びします。</p>
+            <p class="err" id="name-err"></p>
+          </div>
+          <div class="field">
+            <label for="tel">電話番号</label>
+            <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-err" required>
+            <p class="err" id="tel-err"></p>
+          </div>
+
+          <div class="submit">
+            <button type="submit" class="btn" id="submit">予約する</button>
+            <p class="reason" id="reason"></p>
+            <p class="note">受け取りはお店だけです。お支払いは受け取りのときに、現金か交通系ICで。</p>
+          </div>
+        </div>
+      </form>
+
+      <section class="done" id="done" hidden aria-labelledby="done-h">
+        <h2 id="done-h" tabindex="-1">予約しました</h2>
+        <div class="tray" id="done-tray" aria-hidden="true"></div>
+        <dl>
+          <dt>予約番号</dt><dd class="no" id="done-no"></dd>
+          <dt>受け取り</dt><dd id="done-when"></dd>
+          <dt>パン</dt><dd id="done-items"></dd>
+          <dt>お名前</dt><dd id="done-name"></dd>
+          <dt>お支払い</dt><dd>受け取りのときに、現金か交通系ICで</dd>
+        </dl>
+        <div class="done-actions">
+          <button type="button" class="btn btn-ghost" id="edit">予約内容を直す</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="flow" aria-labelledby="flow-h">
+    <h2 id="flow-h">この週末の流れ</h2>
+    <ol class="steps">
+      <li><span class="when" id="f-deadline">11月6日（金）18時</span><span class="what">予約の締め切り</span></li>
+      <li class="bake"><span class="when"><span class="target-date">11月7日（土）</span>8時</span><span class="what">1回目の焼き上がり</span></li>
+      <li class="bake"><span class="when">11時</span><span class="what">2回目の焼き上がり</span></li>
+      <li><span class="when">お店で</span><span class="what">お名前を伝えて、受け取りとお支払い</span></li>
+    </ol>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p class="name">こむぎ舎</p>
+  <p>自家製酵母のパン屋です。</p>
+</footer>
+
+<div class="bar" id="bar">
+  <span class="mini" id="mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+  <span class="n" id="bar-n">0 / 5点</span>
+  <a class="btn" href="#details">予約へ進む</a>
+  <span class="shut">今週の受付は終了しました</span>
+</div>
+
+<script>
+(function(){
+  var H = 3600e3, D = 24*H, JST = 9*H, LIMIT = 5;
+  var W = '日月火水木金土';
+  var params = new URLSearchParams(location.search);
+  var offset = 0;
+  if (params.get('now')) { var p = Date.parse(params.get('now').replace(' ', '+')); if (!isNaN(p)) offset = p - Date.now(); }
+  function now(){ return Date.now() + offset; }
+
+  function week(t){
+    var j = new Date(t + JST), dow = j.getUTCDay();
+    var delta = (6 - dow + 7) % 7;
+    var sat = Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() + delta) - JST;
+    var deadline = sat - 6*H;
+    return { sat: sat, deadline: deadline, open: t < deadline, next: sat + 7*D, reopen: sat + D };
+  }
+  function nw(t){ return '<span class="nw">' + t + '</span>'; }
+  function day(ms){ var j = new Date(ms + JST); return (j.getUTCMonth()+1) + '月' + j.getUTCDate() + '日（' + W[j.getUTCDay()] + '）'; }
+
+  var $ = function(s, r){ return (r||document).querySelector(s); };
+  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  var form = $('#order'), rows = $$('.item'), wells = $$('#tray .well'), minis = $$('#mini i');
+  var state = { batch: '8', qty: {}, order: [], closed: false };
+  rows.forEach(function(r){ state.qty[r.dataset.id] = 0; });
+
+  function total(){ return state.order.length; }
+  function stock(r, b){ return +r.dataset['s' + (b || state.batch)]; }
+
+  function paintTray(container, list, animateLast){
+    var ws = container.children;
+    for (var i = 0; i < LIMIT; i++){
+      var w = ws[i], has = w.firstChild;
+      if (i < list.length && !has){ var b = document.createElement('span'); b.className = 'bun' + (animateLast ? ' new' : ''); w.appendChild(b); }
+      if (i >= list.length && has){ w.removeChild(w.firstChild); }
+    }
+  }
+  function summary(){
+    var parts = [];
+    rows.forEach(function(r){ var q = state.qty[r.dataset.id]; if (q) parts.push(r.dataset.name + ' ' + q + '個'); });
+    return parts;
+  }
+
+  function render(animate){
+    var t = total(), full = t >= LIMIT;
+    rows.forEach(function(r){
+      var s = stock(r), q = state.qty[r.dataset.id], sold = s === 0;
+      r.classList.toggle('is-sold', sold);
+      $('.n', r).textContent = s + '個';
+      $('.qty', r).textContent = q;
+      $('.plus', r).disabled = state.closed || sold || q >= s || full;
+      $('.minus', r).disabled = state.closed || q === 0;
+      var sw = $('.switch', r);
+      if (sw){
+        var other = state.batch === '8' ? '11' : '8', os = stock(r, other);
+        sw.hidden = os === 0 || state.closed;
+        sw.dataset.to = other;
+        sw.textContent = other + '時の回にする（残り' + os + '個）';
+      }
+    });
+    ['8','11'].forEach(function(b){
+      var sum = 0;
+      rows.forEach(function(r){ sum += stock(r, b); });
+      $('[data-meta="' + b + '"]').textContent = '残り' + sum + '個';
+    });
+    paintTray($('#tray'), state.order, animate);
+    $('#count').textContent = t;
+    minis.forEach(function(m, i){ m.classList.toggle('on', i < t); });
+    $('#bar-n').textContent = t + ' / 5点';
+    var parts = summary();
+    var picked = $('#picked');
+    if (!t) picked.innerHTML = 'まだえらんでいません。<b class="nw">1人5点まで</b>えらべます。';
+    else if (full) picked.innerHTML = parts.map(nw).join('、') + '。<b>5点そろいました。</b><span class="nw">1人5点まで</span>です。';
+    else picked.innerHTML = parts.map(nw).join('、') + '。あと<b>' + (LIMIT - t) + '点</b>えらべます。';
+  }
+
+  function setBatch(b, announce){
+    state.batch = b;
+    $$('input[name="batch"]').forEach(function(i){ i.checked = i.value === b; });
+    var removed = [];
+    rows.forEach(function(r){
+      var id = r.dataset.id, s = stock(r);
+      if (state.qty[id] > s){
+        removed.push(r.dataset.name);
+        var over = state.qty[id] - s;
+        state.qty[id] = s;
+        for (var k = state.order.length - 1; k >= 0 && over; k--){ if (state.order[k] === id){ state.order.splice(k, 1); over--; } }
+      }
+    });
+    $('#batch-msg').textContent = removed.length
+      ? b + '時の回は' + removed.join('、') + 'の残りが足りないため、そのぶんを外しました。'
+      : (announce ? b + '時の回にしました。' : '');
+    render(false);
+  }
+
+  form.addEventListener('change', function(e){ if (e.target.name === 'batch') setBatch(e.target.value, false); });
+  $('#items').addEventListener('click', function(e){
+    var btn = e.target.closest('button'); if (!btn) return;
+    var r = btn.closest('.item'), id = r.dataset.id;
+    if (btn.classList.contains('switch')){ setBatch(btn.dataset.to, true); $('.plus', r).focus(); return; }
+    if (state.closed) return;
+    if (btn.classList.contains('plus') && total() < LIMIT && state.qty[id] < stock(r)){
+      state.qty[id]++; state.order.push(id); render(true);
+    } else if (btn.classList.contains('minus') && state.qty[id] > 0){
+      state.qty[id]--; state.order.splice(state.order.lastIndexOf(id), 1); render(false);
+    }
+    if (btn.disabled){ var other = btn.classList.contains('plus') ? $('.minus', r) : $('.plus', r); if (!other.disabled) other.focus(); }
+    clearError('items');
+  });
+
+  function setErr(id, msg){
+    var input = $('#' + id), el = $('#' + id + '-err');
+    el.textContent = msg || '';
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+  function clearError(){ /* errors are refreshed on the next submit */ }
+  ['name','tel'].forEach(function(id){ $('#' + id).addEventListener('input', function(){ if ($('#' + id + '-err').textContent) setErr(id, ''); }); });
+
+  function applyTime(){
+    var t = now(), w = week(t);
+    $$('.target-date').forEach(function(el){ el.textContent = day(w.sat); });
+    $('#f-deadline').textContent = day(w.deadline) + '18時';
+    if (w.open){
+      var left = w.deadline - t, d = Math.floor(left / D), h = Math.floor(left % D / H), m = Math.floor(left % H / 60000);
+      $('#clock-label').textContent = '予約の締め切りまで';
+      $('#countdown').textContent = 'あと' + (d ? d + '日' : '') + (d || h ? h + '時間' : '') + m + '分';
+    } else {
+      $('#clock-label').textContent = '今週の予約は';
+      $('#countdown').textContent = '受付終了';
+      $('#closed-text').innerHTML = nw(day(w.sat)) + '受け取りの予約は、' + nw(day(w.deadline) + '18時') + 'で受け付けを終えました。' + nw(day(w.next)) + '受け取りの分は、' + nw(day(w.reopen)) + 'から予約できます。';
+    }
+    setClosed(!w.open);
+    return w;
+  }
+  function setClosed(c){
+    if (state.closed === c) return;
+    state.closed = c;
+    document.body.classList.toggle('is-closed', c);
+    $$('input[name="batch"], #name, #tel').forEach(function(i){ i.disabled = c; });
+    $('#submit').disabled = c;
+    $('#reason').textContent = c ? '受け付けを締め切ったため、予約できません。' : '';
+    render(false);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var w = applyTime();
+    if (!w.open){ $('#closed').focus(); return; }
+    var errs = [];
+    var name = $('#name').value.trim(), tel = $('#tel').value.replace(/[\s\-ー－()（）]/g, '').replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+    if (!total()) errs.push(['items', 'パンが1点もえらばれていません。＋で数を入れてください。']);
+    if (!name){ setErr('name', 'お名前が空です。受け取りのときのお名前を入れてください。'); errs.push(['name', 'お名前を入れてください。']); } else setErr('name', '');
+    if (!/^0\d{9,10}$/.test(tel)){ setErr('tel', '電話番号は0から始まる10〜11けたの数字で入れてください（例：090-1234-5678）。'); errs.push(['tel', '電話番号を数字で入れてください。']); } else setErr('tel', '');
+    var box = $('#errors');
+    if (errs.length){
+      $('#error-list').innerHTML = '';
+      errs.forEach(function(x){ var li = document.createElement('li'); li.textContent = x[1]; $('#error-list').appendChild(li); });
+      box.hidden = false; box.focus();
+      return;
+    }
+    box.hidden = true;
+    var dt = $('#done-tray'); dt.innerHTML = '';
+    for (var i = 0; i < LIMIT; i++){ var s = document.createElement('span'); s.className = 'well'; dt.appendChild(s); }
+    paintTray(dt, state.order, false);
+    $('#done-no').textContent = String(1000 + Math.floor(Math.random() * 9000));
+    $('#done-when').textContent = day(w.sat) + state.batch + '時から、お店で';
+    $('#done-items').textContent = summary().join('、') + '（' + total() + '点）';
+    $('#done-name').textContent = name + ' 様';
+    form.hidden = true; $('#done').hidden = false; document.body.classList.add('is-done');
+    $('#done-h').focus();
+  });
+  $('#edit').addEventListener('click', function(){
+    form.hidden = false; $('#done').hidden = true; document.body.classList.remove('is-done');
+    $('#submit').focus();
+  });
+
+  applyTime();
+  render(false);
+  setInterval(applyTime, 30000);
+})();
+</script>
+</body>
+</html>

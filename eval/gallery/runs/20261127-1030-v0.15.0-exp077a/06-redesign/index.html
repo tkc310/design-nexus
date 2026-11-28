@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routeslip — a shared board for small teams</title>
+<meta name="description" content="Routeslip is a shared board for small teams. Every task moves from To do to In progress, Review and Done, and everyone can see whose desk it is on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=Public+Sans:wght@400;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Interoffice routing envelope */
+    --manila: #d9c18d;      /* ground: the envelope stock */
+    --slip: #f7f0de;        /* surface: the routing slip paper */
+    --ink: #221d16;         /* text: typewriter ribbon */
+    --rule: #5e4a26;        /* muted text and slip rulings: the printed form lines */
+    --string: #9c2418;      /* action: the red closure string you unwind to open */
+    --on-string: #fff8ee;
+    --pen: #1e3a8a;         /* handwritten entries: ballpoint */
+
+    --f-display: "Zilla Slab", Rockwell, "Courier New", serif;
+    --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+    --f-hand: "Caveat", "Segoe Print", cursive;
+
+    --s-1: 8px; --s-2: 16px; --s-3: 24px; --s-4: 32px; --s-6: 48px; --s-8: 64px; --s-12: 96px;
+
+    --t-0: 1rem;        /* 17px base */
+    --t-1: 1.25rem;
+    --t-2: 1.5625rem;
+    --t-3: 1.953rem;
+    --t-hero: clamp(2.6rem, 2rem + 3.6vw, 4.6rem);
+
+    --radius: 3px;
+    --paper-shadow: 0 1px 0 rgba(34, 29, 22, .18), 0 10px 24px -12px rgba(34, 29, 22, .45);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --page: 1200px;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 17px; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--manila);
+    color: var(--ink);
+    font: 400 var(--t-0)/1.6 var(--f-body);
+  }
+  h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.12; text-wrap: balance; margin: 0; }
+  p { margin: 0; text-wrap: pretty; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .wrap { max-width: var(--page); margin: 0 auto; padding-inline: var(--s-3); }
+
+  /* Nav */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding-block: var(--s-3); flex-wrap: wrap; }
+  .mark { font-family: var(--f-display); font-weight: 700; font-size: var(--t-1); text-decoration: none; white-space: nowrap; }
+  .top nav ul { list-style: none; display: flex; gap: var(--s-3); margin: 0; padding: 0; flex-wrap: wrap; }
+  .top nav a { display: inline-block; padding: 6px 0; font-weight: 600; white-space: nowrap; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-1);
+    min-height: 48px; padding: 0 var(--s-3);
+    font: 600 var(--t-0)/1 var(--f-body); white-space: nowrap;
+    border: 2px solid var(--ink); border-radius: var(--radius);
+    background: transparent; color: var(--ink); cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, transform .12s var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--string); border-color: var(--string); color: var(--on-string); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { background: var(--ink); color: var(--slip); }
+    .btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+  }
+  .btn-text { border: 0; padding-inline: 0; text-decoration: underline; text-underline-offset: 4px; }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--s-8); align-items: center; padding-block: var(--s-6) var(--s-12); }
+  .hero h1 { font-size: var(--t-hero); letter-spacing: -0.01em; }
+  .lede { font-size: var(--t-1); margin-top: var(--s-3); max-width: 40ch; }
+  .signup { margin-top: var(--s-4); max-width: 30rem; }
+  .signup label { display: block; font-weight: 600; margin-bottom: var(--s-1); }
+  .field-row { display: flex; gap: var(--s-1); flex-wrap: wrap; }
+  .field-row input {
+    flex: 1 1 14rem; min-width: 0; min-height: 48px; padding: 0 var(--s-2);
+    font: 400 var(--t-0) var(--f-body); color: var(--ink);
+    background: var(--slip); border: 2px solid var(--rule); border-radius: var(--radius);
+  }
+  .field-row input[aria-invalid="true"] { border-color: var(--string); }
+  .msg { margin-top: var(--s-1); font-size: var(--t-0); }
+  .msg:empty { margin: 0; }
+  .msg.error { color: var(--string); font-weight: 600; }
+  .after { margin-top: var(--s-1); }
+
+  /* Signature: the routing slip */
+  .slip {
+    background: var(--slip); border-radius: var(--radius); box-shadow: var(--paper-shadow);
+    padding: var(--s-3) var(--s-3) var(--s-2); position: relative; transform: rotate(-1.2deg);
+  }
+  .slip-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); border-bottom: 1px solid var(--rule); padding-bottom: var(--s-1); }
+  .slip-head h2 { font-size: var(--t-1); text-transform: uppercase; letter-spacing: .06em; }
+  .slip-head span { font-size: var(--t-0); color: var(--rule); white-space: nowrap; }
+  .slip-task { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s-1) var(--s-2); padding: var(--s-2) 0; }
+  .slip-task p { font-size: var(--t-0); }
+  .slip-task b { display: block; font-family: var(--f-hand); font-weight: 600; font-size: var(--t-3); line-height: 1.1; color: var(--pen); }
+  .route { list-style: none; margin: 0; padding: 0; }
+  .route li, .row {
+    display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) 4.5rem; gap: var(--s-2); align-items: center;
+    min-height: 56px; border-top: 1px solid var(--rule);
+  }
+  .route .stage, .row .stage { font-family: var(--f-display); font-weight: 600; font-size: var(--t-0); }
+  .hand { font-family: var(--f-hand); font-weight: 600; font-size: var(--t-2); line-height: 1; color: var(--pen); white-space: nowrap; }
+  .route .date { text-align: right; }
+  .route li.passed .who { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .route li.now .who { outline: 2px solid var(--pen); outline-offset: 2px; border-radius: 50%; padding: 2px 10px; justify-self: start; }
+  .stamp {
+    display: inline-block; margin-right: var(--s-1);
+    font-family: var(--f-display); font-weight: 700; font-size: var(--t-1); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink); border: 3px solid var(--ink); border-radius: var(--radius); padding: 2px 10px;
+    transform: rotate(-8deg); opacity: .82; pointer-events: none; white-space: nowrap;
+  }
+  .stamp.fresh { animation: stamp .32s var(--ease-out); }
+  @keyframes stamp { from { transform: rotate(-8deg) scale(1.25); opacity: 0; } to { transform: rotate(-8deg) scale(1); opacity: .82; } }
+  @media (prefers-reduced-motion: reduce) {
+    .stamp.fresh { animation: fade .2s ease; }
+    @keyframes fade { from { opacity: 0; } to { opacity: .82; } }
+  }
+  .slip-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); border-top: 1px solid var(--rule); padding-top: var(--s-2); flex-wrap: wrap; }
+  .slip-foot p { font-size: var(--t-0); }
+
+  /* Board screenshot + how a task moves */
+  .pair { display: grid; gap: var(--s-12); padding-bottom: var(--s-12); }
+  .board { margin: 0; background: var(--slip); box-shadow: var(--paper-shadow); border-radius: var(--radius); padding: var(--s-2); }
+  .board img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+  .board figcaption { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); align-items: baseline; gap: var(--s-1) var(--s-3); padding: var(--s-2) var(--s-1) var(--s-1); border-bottom: 1px solid var(--rule); }
+  .board figcaption h2 { font-size: var(--t-2); }
+  .board figcaption p { max-width: 60ch; }
+  @media (max-width: 520px) { .board figcaption { grid-template-columns: minmax(0, 1fr); } }
+
+  .moves h2 { font-size: var(--t-3); margin-bottom: var(--s-3); max-width: 20ch; }
+  .moves .row { grid-template-columns: 10rem minmax(0, 1fr); align-items: start; padding-block: var(--s-2); border-color: var(--ink); }
+  .moves .row:last-child { border-bottom: 1px solid var(--ink); }
+  .moves .row .stage { font-size: var(--t-1); }
+  .moves .row p { max-width: 60ch; }
+
+  /* Footer: the bottom of the slip */
+  footer { border-top: 1px solid var(--ink); }
+  footer .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding-block: var(--s-3); }
+  .icon-btn { width: 48px; height: 48px; padding: 0; }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); padding-bottom: var(--s-8); }
+    .slip { transform: none; }
+    .pair { gap: var(--s-8); }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding-inline: var(--s-2); }
+    .top nav ul { gap: var(--s-1); } .top nav a { font-size: var(--t-0); }
+    .slip { padding: var(--s-2); }
+    .route li { grid-template-columns: 6.2rem minmax(0, 1fr) 3.6rem; gap: var(--s-1); }
+    .moves .row { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+    .field-row .btn { flex: 1 1 100%; }
+  }
+  @media (min-width: 1600px) {
+    :root { --page: 1640px; }
+    .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); }
+    .pair { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--s-8); align-items: start; }
+    .moves .row { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+  }
+</style>
+</head>
+<body>
+  <header class="wrap top">
+    <a class="mark" href="#top" id="top">Routeslip</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#moves">How a task moves</a></li>
+        <li><a href="#board">The board</a></li>
+        <li><a href="#signup">Sign up</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <h1>Every task shows whose desk it’s on.</h1>
+        <p class="lede">A shared board for small teams. Work moves from To&nbsp;do to In&nbsp;progress, Review and Done, and the initials on each card say who has it now.</p>
+
+        <form class="signup" id="signup" novalidate>
+          <label for="email">Work email</label>
+          <div class="field-row">
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="Email" aria-describedby="email-msg">
+            <button class="btn btn-primary" type="submit">Start a board</button>
+          </div>
+          <p class="msg" id="email-msg" aria-live="polite"></p>
+        </form>
+        <p class="after"><button class="btn btn-text" type="button" id="learn">See how a task moves</button></p>
+      </div>
+
+      <article class="slip" aria-labelledby="slip-title">
+        <div class="slip-head">
+          <h2 id="slip-title">Routing slip</h2>
+          <span>Website refresh</span>
+        </div>
+        <div class="slip-task">
+          <p>Task <b>Rebuild the signup form</b></p>
+          <span class="stamp" id="stamp" aria-hidden="true">In progress</span>
+        </div>
+        <ol class="route" id="route">
+          <li class="passed"><span class="stage">To do</span><span class="hand who">AK</span><span class="hand date">Nov 3</span></li>
+          <li class="now"><span class="stage">In progress</span><span class="hand who">SO</span><span class="hand date">Nov 10</span></li>
+          <li><span class="stage">Review</span><span class="hand who"></span><span class="hand date"></span></li>
+          <li><span class="stage">Done</span><span class="hand who"></span><span class="hand date"></span></li>
+        </ol>
+        <div class="slip-foot">
+          <p id="slip-status" aria-live="polite">With SO since Nov 10.</p>
+          <button class="btn" type="button" id="pass" onclick="go()">Pass it on</button>
+        </div>
+      </article>
+    </section>
+
+    <div class="wrap pair">
+      <figure class="board" id="board">
+        <img src="hero.png" width="1600" height="800" loading="lazy" decoding="async"
+             alt="The Website refresh board grouped by status: five cards in To do, four in In progress with progress bars, three in Review and five in Done. Each card shows a label, a due date and the owner's initials; filters for assignee, due date and label sit above the columns.">
+        <figcaption>
+          <h2>The board</h2>
+          <p>Filter by assignee, due date or label, and group by status. Inbox, My work, Calendar and Docs sit beside it.</p>
+        </figcaption>
+      </figure>
+
+      <section class="moves" id="moves" aria-labelledby="moves-title">
+        <h2 id="moves-title">How a task moves</h2>
+        <div class="row"><span class="stage">To do</span><p>Write the task down, give it a label and a due date, and put someone’s initials on it.</p></div>
+        <div class="row"><span class="stage">In progress</span><p>The owner keeps it. A bar on the card shows how far along it is, and the due date turns amber when it’s close.</p></div>
+        <div class="row"><span class="stage">Review</span><p>Comments gather on the card, so whoever checks the work doesn’t have to ask where things stand.</p></div>
+        <div class="row"><span class="stage">Done</span><p>It stays on the board with its date, so the month’s finished work is still in view.</p></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>© 2026 Routeslip</p>
+      <button class="btn icon-btn" type="button" id="totop" aria-label="Back to top">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </footer>
+
+<script>
+  // Routing slip: each press passes the task to the next stage.
+  var stages = [
+    { who: "AK", date: "Nov 3" },
+    { who: "SO", date: "Nov 10" },
+    { who: "MR", date: "Nov 13" },
+    { who: "SO", date: "Nov 14" }
+  ];
+  var current = 1;
+  function render() {
+    var rows = document.querySelectorAll("#route li");
+    rows.forEach(function (li, i) {
+      li.className = i < current ? "passed" : i === current ? "now" : "";
+      li.querySelector(".who").textContent = i <= current ? stages[i].who : "";
+      li.querySelector(".date").textContent = i <= current ? stages[i].date : "";
+    });
+    var name = rows[current].querySelector(".stage").textContent;
+    var stamp = document.getElementById("stamp");
+    stamp.textContent = name;
+    stamp.classList.remove("fresh"); void stamp.offsetWidth; stamp.classList.add("fresh");
+    var done = current === stages.length - 1;
+    document.getElementById("slip-status").textContent = done
+      ? "Done on " + stages[current].date + "."
+      : "With " + stages[current].who + " in " + name + " since " + stages[current].date + ".";
+    document.getElementById("pass").textContent = done ? "Send it round again" : "Pass it on";
+  }
+  function go() {
+    current = current === stages.length - 1 ? 0 : current + 1;
+    render();
+  }
+
+  document.getElementById("learn").addEventListener("click", function () {
+    document.getElementById("moves").scrollIntoView();
+    document.getElementById("moves-title").setAttribute("tabindex", "-1");
+    document.getElementById("moves-title").focus({ preventScroll: true });
+  });
+  document.getElementById("totop").addEventListener("click", function () {
+    window.scrollTo(0, 0);
+    document.getElementById("top").focus({ preventScroll: true });
+  });
+
+  var form = document.getElementById("signup");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = document.getElementById("email");
+    var msg = document.getElementById("email-msg");
+    var value = input.value.trim();
+    if (!value || !input.checkValidity()) {
+      input.setAttribute("aria-invalid", "true");
+      msg.className = "msg error";
+      msg.textContent = value
+        ? "“" + value + "” isn’t an email address. Check for a missing @ or domain, like name@studio.com."
+        : "Enter your work email so we can send the link to your new board.";
+      input.focus();
+      return;
+    }
+    input.removeAttribute("aria-invalid");
+    msg.className = "msg";
+    msg.textContent = "Sent. Check " + value + " for the link to your new board.";
+  });
+</script>
+</body>
+</html>

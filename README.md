@@ -96,7 +96,7 @@ Claude Code では、このリポジトリで `/improve-design-nexus` を実行�
 
 ## フィクスチャの公開
 
-`eval/fixtures/` の HTML の公開先は https://tkc310.github.io/design-nexus/ です。自動では実行しません。Actions タブから手動実行してください（Publish fixture pages）。初回は Settings > Pages の Source を GitHub Actions にしてから実行します。載るのは HTML と、同じディレクトリ内で相対参照しているファイルだけです。
+`eval/fixtures/` の HTML の公開先は https://tkc310.github.io/design-nexus/ です。改善ループで作って比べたページは https://tkc310.github.io/design-nexus/gallery/ に、実験ごとに並べています(`node eval/gallery.mjs` で `eval/gallery/` を作り直してからコミット)。自動では実行しません。Actions タブから手動実行してください（Publish fixture pages and gallery）。初回は Settings > Pages の Source を GitHub Actions にしてから実行します。載るのは HTML と、同じディレクトリ内で相対参照しているファイルだけです。
 
 ## 構成
 
@@ -115,7 +115,7 @@ install.sh                インストーラ
 docs/comparison.md        調査・比較レポート
 docs/design-skills.md     X上のスキル検証（2026-10-31）
 docs/design-trends/       デザイン手法の月次データベース（方向の提案のときにスキルが読む）
-.github/workflows/pages.yml  フィクスチャ HTML を Pages へ手動公開
+.github/workflows/pages.yml  フィクスチャ HTML と eval/gallery を Pages へ手動公開
 .github/assemble-fixture-pages.mjs  公開物の収集と index.html の生成
 ```
 

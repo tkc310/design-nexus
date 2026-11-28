@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline: filter JSON and logfmt logs across every file</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches JSON and logfmt logs across many files with a SQL-like filter such as level=error and latency_ms>500. Install with brew or cargo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;700&family=Martian+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFFFFF;          /* light terminal theme ground */
+  --surface: #F3F3F3;     /* status-line grey */
+  --text: #16181C;        /* terminal foreground */
+  --muted: #5B6067;       /* dimmed, non-matching lines */
+  --accent: #A0197C;      /* grep fn=35: file-name magenta */
+  --on-accent: #FFFFFF;
+  --border: #8A8F96;
+  --match: #CDEBF0;       /* grep se=36: cyan, used as match tint */
+  --danger: #B42318;
+
+  --f-display: "Martian Mono", "JetBrains Mono", ui-monospace, monospace;
+  --f-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --s-14: 14px;
+  --s-17: 17px;
+  --s-21: 21px;
+  --s-27: 27px;
+  --s-34: 34px;
+
+  --sp: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  --radius: 6px;
+  --wrap: 1180px;
+  --shadow: 0 1px 0 rgba(22,24,28,.06), 0 18px 40px -18px rgba(22,24,28,.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--s-17)/1.6 var(--f-body);
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; text-wrap: pretty; }
+code, kbd { font-family: var(--f-mono); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--sp-6); }
+
+/* ---------- header ---------- */
+.top { border-bottom: 1px solid var(--surface); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-height: 64px; }
+.mark { display: inline-block; padding: var(--sp-3) 0; font: 700 var(--s-17)/1 var(--f-display); text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
+.top nav ul { display: flex; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
+.top nav a {
+  display: inline-block; padding: var(--sp-2) var(--sp-3); min-height: 40px;
+  font: 400 var(--s-14)/24px var(--f-mono); text-decoration: none; white-space: nowrap; border-radius: var(--radius);
+}
+.top nav a:hover { background: var(--surface); }
+
+/* ---------- hero ---------- */
+.hero { padding: var(--sp-12) 0 var(--sp-16); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 344px) minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
+/* hero install rows: keep each command on one line at desktop widths */
+.lede .cmd { padding-left: var(--sp-3); gap: var(--sp-2); }
+.lede .cmd code { font-size: 15px; }
+.lede { display: grid; gap: var(--sp-6); padding-top: var(--sp-4); }
+.lede h1 { font: 700 clamp(var(--s-27), 2.7vw, var(--s-34))/1.15 var(--f-display); letter-spacing: -0.02em; }
+.lede p { max-width: 38ch; }
+
+/* install rows: same row unit as the log pane */
+.install { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.cmd {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  background: var(--surface); border-radius: var(--radius);
+}
+.cmd code { font-size: var(--s-17); white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.cmd code::before { content: "$ "; color: var(--muted); }
+.btn {
+  font: 600 var(--s-14)/1 var(--f-body); min-height: 44px; min-width: 84px; padding: 0 var(--sp-4);
+  border-radius: var(--radius); border: 2px solid var(--text); background: var(--bg); color: var(--text);
+  cursor: pointer; white-space: nowrap;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.btn:hover { background: var(--text); color: var(--bg); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--text); border-color: var(--text); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.copy-msg { font-size: var(--s-14); min-height: 1.6em; }
+.copy-msg.err { color: var(--danger); }
+
+/* ---------- signature: filter pane ---------- */
+.pane {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); min-width: 0; overflow: hidden;
+}
+.pane-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.pane-head .label { font: 400 var(--s-14)/1 var(--f-mono); color: var(--text); white-space: nowrap; }
+.expr { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.expr .op { font: 700 var(--s-14)/1 var(--f-mono); color: var(--text); }
+.clause {
+  font: 700 var(--s-14)/1 var(--f-mono); min-height: 36px; padding: 0 var(--sp-3);
+  border-radius: var(--radius); border: 2px solid var(--accent); background: var(--bg); color: var(--accent);
+  cursor: pointer; white-space: nowrap;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.clause:hover { background: var(--surface); }
+.clause[aria-pressed="false"] { border-color: var(--border); border-style: dashed; color: var(--muted); text-decoration: line-through; }
+.count { margin-left: auto; font: 400 var(--s-14)/1.4 var(--f-mono); white-space: nowrap; }
+.count b { font-variant-numeric: tabular-nums; }
+.pane-hint { padding: var(--sp-2) var(--sp-4); font-size: var(--s-14); border-bottom: 1px solid var(--surface); }
+
+.rows { list-style: none; margin: 0; padding: var(--sp-2) 0; }
+.row {
+  display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: var(--sp-3);
+  padding: 3px var(--sp-3) 3px calc(var(--sp-4) - 3px);
+  border-left: 3px solid transparent;
+  font: 400 var(--s-14)/1.6 var(--f-mono); color: var(--muted);
+  transition: color .12s ease, border-color .12s ease;
+}
+.row.hit { color: var(--text); border-left-color: var(--text); font-weight: 700; }
+.loc { white-space: nowrap; color: var(--muted); font-weight: 400; }
+.line { font: inherit; min-width: 0; }
+.tk { white-space: nowrap; }
+.on-level .tk[data-c="level"][data-m],
+.on-lat .tk[data-c="lat"][data-m],
+.lit .tk[data-m] { background: var(--match); border-radius: 2px; box-shadow: 0 0 0 2px var(--match); }
+
+/* ---------- anatomy of the filter ---------- */
+.anatomy { background: var(--surface); padding: var(--sp-16) 0; }
+.anatomy h2, .formats h2, .close h2 { font: 700 var(--s-27)/1.2 var(--f-display); letter-spacing: -0.015em; }
+.parts {
+  margin: var(--sp-8) 0 0; padding: 0; list-style: none;
+  display: grid; grid-template-columns: auto auto auto; justify-content: start; gap: var(--sp-4) var(--sp-8);
+}
+.part { display: grid; grid-template-rows: auto auto; gap: var(--sp-3); align-content: start; }
+.part code {
+  font: 700 clamp(24px, 3.6vw, 56px)/1.1 var(--f-display); letter-spacing: -0.03em; white-space: nowrap;
+  padding-bottom: var(--sp-3); border-bottom: 3px solid var(--text);
+}
+.part.join code { color: var(--muted); border-bottom-color: transparent; }
+.part p { max-width: 26ch; }
+.anatomy .after { margin-top: var(--sp-8); max-width: 62ch; }
+
+/* ---------- formats ---------- */
+.formats { padding: var(--sp-16) 0; }
+.formats .wrap { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); gap: var(--sp-8); align-items: start; }
+.formats .text { display: grid; gap: var(--sp-4); align-self: start; }
+.formats .rows { align-self: center; border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-2) 0; }
+.formats .row { grid-template-columns: 108px minmax(0, 1fr); }
+
+/* ---------- close: facts + install ---------- */
+.close { border-top: 1px solid var(--border); padding: var(--sp-16) 0 var(--sp-24); }
+.close .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--sp-12); align-items: start; }
+.facts { margin: var(--sp-6) 0 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.facts div { display: flex; font: 700 var(--s-27)/1.2 var(--f-display); letter-spacing: -0.02em; white-space: nowrap; }
+.facts dt { color: var(--muted); font-weight: 500; }
+.facts dt::after { content: "="; }
+.facts dd { margin: 0; }
+.close .install-col { display: grid; gap: var(--sp-4); }
+.close .install-col h3 { font: 600 var(--s-21)/1.3 var(--f-body); }
+
+footer { border-top: 1px solid var(--surface); padding: var(--sp-6) 0; font-size: var(--s-14); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); }
+
+/* ---------- widths ---------- */
+@media (max-width: 960px) {
+  .hero .wrap, .formats .wrap, .close .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--sp-8); }
+  .lede p { max-width: 60ch; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 0 var(--sp-4); }
+  .hero { padding: var(--sp-6) 0 var(--sp-12); }
+  .lede { gap: var(--sp-4); padding-top: 0; }
+  .lede h1 { font-size: var(--s-27); }
+  .top nav a { padding: var(--sp-2); }
+  .row, .formats .row { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+  .count { margin-left: 0; width: 100%; }
+  .parts { grid-template-columns: minmax(0, 1fr); }
+  .part p { max-width: none; }
+  .anatomy, .formats { padding: var(--sp-12) 0; }
+  .facts div { font-size: var(--s-21); }
+}
+@media (max-width: 400px) {
+  .top nav li:first-child { display: none; }
+  .cmd code { font-size: var(--s-14); }
+}
+@media (min-width: 1600px) {
+  :root { --wrap: 1560px; }
+  .hero .wrap { grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); gap: var(--sp-16); }
+  .lede h1 { font-size: 42px; }
+  .row { grid-template-columns: 160px minmax(0, 1fr); font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top">grepline</a>
+    <nav aria-label="Page">
+      <ul>
+        <li><a href="#filter">Filter</a></li>
+        <li><a href="#formats">Formats</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="h1">
+    <div class="wrap">
+      <div class="lede">
+        <h1 id="h1">Find the slow errors in every log file.</h1>
+        <p>grepline reads JSON and logfmt lines from many files at once and keeps the ones that match a SQL-like filter.</p>
+        <ul class="install" aria-label="Install commands">
+          <li class="cmd"><code id="c-brew">brew install grepline</code><button class="btn primary" type="button" data-copy="c-brew" aria-label="Copy brew install grepline">Copy</button></li>
+          <li class="cmd"><code id="c-cargo">cargo install grepline</code><button class="btn" type="button" data-copy="c-cargo" aria-label="Copy cargo install grepline">Copy</button></li>
+        </ul>
+        <p class="copy-msg" role="status" aria-live="polite" data-msg></p>
+      </div>
+
+      <figure class="pane on-level on-lat" id="pane" aria-labelledby="pane-cap" style="margin:0">
+        <div class="pane-head">
+          <span class="label" id="pane-cap">filter</span>
+          <div class="expr" role="group" aria-label="Filter clauses">
+            <button class="clause" type="button" aria-pressed="true" data-clause="level">level=error</button>
+            <span class="op">and</span>
+            <button class="clause" type="button" aria-pressed="true" data-clause="lat">latency_ms&gt;500</button>
+          </div>
+          <p class="count" aria-live="polite"><b data-n>4</b> of 12 lines · <b data-f>3</b> of 4 files</p>
+        </div>
+        <p class="pane-hint">Press a clause to switch it off and see which lines it was keeping out.</p>
+        <ul class="rows" aria-label="Log lines">
+<li class="row" data-level="0" data-lat="0"><span class="loc">api-1.jsonl:481</span><code class="line"><span class="tk">{"ts":"15:02:07",</span><wbr><span class="tk" data-c="level">"level":"info",</span><wbr><span class="tk">"path":"/cart",</span><wbr><span class="tk" data-c="lat">"latency_ms":88}</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row hit" data-level="1" data-lat="1"><span class="loc">edge.log:220</span><code class="line"><span class="tk">ts=15:02:08</span> <span class="tk" data-c="level" data-m>level=error</span> <span class="tk">path=/checkout</span> <span class="tk" data-c="lat" data-m>latency_ms=1240</span></code><span class="sr-only verdict">, matches</span></li>
+<li class="row" data-level="0" data-lat="1"><span class="loc">api-2.jsonl:337</span><code class="line"><span class="tk">{"ts":"15:02:08",</span><wbr><span class="tk" data-c="level">"level":"warn",</span><wbr><span class="tk">"path":"/search",</span><wbr><span class="tk" data-c="lat" data-m>"latency_ms":612}</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row" data-level="1" data-lat="0"><span class="loc">worker.log:918</span><code class="line"><span class="tk">ts=15:02:09</span> <span class="tk" data-c="level" data-m>level=error</span> <span class="tk">job=invoice_pdf</span> <span class="tk" data-c="lat">latency_ms=74</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row hit" data-level="1" data-lat="1"><span class="loc">api-1.jsonl:482</span><code class="line"><span class="tk">{"ts":"15:02:10",</span><wbr><span class="tk" data-c="level" data-m>"level":"error",</span><wbr><span class="tk">"path":"/checkout",</span><wbr><span class="tk" data-c="lat" data-m>"latency_ms":903}</span></code><span class="sr-only verdict">, matches</span></li>
+<li class="row" data-level="0" data-lat="0"><span class="loc">edge.log:221</span><code class="line"><span class="tk">ts=15:02:10</span> <span class="tk" data-c="level">level=info</span> <span class="tk">path=/health</span> <span class="tk" data-c="lat">latency_ms=3</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row" data-level="0" data-lat="1"><span class="loc">api-2.jsonl:338</span><code class="line"><span class="tk">{"ts":"15:02:11",</span><wbr><span class="tk" data-c="level">"level":"info",</span><wbr><span class="tk">"path":"/orders",</span><wbr><span class="tk" data-c="lat" data-m>"latency_ms":740}</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row hit" data-level="1" data-lat="1"><span class="loc">worker.log:919</span><code class="line"><span class="tk">ts=15:02:12</span> <span class="tk" data-c="level" data-m>level=error</span> <span class="tk">job=email_retry</span> <span class="tk" data-c="lat" data-m>latency_ms=2210</span></code><span class="sr-only verdict">, matches</span></li>
+<li class="row" data-level="1" data-lat="0"><span class="loc">api-1.jsonl:483</span><code class="line"><span class="tk">{"ts":"15:02:12",</span><wbr><span class="tk" data-c="level" data-m>"level":"error",</span><wbr><span class="tk">"path":"/login",</span><wbr><span class="tk" data-c="lat">"latency_ms":41}</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row" data-level="0" data-lat="1"><span class="loc">edge.log:222</span><code class="line"><span class="tk">ts=15:02:13</span> <span class="tk" data-c="level">level=warn</span> <span class="tk">path=/cart</span> <span class="tk" data-c="lat" data-m>latency_ms=505</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row" data-level="0" data-lat="0"><span class="loc">api-2.jsonl:339</span><code class="line"><span class="tk">{"ts":"15:02:14",</span><wbr><span class="tk" data-c="level">"level":"info",</span><wbr><span class="tk">"path":"/cart",</span><wbr><span class="tk" data-c="lat">"latency_ms":96}</span></code><span class="sr-only verdict">, no match</span></li>
+<li class="row hit" data-level="1" data-lat="1"><span class="loc">worker.log:920</span><code class="line"><span class="tk">ts=15:02:15</span> <span class="tk" data-c="level" data-m>level=error</span> <span class="tk">job=export_csv</span> <span class="tk" data-c="lat" data-m>latency_ms=517</span></code><span class="sr-only verdict">, matches</span></li>
+        </ul>
+      </figure>
+    </div>
+  </section>
+
+  <section class="anatomy" id="filter" aria-labelledby="h-filter">
+    <div class="wrap">
+      <h2 id="h-filter">A filter reads like a WHERE clause.</h2>
+      <ol class="parts">
+        <li class="part"><code>level=error</code><p>A field from the line, compared with a value.</p></li>
+        <li class="part join"><code>and</code><p>Both sides must hold.</p></li>
+        <li class="part"><code>latency_ms&gt;500</code><p>Numbers compare as numbers, so 1240 passes and 74 doesn’t.</p></li>
+      </ol>
+      <p class="after">No regex for the shape of a line, no piping through jq first. You name fields, and grepline checks each line from each file against them.</p>
+    </div>
+  </section>
+
+  <section class="formats" id="formats" aria-labelledby="h-formats">
+    <div class="wrap">
+      <div class="text">
+        <h2 id="h-formats">JSON or logfmt, one filter.</h2>
+        <p>Fields are the keys in each line, whichever way the service wrote it. Files from different services go into one search.</p>
+      </div>
+      <ul class="rows lit" aria-label="The same event in both formats">
+        <li class="row hit"><span class="loc">api.jsonl</span><code class="line"><span class="tk">{"ts":"15:02:10",</span><wbr><span class="tk" data-c="level" data-m>"level":"error",</span><wbr><span class="tk">"path":"/checkout",</span><wbr><span class="tk" data-c="lat" data-m>"latency_ms":903}</span></code></li>
+        <li class="row hit"><span class="loc">edge.log</span><code class="line"><span class="tk">ts=15:02:10</span> <span class="tk" data-c="level" data-m>level=error</span> <span class="tk">path=/checkout</span> <span class="tk" data-c="lat" data-m>latency_ms=903</span></code></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="close" id="install" aria-labelledby="h-install">
+    <div class="wrap">
+      <div>
+        <h2 id="h-install">Open source, one binary.</h2>
+        <dl class="facts">
+          <div><dt>written_in</dt><dd>rust</dd></div>
+          <div><dt>license</dt><dd>MIT</dd></div>
+          <div><dt>binaries</dt><dd>1</dd></div>
+        </dl>
+      </div>
+      <div class="install-col">
+        <h3>Install it, then point it at your logs.</h3>
+        <ul class="install" aria-label="Install commands">
+          <li class="cmd"><code id="c-brew-2">brew install grepline</code><button class="btn primary" type="button" data-copy="c-brew-2" aria-label="Copy brew install grepline">Copy</button></li>
+          <li class="cmd"><code id="c-cargo-2">cargo install grepline</code><button class="btn" type="button" data-copy="c-cargo-2" aria-label="Copy cargo install grepline">Copy</button></li>
+        </ul>
+        <p class="copy-msg" role="status" aria-live="polite" data-msg></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>grepline · MIT licensed</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Filter pane: each clause can be switched off; rows re-evaluate.
+  var pane = document.getElementById('pane');
+  var rows = pane.querySelectorAll('.row');
+  var state = { level: true, lat: true };
+  function apply() {
+    var n = 0, files = {};
+    pane.classList.toggle('on-level', state.level);
+    pane.classList.toggle('on-lat', state.lat);
+    rows.forEach(function (r) {
+      var ok = (!state.level || r.dataset.level === '1') && (!state.lat || r.dataset.lat === '1');
+      r.classList.toggle('hit', ok);
+      r.querySelector('.verdict').textContent = ok ? ', matches' : ', no match';
+      if (ok) { n++; files[r.querySelector('.loc').textContent.split(':')[0]] = 1; }
+    });
+    pane.querySelector('[data-n]').textContent = n;
+    pane.querySelector('[data-f]').textContent = Object.keys(files).length;
+  }
+  pane.querySelectorAll('.clause').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.dataset.clause;
+      state[k] = !state[k];
+      b.setAttribute('aria-pressed', String(state[k]));
+      apply();
+    });
+  });
+
+  // Copy buttons: copy the one-line command; fall back to selecting it.
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = document.getElementById(btn.dataset.copy);
+      var text = code.textContent;
+      var msg = btn.closest('.lede, .install-col').querySelector('[data-msg]');
+      var label = btn.getAttribute('aria-label');
+      function done() {
+        msg.classList.remove('err');
+        msg.textContent = 'Copied “' + text + '”. Paste it into your terminal.';
+        btn.textContent = 'Copied';
+        btn.setAttribute('aria-label', 'Copied ' + text);
+        setTimeout(function () { btn.textContent = 'Copy'; btn.setAttribute('aria-label', label); }, 2000);
+      }
+      function fail() {
+        var range = document.createRange();
+        range.selectNodeContents(code);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        msg.classList.add('err');
+        msg.textContent = 'The browser blocked clipboard access. The command is selected: press Ctrl+C (⌘C on a Mac).';
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fail);
+      } else { fail(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

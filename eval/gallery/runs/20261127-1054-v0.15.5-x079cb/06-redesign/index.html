@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lanes: one board for a small team</title>
+<meta name="description" content="Lanes is a shared board for small teams. Every piece of work is a card, and every card crosses four columns: to do, in progress, review, done.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* sampled from the product screenshot */
+    --ground: #EEEDE9;      /* sidebar grey */
+    --card: #FFFFFF;        /* card stock */
+    --ink: #1E2227;         /* card title ink */
+    --ink-2: #575A61;       /* meta ink */
+    --action: #2C3440;      /* the "New task" button */
+    --on-action: #FFFFFF;
+    --field: #7E7D78;       /* field outline, 3:1 on white */
+    --rule: #D6D4CE;        /* card hairline, progress track */
+    --due: #8A5A00;         /* "Due tomorrow" ink */
+
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Public Sans", "Segoe UI", sans-serif;
+
+    --t-sm: 14px;
+    --t-md: 16px;
+    --t-lg: 20px;
+    --t-xl: 31px;
+    --t-lane: clamp(30px, 4.2vw, 64px);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --radius: 6px;
+    --gutter: 16px;
+
+    /* the board's own column tracks, measured from the 1600px screenshot:
+       sidebar 244 | four 316px columns | 12 right edge, with 16px (1%) gaps */
+    --board: minmax(0, 244fr) repeat(4, minmax(0, 316fr)) minmax(0, 12fr);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 var(--t-md)/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { margin: 0; text-wrap: pretty; }
+
+  .wrap { width: min(100% - 2 * var(--gutter), 1200px); margin-inline: auto; }
+
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
+
+  /* ---------- nav ---------- */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding-block: var(--s3); }
+  .mark { font: 600 28px/1 var(--display); letter-spacing: .02em; text-transform: uppercase; color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: var(--s1); min-height: 44px; }
+  .mark svg { flex: none; }
+  .top ul { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; }
+  .top a:not(.mark) { color: var(--ink); text-decoration: none; font-size: var(--t-sm); font-weight: 600; display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+  .top a:not(.mark):hover { text-decoration: underline; text-underline-offset: 4px; }
+
+  /* ---------- the lane unit ---------- */
+  .lane-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-top: 2px solid var(--ink);
+    padding-top: var(--s1);
+    font-size: var(--t-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ---------- hero ---------- */
+  .hero { display: grid; grid-template-columns: var(--board); column-gap: 1%; row-gap: var(--s3); padding-top: var(--s4); }
+  .lede { grid-column: 1; grid-row: 1; align-self: end; font-size: var(--t-md); padding-right: var(--s1); }
+  .lede strong { font-weight: 600; }
+  h1 { grid-column: 2 / 6; grid-row: 1; display: grid; grid-template-columns: subgrid; font-weight: inherit; }
+  h1 > span { display: block; }
+  h1 .phrase { display: block; font: 600 var(--t-lane)/.98 var(--display); letter-spacing: -.005em; padding-top: var(--s2); }
+  .shot { grid-column: 1 / -1; grid-row: 2; margin: 0; position: relative; }
+  .shot img {
+    display: block; width: 100%; height: auto;
+    aspect-ratio: 1600 / 600; object-fit: cover; object-position: 0 0;
+    border-radius: var(--radius);
+    box-shadow: 0 0 0 1px var(--rule), 0 28px 48px -28px rgb(30 34 39 / .45);
+    background: var(--card);
+  }
+  .shot figcaption { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-top: var(--s2); font-size: var(--t-sm); }
+
+  .start { grid-column: 1 / -1; grid-row: 3; display: grid; grid-template-columns: var(--board); column-gap: 1%; padding-top: var(--s3); }
+  /* the sign-up row sits on the lane tracks too: field over sidebar + To do, primary in In progress, secondary in Review */
+  .start form { grid-column: 1 / 4; display: grid; grid-template-columns: subgrid; }
+  .start form > label, .start form > .hint { grid-column: 1 / -1; }
+  .start .row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; column-gap: normal; }
+  .start .row input { grid-column: 1 / 3; }
+  .start .row .btn { grid-column: 3; }
+  .start .aside { grid-column: 4 / 5; align-self: start; padding-top: 30px; display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; justify-content: flex-start; }
+  label { display: block; font-weight: 600; font-size: var(--t-sm); margin-bottom: var(--s1); }
+  .row { display: flex; gap: var(--s1); flex-wrap: wrap; }
+  input[type="email"] {
+    flex: 1 1 220px; min-width: 0; min-height: 48px; padding: 0 var(--s2);
+    font: inherit; color: var(--ink); background: var(--card);
+    border: 1px solid var(--field); border-radius: var(--radius);
+  }
+  input[type="email"][aria-invalid="true"] { border-color: var(--due); border-width: 2px; }
+  .hint { font-size: var(--t-sm); margin-top: var(--s1); min-height: 1.6em; }
+  .hint.is-error { color: var(--due); font-weight: 600; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3);
+    font: 600 var(--t-md)/1 var(--body); white-space: nowrap;
+    border-radius: var(--radius); cursor: pointer;
+    transition: transform 120ms cubic-bezier(.23,1,.32,1), background-color 160ms ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-fill { background: var(--action); color: var(--on-action); border: 0; }
+  .btn-fill:hover { background: var(--ink); }
+  .btn-line { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+  .btn-line:hover { background: var(--card); }
+  .btn-small { min-height: 44px; padding: 0 var(--s2); font-size: var(--t-sm); }
+
+  /* ---------- section rhythm ---------- */
+  section { padding-block: var(--s12) 0; }
+  h2 { font: 600 var(--t-xl)/1.1 var(--display); letter-spacing: .005em; }
+  .sec-text p { margin-top: var(--s2); }
+
+  /* ---------- one card, four columns ---------- */
+  .flow { display: grid; grid-template-columns: var(--board); column-gap: 1%; row-gap: var(--s4); }
+  .flow .sec-text { grid-column: 1; padding-right: var(--s2); }
+  .flow ol { grid-column: 2 / 6; display: grid; grid-template-columns: subgrid; grid-auto-rows: auto; list-style: none; margin: 0; padding: 0; }
+  /* label / card / caption share rows across lanes, so the four cards are one height and the captions start on one line */
+  .flow li { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: var(--s2); }
+  .flow li > p { font-size: var(--t-md); }
+
+  .task { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s2); display: flex; flex-direction: column; gap: var(--s2); }
+  .task .task-meta { margin-top: auto; }
+  .task-title { font-weight: 400; }
+  .task-meta { display: flex; align-items: center; gap: var(--s1); font-size: var(--t-sm); color: var(--ink); flex-wrap: wrap; }
+  .tag { background: var(--ground); padding: 0 var(--s1); border-radius: 3px; }
+  .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .when.due { color: var(--due); font-weight: 600; }
+  .who { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: var(--rule); display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+  .bar { height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 60%; background: var(--ink-2); }
+  .done-mark { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+  /* ---------- views and filters ---------- */
+  .views { display: grid; grid-template-columns: var(--board); grid-template-rows: auto 1fr; column-gap: 1%; row-gap: var(--s4); }
+  .views .sec-text { grid-column: 2 / 6; grid-row: 1; max-width: 62ch; }
+  .views .side { grid-column: 1; grid-row: 1 / span 2; border-right: 1px solid var(--rule); padding-right: var(--s2); }
+  .side h3 { font-size: var(--t-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: var(--s3) 0 var(--s1); }
+  .side div:first-child h3 { margin-top: 0; }
+  .side ul { list-style: none; margin: 0; padding: 0; }
+  .side li { display: flex; justify-content: space-between; padding: 6px 0; font-size: var(--t-md); }
+  .side li .n { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .filters { grid-column: 2 / 6; grid-row: 2; display: grid; grid-template-columns: subgrid; align-content: start; row-gap: var(--s2); }
+  .filters dl { display: contents; }
+  .filters div { display: flex; flex-direction: column; gap: var(--s1); }
+  .filters dt { font-size: var(--t-sm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; border-top: 2px solid var(--ink); padding-top: var(--s1); }
+  .filters dd { margin: 0; }
+  .chip { display: inline-block; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 14px; font-size: var(--t-md); white-space: nowrap; background: var(--card); }
+
+  /* ---------- footer ---------- */
+  footer { margin-top: var(--s12); border-top: 1px solid var(--rule); }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); padding-block: var(--s3); font-size: var(--t-sm); }
+  .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 2px solid var(--ink); border-radius: var(--radius); color: var(--ink); cursor: pointer; }
+  .icon-btn:hover { background: var(--card); }
+
+  /* ---------- full-size dialog ---------- */
+  dialog { padding: 0; border: 0; border-radius: var(--radius); background: var(--card); width: min(100vw - 32px, 1600px); max-height: calc(100vh - 32px); }
+  dialog::backdrop { background: rgb(30 34 39 / .7); }
+  dialog .dlg-bar { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: var(--s2); padding: var(--s1) var(--s2); background: var(--card); border-bottom: 1px solid var(--rule); }
+  dialog .dlg-bar h2 { font-size: var(--t-lg); }
+  dialog .dlg-body { overflow: auto; }
+  dialog img { display: block; width: 100%; min-width: 960px; height: auto; }
+
+  /* ---------- 768-ish ---------- */
+  @media (max-width: 1099px) {
+    .lede { grid-column: 1 / -1; grid-row: 3; max-width: 60ch; font-size: var(--t-lg); line-height: 1.5; }
+    h1 { grid-row: 1; }
+    .shot { grid-row: 2; }
+    .start { grid-row: 4; }
+    .start form { grid-column: 1 / -1; max-width: 560px; display: block; }
+    .start .row { display: flex; gap: var(--s1); }
+    .start .aside { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding-top: var(--s2); }
+    .flow .sec-text, .views .sec-text { grid-column: 1 / -1; grid-row: 1; padding-right: 0; }
+    .flow ol { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4) var(--s3); }
+    .views .side { grid-column: 1 / -1; grid-row: 2; border-right: 0; padding-right: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s4); }
+    .views { grid-template-rows: auto; }
+    .side div h3 { margin-top: 0; }
+    .filters { grid-column: 1 / -1; grid-row: 3; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: var(--s2); }
+  }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 699px) {
+    .top ul { gap: var(--s2); }
+    .top li:not(:last-child) { display: none; } /* nav collapses to its one action link; sections are reachable by scrolling */
+    .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s2); padding-top: var(--s1); }
+    h1 { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3) var(--s2); }
+    h1 .phrase { font-size: 34px; padding-top: 4px; }
+    /* phones: crop to the To do column (x 252–584 of the 1600px shot) at up to 1:1, so card text stays readable; the full board is one tap away */
+    .frame { height: 320px; overflow: hidden; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--rule), 0 28px 48px -28px rgb(30 34 39 / .45); }
+    .shot img {
+      width: min(calc((100vw - 32px) * 1600 / 332), 1600px); max-width: none;
+      margin-left: max(calc((100vw - 32px) * -252 / 332), -252px);
+      margin-top: max(calc((100vw - 32px) * -16 / 332), -16px);
+      border-radius: 0; box-shadow: none;
+    }
+    .shot figcaption { flex-direction: column; align-items: flex-start; }
+    .start { grid-template-columns: 1fr; }
+    .start form, .start .aside { grid-column: 1; }
+    .start form { max-width: none; }
+    .row .btn { flex: 1 1 100%; }
+    section { padding-top: var(--s8); }
+    .flow ol { grid-template-columns: 1fr; }
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .views .side { grid-template-columns: 1fr; row-gap: var(--s3); }
+  }
+
+  /* ---------- 1920: the board figure grows with the screen ---------- */
+  @media (min-width: 1600px) {
+    .wrap { width: min(100% - 96px, 1720px); }
+    body { font-size: 18px; }
+    .lede, .flow li > p, .side li, .chip { font-size: 18px; }
+    :root { --t-xl: 39px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: background-color 160ms ease; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="mark" href="#top" aria-label="Lanes home">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="0" y="2" width="4" height="18" fill="currentColor"/><rect x="6" y="2" width="4" height="12" fill="currentColor"/><rect x="12" y="2" width="4" height="15" fill="currentColor"/><rect x="18" y="2" width="4" height="8" fill="currentColor"/></svg>
+    Lanes
+  </a>
+  <nav aria-label="Page">
+    <ul>
+      <li><a href="#flow">How a card moves</a></li>
+      <li><a href="#views">Views and filters</a></li>
+      <li><a href="#start">Sign up</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <h1>
+      <span><span class="lane-label">To do</span><span class="phrase">Write it down.</span></span>
+      <span><span class="lane-label">In progress</span><span class="phrase">Pick it up.</span></span>
+      <span><span class="lane-label">Review</span><span class="phrase">Get it checked.</span></span>
+      <span><span class="lane-label">Done</span><span class="phrase">Call it done.</span></span>
+    </h1>
+    <p class="lede"><strong>Lanes is one shared board for a small team.</strong> Every piece of work is a card, and every card crosses the same four columns.</p>
+
+    <figure class="shot">
+      <div class="frame"><img src="hero.png" width="1600" height="800" alt="The Lanes board for a six-person studio team: a sidebar with Inbox, My work, Board, Calendar and Docs, and four columns of task cards. To do holds 5 cards, In progress 4, Review 3 and Done 5; each card shows a title, a label, a date and the owner's initials."></div>
+      <figcaption>
+        <span>The Website refresh board of a six-person studio team.</span>
+        <button type="button" class="btn btn-line btn-small" onclick="go()">Open the board full size</button>
+      </figcaption>
+    </figure>
+
+    <div class="start" id="start">
+      <form id="signup" novalidate>
+        <label for="email">Work email</label>
+        <div class="row">
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="sam@yourstudio.com" required aria-describedby="email-hint">
+          <button type="submit" class="btn btn-fill">Start a team board</button>
+        </div>
+        <p class="hint" id="email-hint" aria-live="polite">We'll send the next step to this address.</p>
+      </form>
+      <div class="aside">
+        <button type="button" class="btn btn-line" id="see-flow">See how a card moves</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="wrap flow" id="flow" aria-labelledby="flow-h">
+    <div class="sec-text">
+      <h2 id="flow-h">One card, four columns</h2>
+      <p>The same card, from the morning it's written to the afternoon it's finished.</p>
+    </div>
+    <ol>
+      <li>
+        <span class="lane-label">To do</span>
+        <article class="task" aria-label="Card in To do">
+          <p class="task-title">Rebuild the signup form</p>
+          <div class="task-meta"><span class="tag">Design</span><span class="when">Nov 5</span><span class="who" aria-label="Owner SO">SO</span></div>
+        </article>
+        <p>A title, a label, a date and someone's initials. That's a card.</p>
+      </li>
+      <li>
+        <span class="lane-label">In progress</span>
+        <article class="task" aria-label="Card in In progress">
+          <p class="task-title">Rebuild the signup form</p>
+          <div class="bar" role="img" aria-label="About 60 percent done"><span></span></div>
+          <div class="task-meta"><span class="tag">Design</span><span class="when due">Due tomorrow</span><span class="who" aria-label="Owner SO">SO</span></div>
+        </article>
+        <p>A bar shows how far along it is, and the date turns amber when it's close.</p>
+      </li>
+      <li>
+        <span class="lane-label">Review</span>
+        <article class="task" aria-label="Card in Review">
+          <p class="task-title">Rebuild the signup form</p>
+          <div class="task-meta"><span class="tag">Design</span><span class="when">2 comments</span><span class="who" aria-label="Owner SO">SO</span></div>
+        </article>
+        <p>Comments stay on the card, not in a thread somebody has to find later.</p>
+      </li>
+      <li>
+        <span class="lane-label">Done</span>
+        <article class="task" aria-label="Card in Done">
+          <p class="task-title">Rebuild the signup form</p>
+          <div class="task-meta"><span class="tag">Design</span><span class="when done-mark"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5 5.5 11 12 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Nov 5</span><span class="who" aria-label="Owner SO">SO</span></div>
+        </article>
+        <p>Finished cards stay on the board, so the week's work is there to see.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="wrap views" id="views" aria-labelledby="views-h">
+    <div class="sec-text">
+      <h2 id="views-h">Narrow the board to your part of it</h2>
+      <p>Filter by who owns a card, when it's due, or its label, and group the columns by status. Beside the board sit your inbox, your own work, a calendar, docs and the team's projects.</p>
+    </div>
+    <div class="side">
+      <div>
+        <h3>Studio team</h3>
+        <ul>
+          <li><span>Inbox</span><span class="n">4</span></li>
+          <li><span>My work</span><span class="n">7</span></li>
+          <li><span>Board</span><span class="n"></span></li>
+          <li><span>Calendar</span><span class="n"></span></li>
+          <li><span>Docs</span><span class="n"></span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Projects</h3>
+        <ul>
+          <li><span>Website refresh</span><span class="n">12</span></li>
+          <li><span>Client onboarding</span><span class="n">5</span></li>
+          <li><span>Q4 planning</span><span class="n">3</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="filters">
+      <dl>
+        <div><dt>Assignee</dt><dd><span class="chip">Anyone</span></dd></div>
+        <div><dt>Due</dt><dd><span class="chip">This month</span></dd></div>
+        <div><dt>Label</dt><dd><span class="chip">Any</span></dd></div>
+        <div><dt>Group</dt><dd><span class="chip">Status</span></dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 Lanes</p>
+    <button type="button" class="icon-btn" id="to-top" aria-label="Back to top">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14V2M3 7l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+  </div>
+</footer>
+
+<dialog id="board-full" aria-labelledby="board-full-h">
+  <div class="dlg-bar">
+    <h2 id="board-full-h">Website refresh board</h2>
+    <button type="button" class="btn btn-line btn-small" id="board-close">Close</button>
+  </div>
+  <div class="dlg-body">
+    <img src="hero.png" width="1600" height="800" loading="lazy" alt="The full Lanes board at actual size, with all seventeen cards across To do, In progress, Review and Done.">
+  </div>
+</dialog>
+
+<script>
+  // Opens the board screenshot at full size (the original page's "Open" handler).
+  function go() {
+    var d = document.getElementById('board-full');
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  }
+  document.getElementById('board-close').addEventListener('click', function () {
+    document.getElementById('board-full').close();
+  });
+  document.getElementById('board-full').addEventListener('click', function (e) {
+    if (e.target === this) this.close();
+  });
+
+  document.getElementById('see-flow').addEventListener('click', function () {
+    document.getElementById('flow').scrollIntoView();
+    document.getElementById('flow-h').setAttribute('tabindex', '-1');
+    document.getElementById('flow-h').focus({ preventScroll: true });
+  });
+  document.getElementById('to-top').addEventListener('click', function () {
+    window.scrollTo(0, 0);
+    document.querySelector('.mark').focus({ preventScroll: true });
+  });
+
+  var form = document.getElementById('signup');
+  var email = document.getElementById('email');
+  var hint = document.getElementById('email-hint');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = email.value.trim();
+    // the browser accepts "sam@studio"; a work address needs a dot in its domain
+    if (!v || !email.checkValidity() || !/^[^@\s]+@[^@\s]+\.[^@\s.]{2,}$/.test(v)) {
+      email.setAttribute('aria-invalid', 'true');
+      hint.className = 'hint is-error';
+      hint.textContent = v
+        ? '"' + v + '" is missing part of an address. Check for the @ and the full domain, like sam@yourstudio.com.'
+        : 'Type your work email first, like sam@yourstudio.com.';
+      email.focus();
+      return;
+    }
+    email.removeAttribute('aria-invalid');
+    hint.className = 'hint';
+    hint.textContent = 'Thanks. We’ll email ' + v + ' to set up your team’s board.';
+  });
+  email.addEventListener('input', function () {
+    if (email.getAttribute('aria-invalid')) {
+      email.removeAttribute('aria-invalid');
+      hint.className = 'hint';
+      hint.textContent = 'We’ll send the next step to this address.';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter JSON and logfmt logs like a table</title>
+<meta name="description" content="grepline is an open-source CLI that searches JSON and logfmt logs across many files with a SQL-like filter. One Rust binary, MIT licensed. brew install grepline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Greenbar printout tokens (see DESIGN.md) */
+  --paper: #F8F8F2;      /* unbleached printout stock */
+  --band: #DCEBD9;       /* greenbar band */
+  --ink: #1C211D;        /* carbon ribbon */
+  --ink-worn: #4A554D;   /* worn ribbon */
+  --perf: #6E7A71;       /* perforations, field outlines */
+  --green: #1E6B3A;      /* greenbar green at full strength: the action */
+  --mark: #FFB8E3;       /* highlighter on a printout: matched lines */
+
+  --f-display: "Doto", "IBM Plex Mono", ui-monospace, monospace;
+  --f-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* scale 1.25 from 16 */
+  --fs-14: 0.875rem;
+  --fs-16: 1rem;
+  --fs-20: 1.25rem;
+  --fs-25: 1.5625rem;
+  --fs-39: clamp(1.5625rem, 1rem + 2.6vw, 2.4414rem);
+  --fs-61: clamp(1.9531rem, 1rem + 3.6vw, 3.8147rem);
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+  --radius: 6px;
+  --strip: 32px;
+  --wrap: 1200px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-16)/1.6 var(--f-body);
+}
+h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; font-weight: 600; }
+p { margin: 0; text-wrap: pretty; }
+code, kbd, pre, input { font-family: var(--f-mono); }
+a { color: var(--ink); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.wrap { width: min(100% - 2 * var(--s2), var(--wrap)); margin-inline: auto; }
+
+/* ---------- top bar ---------- */
+.top { padding-block: var(--s2); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.wordmark { font: 900 var(--fs-25)/1 var(--f-display); text-decoration: none; letter-spacing: 0.02em; }
+.top nav ul { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; }
+.top nav a { display: inline-block; padding-block: var(--s1); white-space: nowrap; }
+
+/* ---------- perforation between sheets ---------- */
+.perf { border: 0; border-top: 2px dashed var(--perf); margin: 0; height: 0; }
+
+/* ---------- hero ---------- */
+.hero { padding-block: var(--s4) var(--s12); }
+.hero .wrap { display: grid; gap: var(--s6); grid-template-columns: minmax(0, 1fr); }
+.hero-copy { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
+.hero h1 { font: 900 var(--fs-61)/1.08 var(--f-display); letter-spacing: 0.01em; }
+.lede { font-size: var(--fs-20); line-height: 1.5; max-width: 34ch; }
+
+/* install rows: printout lines you can copy */
+.install { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--perf); max-width: 640px; }
+.install li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s2); padding: var(--s2) var(--s2); }
+.install li:first-child { background: var(--band); }
+.install li + li { border-top: 1px dashed var(--perf); }
+.cmd { font: 600 var(--fs-16)/1.4 var(--f-mono); white-space: nowrap; }
+.cmd .prompt { color: var(--ink-worn); font-weight: 400; user-select: none; }
+.install-msg { min-height: 1.6em; font-size: var(--fs-16); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+  min-height: 44px; min-width: 96px; padding: 0 var(--s3);
+  border-radius: var(--radius); border: 2px solid var(--ink);
+  background: transparent; color: var(--ink);
+  font: 600 var(--fs-16)/1 var(--f-body); white-space: nowrap; cursor: pointer;
+  transition: transform 120ms var(--ease-out), background-color 160ms ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--green); border-color: var(--green); color: var(--paper); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--band); }
+  .btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+}
+
+/* ---------- the printout (signature) ---------- */
+.sheet {
+  position: relative; min-width: 0;
+  padding-inline: var(--strip);
+  border-inline: 1px dashed var(--perf);
+  background:
+    radial-gradient(circle at 16px 12px, transparent 4px, var(--perf) 4.5px 5.5px, transparent 6px) 0 0 / var(--strip) 24px repeat-y,
+    radial-gradient(circle at 16px 12px, transparent 4px, var(--perf) 4.5px 5.5px, transparent 6px) 100% 0 / var(--strip) 24px repeat-y,
+    var(--paper);
+}
+.sheet-inner { border-inline: 1px dashed var(--perf); min-width: 0; }
+.sheet-head { padding: var(--s2); display: grid; gap: var(--s2); border-bottom: 1px solid var(--perf); }
+.sheet-head > *, .filter-field > * { min-width: 0; }
+.filter-label { font: 600 var(--fs-16)/1.2 var(--f-body); }
+.filter-field { display: grid; gap: var(--s1); }
+.filter-input {
+  width: 100%; min-height: 48px; padding: var(--s1) var(--s2);
+  font: 600 var(--fs-20)/1.3 var(--f-mono); color: var(--ink);
+  background: var(--paper); border: 2px solid var(--perf); border-radius: var(--radius);
+}
+.filter-input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-color: var(--ink); }
+.filter-input[aria-invalid="true"] { border-color: var(--ink); border-style: dashed; }
+.filter-msg { font-size: var(--fs-14); min-height: 1.6em; }
+.filter-msg:empty { display: none; }
+
+.controls { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; }
+.fmt { border: 0; margin: 0; padding: 0; display: flex; gap: var(--s1); align-items: center; }
+.fmt legend { float: left; margin-right: var(--s1); font-size: var(--fs-14); }
+.fmt label { position: relative; }
+.fmt input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.fmt span {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--s2);
+  border: 1px solid var(--perf); border-radius: var(--radius);
+  font: 400 var(--fs-14)/1 var(--f-mono); white-space: nowrap; cursor: pointer;
+}
+.fmt input:checked + span { border: 2px solid var(--ink); font-weight: 600; }
+.fmt input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+.examples { display: flex; flex-wrap: wrap; gap: var(--s1); align-items: center; }
+.examples > span { font-size: var(--fs-14); margin-right: var(--s1); }
+.chip {
+  min-height: 36px; padding: 0 var(--s2); border: 1px dashed var(--perf); border-radius: var(--radius);
+  background: transparent; color: var(--ink); font: 400 var(--fs-14)/1 var(--f-mono); white-space: nowrap; cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) { .chip:hover { border-style: solid; border-color: var(--ink); } }
+
+.lines { list-style: none; margin: 0; padding: 0; font: 400 var(--fs-14)/1.6 var(--f-mono); }
+.row {
+  display: grid; grid-template-columns: 2ch 11ch minmax(0, 1fr); column-gap: var(--s1);
+  padding: 5px var(--s2); color: var(--ink-worn);
+  transition: background-color 160ms ease;
+}
+.row:nth-child(6n+1), .row:nth-child(6n+2), .row:nth-child(6n+3) { background: var(--band); }
+.row .gut { color: var(--ink); }
+.row .file { white-space: nowrap; }
+.row .line { white-space: pre-wrap; min-width: 0; }
+.row .k { color: inherit; }
+.row .v { color: var(--ink); }
+.row.hit {
+  --stroke: linear-gradient(transparent 3px, var(--mark) 3px calc(100% - 3px), transparent calc(100% - 3px));
+  color: var(--ink);
+  background: var(--stroke), var(--paper);
+}
+.row.hit:nth-child(6n+1), .row.hit:nth-child(6n+2), .row.hit:nth-child(6n+3) {
+  background: var(--stroke), var(--band);
+}
+.row .v.on { font-weight: 600; }
+.sheet-foot { padding: var(--s2); border-top: 1px solid var(--perf); font: 600 var(--fs-14)/1.5 var(--f-mono); }
+
+/* ---------- the facts, as one logfmt line ---------- */
+.facts { padding-block: var(--s12); }
+.facts dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-block: 1px solid var(--perf); }
+.facts dl > div { padding: var(--s3) var(--s2); display: grid; gap: var(--s1); align-content: start; }
+.facts dl > div:nth-child(odd) { background: var(--band); }
+.facts dt { font: 600 var(--fs-39)/1.15 var(--f-mono); white-space: nowrap; }
+.facts dt .k { display: block; color: var(--ink-worn); font-weight: 400; font-size: var(--fs-20); line-height: 1.4; }
+
+/* per-condition tally beside the printout, 1600px and up */
+.tally { display: none; gap: var(--s2); align-content: start; min-width: 0; }
+.tally h2 { font: 600 var(--fs-20)/1.3 var(--f-body); }
+.tally ol { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--perf); font: 400 var(--fs-16)/1.5 var(--f-mono); }
+.tally li { display: grid; gap: 2px; padding: var(--s1) var(--s2); }
+.tally li:nth-child(odd) { background: var(--band); }
+.tally li.all { font-weight: 600; border-top: 1px dashed var(--perf); }
+.tally .n { white-space: nowrap; }
+.facts dd { margin: 0; max-width: 32ch; }
+
+/* ---------- filter anatomy ---------- */
+.syntax { padding-block: var(--s12); }
+.syntax .wrap { display: grid; gap: var(--s6); }
+.syntax h2 { font: 900 var(--fs-39)/1.15 var(--f-display); max-width: 22ch; }
+.anatomy { margin: 0; display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); }
+.part { display: grid; gap: var(--s2); align-content: start; }
+.part code {
+  font: 600 var(--fs-39)/1.2 var(--f-mono); white-space: nowrap;
+  padding-bottom: var(--s2); border-bottom: 2px solid var(--ink);
+}
+.part.join code { color: var(--ink-worn); }
+.part p { max-width: 30ch; }
+.part.join p { min-width: 14ch; }
+.syntax-note { max-width: 62ch; font-size: var(--fs-20); line-height: 1.5; }
+
+/* ---------- closing install ---------- */
+.close { padding-block: var(--s12) var(--s8); }
+.close .wrap { display: grid; gap: var(--s4); }
+.close h2 { font: 900 var(--fs-39)/1.15 var(--f-display); }
+.foot { padding-block: var(--s4); }
+.foot .wrap { display: flex; justify-content: space-between; gap: var(--s2); flex-wrap: wrap; }
+.foot .wordmark { font-size: var(--fs-20); display: inline-block; padding-block: var(--s1); }
+
+/* ---------- widths ---------- */
+@media (max-width: 599px) {
+  .sheet { padding-inline: 0; border-inline: 0; background: var(--paper); }
+  .sheet-inner { border-inline: 1px solid var(--perf); }
+  .row { grid-template-columns: 2ch minmax(0, 1fr); }
+  .row .file { grid-column: 2; }
+  .row .line { grid-column: 2; }
+  .row .gut { grid-row: 1 / span 2; }
+  .install li { padding-inline: var(--s1); }
+  .install .btn { flex: 1 1 100%; }
+  .sheet-head { padding: var(--s2) var(--s1); }
+  .filter-input { font-size: var(--fs-14); padding-inline: 4px; }
+  .examples, .chip { min-width: 0; }
+  .chip { white-space: normal; text-align: left; line-height: 1.4; padding-block: 6px; }
+  .hero { padding-top: var(--s2); }
+  .top nav ul { gap: var(--s2); }
+}
+@media (min-width: 720px) {
+  .facts dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts dl > div:nth-child(odd) { background: transparent; }
+  .facts dl > div:nth-child(1), .facts dl > div:nth-child(2) { background: var(--band); }
+}
+@media (min-width: 1024px) {
+  .hero { padding-top: var(--s6); }
+  .hero .wrap { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+  .syntax .wrap { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); align-items: start; column-gap: var(--s8); }
+  .syntax h2 { align-self: start; }
+  .syntax .anatomy, .syntax .syntax-note { grid-column: 2; }
+  .close .wrap { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: center; column-gap: var(--s6); }
+}
+@media (min-width: 1200px) {
+  .facts dl { grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--band); }
+  .facts dl > div:nth-child(n) { background: transparent; }
+  .facts dl > div + div { border-left: 1px dashed var(--perf); }
+  .anatomy { grid-template-columns: auto auto auto; justify-content: start; column-gap: var(--s4); }
+}
+@media (min-width: 1600px) {
+  :root { --wrap: 1720px; }
+  .hero .wrap { grid-template-columns: minmax(0, 440px) minmax(0, 1fr) minmax(0, 280px); column-gap: var(--s6); }
+  .tally { display: grid; }
+  .lines { font-size: var(--fs-16); }
+  .row { grid-template-columns: 2ch 12ch minmax(0, 1fr); padding-block: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .row { transition: none; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="grepline home">grepline</a>
+    <nav aria-label="Page">
+      <ul>
+        <li><a href="#syntax">Filter syntax</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1 id="hero-title">Filter logs like a table, not like a string.</h1>
+        <p class="lede">grepline searches JSON and logfmt logs across many files with a SQL-like filter. One Rust binary, MIT licensed.</p>
+        <ul class="install" aria-label="Install commands">
+          <li>
+            <code class="cmd"><span class="prompt" aria-hidden="true">$ </span><span data-cmd>brew install grepline</span></code>
+            <button class="btn btn-primary" type="button" data-copy="brew install grepline"><span data-label>Copy</span><span class="sr"> brew install grepline</span></button>
+          </li>
+          <li>
+            <code class="cmd"><span class="prompt" aria-hidden="true">$ </span><span data-cmd>cargo install grepline</span></code>
+            <button class="btn" type="button" data-copy="cargo install grepline"><span data-label>Copy</span><span class="sr"> cargo install grepline</span></button>
+          </li>
+        </ul>
+        <p class="install-msg" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="sheet" id="printout">
+        <div class="sheet-inner">
+          <div class="sheet-head">
+            <div class="filter-field">
+              <label class="filter-label" for="filter">Filter</label>
+              <input class="filter-input" id="filter" type="text" value="level=error and latency_ms>500" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="filter-msg">
+              <p class="filter-msg" id="filter-msg"></p>
+            </div>
+            <div class="controls">
+              <fieldset class="fmt">
+                <legend>Print as</legend>
+                <label><input type="radio" name="fmt" value="json" checked><span>JSON</span></label>
+                <label><input type="radio" name="fmt" value="logfmt"><span>logfmt</span></label>
+              </fieldset>
+              <div class="examples">
+                <span id="try-label">Try</span>
+                <button class="chip" type="button" data-filter="level=warn">level=warn</button>
+                <button class="chip" type="button" data-filter="latency_ms>500">latency_ms&gt;500</button>
+                <button class="chip" type="button" data-filter="level=error and latency_ms>500">level=error and latency_ms&gt;500</button>
+              </div>
+            </div>
+          </div>
+          <ol class="lines" id="lines" aria-label="Log lines from three files">
+<!--ROWS-->
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">api.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;info&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/orders&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">42</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">gw.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;warn&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/checkout&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">905</span><span class="k">}</span></code></li>
+<li class="row hit"><span class="gut" aria-hidden="true">&#9654;</span><span class="file"><span class="sr">Match: </span>api.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v on">&quot;error&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/checkout&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v on">812</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">jobs.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;info&quot;</span><span class="k">, </span><span class="k">&quot;job&quot;:</span><span class="v">&quot;invoice.send&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">130</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">gw.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;error&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/orders&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">230</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">api.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;info&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/cart&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">61</span><span class="k">}</span></code></li>
+<li class="row hit"><span class="gut" aria-hidden="true">&#9654;</span><span class="file"><span class="sr">Match: </span>jobs.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v on">&quot;error&quot;</span><span class="k">, </span><span class="k">&quot;job&quot;:</span><span class="v">&quot;invoice.send&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v on">1460</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">api.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;warn&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/checkout&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">540</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">gw.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;info&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/health&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">3</span><span class="k">}</span></code></li>
+<li class="row hit"><span class="gut" aria-hidden="true">&#9654;</span><span class="file"><span class="sr">Match: </span>api.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v on">&quot;error&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/checkout&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v on">2210</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">jobs.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;info&quot;</span><span class="k">, </span><span class="k">&quot;job&quot;:</span><span class="v">&quot;report.daily&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">488</span><span class="k">}</span></code></li>
+<li class="row"><span class="gut" aria-hidden="true"></span><span class="file">gw.jsonl</span><code class="line"><span class="k">{</span><span class="k">&quot;level&quot;:</span><span class="v">&quot;error&quot;</span><span class="k">, </span><span class="k">&quot;route&quot;:</span><span class="v">&quot;/cart&quot;</span><span class="k">, </span><span class="k">&quot;latency_ms&quot;:</span><span class="v">97</span><span class="k">}</span></code></li>
+<!--/ROWS-->
+          </ol>
+          <p class="sheet-foot" id="summary" role="status" aria-live="polite">3 of 12 lines match level=error and latency_ms&gt;500</p>
+        </div>
+      </div>
+
+      <aside class="tally" aria-labelledby="tally-title">
+        <h2 id="tally-title">Condition by condition</h2>
+        <ol id="tally">
+<!--TALLY-->
+<li><code>level=error</code><span class="n">5 of 12 lines</span></li>
+<li><code>latency_ms&gt;500</code><span class="n">5 of 12 lines</span></li>
+<li class="all"><span>All of them</span><span class="n">3 of 12 lines</span></li>
+<!--/TALLY-->
+        </ol>
+      </aside>
+    </div>
+  </section>
+
+  <hr class="perf">
+
+  <section class="facts" aria-labelledby="facts-title">
+    <div class="wrap">
+      <h2 class="sr" id="facts-title">What you install</h2>
+      <dl>
+        <div><dt><span class="k">written_in=</span>rust</dt><dd>Built as a native executable from Rust source.</dd></div>
+        <div><dt><span class="k">license=</span>MIT</dt><dd>Use it at work, change it, ship it inside your own tooling.</dd></div>
+        <div><dt><span class="k">binaries=</span>1</dt><dd>One file on your PATH. Remove it and it is gone.</dd></div>
+        <div><dt><span class="k">reads=</span>json,logfmt</dt><dd>Structured logs in either format, searched across many files.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <hr class="perf">
+
+  <section class="syntax" id="syntax" aria-labelledby="syntax-title">
+    <div class="wrap">
+      <h2 id="syntax-title">Read the filter like a WHERE clause.</h2>
+      <div class="anatomy">
+        <div class="part"><code>level=error</code><p>A field equals a value. The field is a key in each log line.</p></div>
+        <div class="part join"><code>and</code><p>Both conditions must hold.</p></div>
+        <div class="part"><code>latency_ms&gt;500</code><p>Compares the field's value as a number.</p></div>
+      </div>
+      <p class="syntax-note">Field names are whatever your services already log, so the filter you write during an incident uses the same words as your dashboards.</p>
+    </div>
+  </section>
+
+  <hr class="perf">
+
+  <section class="close" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <h2 id="install-title">Put it on your PATH.</h2>
+      <div>
+        <ul class="install" aria-label="Install commands">
+          <li>
+            <code class="cmd"><span class="prompt" aria-hidden="true">$ </span><span data-cmd>brew install grepline</span></code>
+            <button class="btn btn-primary" type="button" data-copy="brew install grepline"><span data-label>Copy</span><span class="sr"> brew install grepline</span></button>
+          </li>
+          <li>
+            <code class="cmd"><span class="prompt" aria-hidden="true">$ </span><span data-cmd>cargo install grepline</span></code>
+            <button class="btn" type="button" data-copy="cargo install grepline"><span data-label>Copy</span><span class="sr"> cargo install grepline</span></button>
+          </li>
+        </ul>
+        <p class="install-msg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <a class="wordmark" href="#top">grepline</a>
+  </div>
+</footer>
+
+<script>
+/*RENDER-START*/
+var LOGS = [
+  ["api",  {level: "info",  route: "/orders",   latency_ms: 42}],
+  ["gw",   {level: "warn",  route: "/checkout", latency_ms: 905}],
+  ["api",  {level: "error", route: "/checkout", latency_ms: 812}],
+  ["jobs", {level: "info",  job: "invoice.send", latency_ms: 130}],
+  ["gw",   {level: "error", route: "/orders",   latency_ms: 230}],
+  ["api",  {level: "info",  route: "/cart",     latency_ms: 61}],
+  ["jobs", {level: "error", job: "invoice.send", latency_ms: 1460}],
+  ["api",  {level: "warn",  route: "/checkout", latency_ms: 540}],
+  ["gw",   {level: "info",  route: "/health",   latency_ms: 3}],
+  ["api",  {level: "error", route: "/checkout", latency_ms: 2210}],
+  ["jobs", {level: "info",  job: "report.daily", latency_ms: 488}],
+  ["gw",   {level: "error", route: "/cart",     latency_ms: 97}]
+];
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function parseFilter(text) {
+  var t = text.trim();
+  if (!t) return { conds: [] };
+  var parts = t.split(/\s+and\s+/i);
+  var conds = [];
+  for (var i = 0; i < parts.length; i++) {
+    var m = /^([A-Za-z_][\w.]*)\s*(=|>)\s*("?)([^"\s]+)\3$/.exec(parts[i].trim());
+    if (!m) return { error: parts[i].trim() };
+    if (m[2] === ">" && isNaN(Number(m[4]))) return { error: parts[i].trim() };
+    conds.push({ key: m[1], op: m[2], val: m[4] });
+  }
+  return { conds: conds };
+}
+
+function test(obj, c) {
+  if (!(c.key in obj)) return false;
+  if (c.op === "=") return String(obj[c.key]) === c.val;
+  return Number(obj[c.key]) > Number(c.val);
+}
+
+function renderRows(conds, fmt) {
+  var hits = 0, html = "";
+  LOGS.forEach(function (entry) {
+    var obj = entry[1];
+    var hit = conds.length > 0 && conds.every(function (c) { return test(obj, c); });
+    if (hit) hits++;
+    var on = {};
+    if (hit) conds.forEach(function (c) { on[c.key] = true; });
+    var keys = Object.keys(obj);
+    var body = keys.map(function (k) {
+      var raw = obj[k];
+      var val = typeof raw === "number" ? String(raw) : (fmt === "json" ? '"' + raw + '"' : raw);
+      var key = fmt === "json" ? '"' + k + '":' : k + "=";
+      return '<span class="k">' + esc(key) + '</span><span class="v' + (on[k] ? " on" : "") + '">' + esc(val) + "</span>";
+    }).join(fmt === "json" ? '<span class="k">, </span>' : " ");
+    if (fmt === "json") body = '<span class="k">{</span>' + body + '<span class="k">}</span>';
+    var file = entry[0] + (fmt === "json" ? ".jsonl" : ".log");
+    html += '<li class="row' + (hit ? " hit" : "") + '"><span class="gut" aria-hidden="true">' + (hit ? "&#9654;" : "") + "</span>" +
+      '<span class="file">' + (hit ? '<span class="sr">Match: </span>' : "") + esc(file) + "</span>" +
+      '<code class="line">' + body + "</code></li>\n";
+  });
+  return { html: html, hits: hits };
+}
+function renderTally(conds) {
+  if (!conds.length) return "";
+  function count(cs) { return LOGS.filter(function (e) { return cs.every(function (c) { return test(e[1], c); }); }).length; }
+  var html = conds.map(function (c) {
+    return '<li><code>' + esc(c.key + c.op + c.val) + '</code><span class="n">' + count([c]) + " of " + LOGS.length + " lines</span></li>";
+  }).join("\n");
+  if (conds.length > 1) html += '\n<li class="all"><span>All of them</span><span class="n">' + count(conds) + " of " + LOGS.length + " lines</span></li>";
+  return html + "\n";
+}
+/*RENDER-END*/
+
+(function () {
+  var input = document.getElementById("filter");
+  var msg = document.getElementById("filter-msg");
+  var list = document.getElementById("lines");
+  var summary = document.getElementById("summary");
+  var lastGood = parseFilter(input.value).conds;
+
+  function fmt() { return document.querySelector('input[name="fmt"]:checked').value; }
+
+  function update() {
+    var parsed = parseFilter(input.value);
+    if (parsed.error !== undefined) {
+      input.setAttribute("aria-invalid", "true");
+      msg.textContent = "Can't read “" + parsed.error + "”. Write each condition as field=value or field>number, and join them with and.";
+      return;
+    }
+    input.removeAttribute("aria-invalid");
+    msg.textContent = "";
+    lastGood = parsed.conds;
+    var out = renderRows(lastGood, fmt());
+    list.innerHTML = out.html;
+    document.getElementById("tally").innerHTML = renderTally(lastGood);
+    var f = input.value.trim().replace(/\s+/g, " ");
+    if (!lastGood.length) {
+      summary.textContent = "No filter: showing all " + LOGS.length + " lines. Type a condition such as level=error.";
+    } else if (out.hits === 0) {
+      summary.textContent = "0 of " + LOGS.length + " lines match " + f + ". Loosen a condition, or try level=error.";
+    } else {
+      summary.textContent = out.hits + " of " + LOGS.length + " lines match " + f;
+    }
+  }
+
+  input.addEventListener("input", update);
+  document.querySelectorAll('input[name="fmt"]').forEach(function (r) { r.addEventListener("change", update); });
+  document.querySelectorAll("[data-filter]").forEach(function (b) {
+    b.addEventListener("click", function () { input.value = b.getAttribute("data-filter"); update(); });
+  });
+
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    var label = btn.querySelector("[data-label]");
+    var status = btn.closest("ul").parentElement.querySelector(".install-msg");
+    var text = btn.getAttribute("data-copy");
+    var timer;
+    function done(ok) {
+      clearTimeout(timer);
+      if (ok) {
+        label.textContent = "Copied";
+        status.textContent = "Copied “" + text + "”. Paste it into your terminal.";
+      } else {
+        var node = btn.parentElement.querySelector("[data-cmd]");
+        var range = document.createRange();
+        range.selectNodeContents(node);
+        var sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(range);
+        status.textContent = "Your browser blocked copying. The command is selected: press Ctrl+C (⌘C on a Mac).";
+      }
+      timer = setTimeout(function () { label.textContent = "Copy"; }, 2000);
+    }
+    btn.addEventListener("click", function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else { done(false); }
+    });
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

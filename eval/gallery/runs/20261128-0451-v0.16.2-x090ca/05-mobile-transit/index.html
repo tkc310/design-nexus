@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>かわせみ号 時刻表</title>
+<meta name="description" content="コミュニティバス「かわせみ号」の停留所ごとの時刻表。次の3本の発車時刻と、あと何分で来るかを大きく表示します。">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Overpass:wght@700;800&display=swap">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --ink: #1B1C1D;
+  --ink-soft: #4E5257;
+  --pole: #2E3135;
+  --on-pole: #FFFFFF;
+  --livery: #0A6B3F;
+  --on-livery: #FFFFFF;
+  --edge: #5C6066;
+  --notice: #FFD43B;
+  --on-notice: #1B1C1D;
+  --cancel: #B42318;
+  --on-cancel: #FFFFFF;
+
+  --f-num: "Overpass", "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  /* scale: 18px base, ratio 1.25 */
+  --t-s: 0.889rem;   /* 16 */
+  --t-0: 1rem;       /* 18 */
+  --t-1: 1.25rem;    /* 22.5 */
+  --t-2: 1.5625rem;  /* 28 */
+  --t-3: 1.953rem;   /* 35 */
+  --t-5: 3.052rem;   /* 55 */
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+  --r: 8px;
+  --tap: 48px;
+  --page: 560px;
+  --pole-past: #5C6066;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #141618;
+    --ink: #F0F0EE;
+    --ink-soft: #B9BDC2;
+    --pole: #3A3F44;
+    --pole-past: #2A2D31;
+    --on-pole: #FFFFFF;
+    --livery: #57C98F;
+    --on-livery: #0B1F14;
+    --edge: #8A9097;
+    --notice: #F5C842;
+    --on-notice: #1B1C1D;
+    --cancel: #FFB4AB;
+    --on-cancel: #3B0906;
+  }
+}
+
+html { font-size: 112.5%; -webkit-text-size-adjust: 100%; }
+html[data-size="large"] { font-size: 131.25%; }
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--t-0);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+h1, h2, h3 { line-height: 1.35; text-wrap: balance; margin: 0; font-weight: 700; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; letter-spacing: 0; overflow-wrap: normal; white-space: nowrap; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- header: the top of the stop pole ---------- */
+.pole-top {
+  background: var(--pole);
+  color: var(--on-pole);
+  padding: calc(var(--s3) + env(safe-area-inset-top)) max(var(--s4), env(safe-area-inset-right)) var(--s3) max(var(--s4), env(safe-area-inset-left));
+}
+.pole-top__in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); max-width: calc(var(--page) - 2 * var(--s4)); margin: 0 auto; }
+.brand { display: flex; flex-direction: column; min-width: 0; }
+.brand h1 { font-size: var(--t-1); }
+.brand span { font-size: var(--t-s); }
+.size-btn {
+  flex: none;
+  min-height: var(--tap); padding: 0 var(--s3);
+  font: 700 var(--t-s)/1.2 var(--f-body);
+  color: var(--on-pole); background: transparent;
+  border: 2px solid var(--on-pole); border-radius: var(--r);
+  white-space: nowrap; cursor: pointer;
+  transition: transform 120ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+}
+.size-btn[aria-pressed="true"] { background: var(--on-pole); color: var(--pole); }
+.size-btn:focus-visible { outline-color: var(--on-pole); }
+
+/* ---------- layout ---------- */
+.wrap {
+  max-width: var(--page); margin: 0 auto;
+  padding: var(--s4) max(var(--s4), env(safe-area-inset-right)) var(--s7) max(var(--s4), env(safe-area-inset-left));
+  display: grid; gap: var(--s6);
+  grid-template-areas: "pick" "next" "notice" "table" "route";
+}
+.wrap > * { min-width: 0; }
+.a-pick { grid-area: pick; }
+.a-next { grid-area: next; }
+.a-notice { grid-area: notice; }
+.a-table { grid-area: table; }
+.a-route { grid-area: route; }
+
+@media (min-width: 900px) {
+  :root { --page: 1180px; }
+  .wrap {
+    column-gap: var(--s7); row-gap: var(--s6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "pick table" "next table" "notice table" "route table";
+    align-items: start;
+    grid-template-rows: auto auto auto 1fr;
+  }
+}
+@media (min-width: 1600px) {
+  :root { --page: 1640px; }
+  .wrap {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 0.7fr);
+    grid-template-areas: "pick table route" "next table route" "notice table route";
+    grid-template-rows: auto auto 1fr;
+  }
+}
+
+/* ---------- stop picker ---------- */
+.today { font-size: var(--t-0); font-weight: 700; margin-bottom: var(--s3); }
+.today .num { font-size: var(--t-1); }
+.pick-label { display: block; font-size: var(--t-0); font-weight: 700; margin-bottom: var(--s2); }
+.select-box { position: relative; }
+.select-box select {
+  appearance: none; -webkit-appearance: none;
+  width: 100%; min-height: 64px;
+  padding: var(--s2) 56px var(--s2) var(--s4);
+  font: 700 var(--t-2)/1.3 var(--f-body);
+  color: var(--ink); background: var(--ground);
+  border: 3px solid var(--livery); border-radius: var(--r);
+  cursor: pointer;
+}
+.select-box::after {
+  content: ""; position: absolute; right: 20px; top: 50%;
+  width: 14px; height: 14px; margin-top: -10px;
+  border-right: 4px solid var(--livery); border-bottom: 4px solid var(--livery);
+  transform: rotate(45deg); pointer-events: none;
+}
+.dir { margin-top: var(--s2); font-size: var(--t-0); }
+
+/* ---------- signature: the next-three board ---------- */
+.board-h { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); flex-wrap: wrap; }
+.board-h h2 { font-size: var(--t-2); }
+.board-h p { font-size: var(--t-0); }
+.board { list-style: none; margin: 0; padding: 0; border: 3px solid var(--ink); border-radius: var(--r); overflow: hidden; }
+.dep { display: flex; align-items: stretch; border-top: 2px solid var(--ink); }
+.dep:first-child { border-top: 0; }
+.dep__tab {
+  flex: none; width: 3.25rem;
+  background: var(--pole); color: var(--on-pole);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--t-s); font-weight: 700; line-height: 1.25; text-align: center;
+  letter-spacing: 0; white-space: nowrap;
+  padding: var(--s2) var(--s1);
+}
+.dep__body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: var(--s4); row-gap: 0; padding: var(--s3) var(--s4); }
+.dep__time { font-size: min(var(--t-5), 16.5vw); font-weight: 800; line-height: 1.1; }
+.dep__left { font-size: var(--t-1); font-weight: 700; }
+.dep__left .num { font-size: var(--t-3); font-weight: 800; padding: 0 2px; }
+.dep:not(:first-child) .dep__time { font-size: min(var(--t-3) * 1.25, 13vw); }
+.dep:not(:first-child) .dep__left .num { font-size: var(--t-2); }
+.dep--soon .dep__left { font-size: var(--t-2); }
+.dep--cancel .dep__tab { background: var(--cancel); color: var(--on-cancel); }
+.dep--cancel .dep__body { align-items: center; padding-top: var(--s2); padding-bottom: var(--s2); }
+.dep--cancel .dep__time { font-size: var(--t-2); text-decoration: line-through; text-decoration-thickness: 3px; }
+.dep--cancel .dep__left { font-size: var(--t-0); white-space: normal; }
+.board-empty { padding: var(--s5) var(--s4); font-size: var(--t-1); font-weight: 700; }
+.board-empty p + p { margin-top: var(--s2); font-size: var(--t-0); font-weight: 400; }
+
+/* ---------- notice: the sheet taped to the pole ---------- */
+.a-notice h2 { font-size: var(--t-1); margin-bottom: var(--s3); }
+.sheet {
+  background: var(--notice); color: var(--on-notice);
+  border-radius: 2px;
+  padding: var(--s4) var(--s4) var(--s5);
+  border-top: 8px solid var(--on-notice);
+}
+.sheet + .sheet { margin-top: var(--s4); }
+.sheet h3 { font-size: var(--t-1); margin-bottom: var(--s2); }
+.sheet p + p { margin-top: var(--s2); }
+.sheet .hit { font-weight: 700; }
+.calm { font-size: var(--t-0); padding: var(--s3) var(--s4); border: 2px solid var(--edge); border-radius: var(--r); }
+
+/* ---------- full timetable: hour band + minutes ---------- */
+.tt-h h2 { font-size: var(--t-2); }
+.tt-h p { margin-top: var(--s1); }
+.dia { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin: var(--s4) 0 var(--s3); border: 0; padding: 0; }
+.dia legend { font-size: var(--t-0); font-weight: 700; margin-bottom: var(--s2); padding: 0; }
+.dia label { position: relative; display: block; }
+.dia input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.dia span {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60px; padding: var(--s1) var(--s2);
+  border: 2px solid var(--ink); border-radius: var(--r);
+  font-size: var(--t-1); font-weight: 700; line-height: 1.2; text-align: center;
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+}
+.dia small { font-size: var(--t-s); font-weight: 700; margin-top: 2px; }
+.dia input:checked + span { background: var(--livery); color: var(--on-livery); border-color: var(--livery); }
+.dia input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 3px; }
+.dia-note { font-size: var(--t-0); margin-bottom: var(--s3); }
+.dia-note strong { font-weight: 700; }
+
+.tt { list-style: none; margin: 0; padding: 0; border: 3px solid var(--ink); border-radius: var(--r); overflow: hidden; }
+.tt li { display: flex; border-top: 2px solid var(--ink); }
+.tt li:first-child { border-top: 0; }
+.tt__hour {
+  flex: none; width: 3.25rem; background: var(--pole); color: var(--on-pole);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--t-2); font-weight: 800;
+}
+.tt__mins { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); padding: var(--s2) var(--s3); align-items: center; }
+.m { display: inline-flex; align-items: center; gap: var(--s1); font-size: var(--t-2); font-weight: 700; line-height: 1.2; padding: 2px 6px; border: 2px solid transparent; border-radius: 4px; }
+.m--past { color: var(--ink-soft); font-weight: 700; }
+.tt li.is-past .tt__hour { background: var(--pole-past); }.m--next { border-color: var(--ink); }
+.m--cancel .num { text-decoration: line-through; text-decoration-thickness: 3px; color: var(--ink-soft); }
+.tag { font-family: var(--f-body); font-size: var(--t-s); font-weight: 700; line-height: 1.3; padding: 1px 6px; border-radius: 3px; background: var(--cancel); color: var(--on-cancel); white-space: nowrap; }
+.tt-foot { margin-top: var(--s3); font-size: var(--t-0); }
+.key { margin-top: var(--s3); display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); font-size: var(--t-s); color: var(--ink); }
+.key span { display: inline-flex; align-items: center; gap: var(--s2); }
+.key .m { font-size: var(--t-0); }
+
+/* ---------- route: the stop list, same band unit ---------- */
+.a-route h2 { font-size: var(--t-1); }
+.a-route > p { margin: var(--s1) 0 var(--s3); }
+.route { list-style: none; margin: 0; padding: 0; border: 3px solid var(--ink); border-radius: var(--r); overflow: hidden; }
+.route li + li { border-top: 2px solid var(--ink); }
+.route button {
+  width: 100%; min-height: 56px; display: flex; align-items: stretch; gap: 0;
+  font: inherit; color: var(--ink); background: var(--ground); border: 0; padding: 0; text-align: left; cursor: pointer;
+  transition: background-color 160ms ease, transform 120ms var(--ease-out);
+}
+.route .r-off { flex: none; width: 3.25rem; background: var(--pole); color: var(--on-pole); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.route .r-off .num { font-size: var(--t-1); font-weight: 800; }
+.route .r-off small { font-size: var(--t-s); }
+.route .r-name { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s2) var(--s4); font-size: var(--t-1); font-weight: 700; }
+.route .r-here { font-size: var(--t-s); white-space: nowrap; }
+.route button[aria-current="location"] .r-off { background: var(--livery); color: var(--on-livery); }
+.route button[aria-current="location"] .r-name { box-shadow: inset 0 0 0 3px var(--livery); }
+.route button:focus-visible { outline-offset: -4px; }
+.route-end { margin-top: var(--s2); }
+
+.foot { border-top: 2px solid var(--ink); width: calc(100% - 2 * var(--s4)); max-width: calc(var(--page) - 2 * var(--s4)); margin: 0 auto; padding: var(--s5) 0 calc(var(--s6) + env(safe-area-inset-bottom)); font-size: var(--t-0); }
+
+@media (hover: hover) and (pointer: fine) {
+  .size-btn:hover { background: rgb(255 255 255 / 0.14); }
+  .size-btn[aria-pressed="true"]:hover { background: var(--on-pole); }
+  .route button:hover .r-name { text-decoration: underline; text-underline-offset: 4px; }
+}
+.size-btn:active, .route button:active, .dia label:active span { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .size-btn, .route button, .dia span { transition: background-color 160ms ease, color 160ms ease; }
+  .size-btn:active, .route button:active, .dia label:active span { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="pole-top">
+  <div class="pole-top__in">
+    <div class="brand">
+      <h1><span class="nw">かわせみ号</span> <span class="nw">時刻表</span></h1>
+      <span><span class="nw">コミュニティバス</span> <span class="nw">市内循環</span></span>
+    </div>
+    <button type="button" class="size-btn" id="sizeBtn" aria-pressed="false">文字を大きく</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="a-pick" aria-label="停留所の選択">
+    <p class="today" id="today"></p>
+    <label class="pick-label" for="stop">停留所を選んでください</label>
+    <div class="select-box">
+      <select id="stop" aria-describedby="dir"></select>
+    </div>
+    <p class="dir" id="dir"></p>
+  </section>
+
+  <section class="a-next" aria-labelledby="nextH">
+    <div class="board-h">
+      <h2 id="nextH">次のバス</h2>
+      <p id="nextSub"></p>
+    </div>
+    <div id="board"></div>
+  </section>
+
+  <section class="a-notice" aria-labelledby="noticeH">
+    <h2 id="noticeH">運休のお知らせ</h2>
+    <div id="notices"></div>
+  </section>
+
+  <section class="a-table" aria-labelledby="ttH">
+    <div class="tt-h">
+      <h2 id="ttH"></h2>
+    </div>
+    <fieldset class="dia">
+      <legend>ダイヤ</legend>
+      <label><input type="radio" name="dia" value="weekday"><span>平日<small id="wdToday"></small></span></label>
+      <label><input type="radio" name="dia" value="holiday"><span>土日祝<small id="hdToday"></small></span></label>
+    </fieldset>
+    <p class="dia-note" id="diaNote"></p>
+    <ol class="tt" id="tt"></ol>
+    <div class="key" aria-hidden="true">
+      <span><span class="m m--next num">42</span>次の便</span>
+      <span><span class="m m--past num">12</span>発車済み</span>
+      <span><span class="m m--cancel"><span class="num">22</span><span class="tag">運休</span></span>運休の便</span>
+    </div>
+  </section>
+
+  <section class="a-route" aria-labelledby="routeH">
+    <h2 id="routeH">路線と所要時間</h2>
+    <p>中央駅前を出て、市内をひとまわりします。停留所を押すと、その時刻表に切り替わります。</p>
+    <ol class="route" id="route"></ol>
+    <p class="route-end">約50分で中央駅前に戻ります。</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>道路の混み具合により、時刻どおりに着かないことがあります。時間に余裕をもって停留所でお待ちください。</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var STOPS = [
+    { id: "eki", name: "中央駅前", off: 0 },
+    { id: "honmachi", name: "本町三丁目", off: 5 },
+    { id: "shiyakusho", name: "市役所前", off: 12 },
+    { id: "toshokan", name: "図書館前", off: 17 },
+    { id: "byoin", name: "市民病院", off: 23 },
+    { id: "asahi", name: "旭町", off: 30 },
+    { id: "fureai", name: "ふれあいセンター", off: 36 },
+    { id: "undo", name: "運動公園", off: 42 }
+  ];
+  var LOOP = 50;
+
+  // Departure times from 中央駅前 (start of each loop).
+  var TRIPS = {
+    weekday: ["06:50", "07:30", "08:10", "08:50", "09:30", "10:30", "11:10", "11:50", "12:30", "13:30", "14:30", "15:10", "15:50", "16:30", "17:10", "17:50", "18:30", "19:10"],
+    holiday: ["08:30", "09:50", "11:10", "12:30", "13:50", "15:10", "16:30"]
+  };
+  var DIA_NAME = { weekday: "平日", holiday: "土日祝" };
+
+  var HOLIDAYS = ["2026-11-03", "2026-11-23", "2027-01-01", "2027-01-11", "2027-02-11", "2027-02-23", "2027-03-21", "2027-03-22"];
+
+  // Notices: shown while today is within [showFrom, showTo].
+  // Either cancels specific trips on one date, or every trip between from and to.
+  var NOTICES = [
+    {
+      showFrom: "2026-10-28", showTo: "2026-11-04",
+      date: "2026-11-04", trips: ["11:10", "11:50"],
+      title: '<span class="nw">11月4日(水)は、</span><span class="nw">お昼前後の</span>2便が運休です',
+      body: "本町通りの水道工事のため、中央駅前を11時10分と11時50分に出る2便を運休します。"
+    },
+    {
+      showFrom: "2026-12-01", showTo: "2027-01-03",
+      from: "2026-12-29", to: "2027-01-03", all: true,
+      title: "年末年始は、すべての便が運休です",
+      body: "12月29日(火)から1月3日(日)まで、すべての便を運休します。1月4日(月)から平日ダイヤで運行します。"
+    }
+  ];
+
+  var WD = ["日", "月", "火", "水", "木", "金", "土"];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function store(k, v) {
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; }
+    return null;
+  }
+
+  // Japan time regardless of the phone's setting.
+  function nowJst() {
+    var d = new Date(Date.now() + 9 * 3600 * 1000);
+    return {
+      y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(), w: d.getUTCDay(),
+      sec: d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds(),
+      key: d.toISOString().slice(0, 10)
+    };
+  }
+  function addDays(key, n) {
+    var d = new Date(key + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n);
+    return { key: d.toISOString().slice(0, 10), mo: d.getUTCMonth() + 1, d: d.getUTCDate(), w: d.getUTCDay() };
+  }
+  function diaOf(key, w) { return (w === 0 || w === 6 || HOLIDAYS.indexOf(key) >= 0) ? "holiday" : "weekday"; }
+  function toMin(hhmm) { var p = hhmm.split(":"); return +p[0] * 60 + +p[1]; }
+  function fmt(min) { var h = Math.floor(min / 60), m = min % 60; return h + ":" + (m < 10 ? "0" : "") + m; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function cancelFor(key, tripStart) {
+    for (var i = 0; i < NOTICES.length; i++) {
+      var n = NOTICES[i];
+      if (n.all && key >= n.from && key <= n.to) return n;
+      if (n.date === key && n.trips && n.trips.indexOf(tripStart) >= 0) return n;
+    }
+    return null;
+  }
+  function departures(stop, dia, key) {
+    return TRIPS[dia].map(function (t) {
+      return { min: toMin(t) + stop.off, trip: t, cancel: key ? cancelFor(key, t) : null };
+    });
+  }
+
+  var state = {
+    stop: STOPS[2],
+    dia: null,
+    diaTouched: false
+  };
+
+  // ---- setup ----
+  var sel = $("stop");
+  sel.innerHTML = STOPS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
+  var saved = store("kawasemi-stop") || (location.hash ? location.hash.slice(1) : null);
+  STOPS.forEach(function (s) { if (s.id === saved) state.stop = s; });
+  sel.value = state.stop.id;
+  sel.addEventListener("change", function () { setStop(sel.value, false); });
+
+  function setStop(id, fromRoute) {
+    STOPS.forEach(function (s) { if (s.id === id) state.stop = s; });
+    sel.value = state.stop.id;
+    store("kawasemi-stop", state.stop.id);
+    render();
+    if (fromRoute) {
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector(".a-pick").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      sel.focus({ preventScroll: true });
+    }
+  }
+
+  var sizeBtn = $("sizeBtn");
+  function applySize(large) {
+    document.documentElement.setAttribute("data-size", large ? "large" : "normal");
+    sizeBtn.setAttribute("aria-pressed", large ? "true" : "false");
+  }
+  applySize(store("kawasemi-size") === "large");
+  sizeBtn.addEventListener("click", function () {
+    var large = sizeBtn.getAttribute("aria-pressed") !== "true";
+    applySize(large); store("kawasemi-size", large ? "large" : "normal");
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="dia"]'), function (r) {
+    r.addEventListener("change", function () { state.dia = r.value; state.diaTouched = true; renderTable(nowJst()); });
+  });
+
+  $("route").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-stop]");
+    if (b) setStop(b.getAttribute("data-stop"), true);
+  });
+
+  // ---- render ----
+  function nextStops(stop) {
+    var i = STOPS.indexOf(stop);
+    var a = STOPS[(i + 1) % STOPS.length], b = STOPS[(i + 2) % STOPS.length];
+    return a.name + "・" + b.name;
+  }
+
+  function leftText(diffSec) {
+    var m = Math.floor(diffSec / 60);
+    if (m < 1) return null;
+    if (m < 60) return '<span class="nw">あと<span class="num">' + m + "</span>分</span>";
+    var h = Math.floor(m / 60), r = m % 60;
+    return '<span class="nw">あと<span class="num">' + h + "</span>時間</span>" + (r ? '<span class="nw"><span class="num">' + r + "</span>分</span>" : "");
+  }
+
+  function renderBoard(now) {
+    var dia = diaOf(now.key, now.w);
+    var deps = departures(state.stop, dia, now.key);
+    var nowMin = now.sec / 60;
+    var allOff = cancelFor(now.key, TRIPS[dia][0]);
+    var labels = ["つぎ", "その次", "3本目"];
+    var rows = [], running = 0;
+    $("nextSub").innerHTML = '<span class="nw">' + DIA_NAME[dia] + "ダイヤ</span>";
+
+    if (!(allOff && allOff.all)) {
+      for (var i = 0; i < deps.length && running < 3; i++) {
+        var d = deps[i];
+        if (d.min * 60 < now.sec - 30) continue;
+        if (d.cancel) {
+          rows.push('<li class="dep dep--cancel"><span class="dep__tab">運休</span><div class="dep__body">' +
+            '<span class="dep__time num">' + fmt(d.min) + "</span>" +
+            '<span class="dep__left">この便は運休です</span></div></li>');
+          continue;
+        }
+        var lt = leftText(d.min * 60 - now.sec);
+        rows.push('<li class="dep' + (lt ? "" : " dep--soon") + '"><span class="dep__tab">' + labels[running] + "</span>" +
+          '<div class="dep__body"><time class="dep__time num" datetime="' + now.key + "T" + pad(Math.floor(d.min / 60)) + ":" + pad(d.min % 60) + '">' + fmt(d.min) + "</time>" +
+          '<span class="dep__left">' + (lt || "まもなく発車") + "</span></div></li>");
+        running++;
+      }
+    }
+
+    var html;
+    if (allOff && allOff.all) {
+      html = '<div class="board board-empty"><p>きょうは、すべての便が運休です。</p><p>' + esc(allOff.body) + "</p></div>";
+    } else if (running === 0) {
+      html = '<div class="board board-empty"><p>きょうの運行は終わりました。</p><p>' + firstTomorrow(now) + "</p></div>";
+    } else {
+      html = '<ol class="board">' + rows.join("") + "</ol>";
+      if (running < 3) html += '<p class="tt-foot">このあとの便はありません。' + firstTomorrow(now) + "</p>";
+    }
+    $("board").innerHTML = html;
+  }
+
+  function firstTomorrow(now) {
+    for (var n = 1; n <= 10; n++) {
+      var t = addDays(now.key, n), dia = diaOf(t.key, t.w);
+      var deps = departures(state.stop, dia, t.key).filter(function (d) { return !d.cancel; });
+      if (deps.length) {
+        var when = n === 1 ? "あす" : '<span class="nw">' + t.mo + "月" + t.d + "日(" + WD[t.w] + ")</span>";
+        if (n === 1) when += '<span class="nw">(' + t.mo + "月" + t.d + "日・" + WD[t.w] + ")</span>";
+        return when + "の始発は <span class=\"num\">" + fmt(deps[0].min) + "</span> です。";
+      }
+    }
+    return "";
+  }
+
+  function renderNotices(now) {
+    var out = [];
+    NOTICES.forEach(function (n) {
+      if (now.key < n.showFrom || now.key > n.showTo) return;
+      var hit = "";
+      if (n.trips) {
+        var dia = diaOf(n.date, addDays(n.date, 0).w);
+        var times = TRIPS[dia].filter(function (t) { return n.trips.indexOf(t) >= 0; })
+          .map(function (t) { return '<span class="num">' + fmt(toMin(t) + state.stop.off) + "</span>"; });
+        hit = '<p class="hit">' + esc(state.stop.name) + "では " + times.join("と") + " の便が来ません。</p>";
+      }
+      out.push('<article class="sheet"><h3>' + n.title + "</h3><p>" + esc(n.body) + "</p>" + hit + "</article>");
+    });
+    $("notices").innerHTML = out.length ? out.join("") : '<p class="calm">きょうは、運休の便はありません。</p>';
+  }
+
+  function renderTable(now) {
+    var todayDia = diaOf(now.key, now.w);
+    if (!state.diaTouched || !state.dia) state.dia = todayDia;
+    var dia = state.dia, isToday = dia === todayDia;
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="dia"]'), function (r) { r.checked = r.value === dia; });
+    $("wdToday").textContent = todayDia === "weekday" ? "きょう" : "";
+    $("hdToday").textContent = todayDia === "holiday" ? "きょう" : "";
+    $("ttH").innerHTML = '<span class="nw">' + esc(state.stop.name) + "</span>の時刻表";
+    $("diaNote").innerHTML = isToday
+      ? "きょう(" + now.mo + "月" + now.d + "日)の時刻です。"
+      : "<strong>" + DIA_NAME[dia] + "の時刻を表示しています。</strong>きょうは" + DIA_NAME[todayDia] + "ダイヤです。";
+
+    var deps = departures(state.stop, dia, isToday ? now.key : null);
+    var nextShown = 0, hours = {}, order = [];
+    deps.forEach(function (d) {
+      var h = Math.floor(d.min / 60);
+      if (!hours[h]) { hours[h] = []; order.push(h); }
+      var cls = "m", extra = "", label = "";
+      if (isToday && d.cancel) { cls += " m--cancel"; extra = '<span class="tag">運休</span>'; }
+      else if (isToday && d.min * 60 < now.sec - 30) { cls += " m--past"; label = '<span class="vh">発車済み</span>'; }
+      else if (isToday && nextShown < 3) { cls += " m--next"; label = '<span class="vh">次の便</span>'; nextShown++; }
+      hours[h].push('<span class="' + cls + '"><span class="num">' + pad(d.min % 60) + "</span>" + label + extra + "</span>");
+    });
+    $("tt").innerHTML = order.map(function (h) {
+      var past = isToday && (h + 1) * 3600 <= now.sec;
+      return '<li' + (past ? ' class="is-past"' : "") + '><span class="tt__hour num">' + h + '<span class="vh">時</span></span><span class="tt__mins">' + hours[h].join("") + "</span></li>";
+    }).join("");
+  }
+
+  function renderRoute() {
+    $("route").innerHTML = STOPS.map(function (s) {
+      var cur = s === state.stop;
+      return '<li><button type="button" data-stop="' + s.id + '"' + (cur ? ' aria-current="location"' : "") + ">" +
+        '<span class="r-off">' + (s.off ? '<span class="num">' + s.off + "</span><small>分</small>" : "<small>始発</small>") + "</span>" +
+        '<span class="r-name"><span>' + esc(s.name) + "</span>" + (cur ? '<span class="r-here">表示中</span>' : "") + "</span></button></li>";
+    }).join("");
+  }
+
+  function renderToday(now) {
+    var h = Math.floor(now.sec / 3600), m = Math.floor(now.sec / 60) % 60;
+    $("today").innerHTML = '<span class="nw">' + now.mo + "月" + now.d + "日(" + WD[now.w] + ")</span> " +
+      '<span class="nw"><span class="num">' + h + ":" + pad(m) + "</span> 現在</span>";
+  }
+
+  var lastMinute = -1;
+  function render() {
+    var now = nowJst();
+    lastMinute = Math.floor(now.sec / 60);
+    $("dir").innerHTML = "このバスは <span class=\"nw\">" + esc(nextStops(state.stop)) + "</span> の方へ進みます。";
+    renderToday(now);
+    renderBoard(now);
+    renderNotices(now);
+    renderTable(now);
+    renderRoute();
+  }
+  render();
+  setInterval(function () {
+    var now = nowJst();
+    if (Math.floor(now.sec / 60) !== lastMinute) {
+      lastMinute = Math.floor(now.sec / 60);
+      renderToday(now); renderBoard(now); renderNotices(now); renderTable(now);
+    }
+  }, 5000);
+})();
+</script>
+</body>
+</html>

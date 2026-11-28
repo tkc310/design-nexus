@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c4a40">
+<title>しおかぜ号 時刻表|汐見市コミュニティバス</title>
+<meta name="description" content="汐見市コミュニティバス しおかぜ号の時刻表。停留所をえらぶと、つぎのバス3本と「あと何分」、きょうの全時刻、運休のお知らせを表示します。">
+<!--
+  前提(質問できないため、次の仮定で作っています)
+  1. 「汐見市」「しおかぜ号」、停留所、時刻、運休のお知らせ、電話番号はすべて架空の見本データです。
+  2. 路線は一方向の市内循環1路線(1周38分)としました。方面の切り替えが不要になり、操作が
+     「停留所をえらぶ」だけで済みます。
+  3. 時刻は端末の設定にかかわらず日本時間で計算します。
+  4. 「つぎのバス」は常にきょうの実際のダイヤで表示し、平日/土日祝の切り替えは下の時刻表だけに効きます
+     (別の曜日の表を見ている間に「あと何分」が嘘になるのを避けるため)。
+  5. 祝日は 2026〜2027年分を内蔵しています。実運用ではサーバーから配信する想定です。
+  6. 初回は起点の「汐見駅前」を選んだ状態で開き、選んだ停留所と文字サイズは端末に記憶します。
+  7. 見本として「きょう 汐見駅前 13:00 発の便が運休」を常に入れています。
+  8. 確認用に ?now=2026-11-16T08:05 のように日本時間を指定できます。
+-->
+<style>
+/* design-nexus: keep R08 because every hex is a named token here; the extra ones are the red (運休 today) and amber (upcoming notices) ink+tint pairs and the focus blue, each a separate status an elderly rider must tell apart */
+:root{
+  --paper:#f5f1e6;
+  --card:#ffffff;
+  --ink:#13201c;
+  --ink-2:#414d48;
+  --past:#646b67;
+  --rule:#cbc5b3;
+  --green:#0c4a40;
+  --green-tint:#e3efe9;
+  --sun:#ffd84d;
+  --red:#a8221a;
+  --red-tint:#fdeeea;
+  --amber-tint:#fff4cf;
+  --amber-ink:#5a4300;
+  --focus:#0b57d0;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{font-size:112.5%;word-break:auto-phrase;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.large{font-size:131.25%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","BIZ UDPGothic","Yu Gothic UI","Noto Sans JP","Noto Sans CJK JP",Meiryo,sans-serif;
+  line-height:1.7;font-feature-settings:"palt" 0;
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+h1,h2,h3,p,ul,ol{margin:0;padding:0}
+h1,h2,h3{text-wrap:balance}
+ul,ol{list-style:none}
+.wrap{max-width:34rem;margin:0 auto;padding:0 16px}
+.nb{display:inline-block}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- header ---------- */
+.top{background:var(--green);color:var(--card)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding-top:10px;padding-bottom:10px}
+.brand small{display:block;font-size:.78rem;line-height:1.3;opacity:.95}
+.brand strong{display:block;font-size:1.3rem;line-height:1.3;letter-spacing:.04em}
+.brand strong span{font-size:.85rem;font-weight:600;margin-left:.5em;letter-spacing:0}
+.size{display:flex;align-items:center;gap:8px}
+.size-label{font-size:.78rem;line-height:1.2}
+.size-btns{display:flex;border:2px solid var(--card);border-radius:10px;overflow:hidden}
+.size-btns button{min-width:48px;min-height:48px;padding:0 10px;border:0;background:transparent;color:var(--card);font-weight:700;font-size:.9rem}
+.size-btns button+button{border-left:2px solid var(--card)}
+.size-btns button[aria-pressed="true"]{background:var(--card);color:var(--green)}
+.size-btns button:focus-visible{outline-color:var(--sun);outline-offset:-5px}
+
+main{padding:16px 0 8px}
+/* polish: one gap between every block in main; the old sibling rules missed div/details neighbours, so the boxes touched */
+main>*+*{margin-top:16px}
+
+/* ---------- stop ---------- */
+/* polish: the stop sits on the paper instead of a fourth framed box, so つぎのバス is the first read */
+.stop{padding:0 2px}
+.stop-label{font-size:.83rem;color:var(--ink-2);font-weight:600}
+.stop-name{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.badge{flex:none;display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--green);color:var(--card);font-weight:700;font-size:1.05rem}
+.stop-name h1{font-size:1.6rem;line-height:1.25;font-weight:800;overflow-wrap:anywhere}
+.stop-name h1 small{display:block;font-size:.78rem;font-weight:500;color:var(--ink-2);letter-spacing:.06em}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:.5em;width:100%;min-height:56px;padding:8px 14px;
+  border-radius:12px;border:2px solid var(--green);background:var(--green-tint);color:var(--green);font-weight:800;font-size:1.05rem;text-decoration:none;
+}
+.btn:active{background:var(--card)}
+
+/* ---------- today alert ---------- */
+.alert{display:flex;gap:10px;background:var(--red-tint);border:3px solid var(--red);border-radius:16px;padding:12px 14px}
+.alert svg{flex:none;width:1.9rem;height:1.9rem;margin-top:.15rem}
+.alert h2{font-size:1.1rem;color:var(--red);line-height:1.4}
+.alert p{font-size:1.05rem;font-weight:700;line-height:1.5}
+.alert p.why{font-size:.9rem;font-weight:500;color:var(--ink-2)}
+
+/* ---------- next buses ---------- */
+.next{background:var(--green);color:var(--card);border-radius:20px;padding:14px 16px 12px}
+.next-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 12px}
+.next-head h2{font-size:1.1rem;letter-spacing:.06em}
+.next-head .now{font-size:.95rem;font-weight:600}
+.first{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 14px;margin-top:2px}
+.first .time{font-size:3.6rem;font-weight:800;line-height:1.1}
+.first .time .unit{font-size:1.05rem;font-weight:700;margin-left:.2em}
+.first .left{font-size:1.2rem;font-weight:800;color:var(--sun);line-height:1.1;white-space:nowrap}
+.first .left .num{font-size:3rem;margin:0 .08em}
+.first .left.soon{font-size:2rem;line-height:1.5}
+.later{margin-top:10px;border-top:2px solid rgba(255,255,255,.45)}
+.later li{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.35)}
+.later li:last-child{border-bottom:0}
+.later .ord{width:3rem;font-size:.83rem;font-weight:600}
+.later .time{font-size:2rem;font-weight:800;line-height:1.2}
+.later .left{margin-left:auto;font-size:1.15rem;font-weight:800;color:var(--sun);white-space:nowrap}
+.later .left .num{font-size:1.5rem;margin:0 .06em}
+.x-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0}
+.x-row s{font-size:1.5rem;font-weight:700;text-decoration-thickness:3px}
+.x-tag{background:var(--card);color:var(--red);font-weight:800;font-size:.95rem;border-radius:6px;padding:2px 10px}
+.x-row+.first{border-top:1px solid rgba(255,255,255,.35);padding-top:4px}
+.next-foot{margin-top:8px;padding-top:8px;border-top:2px solid rgba(255,255,255,.45);font-size:.88rem;font-weight:600}
+.big-msg{font-size:1.6rem;font-weight:800;line-height:1.4;margin-top:6px}
+.sub-msg{font-size:1rem;margin-top:4px}
+.tomorrow-h{margin-top:12px;font-size:1rem;font-weight:700;color:var(--sun)}
+
+/* ---------- upcoming notices ---------- */
+.upcoming{background:var(--amber-tint);border:2px solid var(--amber-ink);border-radius:16px}
+.upcoming summary{display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 14px;cursor:pointer;font-weight:800;font-size:1.02rem;line-height:1.4;color:var(--amber-ink);list-style:none;border-radius:14px}
+.upcoming summary::-webkit-details-marker{display:none}
+.upcoming summary svg{flex:none;width:1.6rem;height:1.6rem}
+.upcoming summary .t{flex:1}
+.upcoming summary .t small{display:block;font-size:.83rem;font-weight:600}
+.upcoming summary .chev{flex:none;font-size:.83rem;border:2px solid var(--amber-ink);border-radius:999px;padding:4px 12px;background:var(--card);white-space:nowrap}
+.upcoming[open] .chev .o,.upcoming:not([open]) .chev .c{display:none}
+.upcoming ul{padding:0 14px 6px}
+.upcoming li{border-top:2px solid rgba(90,67,0,.3);padding:10px 0}
+.upcoming li h3{font-size:1.1rem;line-height:1.4}
+.upcoming li p{font-size:1rem;line-height:1.55}
+.upcoming li p.why{font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- timetable ---------- */
+.tt h2{font-size:1.3rem;line-height:1.35}
+.tt .sub{font-size:.9rem;color:var(--ink-2)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.seg button{min-height:60px;border-radius:12px;border:2px solid var(--ink);background:var(--card);font-weight:800;font-size:1.15rem;line-height:1.2;padding:6px}
+.seg button small{display:block;font-size:.75rem;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.note{background:var(--card);border-left:6px solid var(--ink);border-radius:6px;padding:10px 12px;font-size:.95rem;font-weight:600;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:2px solid var(--ink);border-radius:14px;overflow:hidden;border-style:hidden;box-shadow:0 0 0 2px var(--ink)}
+tr+tr>*{border-top:1px solid var(--rule)}
+th{width:4rem;padding:8px 4px;background:var(--paper);font-size:1.15rem;font-weight:800;text-align:center;vertical-align:top;line-height:2.6rem;white-space:nowrap}
+th small{font-size:.75rem;font-weight:700;margin-left:1px}
+td{padding:8px 10px;vertical-align:top}
+tr.cur th{background:var(--green);color:var(--card)}
+.mins{display:flex;flex-wrap:wrap;gap:6px 8px}
+.m{min-width:3.3rem;padding:0 6px;border-radius:10px;text-align:center;border:2px solid transparent}
+.m b{display:block;font-size:1.6rem;line-height:2.4rem;font-weight:800}
+.m small{display:block;font-size:.75rem;font-weight:800;line-height:1.2;padding-bottom:5px;margin-top:-3px}
+.m.past b{color:var(--past);font-weight:500}
+.m.next{background:var(--green);color:var(--card)}
+.m.x{border-color:var(--red);background:var(--red-tint)}
+.m.x b{color:var(--ink-2);font-weight:500;text-decoration:line-through;text-decoration-thickness:2px}
+.m.x small{color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:.83rem;color:var(--ink-2);font-weight:600}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:1.5rem;height:1.1rem;border-radius:5px;border:2px solid transparent;font-style:normal}
+.legend .l-next{background:var(--green)}
+.legend .l-x{background:var(--red-tint);border-color:var(--red)}
+.legend .l-past{color:var(--past);font-weight:500;width:auto;height:auto;font-size:1rem;line-height:1}
+
+/* ---------- footer ---------- */
+.info{margin:24px 0 0;padding:18px 0 28px;border-top:2px solid var(--ink)}
+.info h2{font-size:1.05rem}
+.info dl{margin:6px 0 14px;font-size:.95rem}
+.info dt{font-weight:800;float:left;clear:left;width:4.2em}
+.info dd{margin:0 0 2px 4.2em}
+.info .fine{font-size:.8rem;line-height:1.8;color:var(--ink-2);margin-top:12px}
+
+/* ---------- stop picker ---------- */
+dialog{width:100%;max-width:34rem;height:100%;max-height:100dvh;margin:0 auto;padding:0;border:0;background:var(--paper);color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,17,.7)}
+.dlg-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green);color:var(--card);padding:10px 16px}
+.dlg-head h2{font-size:1.2rem}
+.dlg-head button{min-height:48px;padding:0 16px;border-radius:10px;border:2px solid var(--card);background:transparent;color:var(--card);font-weight:800;font-size:1rem}
+.dlg-head button:focus-visible{outline-color:var(--sun)}
+.dlg-lead{padding:12px 16px 4px;font-size:.9rem;color:var(--ink-2);font-weight:600}
+.stops{padding:4px 16px 8px}
+.stops li{position:relative}
+.stops li::before{content:"";position:absolute;left:calc(14px + 1.1rem - 3px);top:0;bottom:0;width:6px;background:var(--green)}
+.stops li:first-child::before{top:50%}
+.stops button{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:68px;margin:0;padding:8px 12px 8px 14px;text-align:left;border:2px solid transparent;border-radius:14px;background:transparent}
+.stops button .badge{background:var(--card);color:var(--green);border:4px solid var(--green);font-size:1rem}
+.stops button .n{flex:1;font-size:1.3rem;font-weight:800;line-height:1.25}
+.stops button .n small{display:block;font-size:.75rem;font-weight:500;color:var(--ink-2);letter-spacing:.06em}
+.stops button .sel{flex:none;font-size:.8rem;font-weight:800;background:var(--green);color:var(--card);border-radius:999px;padding:3px 10px}
+.stops button[aria-current="true"]{background:var(--card);border-color:var(--ink)}
+.stops button[aria-current="true"] .badge{background:var(--green);color:var(--card)}
+.stops button:active{background:var(--green-tint)}
+.loop{padding:0 16px 28px 16px;font-size:.9rem;font-weight:700;color:var(--green);display:flex;align-items:center;gap:10px}
+.loop::before{content:"";flex:none;width:calc(14px + 1.1rem + 3px);height:1.4rem;border-right:6px solid var(--green);border-bottom:6px solid var(--green);border-bottom-right-radius:14px;margin-top:-1.4rem;box-sizing:border-box}
+
+/* design-nexus: keep R29 because this is a phone timetable read at the stop; a wide-screen side column adds nothing an elderly rider needs */
+@media (min-width:400px){
+  .first .time{font-size:4rem}
+}
+@media (prefers-reduced-motion:no-preference){
+  .btn,.seg button,.stops button{transition:background-color .12s}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="brand"><small>汐見市コミュニティバス</small><strong>しおかぜ号<span>市内循環</span></strong></p>
+    <div class="size" role="group" aria-labelledby="sizeLabel">
+      <span class="size-label" id="sizeLabel">文字の<br>大きさ</span>
+      <div class="size-btns">
+        <button type="button" data-size="normal" aria-pressed="true">標準</button>
+        <button type="button" data-size="large" aria-pressed="false">大</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stop" aria-labelledby="stopLabel">
+    <p class="stop-label" id="stopLabel">のりば(停留所)</p>
+    <div class="stop-name">
+      <span class="badge num" id="stopNo" aria-hidden="true">1</span>
+      <h1 id="stopName">汐見駅前</h1>
+    </div>
+    <button type="button" class="btn" id="openStops">停留所を変える</button>
+  </section>
+
+  <div class="block" id="alert" hidden></div>
+
+  <section class="next" id="next" aria-labelledby="nextH"></section>
+
+  <details class="upcoming block" id="upcoming" hidden></details>
+
+  <section class="tt" aria-labelledby="ttH">
+    <h2 id="ttH">時刻表</h2>
+    <p class="sub" id="ttSub"></p>
+    <div class="seg" role="group" aria-label="ダイヤの切り替え">
+      <button type="button" data-type="weekday" aria-pressed="false">平日<small></small></button>
+      <button type="button" data-type="holiday" aria-pressed="false">土日祝<small></small></button>
+    </div>
+    <p class="note" id="ttNote" hidden></p>
+    <div id="ttTable"></div>
+    <p class="legend" id="ttLegend"></p>
+  </section>
+
+  <footer class="info">
+    <h2>ご利用案内</h2>
+    <dl>
+      <dt>運賃</dt><dd>おとな 100円 / こども 50円(1回)</dd>
+      <dt>土日祝</dt><dd>土曜・日曜・祝日は本数が少なくなります</dd>
+      <dt>年末年始</dt><dd>12月29日〜1月3日は全便運休</dd>
+    </dl>
+    <a class="btn" href="tel:0000000000">電話で問い合わせる 000-000-0000</a>
+    <p class="fine">汐見市 地域交通課(平日 8:30〜17:15)。道路の混雑や天候により、時刻が前後することがあります。</p>
+    <p class="fine">このページは見本です。市名・停留所・時刻・電話番号は架空のものです。</p>
+  </footer>
+</main>
+
+<dialog id="stopDlg" aria-labelledby="dlgH">
+  <div class="dlg-head">
+    <h2 id="dlgH">停留所をえらぶ</h2>
+    <button type="button" id="closeStops">とじる</button>
+  </div>
+  <p class="dlg-lead">バスは上から下の順にまわります。</p>
+  <ol class="stops" id="stopList"></ol>
+  <p class="loop">汐見駅前にもどります</p>
+</dialog>
+
+<p class="vh" id="live" role="status" aria-live="polite"></p>
+<noscript><p class="wrap" style="padding:16px;font-weight:700">時刻表の表示には JavaScript が必要です。お手数ですが、電話でお問い合わせください。</p></noscript>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= データ(見本) ================= */
+var STOPS=[
+  {id:'ekimae',  name:'汐見駅前',     kana:'しおみえきまえ',           off:0},
+  {id:'shoten',  name:'商店街入口',   kana:'しょうてんがいいりぐち',   off:3},
+  {id:'shiyaku', name:'市役所前',     kana:'しやくしょまえ',           off:6},
+  {id:'komin',   name:'中央公民館',   kana:'ちゅうおうこうみんかん',   off:9},
+  {id:'byoin',   name:'市民病院',     kana:'しみんびょういん',         off:12},
+  {id:'midori',  name:'みどり団地',   kana:'みどりだんち',             off:17},
+  {id:'shogaku', name:'汐見小学校前', kana:'しおみしょうがっこうまえ', off:20},
+  {id:'nokyo',   name:'農協前',       kana:'のうきょうまえ',           off:24},
+  {id:'onsen',   name:'温泉センター', kana:'おんせんセンター',         off:29},
+  {id:'tosho',   name:'図書館前',     kana:'としょかんまえ',           off:33}
+];
+function hm(s){var a=s.split(':');return a[0]*60+ +a[1];}
+/* 起点(汐見駅前)の発車時刻 */
+var ORIGIN={
+  weekday:['7:00','7:40','8:20','9:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','16:40','17:20','18:00','18:40'].map(hm),
+  holiday:['8:00','9:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'].map(hm)
+};
+var TYPE_NAME={weekday:'平日',holiday:'土日祝'};
+var HOLIDAYS={};
+('2026-01-01 2026-01-12 2026-02-11 2026-02-23 2026-03-20 2026-04-29 2026-05-03 2026-05-04 2026-05-05 2026-05-06 '+
+ '2026-07-20 2026-08-11 2026-09-21 2026-09-22 2026-09-23 2026-10-12 2026-11-03 2026-11-23 '+
+ '2027-01-01 2027-01-11 2027-02-11 2027-02-23 2027-03-21 2027-03-22 2027-04-29 2027-05-03 2027-05-04 2027-05-05 '+
+ '2027-07-19 2027-08-11 2027-09-20 2027-09-23 2027-10-11 2027-11-03 2027-11-23').split(' ').forEach(function(k){HOLIDAYS[k]=1;});
+var DOW=['日','月','火','水','木','金','土'];
+
+/* ================= 時刻(日本時間) ================= */
+var FMT=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+var FIXED=(function(){
+  var q=null;try{q=new URLSearchParams(location.search).get('now');}catch(e){}
+  var m=q&&q.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)$/);
+  return m?{y:+m[1],m:+m[2],d:+m[3],min:m[4]*60+ +m[5]}:null;
+})();
+function pad(n){return (n<10?'0':'')+n;}
+function getNow(){
+  if(FIXED)return FIXED;
+  var p={};FMT.formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});
+  return {y:+p.year,m:+p.month,d:+p.day,min:(+p.hour)*60+ +p.minute+ p.second/60};
+}
+function day(now,add){
+  var t=new Date(Date.UTC(now.y,now.m-1,now.d+(add||0)));
+  var o={y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate(),dow:t.getUTCDay()};
+  o.key=o.y+'-'+pad(o.m)+'-'+pad(o.d);
+  o.hol=!!HOLIDAYS[o.key];
+  o.type=(o.dow===0||o.dow===6||o.hol)?'holiday':'weekday';
+  return o;
+}
+function dayFromKey(k){var a=k.split('-');return day({y:+a[0],m:+a[1],d:+a[2]},0);}
+function dateLabel(o){return o.m+'月'+o.d+'日('+DOW[o.dow]+(o.hol&&o.dow!==0?'・祝':'')+')';}
+function fmt(t){return Math.floor(t/60)+':'+pad(t%60);}
+
+/* ================= 運休ルール(見本) ================= */
+var TODAY_KEY=day(getNow(),0).key;
+var RULES=[
+  /* 見本:きょうの1便運休 */
+  {from:TODAY_KEY,to:TODAY_KEY,o1:hm('13:00'),o2:hm('13:00'),reason:'車両点検のため'},
+  {from:'2026-11-23',to:'2026-11-23',o1:hm('9:00'),o2:hm('11:59'),reason:'汐見マラソンの交通規制のため'},
+  {from:'2026-12-29',to:'2027-01-03',all:true,reason:'年末年始のため'}
+];
+function allRule(key){for(var i=0;i<RULES.length;i++){var r=RULES[i];if(r.all&&key>=r.from&&key<=r.to)return r;}return null;}
+function ruleFor(key,o){
+  for(var i=0;i<RULES.length;i++){var r=RULES[i];
+    if(key>=r.from&&key<=r.to&&(r.all||(o>=r.o1&&o<=r.o2)))return r;}
+  return null;
+}
+function trips(d,stop){
+  return ORIGIN[d.type].map(function(o){return {t:o+stop.off,rule:ruleFor(d.key,o)};});
+}
+
+/* ================= 状態 ================= */
+function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function save(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+var state={stop:STOPS[0],view:null,lastMinute:-1,lastKey:''};
+(function(){
+  var q=null;try{q=new URLSearchParams(location.search).get('stop');}catch(e){}
+  var id=q||load('shiokaze.stop');
+  STOPS.forEach(function(s){if(s.id===id)state.stop=s;});
+})();
+
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var WARN='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 1.5 21h21L12 2.5z" fill="currentColor"/><path d="M12 9v6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="18" r="1.4" fill="#fff"/></svg>';
+
+/* ================= 表示 ================= */
+function leftHtml(diff,big){
+  if(diff<1)return '<span class="left soon">まもなく</span>';
+  var m=Math.floor(diff);
+  if(m<60)return '<span class="left">あと<span class="num">'+m+'</span>分</span>';
+  return '<span class="left">あと<span class="num">'+Math.floor(m/60)+'</span>時間<span class="num">'+(m%60)+'</span>分</span>';
+}
+function listHtml(items,nowMin){
+  /* items: 運休便を含む、3本目の運行便まで。nowMin が null のときは「あと何分」を出さない */
+  var h='',n=0,open=false;
+  items.forEach(function(x){
+    if(x.rule){
+      var row='<s class="num">'+fmt(x.t)+'</s><span class="x-tag">運休</span>';
+      if(n===0)h+='<p class="x-row">'+row+'</p>';
+      else{if(!open){h+='<ul class="later">';open=true;}h+='<li class="x-row">'+row+'</li>';}
+      return;
+    }
+    n++;
+    var left=nowMin==null?'':leftHtml(x.t-nowMin);
+    if(n===1){
+      h+='<p class="first"><span class="time"><span class="num">'+fmt(x.t)+'</span><span class="unit">発</span></span>'+left+'</p>';
+    }else{
+      if(!open){h+='<ul class="later">';open=true;}
+      h+='<li><span class="ord">'+(n===2?'その次':'3本目')+'</span><span class="time num">'+fmt(x.t)+'</span>'+left+'</li>';
+    }
+  });
+  if(open)h+='</ul>';
+  return h;
+}
+function take3(list){
+  var out=[],n=0;
+  for(var i=0;i<list.length&&n<3;i++){out.push(list[i]);if(!list[i].rule)n++;}
+  while(out.length&&out[out.length-1].rule)out.pop();
+  if(!n)return [];
+  var lead=0;while(out[lead].rule)lead++;
+  if(lead>1)out.splice(1,lead-1);
+  return out;
+}
+
+function renderNext(now,today){
+  var el=$('next'),stop=state.stop,cur=Math.floor(now.min);
+  var head='<div class="next-head"><h2 id="nextH">つぎのバス</h2><span class="now">いま <span class="num">'+fmt(cur)+'</span></span></div>';
+  var foot='<p class="next-foot">きょう '+dateLabel(today)+' は'+TYPE_NAME[today.type]+'ダイヤ</p>';
+  var sus=allRule(today.key),body='';
+  if(sus){
+    body='<p class="big-msg"><span class="nb">きょうは</span><span class="nb">全便運休です</span></p><p class="sub-msg">'+esc(sus.reason)+'、バスは走りません。</p>';
+  }else{
+    var items=take3(trips(today,stop).filter(function(x){return x.t>=cur;}));
+    if(items.length){body=listHtml(items,now.min);}
+    else{
+      var tm=day(now,1),tsus=allRule(tm.key);
+      body='<p class="big-msg"><span class="nb">きょうの運行は</span><span class="nb">終わりました</span></p>';
+      if(tsus){body+='<p class="sub-msg">あす '+dateLabel(tm)+' は全便運休です('+esc(tsus.reason)+')。</p>';}
+      else{
+        body+='<p class="tomorrow-h"><span class="nb">あす '+dateLabel(tm)+' の始発</span><span class="nb">('+TYPE_NAME[tm.type]+'ダイヤ)</span></p>'+listHtml(take3(trips(tm,stop)),null);
+      }
+    }
+  }
+  el.innerHTML=head+body+foot;
+}
+
+function renderAlert(today){
+  var el=$('alert'),sus=allRule(today.key),h='';
+  if(sus){
+    h='<h2>きょうは全便運休</h2><p>'+esc(sus.reason)+'、きょうはすべての便が運休です。</p>';
+  }else{
+    var xs=trips(today,state.stop).filter(function(x){return x.rule;});
+    if(xs.length){
+      var rs=[];xs.forEach(function(x){if(rs.indexOf(x.rule)<0)rs.push(x.rule);});
+      h='<h2>きょうの運休</h2>'+rs.map(function(r){
+        return '<p><span class="nb"><span class="num">'+xs.filter(function(x){return x.rule===r;}).map(function(x){return fmt(x.t);}).join('・')+'</span> 発の便は</span><span class="nb">運休です。</span></p><p class="why">'+esc(r.reason)+'</p>';
+      }).join('')+'<p class="why">ほかの便は通常どおり走ります。</p>';
+    }
+  }
+  el.hidden=!h;
+  el.innerHTML=h?'<div class="alert" role="group" aria-label="きょうの運休のお知らせ"><span style="color:var(--red)">'+WARN+'</span><div>'+h+'</div></div>':'';
+}
+
+function renderUpcoming(today){
+  var el=$('upcoming'),stop=state.stop;
+  var list=RULES.filter(function(r){return r.from>today.key;}).sort(function(a,b){return a.from<b.from?-1:1;});
+  el.hidden=!list.length;
+  if(!list.length){el.innerHTML='';return;}
+  var items=list.map(function(r){
+    var a=dayFromKey(r.from),title,text;
+    if(r.all){
+      title=dateLabel(a)+(r.to!==r.from?'〜'+dateLabel(dayFromKey(r.to)):'');
+      text='全便運休です。';
+    }else{
+      title=dateLabel(a);
+      var ts=trips(a,stop).filter(function(x){return x.rule===r;}).map(function(x){return fmt(x.t);});
+      text=ts.length?esc(stop.name)+' <span class="num">'+ts.join('・')+'</span> 発の '+ts.length+' 便が運休です。':'この停留所で運休する便はありません。';
+    }
+    return '<li><h3>'+title+'</h3><p>'+text+'</p><p class="why">'+esc(r.reason)+'</p></li>';
+  });
+  var wasOpen=el.open,first=dayFromKey(list[0].from);
+  el.innerHTML='<summary>'+WARN+'<span class="t"><span class="nb">これからの運休</span> <span class="nb">'+list.length+'件</span><small>'+first.m+'月'+first.d+'日'+(list.length>1?' ほか':'')+'</small></span><span class="chev"><span class="o">ひらく</span><span class="c">とじる</span></span></summary><ul>'+items.join('')+'</ul>';
+  el.open=wasOpen;
+}
+
+function renderTable(now,today){
+  var stop=state.stop,type=state.view||today.type,isToday=type===today.type,cur=Math.floor(now.min);
+  document.querySelectorAll('.seg button').forEach(function(b){
+    var on=b.dataset.type===type;
+    b.setAttribute('aria-pressed',on?'true':'false');
+    b.querySelector('small').textContent=b.dataset.type===today.type?'きょうのダイヤ':'';
+  });
+  $('ttH').textContent=(isToday?'きょうの時刻表':TYPE_NAME[type]+'の時刻表');
+  $('ttSub').textContent=stop.name+' 発 / '+TYPE_NAME[type]+'ダイヤ / 全 '+ORIGIN[type].length+' 便';
+  var note=$('ttNote');note.hidden=isToday;
+  note.textContent=isToday?'':'きょうは'+TYPE_NAME[today.type]+'ダイヤです。下は'+TYPE_NAME[type]+'の時刻表で、きょうのバスの時刻ではありません。';
+
+  var sus=isToday?allRule(today.key):null;
+  var list=isToday?trips(today,stop):ORIGIN[type].map(function(o){return {t:o+stop.off,rule:null};});
+  var nextT=-1;
+  if(isToday&&!sus){for(var i=0;i<list.length;i++){if(!list[i].rule&&list[i].t>=cur){nextT=list[i].t;break;}}}
+  var hours={},order=[];
+  list.forEach(function(x){var h=Math.floor(x.t/60);if(!hours[h]){hours[h]=[];order.push(h);}hours[h].push(x);});
+  var rows=order.map(function(h){
+    var cells=hours[h].map(function(x){
+      var mm=pad(x.t%60),cls='m',tag='',sr='';
+      if(x.rule||sus){cls+=' x';tag='<small>運休</small>';}
+      else if(x.t===nextT){cls+=' next';tag='<small>つぎ</small>';}
+      else if(isToday&&x.t<cur){cls+=' past';sr='<span class="vh">(発車済み)</span>';}
+      return '<span class="'+cls+'"><b class="num">'+mm+'</b>'+tag+sr+'</span>';
+    }).join('');
+    var isCur=isToday&&h===Math.floor(cur/60);
+    return '<tr'+(isCur?' class="cur"':'')+'><th scope="row"><span class="num">'+h+'</span><small>時</small></th><td><div class="mins">'+cells+'</div></td></tr>';
+  }).join('');
+  $('ttTable').innerHTML='<table><caption class="vh">'+esc(stop.name)+' 発 '+TYPE_NAME[type]+'ダイヤの時刻表。左が時、右が分</caption><tbody>'+rows+'</tbody></table>';
+  $('ttLegend').innerHTML=isToday
+    ?'<span><i class="l-next"></i>つぎのバス</span><span><i class="l-x"></i>運休</span><span><i class="l-past num">00</i>発車済み</span>'
+    :'<span>運休の情報は「きょうの時刻表」にだけ表示されます。</span>';
+}
+
+function renderStop(){
+  var s=state.stop,i=STOPS.indexOf(s);
+  $('stopNo').textContent=i+1;
+  $('stopName').innerHTML=esc(s.name)+'<small>'+esc(s.kana)+'</small>';
+  $('stopList').innerHTML=STOPS.map(function(x,k){
+    var on=x===s;
+    return '<li><button type="button" data-id="'+x.id+'"'+(on?' aria-current="true"':'')+'><span class="badge num" aria-hidden="true">'+(k+1)+'</span><span class="n">'+esc(x.name)+'<small>'+esc(x.kana)+'</small></span>'+(on?'<span class="sel">えらび中</span>':'')+'</button></li>';
+  }).join('');
+}
+
+function renderAll(){
+  var now=getNow(),today=day(now,0);
+  state.lastMinute=Math.floor(now.min);state.lastKey=today.key;
+  renderAlert(today);renderNext(now,today);renderUpcoming(today);renderTable(now,today);
+}
+
+/* ================= 操作 ================= */
+var dlg=$('stopDlg');
+$('openStops').addEventListener('click',function(){
+  if(dlg.showModal)dlg.showModal();else dlg.setAttribute('open','');
+  var c=dlg.querySelector('[aria-current="true"]');
+  if(c){c.focus();c.scrollIntoView({block:'center'});}
+});
+function closeDlg(){if(dlg.close)dlg.close();else dlg.removeAttribute('open');}
+$('closeStops').addEventListener('click',closeDlg);
+dlg.addEventListener('click',function(e){if(e.target===dlg)closeDlg();});
+$('stopList').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  STOPS.forEach(function(s){if(s.id===b.dataset.id)state.stop=s;});
+  save('shiokaze.stop',state.stop.id);
+  closeDlg();renderStop();renderAll();
+  $('live').textContent=state.stop.name+' の時刻を表示しました';
+  window.scrollTo(0,0);
+});
+document.querySelector('.seg').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  state.view=b.dataset.type;renderAll();
+});
+function setSize(v){
+  document.documentElement.classList.toggle('large',v==='large');
+  document.querySelectorAll('.size-btns button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.size===v?'true':'false');});
+}
+document.querySelector('.size-btns').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  setSize(b.dataset.size);save('shiokaze.size',b.dataset.size);
+});
+setSize(load('shiokaze.size')==='large'?'large':'normal');
+
+renderStop();renderAll();
+function tick(){
+  var now=getNow(),k=day(now,0).key;
+  if(k!==state.lastKey){state.view=null;renderAll();}
+  else if(Math.floor(now.min)!==state.lastMinute)renderAll();
+}
+setInterval(tick,5000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)tick();});
+window.addEventListener('pageshow',tick);
+})();
+</script>
+</body>
+</html>

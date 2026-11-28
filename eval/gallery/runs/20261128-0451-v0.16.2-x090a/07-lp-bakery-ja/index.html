@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末限定パンの予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンを、金曜18時までに予約して土曜に店頭で受け取れます。焼き上がりは土曜8時と11時の2回、1人5点まで。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* クラフト紙の袋・グラシン紙・焦げ茶・袋のスタンプの藍 */
+  --kraft: #D9C3A0;
+  --paper: #FBF7EF;
+  --ink: #2A1E14;
+  --bran: #5A4431;
+  --indigo: #1F3F6B;
+  --indigo-deep: #16304F;
+  --on-indigo: #FFFFFF;
+  --edge: #6E5843;
+  --rule: #CDB896;
+  --scorch: #9A2617;
+
+  --f-display: "Klee One", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  --f-body: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  /* 17px 基準、比 1.25 */
+  --t-0: 1rem;        /* 16 */
+  --t-1: 1.0625rem;   /* 17 body */
+  --t-2: 1.3125rem;   /* 21 */
+  --t-3: 1.625rem;    /* 26 */
+  --t-4: 2.0625rem;   /* 33 */
+  --t-5: 2.5625rem;   /* 41 */
+
+  --s-1: 8px; --s-2: 16px; --s-3: 24px; --s-4: 32px; --s-5: 48px; --s-6: 64px;
+  --radius: 6px;
+  --line: 56px; /* 伝票と表の1行 */
+  --bar-h: 72px;
+}
+
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--kraft);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--t-1);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+  padding-bottom: calc(var(--bar-h) + var(--s-2));
+}
+@media (min-width: 1024px) { body { padding-bottom: 0; } }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; font-synthesis: none; line-height: 1.4; text-wrap: balance; margin: 0; font-feature-settings: "palt"; letter-spacing: 0.02em; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--indigo); outline-offset: 3px; border-radius: 2px; }
+
+/* ── 見出し帯 ───────────────────────── */
+.mast {
+  max-width: 1680px; margin: 0 auto;
+  padding: var(--s-2) var(--s-2) 0;
+  display: flex; align-items: center; gap: var(--s-2);
+}
+.seal {
+  width: 60px; height: 60px; flex: none;
+  border: 2px solid var(--ink); border-radius: 50%;
+  display: grid; place-items: center; white-space: nowrap; letter-spacing: 0;
+  color: var(--ink); font-family: var(--f-display); font-weight: 600; font-size: var(--t-0); line-height: 1.1; text-align: center;
+}
+.mast-name { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); line-height: 1.3; }
+.mast-sub { font-size: var(--t-0); color: var(--bran); line-height: 1.4; }
+
+/* ── 全体の組み ─────────────────────── */
+.layout {
+  max-width: 1680px; margin: 0 auto;
+  padding: var(--s-3) var(--s-2) var(--s-5);
+  display: grid; gap: var(--s-4);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "intro" "bakes" "board" "slip" "info";
+}
+.intro { grid-area: intro; }
+.bakes { grid-area: bakes; }
+.board { grid-area: board; }
+.slip-col { grid-area: slip; }
+.info { grid-area: info; }
+
+@media (min-width: 1024px) {
+  .layout {
+    padding: var(--s-4) var(--s-4) var(--s-6);
+    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-areas: "intro slip" "bakes slip" "board slip" "info slip";
+    column-gap: var(--s-5);
+    row-gap: var(--s-4);
+    align-items: start;
+  }
+  .mast { padding: var(--s-3) var(--s-4) 0; }
+  .slip-col { position: sticky; top: var(--s-3); align-self: start; }
+}
+@media (min-width: 1600px) {
+  .layout {
+    grid-template-columns: 300px minmax(0, 1fr) 420px;
+    grid-template-areas: "info intro slip" "info bakes slip" "info board slip" "info . slip";
+  }
+  .info { position: sticky; top: var(--s-3); align-self: start; }
+}
+
+/* ── 導入 ─────────────────────────── */
+.intro h1 { font-size: var(--t-3); }
+.intro .lead { margin-top: var(--s-1); }
+.deadline {
+  margin-top: var(--s-2);
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-2); row-gap: 0;
+  font-size: var(--t-1); line-height: 1.6;
+}
+.deadline b { font-weight: 700; }
+.deadline .left { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); font-variant-numeric: tabular-nums; }
+@media (min-width: 768px) { .intro h1 { font-size: var(--t-4); } }
+@media (min-width: 1280px) { .intro h1 { font-size: var(--t-5); } }
+
+/* ── 受け取る回 ────────────────────── */
+.bakes { border: 0; margin: 0; padding: 0; min-width: 0; }
+.bakes legend { padding: 0; font-weight: 700; margin-bottom: var(--s-1); }
+.bake-list { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.bake { position: relative; display: block; cursor: pointer; }
+.bake input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bake .box {
+  display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: var(--s-2);
+  min-height: 88px; padding: var(--s-2);
+  background: var(--paper); border: 2px solid var(--edge); border-radius: var(--radius);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.bake .time { font-family: var(--f-display); font-weight: 600; font-size: var(--t-4); line-height: 1; font-variant-numeric: tabular-nums; grid-row: span 2; }
+.bake .what { font-size: var(--t-0); line-height: 1.5; white-space: nowrap; }
+.bake .stock { font-size: var(--t-0); line-height: 1.5; font-weight: 700; white-space: nowrap; }
+.bake input:checked + .box { border-color: var(--indigo); box-shadow: inset 0 0 0 2px var(--indigo); }
+.bake input:checked + .box::after { content: "✓"; position: absolute; top: 8px; right: 12px; color: var(--indigo); font-weight: 700; line-height: 1; }
+.bake input:focus-visible + .box { outline: 3px solid var(--indigo); outline-offset: 3px; }
+.bake:hover input:not(:disabled) + .box { border-color: var(--indigo); }
+.bake input:disabled + .box { cursor: not-allowed; border-style: dashed; }
+/* 締め切り後は押せないので、選んでいた回も藍をやめて焦げ茶で示す */
+.bake input:disabled:checked + .box { border-color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.bake input:disabled:checked + .box::after { color: var(--ink); }
+@media (max-width: 400px) {
+  .bake .box { grid-template-columns: 1fr; padding: 12px; min-height: 0; }
+  .bake .time { grid-row: auto; font-size: var(--t-3); }
+}
+
+/* ── 焼き上がり表（罫の行） ───────────── */
+.board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-1); }
+.board-head h2 { font-size: var(--t-3); }
+.board-head p { font-size: var(--t-0); color: var(--bran); }
+.rows { list-style: none; margin: 0; padding: 0; background: var(--paper); border-radius: var(--radius); border: 1px solid var(--edge); }
+.row {
+  display: grid; align-items: center;
+  grid-template-columns: minmax(0, 1fr) 132px 132px 168px;
+  column-gap: var(--s-2);
+  min-height: calc(var(--line) + 24px);
+  padding: 12px var(--s-2);
+  border-top: 1px solid var(--rule);
+}
+.row:first-child { border-top: 0; }
+.row .name { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); line-height: 1.4; }
+.row .alt { grid-column: 1 / -1; font-size: var(--t-0); line-height: 1.6; display: none; }
+.row.has-alt .alt { display: block; margin-top: 4px; }
+.cell { font-size: var(--t-0); line-height: 1.4; color: var(--bran); white-space: nowrap; font-variant-numeric: tabular-nums; padding: 6px 8px; border-radius: 4px; border: 2px solid transparent; }
+.cell.on { color: var(--ink); font-weight: 700; }
+.linkish { font: inherit; color: var(--indigo); background: none; border: 0; padding: 4px 0; min-height: 32px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkish:hover { text-decoration-thickness: 2px; }
+.row.sold .name { color: var(--bran); }
+.soldtag { font-size: var(--t-0); font-weight: 700; color: var(--ink); border: 2px solid var(--ink); border-radius: 4px; padding: 2px 10px; justify-self: end; white-space: nowrap; }
+
+.stepper { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.stepper button {
+  width: 48px; height: 48px; flex: none;
+  font: inherit; font-size: var(--t-3); line-height: 1; font-weight: 700;
+  color: var(--indigo); background: var(--paper);
+  border: 2px solid var(--indigo); border-radius: var(--radius); cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.stepper button:hover:not(:disabled) { background: var(--kraft); }
+.stepper button:active:not(:disabled) { transform: translateY(1px); }
+.stepper button:disabled { color: var(--bran); border-color: var(--rule); border-style: dashed; cursor: not-allowed; }
+.stepper output { width: 48px; text-align: center; font-family: var(--f-display); font-weight: 600; font-size: var(--t-3); font-variant-numeric: tabular-nums; }
+
+.board { container-type: inline-size; }
+@container (max-width: 759px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; column-gap: var(--s-1); }
+  .row .name { grid-column: 1 / -1; margin-bottom: 4px; }
+  .row .cell { grid-column: 1; padding: 0; }
+  .row .stepper, .row .soldtag { grid-column: 2; grid-row: 2 / span 2; }
+}
+
+/* ── 予約票（シグネチャー） ─────────── */
+.slip {
+  position: relative;
+  background: var(--paper);
+  border-radius: 2px var(--radius) var(--radius) var(--radius);
+  padding: var(--s-3) var(--s-3) var(--s-3);
+  box-shadow: 0 1px 0 var(--rule), 0 10px 24px -12px rgba(42, 30, 20, 0.55);
+  background-image: radial-gradient(circle at 8px -2px, var(--kraft) 5px, transparent 5.5px);
+  background-size: 16px 10px; background-repeat: repeat-x; background-position: 0 0;
+}
+.slip-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding-top: var(--s-1); }
+.slip h2 { font-size: var(--t-3); }
+.slip-when { margin-top: var(--s-1); font-size: var(--t-1); line-height: 1.6; }
+.slip-when b { white-space: nowrap; }
+.lines { list-style: none; margin: var(--s-2) 0 0; padding: 0; counter-reset: ln; border-top: 2px solid var(--ink); }
+.lines li {
+  counter-increment: ln;
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: end; column-gap: var(--s-1);
+  min-height: var(--line); padding: 0 0 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.lines li::before { content: counter(ln); font-size: var(--t-0); color: var(--bran); font-variant-numeric: tabular-nums; align-self: end; line-height: 1.6; }
+.lines .w { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); line-height: 1.4; }
+.lines .b { font-size: var(--t-0); color: var(--bran); white-space: nowrap; line-height: 1.6; }
+.lines li.filled .w { animation: ink 160ms ease-out; }
+.lines li.empty-hint .w { font-family: var(--f-body); font-weight: 400; font-size: var(--t-0); color: var(--bran); line-height: 1.6; }
+@keyframes ink { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.count { margin-top: var(--s-1); font-size: var(--t-1); display: flex; justify-content: space-between; gap: var(--s-2); }
+.count b { font-variant-numeric: tabular-nums; }
+
+.fields { margin-top: var(--s-3); display: grid; gap: var(--s-2); }
+.field label { display: block; font-weight: 700; font-size: var(--t-1); line-height: 1.6; margin-bottom: 4px; }
+.field input {
+  width: 100%; min-height: 52px; padding: 10px 12px;
+  font: inherit; font-size: var(--t-1); color: var(--ink);
+  background: var(--paper); border: 2px solid var(--edge); border-radius: var(--radius);
+}
+.field input:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; border-color: var(--indigo); }
+.field input[aria-invalid="true"] { border-color: var(--scorch); }
+.field input:disabled { border-style: dashed; color: var(--bran); }
+.err { color: var(--scorch); font-size: var(--t-0); font-weight: 700; line-height: 1.6; margin-top: 4px; }
+.err:empty { display: none; }
+
+.submit {
+  display: flex; align-items: center; justify-content: center; gap: var(--s-1);
+  width: 100%; min-height: 56px; margin-top: var(--s-3); padding: 12px var(--s-3);
+  font: inherit; font-size: var(--t-2); font-weight: 700; letter-spacing: 0.08em; white-space: nowrap;
+  color: var(--on-indigo); background: var(--indigo); border: 2px solid var(--indigo); border-radius: var(--radius); cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.submit:hover:not(:disabled) { background: var(--indigo-deep); }
+.submit:active:not(:disabled) { transform: translateY(1px); }
+.submit:disabled { background: var(--paper); color: var(--bran); border: 2px dashed var(--edge); cursor: not-allowed; }
+.reason { margin-top: var(--s-1); font-size: var(--t-0); font-weight: 700; line-height: 1.6; }
+.reason:empty { display: none; }
+.form-err { margin-top: var(--s-2); color: var(--scorch); font-weight: 700; font-size: var(--t-0); line-height: 1.6; }
+.form-err:empty { display: none; }
+
+.done { display: none; margin-top: var(--s-3); padding-top: var(--s-2); border-top: 2px solid var(--ink); }
+.done h3 { font-size: var(--t-2); }
+.done p { margin-top: var(--s-1); }
+.is-done .done { display: block; }
+.is-done .fields, .is-done .submit, .is-done .count { display: none; }
+
+/* ── 受け取りについて（同じ罫） ───────── */
+.info h2 { font-size: var(--t-3); margin-bottom: var(--s-1); }
+.info dl { margin: 0; border-top: 2px solid var(--ink); }
+.info .r { display: grid; grid-template-columns: 8em minmax(0, 1fr); column-gap: var(--s-2); padding: 12px 0; border-bottom: 1px solid var(--edge); }
+.info dt { font-weight: 700; }
+.info dd { margin: 0; }
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .info dl { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s-4); }
+}
+@media (min-width: 1600px) {
+  .info .r { grid-template-columns: 1fr; }
+  .info dt { font-size: var(--t-0); color: var(--bran); }
+  .info dd { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); line-height: 1.5; }
+}
+@media (max-width: 400px) { .info .r { grid-template-columns: 1fr; } }
+
+
+/* ── 下の帯（1024px 未満） ─────────── */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  min-height: var(--bar-h);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+  padding: 10px var(--s-2);
+  background: var(--paper); border-top: 2px solid var(--ink);
+  transition: transform 160ms ease;
+}
+.bar.away { transform: translateY(110%); }
+.bar-meter { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bar-meter .txt { font-size: var(--t-0); line-height: 1.4; white-space: nowrap; }
+.ticks { display: flex; gap: 4px; }
+.ticks i { width: 18px; height: 8px; border: 1.5px solid var(--ink); border-radius: 2px; }
+.ticks i.f { background: var(--ink); }
+.bar .submit { width: auto; margin: 0; min-height: 48px; font-size: var(--t-1); padding: 8px var(--s-3); }
+@media (min-width: 1024px) { .bar { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lines li.filled .w { animation: none; }
+  .bar, .bake .box, .stepper button, .submit { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <span class="seal" aria-hidden="true">こむぎ<br>舎</span>
+  <div>
+    <div class="mast-name">こむぎ舎</div>
+    <div class="mast-sub">週末限定パンの予約</div>
+  </div>
+</header>
+
+<form class="layout" id="order" novalidate>
+
+  <section class="intro" aria-labelledby="title">
+    <h1 id="title">土曜のパンは、<wbr>金曜18時までに予約を</h1>
+    <p class="lead">自家製酵母で焼く、週末のパン。</p>
+    <p class="deadline" id="deadline">
+      <span>締め切り <b class="nw" data-deadline>金曜18時</b></span>
+      <span class="left" data-left></span>
+    </p>
+  </section>
+
+  <fieldset class="bakes" id="bakes">
+    <legend><span data-sat>土曜</span>、受け取る回を選ぶ</legend>
+    <div class="bake-list">
+      <label class="bake">
+        <input type="radio" name="bake" value="8" checked>
+        <span class="box">
+          <span class="time">8時</span>
+          <span class="what">焼き上がり</span>
+          <span class="stock" data-total="8">残り—点</span>
+        </span>
+      </label>
+      <label class="bake">
+        <input type="radio" name="bake" value="11">
+        <span class="box">
+          <span class="time">11時</span>
+          <span class="what">焼き上がり</span>
+          <span class="stock" data-total="11">残り—点</span>
+        </span>
+      </label>
+    </div>
+  </fieldset>
+
+  <section class="board" aria-labelledby="board-title">
+    <div class="board-head">
+      <h2 id="board-title">パンを選ぶ</h2>
+      <p>数は「＋」「−」で変えられます</p>
+    </div>
+    <ul class="rows" id="rows"></ul>
+  </section>
+
+  <div class="slip-col">
+    <section class="slip" id="slip" aria-labelledby="slip-title">
+      <div class="slip-top">
+        <h2 id="slip-title">予約票</h2>
+      </div>
+      <p class="slip-when">受け取り <b data-when>土曜 8時の回</b>・店頭</p>
+      <ol class="lines" id="lines" aria-label="選んだパン（5点まで）"></ol>
+      <p class="count" id="count"><span>1人5点まで</span><span>あと<b data-rest>5</b>点</span></p>
+
+      <div class="fields">
+        <div class="field">
+          <label for="name">お名前</label>
+          <input id="name" name="name" type="text" autocomplete="name" aria-describedby="name-err">
+          <p class="err" id="name-err"></p>
+        </div>
+        <div class="field">
+          <label for="tel">電話番号</label>
+          <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-err">
+          <p class="err" id="tel-err"></p>
+        </div>
+      </div>
+
+      <p class="form-err" id="form-err" role="alert"></p>
+      <button class="submit" type="submit" id="submit" aria-describedby="reason">予約する</button>
+      <p class="reason" id="reason"></p>
+
+      <div class="done" id="done" tabindex="-1">
+        <h3>予約を受け付けました</h3>
+        <p data-done-when></p>
+        <p>お支払いは現金か交通系ICでどうぞ。</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="info" aria-labelledby="info-title">
+    <h2 id="info-title">受け取りについて</h2>
+    <dl>
+      <div class="r"><dt>受け取り</dt><dd>店頭のみ</dd></div>
+      <div class="r"><dt>焼き上がり</dt><dd>土曜 8時と11時の2回</dd></div>
+      <div class="r"><dt>予約できる数</dt><dd>1人5点まで</dd></div>
+      <div class="r"><dt>お支払い</dt><dd>現金・交通系IC</dd></div>
+    </dl>
+  </section>
+
+  <div class="bar" id="bar">
+    <div class="bar-meter">
+      <span class="txt" data-bar-txt>選んだパン 0／5点</span>
+      <span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    </div>
+    <button class="submit" type="submit" id="bar-submit">予約する</button>
+  </div>
+</form>
+
+<p class="vh" aria-live="polite" id="live"></p>
+
+<script>
+(() => {
+  const LIMIT = 5;
+  const BREADS = [
+    { id: 'campagne', name: 'カンパーニュ', stock: { 8: 3, 11: 6 } },
+    { id: 'walnut', name: 'くるみとレーズンのパン', stock: { 8: 0, 11: 5 } },
+    { id: 'roll', name: '土曜のバターロール', stock: { 8: 8, 11: 10 } },
+    { id: 'anbutter', name: 'あんバター', stock: { 8: 5, 11: 4 } },
+    { id: 'cinnamon', name: 'シナモンロール', stock: { 8: 0, 11: 0 } },
+  ];
+  const DOW = '日月火水木金土';
+  const H = 3600e3, JST = 9 * H;
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const form = $('#order'), rowsEl = $('#rows'), linesEl = $('#lines'), live = $('#live');
+  const qty = Object.fromEntries(BREADS.map(b => [b.id, 0]));
+  let bake = '8', closed = false, done = false, sat = 0, deadline = 0;
+
+  const jst = ms => { const d = new Date(ms + JST); return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate(), w: d.getUTCDay() }; };
+  const dayLabel = ms => { const p = jst(ms); return `${p.m + 1}月${p.d}日（${DOW[p.w]}）`; };
+
+  function computeWindow(now) {
+    const p = jst(now);
+    const days = (6 - p.w + 7) % 7;
+    sat = Date.UTC(p.y, p.m, p.d + days) - JST;     // 受け取る土曜の 0時（日本時間）
+    deadline = sat - 6 * H;                          // 前日の金曜 18時
+    return now >= deadline;
+  }
+  const total = () => Object.values(qty).reduce((a, b) => a + b, 0);
+
+  function leftText(now) {
+    const ms = deadline - now; const m = Math.floor(ms / 60000);
+    const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+    if (d > 0) return `あと${d}日${h}時間`;
+    if (h > 0) return `あと${h}時間${mm}分`;
+    return `あと${Math.max(mm, 1)}分`;
+  }
+
+  function buildRows() {
+    rowsEl.innerHTML = '';
+    for (const b of BREADS) {
+      const li = document.createElement('li');
+      li.className = 'row'; li.dataset.id = b.id;
+      const soldAll = b.stock[8] === 0 && b.stock[11] === 0;
+      li.innerHTML = `
+        <span class="name" id="n-${b.id}">${b.name}</span>
+        <span class="cell" data-c="8"></span>
+        <span class="cell" data-c="11"></span>
+        ${soldAll ? '<span class="soldtag">売り切れ</span>' : `
+        <span class="stepper" role="group" aria-labelledby="n-${b.id}">
+          <button type="button" data-d="-1"><span aria-hidden="true">−</span><span class="vh">${b.name}を1点減らす</span></button>
+          <output aria-label="${b.name}の数">0</output>
+          <button type="button" data-d="1"><span aria-hidden="true">＋</span><span class="vh">${b.name}を1点増やす</span></button>
+        </span>`}
+        <p class="alt"></p>`;
+      if (soldAll) li.classList.add('sold');
+      rowsEl.append(li);
+    }
+  }
+
+  function render() {
+    const t = total();
+    for (const b of BREADS) {
+      const li = rowsEl.querySelector(`[data-id="${b.id}"]`);
+      for (const c of $$('.cell', li)) {
+        const k = c.dataset.c, n = b.stock[k];
+        c.textContent = n ? `${k}時 残り${n}` : `${k}時 売り切れ`;
+        c.classList.toggle('on', k === bake);
+      }
+      const alt = $('.alt', li);
+      const other = bake === '8' ? '11' : '8';
+      const here = b.stock[bake];
+      const showAlt = !closed && !done && here === 0 && b.stock[other] > 0;
+      li.classList.toggle('has-alt', showAlt);
+      alt.innerHTML = showAlt ? `<button type="button" class="linkish" data-switch="${other}">${other}時の回にする</button>` : '';
+      const st = $('.stepper', li);
+      if (st) {
+        $('output', st).textContent = qty[b.id];
+        const [minus, plus] = $$('button', st);
+        minus.disabled = closed || done || qty[b.id] === 0;
+        plus.disabled = closed || done || here === 0 || qty[b.id] >= here || t >= LIMIT;
+      }
+    }
+    // 回ごとの残り
+    for (const k of ['8', '11']) {
+      const s = BREADS.reduce((a, b) => a + b.stock[k], 0);
+      $(`[data-total="${k}"]`).textContent = `残り${s}点`;
+    }
+    $$('input[name=bake]').forEach(i => { i.disabled = closed || done; });
+
+    // 予約票の5行
+    const picked = [];
+    for (const b of BREADS) for (let i = 0; i < qty[b.id]; i++) picked.push(b);
+    const prev = linesEl.children.length ? $$('li', linesEl).map(l => l.dataset.id || '') : [];
+    linesEl.innerHTML = '';
+    for (let i = 0; i < LIMIT; i++) {
+      const li = document.createElement('li');
+      const b = picked[i];
+      if (b) {
+        li.className = 'filled'; li.dataset.id = b.id;
+        if (prev[i] === b.id) li.classList.remove('filled');
+        li.innerHTML = `<span class="w">${b.name}</span>`;
+      } else if (i === 0) {
+        li.className = 'empty-hint';
+        li.innerHTML = `<span class="w">${closed ? '受付は終わりました' : 'パンを選ぶと、ここに書き込まれます'}</span>`;
+      } else {
+        li.innerHTML = '<span class="w"><span class="vh">空き</span></span>';
+      }
+      linesEl.append(li);
+    }
+    $('[data-rest]').textContent = LIMIT - t;
+    $('[data-bar-txt]').textContent = `選んだパン ${t}／${LIMIT}点`;
+    $$('.ticks i').forEach((el, i) => el.classList.toggle('f', i < t));
+
+    const when = `${dayLabel(sat)} ${bake}時の回`;
+    $('[data-when]').textContent = when;
+    $('[data-sat]').textContent = `${dayLabel(sat)}`;
+    $('[data-done-when]').textContent = `${when}に、店頭でお受け取りください。`;
+
+    // 締め切り
+    $('[data-deadline]').textContent = `${dayLabel(deadline)}18時`;
+    const reason = $('#reason');
+    if (closed && !done) {
+      document.body.classList.add('is-closed');
+      $('#deadline').innerHTML = `<span class="left">今週の予約は締め切りました</span><span>締め切り <b class="nw">${dayLabel(deadline)}18時</b></span>`;
+      reason.textContent = `受付は${dayLabel(deadline)}18時で終わりました。`;
+    } else {
+      $('[data-left]') && ($('[data-left]').textContent = leftText(Date.now()));
+      reason.textContent = '';
+    }
+    for (const btn of [$('#submit'), $('#bar-submit')]) btn.disabled = closed || done;
+    $('#name').disabled = $('#tel').disabled = closed || done;
+  }
+
+  function say(msg) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 30); }
+
+  rowsEl.addEventListener('click', e => {
+    const sw = e.target.closest('[data-switch]');
+    if (sw) { setBake(sw.dataset.switch); $(`input[name=bake][value="${bake}"]`).focus(); return; }
+    const btn = e.target.closest('button[data-d]');
+    if (!btn || btn.disabled) return;
+    const id = btn.closest('.row').dataset.id; const b = BREADS.find(x => x.id === id);
+    const d = Number(btn.dataset.d);
+    qty[id] = Math.max(0, qty[id] + d);
+    render();
+    const t = total();
+    say(`${b.name} ${qty[id]}点。合計${t}点${t >= LIMIT ? '、5点そろいました' : `、あと${LIMIT - t}点選べます`}`);
+    $('#form-err').textContent = '';
+    if (btn.disabled) { const sib = btn.parentElement.querySelector(`button[data-d="${-d}"]`); if (sib && !sib.disabled) sib.focus(); }
+  });
+
+  function setBake(k) {
+    bake = k;
+    $(`input[name=bake][value="${k}"]`).checked = true;
+    const cut = [];
+    for (const b of BREADS) if (qty[b.id] > b.stock[k]) { cut.push(`${b.name}を${b.stock[k]}点`); qty[b.id] = b.stock[k]; }
+    render();
+    say(`${k}時の回にしました。${cut.length ? `残りが少ないため、${cut.join('、')}にしました。` : ''}`);
+    if (cut.length) $('#form-err').textContent = `${k}時の回は残りが少ないため、${cut.join('、')}にしました。`;
+  }
+  $$('input[name=bake]').forEach(i => i.addEventListener('change', () => setBake(i.value)));
+
+  function setErr(id, msg) {
+    const input = $('#' + id); $('#' + id + '-err').textContent = msg;
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+  ['name', 'tel'].forEach(id => $('#' + id).addEventListener('input', () => setErr(id, '')));
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (computeWindow(Date.now())) { closed = true; render(); $('#form-err').textContent = `受付は${dayLabel(deadline)}18時で終わりました。予約は送られていません。`; return; }
+    const formErr = $('#form-err'); formErr.textContent = '';
+    const name = $('#name').value.trim(); const tel = $('#tel').value.replace(/[\s\-‐－ー()（）]/g, '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    let first = null;
+    if (total() === 0) { formErr.textContent = 'パンがまだ選ばれていません。「パンを選ぶ」の「＋」で数を選んでください。'; first = first || rowsEl.querySelector('button[data-d="1"]:not(:disabled)'); }
+    if (!name) { setErr('name', 'お名前を入力してください。'); first = first || $('#name'); } else setErr('name', '');
+    if (!tel) { setErr('tel', '電話番号を入力してください。'); first = first || $('#tel'); }
+    else if (!/^\d{10,11}$/.test(tel)) { setErr('tel', '電話番号は10桁か11桁の数字で入力してください（ハイフンはあってもなくてもかまいません）。'); first = first || $('#tel'); }
+    else setErr('tel', '');
+    if (first) { first.focus(); first.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return; }
+    done = true;
+    document.body.classList.add('is-done');
+    render();
+    $('#bar').classList.add('away');
+    const d = $('#done'); d.focus(); d.scrollIntoView({ block: 'nearest' });
+  });
+
+  // 下の帯は、予約票の「予約する」が見えている間は引っ込める
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([en]) => { if (!done) $('#bar').classList.toggle('away', en.isIntersecting); }, { threshold: 0.5 }).observe($('#submit'));
+  }
+
+  buildRows();
+  closed = computeWindow(Date.now());
+  render();
+  // 開いたまま締め切りを過ぎたら、その場で受付終了にする
+  setInterval(() => {
+    if (closed || done) return;
+    if (computeWindow(Date.now())) { closed = true; render(); say('今週の予約は締め切りました。'); }
+    else { const l = $('[data-left]'); if (l) l.textContent = leftText(Date.now()); }
+  }, 30000);
+})();
+</script>
+</body>
+</html>

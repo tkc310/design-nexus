@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパン予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンの予約ページ。土曜8時と11時の焼き上がりを、金曜18時まで予約できます。受け取りは店頭のみ、お支払いは現金・交通系IC。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Antique+Soft&display=swap">
+<style>
+:root{
+  /* color — sources in NOTES.md / DESIGN.md */
+  --kraft:#C9A77C;      /* ground: the kraft bread bag */
+  --paper:#F8F2E7;      /* surface: the reservation slip paper */
+  --ink:#2A1F17;        /* text: stamp-pad ink */
+  --ink-soft:#5B4735;   /* muted text, on paper only, 15px+ */
+  --ai:#1F3F66;         /* accent: the shop's indigo noren */
+  --shu:#A82E1C;        /* status: 売切 / 締切 stamp, errors */
+  --rule:#8A6E52;       /* field borders, rules on paper */
+  --field:#FFFFFF;      /* inside a field: a blank line on the slip */
+  --shadow:0 1px 0 rgb(42 31 23 / .18), 0 3px 10px rgb(42 31 23 / .14);
+
+  --f-display:"Zen Antique Soft","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  /* type scale 17px × 1.25 */
+  --t0:15px; --t1:17px; --t2:21px; --t3:26.5px; --t4:33px; --t5:41.5px;
+  /* space base 8 */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s7:96px;
+  --r:6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--kraft);color:var(--ink);font-family:var(--f-body);font-size:var(--t1);line-height:1.8;letter-spacing:.03em}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;font-synthesis:none;line-height:1.35;text-wrap:balance;margin:0;letter-spacing:.02em;font-feature-settings:"palt"}
+p{margin:0;text-wrap:pretty}
+a{color:inherit}
+.nw{white-space:nowrap}
+.fig{font-variant-numeric:tabular-nums;white-space:nowrap}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s3)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);padding-block:var(--s2)}
+.logo{display:flex;align-items:center;gap:var(--s1);text-decoration:none}
+.logo b{font-family:var(--f-display);font-weight:400;font-size:var(--t3);line-height:1}
+.logo .mark{width:40px;height:40px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:var(--t2);line-height:1}
+.top nav ul{display:flex;gap:var(--s3);list-style:none;margin:0;padding:0}
+.top nav a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+.top nav a:hover{border-bottom-color:var(--ink)}
+
+/* hero */
+.hero{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--s2) var(--s4);padding-block:var(--s3) var(--s4)}
+.hero h1{font-size:var(--t5)}
+.deadline{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--s2);font-size:var(--t2);line-height:1.5}
+.deadline strong{font-weight:700}
+.left-time{font-size:var(--t1)}
+.closed-note{display:none;max-width:34em}
+.is-closed .closed-note{display:block}
+.is-closed .deadline{display:none}
+.is-closed .closed-note{font-size:var(--t2);line-height:1.6}
+.is-closed .round .pick,.is-closed .round input:checked + .box .pick{color:var(--ink-soft);font-weight:400}
+
+/* order area */
+.order{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:var(--s4);align-items:start;padding-bottom:var(--s6)}
+.order>*{min-width:0}
+
+/* rounds — the next units */
+.rounds{border:0;margin:0 0 var(--s3);padding:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.rounds legend{font-family:var(--f-display);font-size:var(--t2);margin-bottom:var(--s1);padding:0}
+.round{position:relative;display:block;cursor:pointer}
+.round input{position:absolute;opacity:0;width:1px;height:1px}
+.round .box{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:var(--s2);background:var(--paper);border-radius:var(--r);padding:var(--s2);box-shadow:var(--shadow);border:3px solid transparent;transition:border-color .15s ease}
+.round input:checked + .box{border-color:var(--ai)}
+.round input:focus-visible + .box{outline:3px solid var(--ink);outline-offset:3px}
+.round input:disabled + .box{cursor:not-allowed}
+.round .when{line-height:1.5}
+.round .when b{display:block;font-weight:700}
+.round .rest{font-size:var(--t1)}
+.round .pick{font-size:var(--t0);color:var(--ink-soft)}
+.round input:checked + .box .pick{color:var(--ai);font-weight:700}
+
+/* stamp unit */
+.stamp{flex:none;width:64px;height:64px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-size:var(--t2);line-height:1;font-variant-numeric:tabular-nums;font-synthesis:none}
+.stamp.sm{width:48px;height:48px;font-size:var(--t1)}
+.stamp.shu{border-color:var(--shu);color:var(--shu);border-width:3px;transform:rotate(-8deg)}
+
+/* bread list */
+.list{background:var(--paper);border-radius:var(--r);box-shadow:var(--shadow);padding:var(--s1) var(--s3)}
+.list-head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2);padding:var(--s2) 0 var(--s1);border-bottom:2px solid var(--ink)}
+.list-head h2{font-size:var(--t3)}
+.list-head p{font-size:var(--t0);color:var(--ink-soft)}
+.breads{list-style:none;margin:0;padding:0}
+.bread{display:grid;grid-template-columns:minmax(0,1fr) 96px 156px;align-items:center;gap:var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--rule)}
+.bread:last-child{border-bottom:0}
+.bread h3{font-size:var(--t2)}
+.bread .desc{font-size:var(--t0);color:var(--ink-soft);line-height:1.6}
+.bread .left{text-align:center;line-height:1.3}
+.bread .left .n{display:block;font-family:var(--f-display);font-size:var(--t3)}
+.bread .left small{font-size:var(--t0)}
+.bread .ctl{display:flex;justify-content:flex-end}
+.stepper{display:inline-flex;align-items:center;gap:var(--s1)}
+.stepper output{min-width:2ch;text-align:center;font-size:var(--t2);font-weight:700;font-variant-numeric:tabular-nums}
+.step{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;font:inherit;transition:transform .12s ease,background-color .15s ease}
+.step svg{width:18px;height:18px}
+.step:active:not(:disabled){transform:scale(.94)}
+.step:disabled{border-color:var(--rule);border-style:dashed;color:var(--ink-soft);cursor:not-allowed}
+@media (hover:hover) and (pointer:fine){.step:hover:not(:disabled){background:var(--kraft)}}
+.bread.is-soldout h3,.bread.is-soldout .desc{color:var(--ink-soft)}
+.bread .left .stamp{margin:0 auto}
+.alt{font-size:var(--t0);line-height:1.5;text-align:right}
+.textbtn{font:inherit;color:var(--ai);font-weight:700;background:none;border:0;padding:var(--s1) 0;min-height:44px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.limit-msg{min-height:0;font-size:var(--t0);padding:0 0 var(--s1)}
+
+/* slip — signature */
+.slip{position:sticky;top:var(--s2);background:var(--paper);border-radius:var(--r);box-shadow:var(--shadow);padding:var(--s3)}
+.slip h2{font-size:var(--t3);display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:var(--s1)}
+.slip h2 small{font-family:var(--f-body);font-size:var(--t0)}
+.slip .pick-at{padding:var(--s1) 0;line-height:1.6}
+.slots{display:flex;gap:var(--s1);margin:var(--s1) 0 var(--s1);padding:0;list-style:none}
+.slot{width:52px;height:52px;border-radius:50%;border:2px dashed var(--rule);display:grid;place-items:center;font-family:var(--f-display);font-size:var(--t2);line-height:1;color:var(--paper);font-synthesis:none}
+.slot.on{border:2px solid var(--ink);background:var(--ink)}
+.slot.just{animation:press .28s var(--ease-out)}
+@keyframes press{from{transform:scale(1.18);opacity:.3}to{transform:scale(1);opacity:1}}
+.count{font-size:var(--t1);line-height:1.5}
+.count b{font-size:var(--t2);font-variant-numeric:tabular-nums}
+.items{list-style:none;margin:var(--s1) 0 var(--s2);padding:0;font-size:var(--t1)}
+.items li{display:flex;justify-content:space-between;gap:var(--s2);border-bottom:1px dotted var(--rule);padding:2px 0}
+.items .empty{color:var(--ink-soft);border:0}
+.field{display:grid;gap:4px;margin-bottom:var(--s2)}
+.field label{font-weight:700;font-size:var(--t1)}
+.field input{font:inherit;font-size:var(--t1);color:var(--ink);background:var(--field);border:2px solid var(--rule);border-radius:var(--r);padding:10px 12px;min-height:48px;width:100%}
+.field input:focus-visible{outline:3px solid var(--ai);outline-offset:1px;border-color:var(--ai)}
+.field input[aria-invalid="true"]{border-color:var(--shu)}
+.err{color:var(--shu);font-size:var(--t0);line-height:1.6;font-weight:700}
+.err:empty{display:none}
+.btn{display:flex;width:100%;justify-content:center;align-items:center;min-height:56px;border:0;border-radius:var(--r);background:var(--ai);color:var(--paper);font:inherit;font-size:var(--t2);font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s ease,opacity .15s ease;text-decoration:none}
+.btn:active:not(:disabled){transform:scale(.98)}
+.btn:disabled{background:var(--rule);color:var(--ink);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.slip .fine{font-size:var(--t0);line-height:1.6;margin-top:var(--s2)}
+.slip .reason{margin-top:var(--s2);font-weight:700;color:var(--shu)}
+.slip-stamp{display:none}
+.is-closed .slip-stamp{display:grid;position:absolute;right:var(--s3);top:112px}
+.is-closed .slip .slots{opacity:.5}
+.done{display:none}
+.slip.is-done .done{display:block}
+.slip.is-done .form{display:none}
+.done .stamp{margin:var(--s2) 0}
+.done p{margin-bottom:var(--s2)}
+
+/* pickup */
+.pickup{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s4);align-items:start;padding-top:var(--s5);border-top:2px solid var(--ink)}
+.pickup h2{font-size:var(--t4);margin-bottom:var(--s3)}
+.line{list-style:none;margin:0;padding:0;position:relative}
+.line li{display:grid;grid-template-columns:64px 1fr;gap:var(--s2);align-items:center;padding-bottom:var(--s3);position:relative}
+.line li:not(:last-child)::before{content:"";position:absolute;left:31px;top:64px;bottom:0;border-left:2px solid var(--ink)}
+.line .d{line-height:1.5}
+.line .d b{display:block;font-size:var(--t2)}
+.terms{margin:0;display:grid;gap:0}
+.terms div{display:grid;grid-template-columns:7em 1fr;gap:var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--ink)}
+.terms div:first-child{border-top:1px solid var(--ink)}
+.terms dt{font-weight:700}
+.terms dd{margin:0;font-size:var(--t2);line-height:1.5}
+
+/* yeast */
+.yeast{padding-block:var(--s5) var(--s6);display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s4);align-items:center}
+.yeast .stamp{width:120px;height:120px;font-size:var(--t4);border-width:3px}
+.yeast h2{font-size:var(--t5);margin-bottom:var(--s2)}
+.yeast p{max-width:34em}
+footer{border-top:2px solid var(--ink);padding:var(--s4) 0 var(--s5);font-size:var(--t1)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s2)}
+
+/* mobile bar */
+.bar{display:none}
+
+@media (max-width:959px){
+  .order{grid-template-columns:minmax(0,1fr)}
+  .slip{position:relative;top:auto}
+  .pickup{grid-column:auto}
+  body{padding-bottom:76px}
+  .bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--paper);box-shadow:0 -2px 10px rgb(42 31 23 / .2);padding:10px var(--s2);gap:var(--s2);align-items:center;justify-content:space-between}
+  .bar .count{white-space:nowrap}
+  .bar .btn{width:auto;min-height:48px;padding:0 var(--s3);font-size:var(--t1)}
+  .is-closed .bar{display:none}
+}
+@media (max-width:700px){
+  .wrap{padding:0 var(--s2)}
+  .top nav{display:none}
+  .hero{padding-block:var(--s1) var(--s3)}
+  .hero h1{font-size:var(--t3)}
+  .deadline{font-size:var(--t1)}
+  .rounds{grid-template-columns:1fr;gap:var(--s1)}
+  .round .box{padding:12px var(--s2)}
+  .round .stamp{width:52px;height:52px;font-size:var(--t1)}
+  .list{padding:var(--s1) var(--s2)}
+  .bread{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name name" "left ctl";row-gap:var(--s1)}
+  .bread .name{grid-area:name}
+  .bread .left{grid-area:left;text-align:left}
+  .bread .left .n{display:inline;font-size:var(--t2)}
+  .bread .left .stamp{margin:0}
+  .bread .ctl{grid-area:ctl}
+  .pickup{grid-template-columns:minmax(0,1fr)}
+  .pickup h2{font-size:var(--t3)}
+  .terms div{grid-template-columns:5.5em 1fr}
+  .yeast{grid-template-columns:minmax(0,1fr);padding-block:var(--s5)}
+  .yeast .stamp{width:88px;height:88px;font-size:var(--t3)}
+  .yeast h2{font-size:var(--t4)}
+  .slot{width:44px;height:44px;font-size:var(--t1)}
+  .slip{padding:var(--s3) var(--s2)}
+  .is-closed .slip-stamp{right:var(--s2);top:140px}
+}
+@media (min-width:1600px){
+  .wrap{max-width:1560px}
+  .order{grid-template-columns:340px minmax(0,1fr) 400px}
+  .order .main{grid-column:2;grid-row:1}
+  .order .slip{grid-column:3;grid-row:1}
+  .pickup{grid-column:1;grid-row:1;grid-template-columns:minmax(0,1fr);padding-top:0;border-top:0;gap:var(--s3)}
+  .pickup h2{font-size:var(--t3);margin-bottom:var(--s2)}
+}
+@media (prefers-reduced-motion:reduce){
+  .slot.just{animation:fade .2s ease}
+  @keyframes fade{from{opacity:.3}to{opacity:1}}
+  .step,.btn{transition:background-color .15s ease}
+  .step:active:not(:disabled),.btn:active:not(:disabled){transform:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="wrap top">
+  <a class="logo" href="#"><span class="mark" aria-hidden="true">麦</span><b>こむぎ舎</b></a>
+  <nav aria-label="ページ内">
+    <ul>
+      <li><a href="#order">パンを選ぶ</a></li>
+      <li><a href="#pickup">受け取り</a></li>
+      <li><a href="#yeast">酵母のこと</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="wrap hero" aria-labelledby="h1">
+    <h1 id="h1">土曜の焼きたてを、<wbr>取り置きます。</h1>
+    <div>
+      <p class="deadline"><span><span class="nw"><span data-k="sat">11月7日(土)</span>受け取り分は</span> <strong class="nw"><span data-k="fri">11月6日(金)</span> 18:00</strong><span class="nw">まで</span></span><span class="left-time fig" data-k="left">あと2日7時間30分</span></p>
+      <p class="closed-note" role="status"></p>
+    </div>
+  </section>
+
+  <div class="wrap order" id="order">
+    <div class="main">
+      <fieldset class="rounds">
+        <legend>受け取る回を選ぶ</legend>
+        <label class="round">
+          <input type="radio" name="round" value="8" checked>
+          <span class="box">
+            <span class="stamp" aria-hidden="true">8:00</span>
+            <span class="when"><b><span class="nw" data-k="sat-s">11/7(土)</span> <span class="nw">朝8時の焼き上がり</span></b><span class="rest">残り <span class="fig" data-rest="8">17</span>点</span> <span class="pick nw" data-pick="8">選択中</span></span>
+          </span>
+        </label>
+        <label class="round">
+          <input type="radio" name="round" value="11">
+          <span class="box">
+            <span class="stamp" aria-hidden="true">11:00</span>
+            <span class="when"><b><span class="nw" data-k="sat-s">11/7(土)</span> <span class="nw">11時の焼き上がり</span></b><span class="rest">残り <span class="fig" data-rest="11">26</span>点</span> <span class="pick nw" data-pick="11">この回にする</span></span>
+          </span>
+        </label>
+      </fieldset>
+
+      <section class="list" aria-labelledby="list-h">
+        <div class="list-head">
+          <h2 id="list-h"><span data-k="round-label">8時</span>の回のパン</h2>
+        </div>
+        <ul class="breads">
+          <li class="bread" data-id="campagne" data-name="カンパーニュ" data-c="カ" data-n8="4" data-n11="5">
+            <div class="name"><h3>カンパーニュ</h3><p class="desc">大きな丸いパン。薄く切って朝食に。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+          <li class="bread" data-id="walnut" data-name="くるみとレーズン" data-c="く" data-n8="0" data-n11="3">
+            <div class="name"><h3>くるみとレーズン</h3><p class="desc">くるみとレーズンを練り込んだ食事パン。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+          <li class="bread" data-id="rye" data-name="ライ麦のパン" data-c="ラ" data-n8="3" data-n11="4">
+            <div class="name"><h3>ライ麦のパン</h3><p class="desc">ほどよい酸味の、どっしりした生地。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+          <li class="bread" data-id="baguette" data-name="バゲット" data-c="バ" data-n8="6" data-n11="8">
+            <div class="name"><h3>バゲット</h3><p class="desc">皮が香ばしい、細長いフランスパン。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+          <li class="bread" data-id="cinnamon" data-name="シナモンロール" data-c="シ" data-n8="4" data-n11="6">
+            <div class="name"><h3>シナモンロール</h3><p class="desc">シナモンと砂糖を巻き込んだ甘いパン。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+          <li class="bread" data-id="apple" data-name="りんごのパン" data-c="り" data-n8="0" data-n11="0">
+            <div class="name"><h3>りんごのパン</h3><p class="desc">煮たりんごを包んだ、やわらかい生地。</p></div>
+            <p class="left"></p><div class="ctl"></div>
+          </li>
+        </ul>
+        <p class="limit-msg" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <aside class="slip" id="slip" aria-labelledby="slip-h">
+      <h2 id="slip-h">予約票 <small>1人5点まで</small></h2>
+      <div class="slip-stamp stamp shu" aria-hidden="true">締切</div>
+      <form class="form" novalidate>
+        <p class="pick-at">受け取り <b class="nw"><span data-k="sat">11月7日(土)</span> <span data-k="round-time">8:00</span>の回</b></p>
+        <ul class="slots" aria-hidden="true">
+          <li class="slot"></li><li class="slot"></li><li class="slot"></li><li class="slot"></li><li class="slot"></li>
+        </ul>
+        <p class="count"><b data-k="total">0</b> / 5点 <span data-k="room">あと5点選べます</span></p>
+        <ul class="items" aria-label="選んだパン"><li class="empty">まだ選ばれていません</li></ul>
+        <p class="err" id="err-items"></p>
+        <div class="field">
+          <label for="f-name">お名前</label>
+          <input id="f-name" name="name" autocomplete="name" aria-describedby="err-name">
+          <p class="err" id="err-name"></p>
+        </div>
+        <div class="field">
+          <label for="f-tel">電話番号</label>
+          <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="err-tel">
+          <p class="err" id="err-tel"></p>
+        </div>
+        <button class="btn" type="submit" id="submit" aria-describedby="reason">予約する</button>
+        <p class="reason" id="reason" hidden></p>
+        <p class="fine">お支払いは受け取りのときに、現金か交通系ICで。</p>
+      </form>
+      <div class="done" role="status" tabindex="-1">
+        <div class="stamp" aria-hidden="true">受付</div>
+        <p><b>ご予約を受け付けました。</b></p>
+        <p class="done-sum"></p>
+        <p>店頭でお名前をお伝えください。</p>
+        <button class="btn ghost" type="button" id="edit">内容を直す</button>
+      </div>
+    </aside>
+
+    <section class="pickup" id="pickup" aria-labelledby="pickup-h">
+      <div>
+        <h2 id="pickup-h">予約から受け取りまで</h2>
+        <ol class="line">
+          <li><span class="stamp sm" aria-hidden="true">金</span><span class="d"><b><span data-k="fri-s">11/6(金)</span> 18:00</b>予約の締め切り</span></li>
+          <li><span class="stamp sm" aria-hidden="true">8</span><span class="d"><b><span data-k="sat-s">11/7(土)</span> 8:00</b>1回目の焼き上がり</span></li>
+          <li><span class="stamp sm" aria-hidden="true">11</span><span class="d"><b><span data-k="sat-s">11/7(土)</span> 11:00</b>2回目の焼き上がり</span></li>
+        </ol>
+      </div>
+      <dl class="terms">
+        <div><dt>受け取り</dt><dd>店頭のみ</dd></div>
+        <div><dt>お支払い</dt><dd>現金・交通系IC</dd></div>
+        <div><dt>予約</dt><dd>1人5点まで</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <section class="wrap yeast" id="yeast" aria-labelledby="yeast-h">
+    <span class="stamp" aria-hidden="true">種</span>
+    <div>
+      <h2 id="yeast-h">酵母も、店で<wbr>育てています。</h2>
+      <p>週末のパンは、こむぎ舎の自家製酵母で焼いています。</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span>こむぎ舎</span></div>
+</footer>
+
+<div class="bar" aria-label="予約の状況">
+  <p class="count"><b data-k="total">0</b> / 5点</p>
+  <a class="btn" href="#slip">予約票へ進む</a>
+</div>
+</div>
+
+<script>
+(function(){
+  var MAX = 5;
+  var app = document.getElementById('app');
+  var rows = [].slice.call(document.querySelectorAll('.bread'));
+  var qty = {}; rows.forEach(function(r){ qty[r.dataset.id] = 0; });
+  var round = '8';
+  var closed = false;
+  var lastAdded = -1;
+  var WD = ['日','月','火','水','木','金','土'];
+
+  var minus = '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  var plus = '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h12M9 3v12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+  function $(s, el){ return (el||document).querySelector(s); }
+  function $$(s, el){ return [].slice.call((el||document).querySelectorAll(s)); }
+  function setK(k, v){ $$('[data-k="'+k+'"]').forEach(function(e){ e.textContent = v; }); }
+
+  /* ---- time: the coming Saturday and its Friday 18:00 deadline ---- */
+  function now(){
+    var m = location.search.match(/[?&]now=([^&]+)/);
+    if (m) { var d = new Date(decodeURIComponent(m[1])); if (!isNaN(d)) return d; }
+    return new Date();
+  }
+  function cycle(t){
+    var sat = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    var add = (6 - sat.getDay() + 7) % 7;
+    sat.setDate(sat.getDate() + add);
+    var dl = new Date(sat); dl.setDate(dl.getDate() - 1); dl.setHours(18,0,0,0);
+    return { sat: sat, dl: dl, closed: t >= dl };
+  }
+  function long(d){ return (d.getMonth()+1)+'月'+d.getDate()+'日('+WD[d.getDay()]+')'; }
+  function short(d){ return (d.getMonth()+1)+'/'+d.getDate()+'('+WD[d.getDay()]+')'; }
+  function leftText(ms){
+    var m = Math.floor(ms/60000), d = Math.floor(m/1440), h = Math.floor(m%1440/60), mi = m%60;
+    return 'あと' + (d ? d+'日' : '') + (d||h ? h+'時間' : '') + mi + '分';
+  }
+  function tick(){
+    var c = cycle(now());
+    setK('sat', long(c.sat)); setK('sat-s', short(c.sat));
+    setK('fri', long(c.dl)); setK('fri-s', short(c.dl));
+    if (c.closed !== closed) { closed = c.closed; render(); }
+    if (!closed) setK('left', leftText(c.dl - now()));
+    else $('.closed-note').textContent = long(c.sat) + '受け取り分の予約は、' + long(c.dl) + ' 18:00に締め切りました。ご予約済みの方は、土曜の焼き上がりの回に店頭へお越しください。';
+  }
+
+  function stock(r, rd){ return +r.dataset['n'+(rd||round)]; }
+  function total(){ var t = 0; for (var k in qty) t += qty[k]; return t; }
+
+  function renderRow(r){
+    var id = r.dataset.id, n = stock(r), q = qty[id], name = r.dataset.name;
+    var other = round === '8' ? '11' : '8', on = stock(r, other);
+    var left = $('.left', r), ctl = $('.ctl', r);
+    r.classList.toggle('is-soldout', n === 0);
+    if (n === 0) {
+      left.innerHTML = '<span class="stamp sm shu">売切</span><span class="vh">この回は売り切れ</span>';
+      ctl.innerHTML = on > 0
+        ? '<p class="alt">'+(other==='8'?'8時':'11時')+'の回は残り<span class="fig">'+on+'</span>点' + (closed ? '' : '<br><button type="button" class="textbtn" data-switch="'+other+'">'+(other==='8'?'8時':'11時')+'の回にする</button>') + '</p>'
+        : '<p class="alt">今週は売り切れました</p>';
+      return;
+    }
+    left.innerHTML = '<small>残り</small><span class="n fig">'+n+'</span>';
+    var full = total() >= MAX;
+    ctl.innerHTML = '<div class="stepper">' +
+      '<button type="button" class="step" data-d="-1"'+(q<=0||closed?' disabled':'')+'>'+minus+'<span class="vh">'+name+'を1点減らす</span></button>' +
+      '<output aria-live="polite"><span class="vh">'+name+' </span>'+q+'<span class="vh">点</span></output>' +
+      '<button type="button" class="step" data-d="1"'+(q>=n||full||closed?' disabled':'')+'>'+plus+'<span class="vh">'+name+'を1点増やす</span></button>' +
+      '</div>';
+  }
+
+  function render(){
+    app.classList.toggle('is-closed', closed);
+    rows.forEach(renderRow);
+    ['8','11'].forEach(function(rd){
+      var s = rows.reduce(function(a, r){ return a + stock(r, rd); }, 0);
+      $('[data-rest="'+rd+'"]').textContent = s;
+      var p = $('[data-pick="'+rd+'"]');
+      p.textContent = closed ? '受付終了' : (rd === round ? '選択中' : 'この回にする');
+    });
+    $$('input[name="round"]').forEach(function(i){ i.disabled = closed; i.checked = i.value === round; });
+    setK('round-label', round === '8' ? '8時' : '11時');
+    setK('round-time', round === '8' ? '8:00' : '11:00');
+
+    var t = total();
+    setK('total', t);
+    setK('room', closed ? '受付は終わりました' : t >= MAX ?'上限に達しました' : 'あと' + (MAX - t) + '点選べます');
+    var chars = [];
+    rows.forEach(function(r){ for (var i = 0; i < qty[r.dataset.id]; i++) chars.push(r.dataset.c); });
+    $$('.slot').forEach(function(s, i){
+      s.classList.toggle('on', i < chars.length);
+      s.textContent = chars[i] || '';
+      s.classList.remove('just');
+      if (i === lastAdded) { void s.offsetWidth; s.classList.add('just'); }
+    });
+    lastAdded = -1;
+    var items = $('.items');
+    var picked = rows.filter(function(r){ return qty[r.dataset.id] > 0; });
+    items.innerHTML = picked.length
+      ? picked.map(function(r){ return '<li><span>'+r.dataset.name+'</span><span class="fig">'+qty[r.dataset.id]+'点</span></li>'; }).join('')
+      : '<li class="empty">まだ選ばれていません</li>';
+    if (t > 0) $('#err-items').textContent = '';
+
+    var btn = $('#submit'), reason = $('#reason');
+    btn.disabled = closed;
+    reason.hidden = !closed;
+    reason.textContent = closed ? '今週の予約は締め切りました。' : '';
+    $('.limit-msg').textContent = t >= MAX ? '1人5点までのため、これ以上は選べません。' : '';
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('.step');
+    if (b && !b.disabled) {
+      var r = b.closest('.bread'), id = r.dataset.id, d = +b.dataset.d;
+      var before = total();
+      qty[id] = Math.max(0, Math.min(stock(r), qty[id] + d));
+      if (total() > before) lastAdded = total() - 1;
+      render();
+      var again = $('.step[data-d="'+d+'"]', r);
+      (again && !again.disabled ? again : $('.step:not(:disabled)', r) || $('.step', r)).focus();
+      return;
+    }
+    var sw = e.target.closest('[data-switch]');
+    if (sw) { setRound(sw.dataset.switch); $('input[name="round"][value="'+round+'"]').focus(); }
+  });
+
+  function setRound(rd){
+    round = rd;
+    var fixed = false;
+    rows.forEach(function(r){ var n = stock(r); if (qty[r.dataset.id] > n) { qty[r.dataset.id] = n; fixed = true; } });
+    render();
+    if (fixed) $('.limit-msg').textContent = (rd==='8'?'8時':'11時') + 'の回の残りに合わせて、数を直しました。';
+  }
+  $$('input[name="round"]').forEach(function(i){ i.addEventListener('change', function(){ setRound(i.value); }); });
+
+  var form = $('.form'), slip = $('#slip');
+  function fieldErr(input, id, msg){
+    $(id).textContent = msg;
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    return !msg;
+  }
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (closed) return;
+    var name = $('#f-name'), tel = $('#f-tel');
+    var digits = tel.value.replace(/[\s\-ー－()（）]/g, '').replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 65248); });
+    var ok = true, first = null;
+    if (total() === 0) { $('#err-items').textContent = 'パンがまだ選ばれていません。一覧の「＋」で1点以上選んでください。'; ok = false; }
+    if (!fieldErr(name, '#err-name', name.value.trim() ? '' : 'お名前を入れてください。受け取りのときに確認します。')) { ok = false; first = first || name; }
+    if (!fieldErr(tel, '#err-tel', /^0\d{9,10}$/.test(digits) ? '' : (tel.value.trim() ? '電話番号は0から始まる10〜11桁で入れてください（例: 090-1234-5678）。' : '電話番号を入れてください。お店から連絡するときに使います。'))) { ok = false; first = first || tel; }
+    if (!ok) { (first || $('.breads .step:not(:disabled)') || name).focus(); return; }
+    var sum = rows.filter(function(r){ return qty[r.dataset.id] > 0; }).map(function(r){ return r.dataset.name + ' ' + qty[r.dataset.id] + '点'; }).join('、');
+    $('.done-sum').textContent = $('[data-k="sat"]').textContent + ' ' + (round==='8'?'8:00':'11:00') + 'の回 / ' + sum + '（計' + total() + '点）';
+    slip.classList.add('is-done');
+    $('.done').focus();
+  });
+  $('#edit').addEventListener('click', function(){ slip.classList.remove('is-done'); $('#f-name').focus(); });
+
+  render();
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+</body>
+</html>

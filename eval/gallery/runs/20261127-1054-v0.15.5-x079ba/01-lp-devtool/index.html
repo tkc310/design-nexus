@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter JSON and logfmt logs with a WHERE clause</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches structured logs (JSON, logfmt) across many files with a SQL-like filter. One binary, MIT licensed. brew install grepline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600&family=Martian+Mono:wdth,wght@75..112.5,400;75..112.5,500;75..112.5,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF;
+  --surface:#F4F4F6;
+  --text:#16181D;
+  --muted:#5B606B;
+  --accent:#A3166F;
+  --accent-press:#86105B;
+  --on-accent:#FFFFFF;
+  --border:#767B86;
+  --rule:#DCDDE2;
+  --danger:#B3261E;
+
+  --font-display:"Martian Mono", ui-monospace, monospace;
+  --font-body:"Instrument Sans", ui-sans-serif, sans-serif;
+
+  --fs-1:0.875rem;   /* 14 */
+  --fs-2:1rem;       /* 16 */
+  --fs-3:1.25rem;    /* 20 */
+  --fs-4:1.5625rem;  /* 25 */
+  --fs-5:clamp(1.9375rem, 1.3rem + 2.2vw, 2.4375rem); /* 31 → 39 */
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px; --s9:96px;
+  --radius:6px;
+  --gutter:clamp(16px, 4vw, 48px);
+  --max:1200px;
+  --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--font-body); font-size:var(--fs-2); line-height:1.6;
+}
+h1,h2,h3{text-wrap:balance; margin:0}
+p{text-wrap:pretty; margin:0}
+code,kbd,.mono{font-family:var(--font-display); font-variation-settings:"wdth" 87.5}
+a{color:var(--text); text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.wrap{max-width:var(--max); margin-inline:auto; padding-inline:var(--gutter)}
+
+/* ---------- header ---------- */
+.top{display:flex; align-items:center; justify-content:space-between; gap:var(--s4); padding-block:var(--s4)}
+.mark-word{font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); text-decoration:none; letter-spacing:-0.01em; font-variation-settings:"wdth" 112.5; white-space:nowrap}
+.top nav ul{display:flex; gap:var(--s5); list-style:none; margin:0; padding:0}
+.top nav a{white-space:nowrap; display:inline-block; padding-block:var(--s1)}
+
+/* ---------- hero ---------- */
+.hero{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:var(--s7); align-items:end; padding-block:var(--s7) var(--s7)}
+.hero h1{font-family:var(--font-display); font-size:var(--fs-5); line-height:1.15; font-weight:700; letter-spacing:-0.02em; font-variation-settings:"wdth" 100}
+.hero h1 em{font-style:normal; white-space:nowrap; background:var(--text); color:var(--bg); padding:0 .18em; border-radius:2px}
+.lede{margin-top:var(--s5); font-size:var(--fs-3); line-height:1.5; max-width:34em}
+
+/* ---------- the log row: the page's unit ---------- */
+.row{
+  display:grid; grid-template-columns:var(--s5) 9.5rem minmax(0,1fr) auto;
+  column-gap:var(--s3); align-items:baseline;
+  padding-block:var(--s3); border-top:1px solid var(--rule);
+}
+.row:last-child{border-bottom:1px solid var(--rule)}
+.row .gut{font-family:var(--font-display); color:var(--muted); font-size:var(--fs-1); text-align:center}
+.row .src{font-family:var(--font-display); font-variation-settings:"wdth" 75; font-size:var(--fs-1); color:var(--muted); white-space:nowrap}
+.row .line{font-size:var(--fs-1); line-height:1.7; white-space:pre-wrap; word-break:normal; overflow-wrap:normal; min-width:0}
+
+/* install rows */
+.install{margin:0; padding:0; list-style:none}
+.install .row{grid-template-columns:var(--s5) 5.5rem minmax(0,1fr) auto; padding-block:var(--s3)}
+.install .src{font-size:var(--fs-2)}
+.install .cmd{font-size:var(--fs-3); font-weight:500; white-space:pre-wrap; min-width:0}
+.install .gut{font-size:var(--fs-3); color:var(--muted)}
+.install-note{margin-top:var(--s3); min-height:1.6em; font-size:var(--fs-1)}
+.install-note[data-state="err"]{color:var(--danger)}
+
+.btn{
+  font:600 var(--fs-1)/1 var(--font-body); white-space:nowrap; cursor:pointer;
+  min-height:40px; padding:0 var(--s4); border-radius:var(--radius);
+  border:2px solid var(--text); background:var(--bg); color:var(--text);
+  transition:background-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+}
+.btn:hover{background:var(--surface)}
+.btn:active{transform:scale(0.97)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.btn.primary:hover{background:var(--accent-press); border-color:var(--accent-press)}
+.btn:disabled{opacity:.5; cursor:not-allowed}
+
+/* ---------- bench (signature) ---------- */
+.bench{background:var(--surface); border-block:1px solid var(--rule); padding-block:var(--s7) var(--s8)}
+.bench-grid{display:grid; grid-template-columns:minmax(0,1fr); gap:var(--s5)}
+.bench h2{font-size:var(--fs-3); font-weight:600; line-height:1.3}
+.filter{display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:var(--s3);
+  background:var(--bg); border:2px solid var(--border); border-radius:var(--radius); padding:var(--s2) var(--s4)}
+.filter:focus-within{border-color:var(--accent); outline:2px solid var(--accent); outline-offset:2px}
+.filter label{font-family:var(--font-display); font-variation-settings:"wdth" 75; font-size:var(--fs-1); color:var(--muted); white-space:nowrap}
+.filter textarea{
+  resize:none; field-sizing:content; line-height:1.3; overflow:hidden;
+  font-family:var(--font-display); font-variation-settings:"wdth" 87.5; font-weight:500;
+  font-size:var(--fs-4); color:var(--text); background:transparent; border:0; padding:var(--s2) 0; width:100%; min-width:0;
+}
+.filter textarea:focus{outline:none}
+.filter[data-invalid] {border-color:var(--danger)}
+.hint{font-size:var(--fs-1); margin-top:var(--s2)}
+.hint[data-state="err"]{color:var(--danger); font-weight:600}
+
+.presets{display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; margin:0; padding:0; list-style:none}
+.presets .lbl{font-size:var(--fs-1); margin-right:var(--s2)}
+.chip{font-family:var(--font-display); font-variation-settings:"wdth" 87.5; font-size:var(--fs-1); white-space:nowrap;
+  min-height:32px; padding:0 var(--s3); border-radius:var(--radius); border:1px solid var(--border); background:var(--bg); color:var(--text); cursor:pointer;
+  transition:border-color 160ms ease, background-color 160ms ease}
+.chip:hover{border-color:var(--text)}
+.chip[aria-pressed="true"]{border:2px solid var(--accent); padding:0 calc(var(--s3) - 1px)}
+
+.tally{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s5); align-items:baseline; margin:0; padding:0; list-style:none; font-variant-numeric:tabular-nums}
+.tally li{font-size:var(--fs-1)}
+.tally .total{white-space:nowrap}
+.tally code{font-size:var(--fs-1)}
+.tally .total{font-family:var(--font-display); font-weight:700; font-size:var(--fs-3); font-variation-settings:"wdth" 100}
+
+.lines{margin:0; padding:0; list-style:none; background:var(--bg); border-radius:var(--radius); padding-inline:var(--s4)}
+.lines .row{border-top-color:var(--rule)}
+.lines .row:first-child{border-top:0}
+.lines .row:last-child{border-bottom:0}
+/* design-nexus: non-matching log rows stay muted at 14px on purpose: the fade is the bench's "excluded" state (6.3:1, and matches add ▶, weight and reverse video) */
+.lines .row{color:var(--muted); transition:color 160ms ease}
+.lines .row .k{color:inherit}
+.lines .row.hit{color:var(--text)}
+.lines .row.hit .gut::before{content:"▶"; color:var(--text)}
+.lines .row.hit .src{color:var(--text); font-weight:500}
+.f{white-space:nowrap}
+.f.pass{text-decoration:underline dotted 1px; text-underline-offset:4px}
+.row.hit .f.pass{text-decoration:none; background:var(--text); color:var(--bg); border-radius:2px; box-decoration-break:clone; -webkit-box-decoration-break:clone}
+.empty{padding:var(--s6) var(--s4); background:var(--bg); border-radius:var(--radius)}
+.empty[hidden]{display:none}
+.empty p{font-size:var(--fs-2)}
+
+/* ---------- facts as one logfmt line ---------- */
+.facts{padding-block:var(--s8)}
+.facts .row{grid-template-columns:var(--s5) 9.5rem minmax(0,1fr); padding-block:var(--s5)}
+.facts .src, footer .src{font-size:var(--fs-2)}
+.facts dl{margin:0; display:flex; flex-wrap:wrap; gap:var(--s2) var(--s6); font-family:var(--font-display); font-variation-settings:"wdth" 100; font-size:var(--fs-5); line-height:1.25; letter-spacing:-0.01em}
+.facts dl div{display:flex; white-space:nowrap}
+.facts dt{color:var(--muted); font-weight:400}
+.facts dt::after{content:"="}
+.facts dd{margin:0; font-weight:700}
+.facts .say{grid-column:3; margin-top:var(--s4); font-size:var(--fs-3); max-width:36em}
+
+/* ---------- closing install ---------- */
+.close{padding-block:0 var(--s8)}
+.close-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:var(--s7); align-items:start}
+.close h2{font-family:var(--font-display); font-size:var(--fs-4); font-weight:700; line-height:1.2; font-variation-settings:"wdth" 100}
+.close p{margin-top:var(--s3)}
+
+footer .row{grid-template-columns:var(--s5) 9.5rem minmax(0,1fr); border-bottom:0; padding-block:var(--s5) var(--s6)}
+footer .line{font-family:var(--font-display); font-size:var(--fs-2); color:var(--muted)}
+
+/* ---------- widths ---------- */
+@media (max-width: 900px){
+  .hero{grid-template-columns:minmax(0,1fr); gap:var(--s6); padding-block:var(--s6)}
+  .close-grid{grid-template-columns:minmax(0,1fr); gap:var(--s5)}
+  .tally li:first-child{flex-basis:100%}
+}
+@media (max-width: 640px){
+  .top nav ul{gap:var(--s4)}
+  .hero{padding-block:var(--s4) var(--s6); gap:var(--s5)}
+  .lede{font-size:var(--fs-2); margin-top:var(--s4)}
+  .row{grid-template-columns:var(--s5) minmax(0,1fr) auto; row-gap:var(--s1)}
+  .row .line{grid-column:2 / -1}
+  .f[data-k="msg"]{white-space:normal}
+  /* the command gets the whole line; its source label and Copy sit under it */
+  .install .row{grid-template-columns:var(--s4) minmax(0,1fr) auto; grid-template-areas:"gut cmd cmd" ". src btn"; row-gap:var(--s2); align-items:center}
+  .install .gut{grid-area:gut}
+  .install .cmd{grid-area:cmd; font-size:var(--fs-2)}
+  .install .src{grid-area:src}
+  .install .btn{grid-area:btn}
+  .lines{padding-inline:var(--s3)}
+  .facts .row, footer .row{grid-template-columns:var(--s4) minmax(0,1fr)}
+  .facts dl, .facts .say{grid-column:2}
+  .facts dl{font-size:var(--fs-3); gap:var(--s2) var(--s5)}
+  .filter{grid-template-columns:minmax(0,1fr); gap:0; padding-top:var(--s3)}
+  .filter textarea{font-size:var(--fs-3)}
+}
+@media (min-width: 1600px){
+  :root{--max:1560px}
+  .bench-grid{grid-template-columns:minmax(0,1fr) 20rem; grid-template-areas:"head head" "filter filter" "presets presets" "lines tally"; column-gap:var(--s7)}
+  .bench-grid > .head{grid-area:head}
+  .bench-grid > .filter-wrap{grid-area:filter}
+  .bench-grid > .presets{grid-area:presets}
+  .bench-grid > .result{grid-area:lines}
+  .bench-grid > .tally{grid-area:tally; flex-direction:column; flex-wrap:nowrap; gap:var(--s4); align-self:start; position:sticky; top:var(--s5);
+    border-left:1px solid var(--rule); padding-left:var(--s5)}
+  .tally .total{font-size:var(--fs-5); display:block}
+  .hero h1{font-size:3.05rem}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none !important; animation:none !important}
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="mark-word" href="#top">grepline</a>
+  <nav aria-label="Page">
+    <ul>
+      <li><a href="#bench">Try a filter</a></li>
+      <li><a href="#install">Install</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="wrap hero" aria-labelledby="h1">
+    <div>
+      <h1 id="h1">Search JSON and logfmt logs with <em>level=error</em> instead of a&nbsp;regex.</h1>
+      <p class="lede">grepline reads structured log lines across many files and keeps the ones that match a SQL-like filter. It's a single open-source binary written in Rust.</p>
+    </div>
+    <div>
+      <ul class="install" aria-label="Install commands">
+        <li class="row">
+          <span class="gut" aria-hidden="true">$</span>
+          <span class="src">homebrew</span>
+          <code class="cmd" id="cmd-brew">brew install grepline</code>
+          <button class="btn primary" type="button" data-copy="cmd-brew" aria-label="Copy brew install grepline">Copy</button>
+        </li>
+        <li class="row">
+          <span class="gut" aria-hidden="true">$</span>
+          <span class="src">cargo</span>
+          <code class="cmd" id="cmd-cargo">cargo install grepline</code>
+          <button class="btn" type="button" data-copy="cmd-cargo" aria-label="Copy cargo install grepline">Copy</button>
+        </li>
+      </ul>
+      <p class="install-note" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="bench" id="bench" aria-labelledby="bench-h">
+    <div class="wrap bench-grid">
+      <div class="head">
+        <h2 id="bench-h">Write a filter and see which lines it keeps. These are twelve lines from three files, JSON and logfmt mixed.</h2>
+      </div>
+      <div class="filter-wrap">
+        <div class="filter" id="filter-box">
+          <label for="q">filter</label>
+          <textarea id="q" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="q-hint">level=error and latency_ms&gt;500</textarea>
+        </div>
+        <p class="hint" id="q-hint">Clauses take the form <code>field=value</code> or <code>field&gt;number</code>, joined with <code>and</code>.</p>
+      </div>
+      <ul class="presets" aria-label="Example filters">
+        <li class="lbl">Try</li>
+        <li><button class="chip" type="button" aria-pressed="true">level=error and latency_ms&gt;500</button></li>
+        <li><button class="chip" type="button" aria-pressed="false">latency_ms&gt;500</button></li>
+        <li><button class="chip" type="button" aria-pressed="false">level=warn</button></li>
+        <li><button class="chip" type="button" aria-pressed="false">level=error</button></li>
+      </ul>
+      <ul class="tally" id="tally" aria-live="polite"></ul>
+      <div class="result">
+        <ol class="lines" id="lines" aria-label="Log lines"></ol>
+        <div class="empty" id="empty" hidden>
+          <p><strong>No line matches every clause.</strong> Each clause above shows how many lines it keeps on its own. Drop the one that keeps zero, or try <button class="chip" type="button" data-set="level=error">level=error</button></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap facts" aria-labelledby="facts-h">
+    <h2 id="facts-h" class="vh">What you install</h2>
+    <div class="row">
+      <span class="gut" aria-hidden="true"></span>
+      <span class="src">grepline</span>
+      <dl>
+        <div><dt>lang</dt><dd>rust</dd></div>
+        <div><dt>license</dt><dd>MIT</dd></div>
+        <div><dt>binaries</dt><dd>1</dd></div>
+        <div><dt>reads</dt><dd>json,logfmt</dd></div>
+      </dl>
+      <p class="say">It's one binary to put on your PATH, and the MIT license lets you vendor it, fork it, or ship it inside your own tooling.</p>
+    </div>
+  </section>
+
+  <section class="wrap close" id="install" aria-labelledby="install-h">
+    <div class="close-grid">
+      <div>
+        <h2 id="install-h">Install it, then paste the filter you just tried.</h2>
+        <p>Use Homebrew on macOS or Linux, or Cargo wherever you have a Rust toolchain.</p>
+      </div>
+      <div>
+        <ul class="install" aria-label="Install commands, again">
+          <li class="row">
+            <span class="gut" aria-hidden="true">$</span>
+            <span class="src">homebrew</span>
+            <code class="cmd" id="cmd-brew-2">brew install grepline</code>
+            <button class="btn primary" type="button" data-copy="cmd-brew-2" aria-label="Copy brew install grepline">Copy</button>
+          </li>
+          <li class="row">
+            <span class="gut" aria-hidden="true">$</span>
+            <span class="src">cargo</span>
+            <code class="cmd" id="cmd-cargo-2">cargo install grepline</code>
+            <button class="btn" type="button" data-copy="cmd-cargo-2" aria-label="Copy cargo install grepline">Copy</button>
+          </li>
+        </ul>
+        <p class="install-note" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="row">
+    <span class="gut" aria-hidden="true"></span>
+    <span class="src">grepline</span>
+    <p class="line">open source · MIT license · written in Rust</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Sample lines: three files, two formats. Field order is preserved for rendering.
+  const DATA = [
+    ["api.log", 1, "json",   [["ts","14:02:07.118"],["level","info"],["route","/orders"],["latency_ms",112],["msg","order listed"]]],
+    ["api.log", 2, "json",   [["ts","14:02:07.342"],["level","error"],["route","/checkout"],["latency_ms",1840],["msg","payment provider timeout"]]],
+    ["api.log", 3, "json",   [["ts","14:02:08.005"],["level","warn"],["route","/checkout"],["latency_ms",930],["msg","retrying payment call"]]],
+    ["api.log", 4, "json",   [["ts","14:02:09.771"],["level","error"],["route","/cart"],["latency_ms",230],["msg","cart item not found"]]],
+    ["worker.log", 1, "logfmt", [["ts","14:02:07.290"],["level","info"],["job","invoice-pdf"],["latency_ms",640],["msg","job finished"]]],
+    ["worker.log", 2, "logfmt", [["ts","14:02:08.415"],["level","error"],["job","email-send"],["msg","smtp connection refused"]]],
+    ["worker.log", 3, "logfmt", [["ts","14:02:08.902"],["level","error"],["job","invoice-pdf"],["latency_ms",2210],["msg","render exceeded deadline"]]],
+    ["worker.log", 4, "logfmt", [["ts","14:02:10.030"],["level","debug"],["job","email-send"],["attempt",2],["msg","requeued"]]],
+    ["edge.log", 1, "json",  [["ts","14:02:07.501"],["level","info"],["path","/checkout"],["status",200],["latency_ms",88],["msg","proxied"]]],
+    ["edge.log", 2, "json",  [["ts","14:02:08.120"],["level","error"],["path","/checkout"],["status",504],["latency_ms",3012],["msg","upstream timed out"]]],
+    ["edge.log", 3, "json",  [["ts","14:02:09.004"],["level","warn"],["path","/search"],["status",429],["latency_ms",41],["msg","rate limited"]]],
+    ["edge.log", 4, "json",  [["ts","14:02:10.611"],["level","info"],["path","/orders"],["status",200],["latency_ms",97],["msg","proxied"]]],
+  ];
+  const FILES = [...new Set(DATA.map(d => d[0]))];
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fmt = (format, k, v) => {
+    if (format === "json") return `"${esc(k)}": ${typeof v === "number" ? v : `"${esc(v)}"`}`;
+    const needsQ = typeof v === "string" && /\s/.test(v);
+    return `${esc(k)}=${needsQ ? `"${esc(v)}"` : esc(v)}`;
+  };
+
+  const list = document.getElementById("lines");
+  const rows = DATA.map(([file, n, format, fields]) => {
+    const li = document.createElement("li");
+    li.className = "row";
+    const parts = fields.map(([k, v]) => `<span class="f" data-k="${esc(k)}">${fmt(format, k, v)}</span>`);
+    const body = format === "json" ? `{${parts.join(", ")}}` : parts.join(" ");
+    li.innerHTML = `<span class="gut" aria-hidden="true"></span><span class="src">${file}:${n}</span><code class="line">${body}</code><span class="vh state"></span>`;
+    list.appendChild(li);
+    return { li, file, rec: Object.fromEntries(fields), state: li.querySelector(".state") };
+  });
+
+  const parse = q => {
+    const text = q.trim();
+    if (!text) return { clauses: [] };
+    const raw = text.split(/\s+and\s+/i);
+    const clauses = [];
+    for (const c of raw) {
+      const m = c.trim().match(/^([A-Za-z_][\w.]*)\s*(=|>)\s*(.+)$/);
+      if (!m) return { error: `“${c.trim()}” isn’t a clause this filter can read. Write it as field=value or field>number, for example latency_ms>500.` };
+      let [, field, op, val] = m;
+      val = val.trim().replace(/^["'](.*)["']$/, "$1");
+      if (op === ">" && !Number.isFinite(Number(val))) return { error: `“${c.trim()}” compares with “${val}”, which isn’t a number. Use a number after >, for example latency_ms>500.` };
+      clauses.push({ field, op, val, src: `${field}${op}${val}` });
+    }
+    return { clauses };
+  };
+  const test = (rec, c) => {
+    if (!(c.field in rec)) return false;
+    const v = rec[c.field];
+    return c.op === "=" ? String(v) === c.val : Number(v) > Number(c.val);
+  };
+
+  const input = document.getElementById("q");
+  const box = document.getElementById("filter-box");
+  const hint = document.getElementById("q-hint");
+  const hintDefault = hint.innerHTML;
+  const tally = document.getElementById("tally");
+  const empty = document.getElementById("empty");
+  const chips = [...document.querySelectorAll(".presets .chip")];
+  let last = { clauses: [] };
+
+  const run = () => {
+    const p = parse(input.value);
+    chips.forEach(ch => ch.setAttribute("aria-pressed", String(ch.textContent === input.value.trim())));
+    if (p.error) {
+      box.setAttribute("data-invalid", "");
+      input.setAttribute("aria-invalid", "true");
+      hint.dataset.state = "err";
+      hint.textContent = p.error;
+      return; // keep the last good result on screen
+    }
+    box.removeAttribute("data-invalid");
+    input.removeAttribute("aria-invalid");
+    delete hint.dataset.state;
+    hint.innerHTML = hintDefault;
+    last = p;
+
+    let hits = 0; const hitFiles = new Set();
+    const per = p.clauses.map(() => 0);
+    rows.forEach(r => {
+      const res = p.clauses.map(c => test(r.rec, c));
+      res.forEach((ok, i) => { if (ok) per[i]++; });
+      const hit = res.every(Boolean);
+      if (hit) { hits++; hitFiles.add(r.file); }
+      r.li.classList.toggle("hit", hit);
+      r.state.textContent = hit ? " (matches)" : "";
+      r.li.querySelectorAll(".f").forEach(f => {
+        const k = f.dataset.k;
+        f.classList.toggle("pass", p.clauses.some((c, i) => res[i] && c.field === k));
+      });
+    });
+
+    const total = rows.length;
+    let html = `<li><span class="total">${hits} of ${total}</span> lines match, from ${hitFiles.size} of ${FILES.length} files</li>`;
+    if (p.clauses.length > 1) {
+      html += p.clauses.map((c, i) => `<li><code>${esc(c.src)}</code> alone keeps ${per[i]}</li>`).join("");
+    } else if (!p.clauses.length) {
+      html = `<li><span class="total">${total} of ${total}</span> lines, with no filter applied</li>`;
+    }
+    tally.innerHTML = html;
+    empty.hidden = hits !== 0;
+  };
+
+  input.addEventListener("input", run);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); }); // a filter is one line
+  const setQ = q => { input.value = q; run(); };
+  chips.forEach(ch => ch.addEventListener("click", () => setQ(ch.textContent)));
+  document.querySelectorAll("[data-set]").forEach(b => b.addEventListener("click", () => { setQ(b.dataset.set); input.focus(); }));
+  run();
+
+  // Copy buttons
+  document.querySelectorAll("[data-copy]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const cmd = document.getElementById(btn.dataset.copy).textContent.trim();
+      const note = btn.closest(".install").nextElementSibling;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        note.dataset.state = "ok";
+        note.textContent = `Copied “${cmd}”. Paste it into your terminal to install.`;
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1800);
+      } catch {
+        note.dataset.state = "err";
+        note.textContent = "The browser blocked clipboard access. Select the command and copy it with your keyboard.";
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById(btn.dataset.copy));
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter JSON and logfmt logs across many files</title>
+<meta name="description" content="grepline is an open-source CLI, written in Rust, that searches structured logs (JSON, logfmt) across many files with a SQL-like filter. MIT licensed, one binary. brew install grepline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* colors: xterm defaults + grep --color roles (see DESIGN.md) */
+  --color-bg:#FFFFFF;
+  --color-surface:#FFFFFF;
+  --color-text:#17151C;
+  --color-muted:#5E5A66;
+  --color-accent:#17151C;
+  --color-on-accent:#FFFFFF;
+  --color-border:#17151C;
+  --color-danger:#B3261E;
+  --color-file:#A1149F;
+  --color-lineno:#1D7A33;
+
+  --font-display:"Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-body:"IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-utility:"Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* type scale: 16 × 1.25 */
+  --t0:1rem;      /* 16 */
+  --t1:1.25rem;   /* 20 */
+  --t2:1.5625rem; /* 25 */
+  --t3:1.953rem;  /* 31 */
+  --t4:2.441rem;  /* 39 */
+
+  /* spacing: 8px base */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px; --s12:96px;
+
+  --radius:6px;
+  --rule:2px solid var(--color-border);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --wrap:1180px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--color-bg);color:var(--color-text);
+  font:400 var(--t0)/1.6 var(--font-body);
+}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--color-text);outline-offset:3px;border-radius:2px}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--s3)}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+p{margin:0;text-wrap:pretty}
+code,kbd,.mono{font-family:var(--font-utility)}
+
+/* ---------- nav ---------- */
+.top{border-bottom:var(--rule)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);min-height:64px;flex-wrap:wrap}
+.mark{font:700 var(--t1)/1 var(--font-display);font-stretch:112.5%;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;min-height:44px}
+.mark span{background:var(--color-accent);color:var(--color-on-accent);padding:0 4px;border-radius:3px}
+.top ul{display:flex;gap:var(--s3);list-style:none;margin:0;padding:0}
+.top a.nl{font:500 var(--t0)/1 var(--font-utility);text-decoration:none;white-space:nowrap;display:inline-block;padding:var(--s1) 0}
+.top a.nl:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* ---------- hero ---------- */
+.hero{padding-top:var(--s6);padding-bottom:var(--s4)}
+.hero h1{font-size:var(--t4);font-stretch:112.5%;max-width:28ch;letter-spacing:-0.01em}
+.hero .lede{margin-top:var(--s2);font-size:var(--t1);line-height:1.5;max-width:60ch}
+.install{margin-top:var(--s4);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
+.cmd{display:flex;align-items:center;gap:var(--s2);border:var(--rule);border-radius:var(--radius);padding:var(--s1) var(--s1) var(--s1) var(--s2);min-width:0;flex-wrap:wrap}
+.cmd code{flex:1 1 12ch;font-size:var(--t1);font-weight:500;white-space:normal;min-width:0}
+.cmd code .p{color:var(--color-muted);user-select:none}
+.via{display:block;font:400 var(--t0)/1.4 var(--font-body);color:var(--color-muted);margin-bottom:var(--s1)}
+.btn{
+  font:600 var(--t0)/1 var(--font-utility);white-space:nowrap;cursor:pointer;
+  min-height:44px;padding:0 var(--s3);border-radius:var(--radius);
+  border:var(--rule);background:var(--color-surface);color:var(--color-text);
+  transition:transform 120ms var(--ease-out),background-color 120ms ease,color 120ms ease;
+}
+.btn.primary{background:var(--color-accent);color:var(--color-on-accent)}
+@media (hover:hover) and (pointer:fine){
+  .btn:not(.primary):hover{background:var(--color-text);color:var(--color-bg)}
+  .btn.primary:hover{background:var(--color-bg);color:var(--color-text)}
+}
+.btn:active{transform:scale(0.97)}
+.copy-msg{grid-column:1/-1;min-height:1.6em;color:var(--color-text)}
+.facts-inline{margin-top:var(--s2);color:var(--color-muted);font-size:var(--t0)}
+
+/* ---------- match line: the unit ---------- */
+.ml{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:var(--s1);
+  font:400 var(--t0)/1.55 var(--font-utility);font-stretch:87.5%;padding:2px 0}
+.ml .g{white-space:nowrap}
+.ml .f{color:var(--color-file)}
+.ml .n{color:var(--color-lineno)}
+.ml .c{color:var(--color-muted)}
+.ml .r{white-space:pre-wrap;overflow-wrap:normal;word-break:normal;min-width:0}
+.hit{background:var(--color-accent);color:var(--color-on-accent);border-radius:2px;padding:0 2px}
+.err{color:var(--color-danger);font-weight:600}
+.hit .err{color:inherit}
+
+/* ---------- signature: live filter ---------- */
+.demo{padding-bottom:var(--s8)}
+.demo-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s3)}
+.pane{border:var(--rule);border-radius:var(--radius);background:var(--color-surface);min-width:0}
+.pane-head{border-bottom:var(--rule);padding:var(--s2) var(--s3)}
+.pane-head label{display:block;font:600 var(--t0)/1.3 var(--font-utility);margin-bottom:var(--s1)}
+.filter-box{display:flex;align-items:center;gap:var(--s1);border:var(--rule);border-radius:var(--radius);padding:0 var(--s2);background:var(--color-surface)}
+.filter-box:focus-within{outline:3px solid var(--color-text);outline-offset:3px}
+#filter{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--color-text);
+  font:600 var(--t2)/1.2 var(--font-display);font-stretch:100%;padding:var(--s2) 0;
+  display:block;resize:none;overflow:hidden;field-sizing:content}
+.filter-box[data-invalid="true"]{border-color:var(--color-danger)}
+.hint{margin-top:var(--s1);font-size:var(--t0);min-height:1.6em}
+.hint.bad{color:var(--color-danger)}
+.status{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s1) var(--s3);padding:var(--s1) var(--s3);border-bottom:var(--rule);font:500 var(--t0)/1.5 var(--font-utility)}
+.status .legend{color:var(--color-muted);font-family:var(--font-body)}
+.status .legend b{font-weight:600}
+.results{padding:var(--s2) var(--s3) var(--s3)}
+@media (min-width:561px){
+  /* one shared gutter column so every record starts at the same x */
+  #results{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:var(--s1)}
+  #results .ml{grid-column:1/-1;grid-template-columns:subgrid}
+  #results .empty{grid-column:1/-1}
+}
+.empty{padding:var(--s2) 0}
+.empty p + p{margin-top:var(--s1)}
+.linkbtn{font:inherit;background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:24px}
+.files{padding:var(--s2) var(--s3) var(--s3)}
+.files h3{font-size:var(--t0);margin-bottom:var(--s1)}
+.files ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px var(--s3)}
+.files li{display:flex;justify-content:space-between;gap:var(--s2);font:400 var(--t0)/1.6 var(--font-utility);font-stretch:87.5%}
+.files li .f{color:var(--color-file)}
+.files li .k{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- sections ---------- */
+section h2{font-size:var(--t3);font-stretch:100%}
+.formats{padding:var(--s8) 0;border-top:var(--rule)}
+.formats .intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s4);align-items:end;margin-bottom:var(--s4)}
+.formats .intro p{font-size:var(--t1);line-height:1.5}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+.two .pane-head{font:600 var(--t0)/1.3 var(--font-utility);display:flex;justify-content:space-between;gap:var(--s2)}
+.two .pane-head span{color:var(--color-muted);font-weight:400;font-family:var(--font-body)}
+.two .results{padding:var(--s3)}
+
+.facts{padding:var(--s8) 0;border-top:var(--rule)}
+.facts .wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s4)}
+.facts dl{margin:0;border:var(--rule);border-radius:var(--radius)}
+.facts .row{display:grid;grid-template-columns:minmax(0,22rem) minmax(0,1fr);gap:var(--s3);padding:var(--s2) var(--s3);align-items:baseline}
+.facts .row + .row{border-top:1px solid var(--color-muted)}
+.facts dt{min-width:0}
+.facts dd{margin:0;font-size:var(--t0)}
+
+.get{padding:var(--s8) 0;border-top:var(--rule)}
+.get h2{font-size:var(--t4);font-stretch:112.5%}
+.get .install{margin-top:var(--s4)}
+
+footer{border-top:var(--rule);padding:var(--s4) 0 var(--s6)}
+footer .ml{font-size:var(--t0)}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  .formats .intro,.two,.install{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .install{grid-template-columns:minmax(0,1fr)}
+  .hero h1{font-size:var(--t3)}
+  .get h2{font-size:var(--t3)}
+  section h2{font-size:var(--t2)}
+}
+@media (max-width:560px){
+  .wrap{padding:0 var(--s2)}
+  .hero{padding-top:var(--s4);padding-bottom:var(--s3)}
+  .hero .lede{font-size:var(--t0)}
+  .top ul{gap:var(--s2)}
+  .cmd code{font-size:var(--t0)}
+  .ml{grid-template-columns:minmax(0,1fr)}
+  .pane-head,.results,.files,.status{padding-left:var(--s2);padding-right:var(--s2)}
+  #filter{font-size:var(--t1)}
+  .facts .row{grid-template-columns:minmax(0,1fr);gap:4px}
+}
+@media (min-width:1600px){
+  :root{--wrap:1520px}
+  .demo-grid{grid-template-columns:minmax(0,1fr) 340px;align-items:start}
+  .files ul{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .btn{transition:background-color 120ms ease,color 120ms ease}
+  .btn:active{transform:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top" aria-label="grepline home"><span>grep</span>line</a>
+    <nav aria-label="Page">
+      <ul>
+        <li><a class="nl" href="#demo">Filter</a></li>
+        <li><a class="nl" href="#formats">Formats</a></li>
+        <li><a class="nl" href="#install">Install</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero wrap">
+    <h1>Search JSON and logfmt logs with a filter, not a regex.</h1>
+    <p class="lede">grepline reads structured log lines across many files and keeps the ones that match a SQL-like filter such as <code>level=error and latency_ms&gt;500</code>.</p>
+
+    <div class="install" data-copy-group>
+      <div>
+        <span class="via">Homebrew</span>
+        <div class="cmd">
+          <code><span class="p">$ </span>brew install grepline</code>
+          <button class="btn primary" type="button" data-copy="brew install grepline">Copy<span class="vh"> brew install grepline</span></button>
+        </div>
+      </div>
+      <div>
+        <span class="via">Cargo</span>
+        <div class="cmd">
+          <code><span class="p">$ </span>cargo install grepline</code>
+          <button class="btn" type="button" data-copy="cargo install grepline">Copy<span class="vh"> cargo install grepline</span></button>
+        </div>
+      </div>
+      <p class="copy-msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- signature: the live filter, built from match lines -->
+  <section class="demo wrap" id="demo" aria-labelledby="demo-h">
+    <h2 id="demo-h" class="vh">Try a filter</h2>
+    <div class="demo-grid">
+      <div class="pane">
+        <div class="pane-head">
+          <label for="filter">Filter</label>
+          <div class="filter-box" id="filter-box">
+            <textarea id="filter" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="filter-hint">level=error and latency_ms&gt;500</textarea>
+          </div>
+          <p class="hint" id="filter-hint">Edit it: change <code>500</code> to <code>100</code>, or try <code>status=502</code>.</p>
+        </div>
+        <div class="status">
+          <span id="count" aria-live="polite"></span>
+          <span class="legend"><b class="mono" style="color:var(--color-file)">file</b>:<b class="mono" style="color:var(--color-lineno)">line</b>: then the record, with the <span class="hit mono">matched fields</span> reversed</span>
+        </div>
+        <div class="results" id="results"></div>
+      </div>
+      <aside class="pane files" aria-labelledby="files-h">
+        <h3 id="files-h">4 files searched</h3>
+        <ul id="files"></ul>
+      </aside>
+    </div>
+  </section>
+
+  <section class="formats" id="formats" aria-labelledby="formats-h">
+    <div class="wrap">
+      <div class="intro">
+        <h2 id="formats-h">One filter for JSON and logfmt.</h2>
+        <p>Fields are fields. You filter on <code>level</code> and <code>latency_ms</code>, whichever way the service wrote them.</p>
+      </div>
+      <div class="two">
+        <div class="pane">
+          <div class="pane-head">checkout/app.log <span>logfmt</span></div>
+          <div class="results">
+            <div class="ml"><span class="g"><span class="f">checkout/app.log</span><span class="c">:</span><span class="n">2207</span><span class="c">:</span></span><span class="r">ts=2026-11-04T10:21:07Z <span class="hit">level=error</span> route=/pay <span class="hit">latency_ms=1240</span> msg="card processor timeout"</span></div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head">api/requests.json <span>JSON</span></div>
+          <div class="results">
+            <div class="ml"><span class="g"><span class="f">api/requests.json</span><span class="c">:</span><span class="n">1482</span><span class="c">:</span></span><span class="r">{"ts": "2026-11-04T10:21:06Z", <span class="hit">"level": "error"</span>, "route": "/orders", <span class="hit">"latency_ms": 812</span>, "msg": "upstream reset"}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="facts" aria-labelledby="facts-h">
+    <div class="wrap">
+      <h2 id="facts-h">What you are installing.</h2>
+      <dl>
+        <div class="row">
+          <dt class="ml"><span class="g"><span class="f">grepline</span><span class="c">:</span><span class="n">1</span><span class="c">:</span></span><span class="r">lang=<span class="hit">Rust</span></span></dt>
+          <dd>Written in Rust.</dd>
+        </div>
+        <div class="row">
+          <dt class="ml"><span class="g"><span class="f">grepline</span><span class="c">:</span><span class="n">2</span><span class="c">:</span></span><span class="r">binaries=<span class="hit">1</span></span></dt>
+          <dd>One binary. Put it on a jump box and go.</dd>
+        </div>
+        <div class="row">
+          <dt class="ml"><span class="g"><span class="f">grepline</span><span class="c">:</span><span class="n">3</span><span class="c">:</span></span><span class="r">license=<span class="hit">MIT</span></span></dt>
+          <dd>Open source under the MIT license.</dd>
+        </div>
+        <div class="row">
+          <dt class="ml"><span class="g"><span class="f">grepline</span><span class="c">:</span><span class="n">4</span><span class="c">:</span></span><span class="r">reads=<span class="hit">json,logfmt</span></span></dt>
+          <dd>Structured logs in JSON and logfmt, across many files.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="get" id="install" aria-labelledby="install-h">
+    <div class="wrap">
+      <h2 id="install-h">Install it before the next incident.</h2>
+      <div class="install" data-copy-group>
+        <div>
+          <span class="via">Homebrew</span>
+          <div class="cmd">
+            <code><span class="p">$ </span>brew install grepline</code>
+            <button class="btn primary" type="button" data-copy="brew install grepline">Copy<span class="vh"> brew install grepline</span></button>
+          </div>
+        </div>
+        <div>
+          <span class="via">Cargo</span>
+          <div class="cmd">
+            <code><span class="p">$ </span>cargo install grepline</code>
+            <button class="btn" type="button" data-copy="cargo install grepline">Copy<span class="vh"> cargo install grepline</span></button>
+          </div>
+        </div>
+        <p class="copy-msg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="ml"><span class="g"><span class="f">grepline</span><span class="c">:</span><span class="n">EOF</span><span class="c">:</span></span><span class="r">Open source, MIT licensed, written in Rust.</span></p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Sample log records (invented, see NOTES.md). fmt: "json" | "logfmt"
+  const FILES = [
+    { name: "api/requests.json", fmt: "json" },
+    { name: "checkout/app.log", fmt: "logfmt" },
+    { name: "worker/jobs.log", fmt: "logfmt" },
+    { name: "edge/gateway.json", fmt: "json" },
+  ];
+  const R = (file, line, fields) => ({ file, line, fields });
+  const LINES = [
+    R(0, 1479, [["ts","2026-11-04T10:21:02Z"],["level","info"],["route","/orders"],["status",200],["latency_ms",38],["msg","ok"]]),
+    R(0, 1482, [["ts","2026-11-04T10:21:06Z"],["level","error"],["route","/orders"],["status",502],["latency_ms",812],["msg","upstream reset"]]),
+    R(0, 1490, [["ts","2026-11-04T10:21:19Z"],["level","warn"],["route","/search"],["status",200],["latency_ms",640],["msg","slow query"]]),
+    R(0, 1503, [["ts","2026-11-04T10:22:41Z"],["level","error"],["route","/orders"],["status",500],["latency_ms",97],["msg","validation failed"]]),
+    R(1, 2207, [["ts","2026-11-04T10:21:07Z"],["level","error"],["route","/pay"],["status",504],["latency_ms",1240],["msg","card processor timeout"]]),
+    R(1, 2211, [["ts","2026-11-04T10:21:09Z"],["level","info"],["route","/pay"],["status",200],["latency_ms",212],["msg","charged"]]),
+    R(1, 2230, [["ts","2026-11-04T10:23:30Z"],["level","error"],["route","/pay"],["status",504],["latency_ms",1185],["msg","card processor timeout"]]),
+    R(2, 88,   [["ts","2026-11-04T10:20:55Z"],["level","info"],["job","invoice-pdf"],["latency_ms",430],["msg","done"]]),
+    R(2, 91,   [["ts","2026-11-04T10:21:12Z"],["level","error"],["job","email-send"],["latency_ms",3020],["msg","smtp timeout"]]),
+    R(2, 104,  [["ts","2026-11-04T10:24:03Z"],["level","warn"],["job","email-send"],["latency_ms",2950],["msg","retrying"]]),
+    R(3, 6610, [["ts","2026-11-04T10:21:06Z"],["level","error"],["route","/orders"],["status",502],["latency_ms",815],["msg","bad gateway"]]),
+    R(3, 6618, [["ts","2026-11-04T10:21:08Z"],["level","info"],["route","/health"],["status",200],["latency_ms",2],["msg","ok"]]),
+    R(3, 6642, [["ts","2026-11-04T10:22:15Z"],["level","error"],["route","/pay"],["status",499],["latency_ms",60],["msg","client closed"]]),
+    R(3, 6650, [["ts","2026-11-04T10:23:31Z"],["level","error"],["route","/pay"],["status",504],["latency_ms",1190],["msg","gateway timeout"]]),
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  const input = $("#filter"), box = $("#filter-box"), hint = $("#filter-hint");
+  const out = $("#results"), count = $("#count"), filesEl = $("#files");
+  const HINT = hint.innerHTML;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+  function parse(text) {
+    const src = text.trim();
+    if (!src) return { clauses: [] };
+    const parts = src.split(/\s+and\s+/i);
+    const clauses = [];
+    for (const p of parts) {
+      const m = p.trim().match(/^([A-Za-z_][\w.]*)\s*(>=|<=|!=|=|>|<)\s*(.+)$/);
+      if (!m) return { error: p.trim() };
+      clauses.push({ key: m[1], op: m[2], val: m[3].trim().replace(/^["']|["']$/g, "") });
+    }
+    return { clauses };
+  }
+  function test(rec, c) {
+    const f = rec.fields.find(([k]) => k === c.key);
+    if (!f) return false;
+    const a = f[1], numA = Number(a), numB = Number(c.val);
+    const num = typeof a === "number" && c.val !== "" && !Number.isNaN(numB);
+    switch (c.op) {
+      case "=":  return num ? numA === numB : String(a) === c.val;
+      case "!=": return num ? numA !== numB : String(a) !== c.val;
+      case ">":  return num && numA > numB;
+      case "<":  return num && numA < numB;
+      case ">=": return num && numA >= numB;
+      case "<=": return num && numA <= numB;
+    }
+    return false;
+  }
+  function renderRecord(rec, keys) {
+    const fmt = FILES[rec.file].fmt;
+    const pieces = rec.fields.map(([k, v]) => {
+      let valHtml, isErr = k === "level" && v === "error";
+      if (fmt === "json") {
+        valHtml = typeof v === "number" ? v : '"' + esc(v) + '"';
+        valHtml = isErr ? '<span class="err">' + valHtml + "</span>" : valHtml;
+        const t = '"' + esc(k) + '": ' + valHtml;
+        return keys.has(k) ? '<span class="hit">' + t + "</span>" : t;
+      }
+      const raw = typeof v === "string" && /\s/.test(v) ? '"' + esc(v) + '"' : esc(v);
+      valHtml = isErr ? '<span class="err">' + raw + "</span>" : raw;
+      const t = esc(k) + "=" + valHtml;
+      return keys.has(k) ? '<span class="hit">' + t + "</span>" : t;
+    });
+    return fmt === "json" ? "{" + pieces.join(", ") + "}" : pieces.join(" ");
+  }
+  function gutter(rec) {
+    return '<span class="g"><span class="f">' + esc(FILES[rec.file].name) + '</span><span class="c">:</span><span class="n">' + rec.line + '</span><span class="c">:</span></span>';
+  }
+  function run() {
+    const q = parse(input.value);
+    if (q.error !== undefined) {
+      box.dataset.invalid = "true";
+      input.setAttribute("aria-invalid", "true");
+      hint.className = "hint bad";
+      hint.innerHTML = "Can’t read <code>" + esc(q.error) + "</code>. Write each condition as field, operator, value, joined with <code>and</code>, for example <code>latency_ms&gt;500</code>.";
+      return;
+    }
+    box.dataset.invalid = "false";
+    input.removeAttribute("aria-invalid");
+    hint.className = "hint";
+    hint.innerHTML = HINT;
+    const keys = new Set(q.clauses.map((c) => c.key));
+    const hits = LINES.filter((r) => q.clauses.every((c) => test(r, c)));
+    const per = FILES.map((_, i) => hits.filter((h) => h.file === i).length);
+    count.textContent = hits.length + " of " + LINES.length + " lines match in " + per.filter(Boolean).length + " of " + FILES.length + " files";
+    filesEl.innerHTML = FILES.map((f, i) =>
+      '<li><span class="f">' + esc(f.name) + '</span><span class="k">' + per[i] + " / " + LINES.filter((l) => l.file === i).length + "</span></li>").join("");
+    if (!hits.length) {
+      out.innerHTML = '<div class="empty"><p>No line has all of those fields with those values.</p><p>Loosen a condition, or <button type="button" class="linkbtn" id="reset">go back to <code>level=error and latency_ms&gt;500</code></button>.</p></div>';
+      $("#reset").addEventListener("click", () => { input.value = "level=error and latency_ms>500"; run(); input.focus(); });
+      return;
+    }
+    out.innerHTML = hits.map((r) => '<div class="ml">' + gutter(r) + '<span class="r">' + renderRecord(r, keys) + "</span></div>").join("");
+  }
+  // the filter is one line: Enter never inserts a newline (the field only wraps to show long filters)
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+  input.addEventListener("input", run);
+  run();
+
+  // copy buttons
+  document.querySelectorAll("[data-copy]").forEach((btn) => {
+    const group = btn.closest("[data-copy-group]");
+    const msg = group.querySelector(".copy-msg");
+    const label = btn.firstChild;
+    btn.addEventListener("click", async () => {
+      const text = btn.dataset.copy;
+      try {
+        await navigator.clipboard.writeText(text);
+        label.textContent = "Copied";
+        msg.textContent = "Copied “" + text + "”. Paste it into your terminal.";
+        setTimeout(() => { label.textContent = "Copy"; }, 2000);
+      } catch (e) {
+        const code = btn.parentElement.querySelector("code");
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        msg.textContent = "Your browser blocked the clipboard. The command is selected: press Ctrl+C or ⌘C.";
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

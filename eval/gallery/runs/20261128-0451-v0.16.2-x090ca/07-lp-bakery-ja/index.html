@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパンの予約 | こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンの予約ページ。金曜18時までの予約で、土曜8時・11時の焼き上がりを店頭でお受け取りいただけます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  --kraft:#D9C4A0;      /* 紙袋のクラフト紙: page ground */
+  --paper:#FBF8F1;      /* 敷紙・小麦粉の白: surfaces */
+  --ink:#2B2018;        /* text */
+  --muted:#5B4733;      /* secondary text, sold out */
+  --stamp:#24477A;      /* 紙袋のスタンプの藍: what you press */
+  --on-stamp:#FFFFFF;
+  --rim:#8C7458;        /* トレーの木・field borders */
+  --danger:#9E2F1B;     /* errors */
+  --crust:#8A4F26;      /* 焼き色: bread silhouettes */
+
+  --display:"Klee One","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --t-s:16px; --t-b:17px; --t-m:21px; --t-l:26px; --t-xl:33px; --t-xxl:41px;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r:10px; --r-tray:22px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--kraft);color:var(--ink);font-family:var(--body);font-size:var(--t-b);line-height:1.8;letter-spacing:.03em;text-wrap:pretty}
+h1,h2,h3{font-family:var(--display);font-weight:600;font-synthesis:none;line-height:1.35;letter-spacing:.01em;text-wrap:balance;margin:0;font-feature-settings:"palt"}
+p{margin:0}
+.nw{white-space:nowrap}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+a{color:var(--stamp);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--stamp);outline-offset:3px;border-radius:4px}
+button{font:inherit;letter-spacing:inherit}
+
+/* header */
+.top{max-width:1200px;margin:0 auto;padding:var(--s2) var(--s2) 0;display:flex;align-items:center;justify-content:space-between;gap:var(--s2);flex-wrap:wrap}
+.logo{font-family:var(--display);font-weight:600;font-size:var(--t-l);color:var(--ink);text-decoration:none;line-height:1.2;white-space:nowrap}
+.top nav{display:flex;gap:var(--s3)}
+.top nav a{font-size:var(--t-s);color:var(--ink);white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
+
+/* layout */
+main{max-width:1200px;margin:0 auto;padding:var(--s3) var(--s2) var(--s6);display:grid;gap:var(--s4);grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "board" "tray" "week"}
+.intro{grid-area:intro;min-width:0}
+.board{grid-area:board;min-width:0}
+.tray-panel{grid-area:tray;min-width:0}
+.week{grid-area:week;min-width:0}
+@media (min-width:960px){
+  .top{padding:var(--s3) var(--s4) 0}
+  main{padding:var(--s4) var(--s4) var(--s6);grid-template-columns:minmax(0,1fr) 380px;column-gap:var(--s5);grid-template-areas:"intro tray" "board tray" "week week";align-items:start}
+  .tray-panel{position:sticky;top:var(--s2)}
+}
+@media (min-width:1600px){
+  .top,main{max-width:1680px}
+  main{grid-template-columns:minmax(0,1fr) 400px 340px;grid-template-areas:"intro tray week" "board tray week"}
+  .week{position:sticky;top:var(--s2)}
+}
+
+/* intro */
+h1{font-size:var(--t-l)}
+.lead{margin-top:var(--s1)}
+.deadline{margin-top:var(--s2);display:flex;flex-wrap:wrap;gap:0 var(--s2);align-items:baseline;font-size:var(--t-b)}
+.deadline strong{font-family:var(--display);font-weight:600;font-size:var(--t-m)}
+@media (min-width:768px){h1{font-size:var(--t-xl)}}
+@media (min-width:1280px){h1{font-size:var(--t-xxl)}}
+
+/* slots (受け取りの回) */
+.slots{border:0;margin:var(--s3) 0 0;padding:0;min-width:0}
+.slots legend{padding:0;font-size:var(--t-s);margin-bottom:var(--s1)}
+.slot-list{display:grid;gap:var(--s1);grid-template-columns:1fr}
+@media (min-width:600px){.slot-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}}
+.slot{position:relative;display:block;cursor:pointer}
+.slot input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.slot-box{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"time left" "name name";align-items:center;gap:0 var(--s2);padding:var(--s1) var(--s2);min-height:64px;background:var(--paper);border:2px solid var(--rim);border-radius:var(--r);transition:border-color .15s ease,box-shadow .15s ease}
+.slot-time{font-family:var(--display);font-weight:600;font-size:var(--t-xl);line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.slot-name{font-size:var(--t-s);line-height:1.5;white-space:nowrap;grid-area:name}
+.slot-time{grid-area:time}
+.slot-left{grid-area:left}
+@media (min-width:1600px){.slot-box{grid-template-columns:auto 1fr auto;grid-template-areas:"time name left"}}
+.slot-left{font-size:var(--t-s);white-space:nowrap;text-align:right}
+.slot-left b{font-size:var(--t-m);font-variant-numeric:tabular-nums}
+.slot-mark{grid-column:1/-1;display:none}
+.slot input:checked + .slot-box{border-color:var(--stamp);box-shadow:inset 0 0 0 2px var(--stamp)}
+.slot input:checked + .slot-box .slot-time{color:var(--stamp)}
+.slot input:focus-visible + .slot-box{outline:3px solid var(--stamp);outline-offset:3px}
+.slot input:disabled + .slot-box{cursor:not-allowed;border-style:dashed;color:var(--muted)}
+.slot input:disabled{cursor:not-allowed}
+.slot input:disabled:checked + .slot-box{border-color:var(--rim);box-shadow:inset 0 0 0 2px var(--rim)}
+.slot input:disabled:checked + .slot-box .slot-time{color:var(--ink)}
+
+/* board (パンを選ぶ) */
+.board-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 var(--s2);margin-bottom:var(--s2)}
+.board-head h2{font-size:var(--t-l)}
+.board-head p{font-size:var(--t-s)}
+.breads{list-style:none;margin:0;padding:var(--s1) var(--s2);background:var(--paper);border:1px solid var(--rim);border-radius:var(--r)}
+.bread{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-areas:"pic name" "pic act";gap:var(--s1) var(--s2);align-items:center;padding:var(--s2) 0;border-top:1px solid color-mix(in srgb,var(--rim) 45%,var(--paper))}
+.bread:first-child{border-top:0}
+@media (min-width:520px){.bread{grid-template-columns:72px minmax(0,1fr) auto;grid-template-areas:"pic name act"}}
+.bread .spot{grid-area:pic}
+.bread-name{grid-area:name;min-width:0}
+.bread-name h3{font-size:var(--t-m)}
+.bread-name p{font-size:var(--t-s)}
+.bread-act{grid-area:act;display:flex;align-items:center;gap:var(--s1);justify-self:start;flex-wrap:wrap}
+@media (min-width:520px){.bread-act{justify-self:end}}
+.step{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:var(--r);border:2px solid var(--stamp);background:var(--paper);color:var(--stamp);font-size:var(--t-m);line-height:1;cursor:pointer;transition:background-color .12s ease,transform .12s ease}
+.step:active{transform:scale(.95)}
+@media (hover:hover) and (pointer:fine){.step:hover:not(:disabled){background:color-mix(in srgb,var(--stamp) 10%,var(--paper))}}
+.step:disabled{border-color:color-mix(in srgb,var(--rim) 60%,var(--paper));color:var(--muted);cursor:not-allowed}
+.qty{min-width:2.2em;text-align:center;font-family:var(--display);font-weight:600;font-size:var(--t-m);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sold{font-size:var(--t-s);color:var(--muted);display:flex;flex-direction:column;align-items:flex-start;line-height:1.5}
+@media (min-width:520px){.sold{align-items:flex-end;text-align:right}}
+.sold b{font-family:var(--display);font-weight:600;font-size:var(--t-m);color:var(--muted)}
+.swap{background:none;border:0;padding:0;color:var(--stamp);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:var(--t-s);min-height:44px;white-space:nowrap}
+
+/* the spot: the round unit shared by tray, bread rows, and the week ruler */
+.spot{position:relative;display:block;aspect-ratio:1;border-radius:50%;background:color-mix(in srgb,var(--crust) 12%,var(--paper));}
+.spot svg{position:absolute;inset:10%;width:80%;height:80%}
+.spot.is-empty{background:transparent;border:2px dashed color-mix(in srgb,var(--rim) 80%,var(--paper))}
+.bread.is-sold .spot svg{opacity:.28}
+.bread.is-sold .bread-name h3{color:var(--muted)}
+
+/* tray panel (signature) */
+.tray-panel{background:var(--paper);border:1px solid var(--rim);border-radius:var(--r);padding:var(--s2)}
+@media (min-width:960px){.tray-panel{padding:var(--s3)}}
+.tray-panel h2{font-size:var(--t-l)}
+.tray-head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
+.limit{font-size:var(--t-s);white-space:nowrap}
+.tray{max-width:440px;margin-top:var(--s2);background:var(--rim);border-radius:var(--r-tray);padding:12px;box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--ink) 25%,transparent),0 6px 14px color-mix(in srgb,var(--ink) 22%,transparent)}
+.tray-spots{list-style:none;margin:0;padding:12px 10px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;border-radius:14px;background:color-mix(in srgb,var(--rim) 30%,var(--paper));box-shadow:inset 0 2px 5px color-mix(in srgb,var(--ink) 35%,transparent)}
+.tray-spots .spot{background:color-mix(in srgb,var(--paper) 92%,var(--rim))}
+.tray-spots .spot.is-empty{background:color-mix(in srgb,var(--rim) 12%,var(--paper));border:2px dashed var(--rim)}
+.tray-spots .spot.just-in svg{animation:drop .18s var(--ease-out)}
+@keyframes drop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.tray-spots .spot.just-in svg{animation:none}.step,.slot-box{transition:none}}
+.tray-count{margin-top:var(--s2);display:flex;align-items:baseline;gap:var(--s1) var(--s2);flex-wrap:wrap}
+.tray-count b{font-family:var(--display);font-weight:600;font-size:var(--t-xl);line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.picked{margin:var(--s1) 0 0;padding:0;list-style:none;font-size:var(--t-s)}
+.picked li{display:flex;justify-content:space-between;gap:var(--s2);border-bottom:1px dotted var(--rim);padding:2px 0}
+.picked li span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+.note{font-size:var(--t-s);margin-top:var(--s1)}
+
+form{margin-top:var(--s3);display:grid;gap:var(--s2)}
+.field label{display:block;font-size:var(--t-s);font-weight:700;margin-bottom:4px}
+.field input{width:100%;min-height:48px;padding:var(--s1) 12px;font:inherit;font-size:var(--t-b);color:var(--ink);background:var(--paper);border:2px solid var(--rim);border-radius:var(--r)}
+.field input:focus-visible{outline:3px solid var(--stamp);outline-offset:2px;border-color:var(--stamp)}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
+.err{font-size:var(--t-s);color:var(--danger);margin-top:4px;line-height:1.6}
+.err:empty{display:none}
+.primary{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;padding:var(--s1) var(--s3);border:0;border-radius:var(--r);background:var(--stamp);color:var(--on-stamp);font-family:var(--display);font-weight:600;font-size:var(--t-m);cursor:pointer;white-space:nowrap;text-decoration:none;transition:transform .12s ease,background-color .12s ease}
+.primary:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.primary:hover:not(:disabled){background:color-mix(in srgb,var(--stamp) 85%,var(--ink))}}
+.primary:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.primary:disabled{background:color-mix(in srgb,var(--rim) 35%,var(--paper));color:var(--muted);cursor:not-allowed}
+.form-err{font-size:var(--t-s);color:var(--danger);line-height:1.6}
+.form-err:empty{display:none}
+.pay{font-size:var(--t-s)}
+
+.done,.closed{margin-top:var(--s3);display:grid;gap:var(--s1)}
+.done h3,.closed h3{font-size:var(--t-m)}
+.done dl{margin:var(--s1) 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px var(--s2);font-size:var(--t-s)}
+.done dt{font-weight:700;white-space:nowrap}
+.done dd{margin:0}
+.ticket-no{font-family:var(--display);font-weight:600;font-size:var(--t-l);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+
+/* week ruler */
+.week h2{font-size:var(--t-l);margin-bottom:var(--s2)}
+.ruler{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.ruler li{display:grid;grid-template-columns:28px 1fr;gap:var(--s2);position:relative;padding-bottom:var(--s3)}
+.ruler li::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--rim)}
+.ruler li:last-child::before{display:none}
+.ruler .mark{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);background:var(--kraft);margin-top:4px}
+.ruler .is-bake .mark{background:var(--crust);border-color:var(--crust)}
+.ruler .is-deadline .mark{border-width:6px}
+.ruler .is-today .mark{border-style:dashed}
+.ruler time,.ruler .when{font-family:var(--display);font-weight:600;font-size:var(--t-m);line-height:1.4;display:block}
+.ruler p{font-size:var(--t-b)}
+@media (min-width:1100px) and (max-width:1599px){
+  .ruler{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ruler li{grid-template-columns:1fr;gap:var(--s1);padding:0 var(--s2) 0 0}
+  .ruler li::before{left:28px;right:0;top:13px;bottom:auto;width:auto;height:2px}
+}
+.facts{margin:var(--s3) 0 0;display:grid;gap:0;background:var(--paper);border:1px solid var(--rim);border-radius:var(--r);padding:var(--s1) var(--s2)}
+.facts div{display:grid;grid-template-columns:6.5em 1fr;gap:var(--s2);padding:var(--s1) 0;border-top:1px solid color-mix(in srgb,var(--rim) 45%,var(--paper))}
+.facts div:first-child{border-top:0}
+.facts dt{font-weight:700}
+.facts dd{margin:0}
+@media (min-width:768px) and (max-width:1599px){
+  .facts{grid-template-columns:repeat(3,1fr);column-gap:var(--s3)}
+  .facts div{grid-template-columns:1fr;gap:0;border-top:0}
+}
+
+
+/* sticky bar at narrow widths */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--paper);border-top:2px solid var(--rim);padding:var(--s1) var(--s2);display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+.bar p{font-size:var(--t-s);white-space:nowrap}
+.bar p b{font-family:var(--display);font-weight:600;font-size:var(--t-m);font-variant-numeric:tabular-nums}
+.bar .primary{width:auto;min-height:44px;font-size:var(--t-b);padding:4px var(--s2)}
+body{padding-bottom:72px}
+@media (min-width:960px){.bar{display:none}body{padding-bottom:0}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="b-campagne" viewBox="0 0 64 64"><circle cx="32" cy="34" r="25" fill="var(--crust)"/><path d="M20 25 L44 43 M44 25 L20 43" stroke="var(--paper)" stroke-width="3.5" stroke-linecap="round" opacity=".85"/></symbol>
+    <symbol id="b-batard" viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="29" ry="15" transform="rotate(-14 32 34)" fill="var(--crust)"/><path d="M15 40 l9 -9 M27 37 l9 -9 M39 34 l9 -9" stroke="var(--paper)" stroke-width="3" stroke-linecap="round" opacity=".85"/></symbol>
+    <symbol id="b-yamagata" viewBox="0 0 64 64"><path d="M10 55 V31 C10 17 23 13 24.5 24 C26 11 39 11 40 24 C41.5 13 54 17 54 31 V55 Z" fill="var(--crust)"/><path d="M24.5 27 V36 M40 27 V36" stroke="var(--paper)" stroke-width="2.5" stroke-linecap="round" opacity=".6"/></symbol>
+    <symbol id="b-kurumi" viewBox="0 0 64 64"><ellipse cx="32" cy="35" rx="26" ry="21" fill="var(--crust)"/><g fill="var(--paper)" opacity=".8"><circle cx="21" cy="29" r="2.4"/><circle cx="33" cy="25" r="2.4"/><circle cx="43" cy="32" r="2.4"/><circle cx="26" cy="41" r="2.4"/><circle cx="38" cy="43" r="2.4"/><circle cx="16" cy="38" r="2"/><circle cx="48" cy="40" r="2"/></g></symbol>
+    <symbol id="b-cinnamon" viewBox="0 0 64 64"><circle cx="32" cy="33" r="25" fill="var(--crust)"/><path d="M32 33 a3 3 0 1 1 3 3 a7 7 0 1 1 -7 -8 a12 12 0 1 1 13 13 a17 17 0 1 1 -19 -18" fill="none" stroke="var(--paper)" stroke-width="3" stroke-linecap="round" opacity=".85"/></symbol>
+    <symbol id="b-ichijiku" viewBox="0 0 64 64"><rect x="7" y="21" width="50" height="27" rx="13.5" fill="var(--crust)"/><path d="M17 34.5 H47" stroke="var(--paper)" stroke-width="3.5" stroke-linecap="round" opacity=".85"/><g fill="var(--paper)" opacity=".7"><circle cx="22" cy="28" r="1.8"/><circle cx="32" cy="41" r="1.8"/><circle cx="42" cy="28" r="1.8"/></g></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <a class="logo" href="#top" id="top">こむぎ舎</a>
+  <nav aria-label="ページ内">
+    <a href="#board">パンを選ぶ</a>
+    <a href="#week">受け取りとお支払い</a>
+  </nav>
+</header>
+
+<main>
+  <section class="intro" aria-labelledby="h1">
+    <h1 id="h1">週末のパンは、<span class="nw">金曜18時まで</span>に予約を。</h1>
+    <p class="lead">自家製酵母のパンを、土曜の朝に2回焼き上げます。</p>
+    <p class="deadline" id="deadline"><span>締め切り <strong class="nw" data-deadline-label>11月6日(金) 18:00</strong></span><span class="nw" data-countdown></span></p>
+
+    <fieldset class="slots" id="slots">
+      <legend>受け取りの回　<span class="nw" data-sat-label>11月7日(土)</span></legend>
+      <div class="slot-list">
+        <label class="slot">
+          <input type="radio" name="slot" value="8" checked>
+          <span class="slot-box">
+            <span class="slot-time">8:00</span>
+            <span class="slot-name">1回目の焼き上がり</span>
+            <span class="slot-left">残り <b data-slot-left="8">23</b>点</span>
+          </span>
+        </label>
+        <label class="slot">
+          <input type="radio" name="slot" value="11">
+          <span class="slot-box">
+            <span class="slot-time">11:00</span>
+            <span class="slot-name">2回目の焼き上がり</span>
+            <span class="slot-left">残り <b data-slot-left="11">20</b>点</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="board" id="board" aria-labelledby="board-h">
+    <div class="board-head">
+      <h2 id="board-h">パンを選ぶ</h2>
+      <p><span data-slot-label>8:00の回</span>の残り数です</p>
+    </div>
+    <ul class="breads" id="breads"></ul>
+  </section>
+
+  <aside class="tray-panel" id="tray" aria-labelledby="tray-h">
+    <div class="tray-head">
+      <h2 id="tray-h">あなたのトレー</h2>
+      <p class="limit">1人5点まで</p>
+    </div>
+    <div class="tray">
+      <ul class="tray-spots" id="tray-spots" aria-hidden="true"></ul>
+    </div>
+    <div class="tray-count">
+      <b id="count">0 / 5点</b>
+      <span id="count-hint">あと5点選べます</span>
+    </div>
+    <p class="vh" id="live" aria-live="polite"></p>
+    <ul class="picked" id="picked"></ul>
+    <p class="note" id="swap-note" role="status"></p>
+
+    <form id="form" novalidate>
+      <div class="field">
+        <label for="name">お名前</label>
+        <input id="name" name="name" autocomplete="name" aria-describedby="name-err">
+        <p class="err" id="name-err"></p>
+      </div>
+      <div class="field">
+        <label for="tel">電話番号</label>
+        <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-err">
+        <p class="err" id="tel-err"></p>
+      </div>
+      <p class="form-err" id="form-err"></p>
+      <button class="primary" type="submit" id="submit" aria-describedby="submit-why">予約を確定する</button>
+      <p class="pay" id="submit-why">受け取りは<span class="nw"><span data-sat-label>11月7日(土)</span> <span data-slot-label>8:00の回</span></span>、店頭で。お支払いは<span class="nw">現金・交通系IC</span>です。</p>
+    </form>
+
+    <div class="done" id="done" hidden>
+      <h3 id="done-h" tabindex="-1">予約を受け付けました</h3>
+      <p>予約番号 <span class="ticket-no" id="ticket"></span></p>
+      <dl>
+        <dt>受け取り</dt><dd id="done-when"></dd>
+        <dt>パン</dt><dd id="done-items"></dd>
+        <dt>お名前</dt><dd id="done-name"></dd>
+        <dt>お支払い</dt><dd>店頭で、現金か交通系ICで</dd>
+      </dl>
+    </div>
+
+    <div class="closed" id="closed" hidden>
+      <h3>今週の予約受付は終了しました</h3>
+      <p>締め切りは<span class="nw" data-deadline-label>11月6日(金) 18:00</span>でした。<span class="nw" data-sat-label>11月7日(土)</span>分は、このページから予約できません。</p>
+    </div>
+  </aside>
+
+  <section class="week" id="week" aria-labelledby="week-h">
+    <h2 id="week-h">受け取りまでの流れ</h2>
+    <ol class="ruler" id="ruler"></ol>
+    <dl class="facts">
+      <div><dt>受け取り</dt><dd>店頭のみ</dd></div>
+      <div><dt>お支払い</dt><dd><span class="nw">現金・</span><span class="nw">交通系IC</span></dd></div>
+      <div><dt>予約できる数</dt><dd>1人5点まで</dd></div>
+    </dl>
+  </section>
+</main>
+
+
+<div class="bar" id="bar">
+  <p id="bar-text">トレー <b id="bar-count">0/5</b>点</p>
+  <a class="primary" href="#tray" id="bar-go">予約に進む</a>
+</div>
+
+<script>
+(function(){
+  const BREADS = [
+    {id:'campagne', name:'カンパーニュ'},
+    {id:'batard',   name:'バタール'},
+    {id:'yamagata', name:'山型食パン'},
+    {id:'kurumi',   name:'くるみとレーズンのパン'},
+    {id:'cinnamon', name:'シナモンロール'},
+    {id:'ichijiku', name:'いちじくのパン'}
+  ];
+  const STOCK = {
+    '8':  {campagne:6, batard:8, yamagata:5, kurumi:4, cinnamon:0, ichijiku:0},
+    '11': {campagne:4, batard:6, yamagata:0, kurumi:3, cinnamon:7, ichijiku:0}
+  };
+  const LIMIT = 5;
+  const H = 3600e3, JST = 9*H;
+  const DOW = '日月火水木金土';
+
+  // clock: real time, or ?now=2026-11-06T18:30 (JST) to view another moment
+  const q = new URLSearchParams(location.search).get('now');
+  const offset = q ? (Date.parse(q + (/[zZ]|[+-]\d\d:?\d\d$/.test(q) ? '' : '+09:00')) - Date.now()) : 0;
+  const now = () => Date.now() + (isNaN(offset) ? 0 : offset);
+
+  function parts(ms){const d=new Date(ms+JST);return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),w:d.getUTCDay()};}
+  function at(y,m,d,h,mi){return Date.UTC(y,m-1,d,h||0,mi||0)-JST;}
+  function day(ms){const p=parts(ms);return p.m+'月'+p.d+'日('+DOW[p.w]+')';}
+
+  const t0 = now(), p0 = parts(t0);
+  const sat = at(p0.y,p0.m,p0.d+((6-p0.w+7)%7));
+  const deadline = sat - 6*H; // 金曜 18:00
+  const state = {slot:'8', qty:{}, open: t0 < deadline, booked:false, lastAdded:null};
+  BREADS.forEach(b=>state.qty[b.id]=0);
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const total = () => Object.values(state.qty).reduce((a,b)=>a+b,0);
+  const slotLabel = s => (s==='8'?'8:00':'11:00')+'の回';
+  const left = (s,id) => STOCK[s][id];
+  const slotLeft = s => Object.values(STOCK[s]).reduce((a,b)=>a+b,0);
+
+  $$('[data-sat-label]').forEach(e=>e.textContent=day(sat));
+  $$('[data-deadline-label]').forEach(e=>e.textContent=day(deadline)+' 18:00');
+
+  function countdown(){
+    const ms = deadline - now();
+    const el = $('[data-countdown]');
+    if (ms <= 0){ el.textContent = '受付は終了しました'; return false; }
+    const m = Math.floor(ms/60000), d = Math.floor(m/1440), h = Math.floor(m%1440/60), mi = m%60;
+    el.textContent = 'あと' + (d ? d+'日と'+h+'時間' : h ? h+'時間'+mi+'分' : mi+'分');
+    return true;
+  }
+
+  function ruler(){
+    const items = [
+      {t:deadline, when:day(deadline)+' 18:00', what:'予約の締め切り', cls:'is-deadline'},
+      {t:sat+8*H, when:day(sat)+' 8:00', what:'1回目の焼き上がり', cls:'is-bake'},
+      {t:sat+11*H, when:day(sat)+' 11:00', what:'2回目の焼き上がり', cls:'is-bake'}
+    ];
+    items.push({t:t0, when:'今日 '+day(t0), what: state.open ? '予約を受け付けています' : '今週の受付は終了しました', cls:'is-today'});
+    items.sort((a,b)=>a.t-b.t);
+    $('#ruler').innerHTML = items.map(i=>'<li class="'+i.cls+'"><span class="mark" aria-hidden="true"></span><div><span class="when">'+i.when+'</span><p>'+i.what+'</p></div></li>').join('');
+  }
+
+  function rows(){
+    const s = state.slot, other = s==='8' ? '11' : '8';
+    $('#breads').innerHTML = BREADS.map(b=>{
+      const n = left(s,b.id), q = state.qty[b.id];
+      const pic = '<span class="spot'+(n?'':' is-empty')+'"><svg aria-hidden="true" focusable="false"><use href="#b-'+b.id+'"/></svg></span>';
+      let act;
+      if (!n){
+        const o = left(other,b.id);
+        act = '<div class="sold"><b>売り切れ</b>' + (o && state.open && !state.booked
+          ? '<button type="button" class="swap" data-swap="'+other+'">'+slotLabel(other)+'なら残り'+o+'点</button>'
+          : (o ? '' : '<span>両方の回とも</span>')) + '</div>';
+      } else if (state.booked) {
+        act = '';
+      } else {
+        const lock = !state.open || state.booked;
+        act = '<button type="button" class="step" data-dec="'+b.id+'"'+(lock||!q?' disabled':'')+'><span aria-hidden="true">−</span><span class="vh">'+b.name+'を1つ減らす</span></button>'
+            + '<span class="qty" aria-hidden="true">'+q+'</span>'
+            + '<button type="button" class="step" data-inc="'+b.id+'"'+(lock||q>=n||total()>=LIMIT?' disabled':'')+'><span aria-hidden="true">＋</span><span class="vh">'+b.name+'を1つ増やす</span></button>';
+      }
+      return '<li class="bread'+(n?'':' is-sold')+'">'+pic+'<div class="bread-name"><h3>'+b.name+'</h3><p>'+(n?'残り<span class="nw">'+n+'点</span>'+(q && !state.booked?'・トレーに<span class="nw">'+q+'点</span>':''):'残り0点')+'</p></div><div class="bread-act">'+act+'</div></li>';
+    }).join('');
+  }
+
+  function tray(){
+    const list = [];
+    BREADS.forEach(b=>{for(let i=0;i<state.qty[b.id];i++) list.push(b.id);});
+    let html = '';
+    for (let i=0;i<LIMIT;i++){
+      const id = list[i];
+      html += id ? '<li class="spot'+(i===list.length-1 && state.lastAdded===id ? ' just-in':'')+'"><svg aria-hidden="true" focusable="false"><use href="#b-'+id+'"/></svg></li>' : '<li class="spot is-empty"></li>';
+    }
+    $('#tray-spots').innerHTML = html;
+    const t = total();
+    $('#count').textContent = t+' / 5点';
+    $('#count-hint').textContent = state.booked ? '予約済み' : !state.open ? '受付は終了しました' : t>=LIMIT ? '上限の5点です' : 'あと'+(LIMIT-t)+'点選べます';
+    const bc = $('#bar-count'); if (bc) bc.textContent = t+'/5';
+    $('#picked').innerHTML = BREADS.filter(b=>state.qty[b.id]).map(b=>'<li><span>'+b.name+'</span><span>'+state.qty[b.id]+'点</span></li>').join('');
+  }
+
+  function slots(){
+    $$('input[name=slot]').forEach(r=>{ r.disabled = !state.open || state.booked; });
+    $('[data-slot-left="8"]').textContent = slotLeft('8');
+    $('[data-slot-left="11"]').textContent = slotLeft('11');
+    $$('[data-slot-label]').forEach(e=>e.textContent=slotLabel(state.slot));
+  }
+
+  function render(){ rows(); tray(); slots(); }
+
+  function setSlot(s){
+    state.slot = s;
+    $$('input[name=slot]').forEach(r=>r.checked = r.value===s);
+    const removed = [];
+    BREADS.forEach(b=>{ const n=left(s,b.id); if (state.qty[b.id]>n){ removed.push(b.name); state.qty[b.id]=n; } });
+    $('#swap-note').textContent = removed.length ? slotLabel(s)+'は'+removed.join('、')+'の残りが足りないため、トレーの数を減らしました。' : '';
+    state.lastAdded = null;
+    render();
+  }
+
+  function close(){
+    state.open = false;
+    $('#form').hidden = true;
+    $('#closed').hidden = state.booked;
+    $('#bar-text').textContent = '今週の受付は終了しました';
+    $('#bar-go').hidden = true;
+    countdown(); ruler(); render();
+  }
+
+  document.addEventListener('change', e=>{ if (e.target.name==='slot') setSlot(e.target.value); });
+  document.addEventListener('click', e=>{
+    const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]'), sw = e.target.closest('[data-swap]');
+    if (inc){ const id=inc.dataset.inc; if (total()<LIMIT && state.qty[id]<left(state.slot,id)){ state.qty[id]++; state.lastAdded=id; } after(id, inc, 'inc'); }
+    else if (dec){ const id=dec.dataset.dec; if (state.qty[id]>0){ state.qty[id]--; state.lastAdded=null; } after(id, dec, 'dec'); }
+    else if (sw){ setSlot(sw.dataset.swap); const r=$('input[name=slot][value="'+sw.dataset.swap+'"]'); r && r.focus(); }
+  });
+  function after(id, btn, kind){
+    $('#swap-note').textContent = '';
+    $('#form-err').textContent = '';
+    render();
+    const b = BREADS.find(x=>x.id===id);
+    $('#live').textContent = b.name+' '+state.qty[id]+'点。トレーは'+total()+'点です。';
+    const again = document.querySelector('[data-'+kind+'="'+id+'"]');
+    const other = document.querySelector('[data-'+(kind==='inc'?'dec':'inc')+'="'+id+'"]');
+    (again && !again.disabled ? again : other && !other.disabled ? other : null)?.focus();
+  }
+
+  $('#form').addEventListener('submit', e=>{
+    e.preventDefault();
+    if (!state.open){ close(); return; }
+    const name = $('#name'), tel = $('#tel');
+    let firstBad = null;
+    const set = (el, msg, html) => { $('#'+el.id+'-err')[html ? 'innerHTML' : 'textContent'] = msg; el.setAttribute('aria-invalid', msg ? 'true':'false'); if (msg && !firstBad) firstBad = el; };
+    set(name, name.value.trim() ? '' : 'お名前が空欄です。予約の確認に使うので、入力してください。');
+    const digits = tel.value.replace(/[^0-9０-９]/g,'');
+    set(tel, digits.length>=10 && digits.length<=11 ? '' : '電話番号が読み取れません。10〜11桁の数字で入力してください（例: <span class="nw">090-1234-5678</span>）。', true);
+    if (!total()){
+      $('#form-err').innerHTML = 'パンがまだトレーにありません。<a href="#board">パンを選ぶ</a>で「＋」を押してください。';
+      if (!firstBad) firstBad = $('#form-err a');
+    }
+    if (firstBad){ firstBad.focus(); return; }
+    // reserve: take the breads out of the stock for this slot
+    BREADS.forEach(b=>{ STOCK[state.slot][b.id] -= state.qty[b.id]; });
+    state.booked = true;
+    $('#ticket').textContent = String(1000 + Math.floor(Math.random()*9000));
+    $('#done-when').textContent = day(sat)+' '+slotLabel(state.slot)+'・店頭';
+    $('#done-items').textContent = BREADS.filter(b=>state.qty[b.id]).map(b=>b.name+' '+state.qty[b.id]+'点').join('、');
+    $('#done-name').textContent = name.value.trim()+' 様';
+    $('#form').hidden = true; $('#done').hidden = false;
+    $('#bar-text').textContent = '予約を受け付けました';
+    $('#bar-go').textContent = '予約内容を見る';
+    state.lastAdded = null;
+    render();
+    $('#tray').scrollIntoView({block:'start'});
+    $('#done-h').focus();
+  });
+
+  ruler();
+  render();
+  if (!countdown() || !state.open) close();
+  setInterval(()=>{ if (state.open && !countdown()) close(); }, 30000);
+})();
+</script>
+</body>
+</html>

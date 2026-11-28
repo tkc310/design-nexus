@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laneway — one board for a small team</title>
+<meta name="description" content="A shared board for small teams: what's next, who has it, and when it's due, in four lanes everyone can read.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #22282f;
+    --card: #f7f5ef;
+    --ink: #1d2125;
+    --chalk: #ecede8;
+    --muted: #a9b1b8;
+    --note: #f5d547;
+    --edge: #6a7076;
+    --rule: #48515b;
+    --due: #a4361b;
+    --tag: #e4e1d8;
+    --field: #ffffff;
+
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Instrument Sans", "Segoe UI", sans-serif;
+
+    --t-sm: 0.875rem;   /* 14 */
+    --t-base: 1.0625rem; /* 17 */
+    --t-md: 1.3125rem;  /* 21 */
+    --t-lg: 2.0625rem;  /* 33 */
+    --t-xl: clamp(2.75rem, 5.2vw, 4.25rem);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --r: 6px;
+    --pin: 0 1px 0 rgba(0,0,0,.25), 0 10px 24px -8px rgba(0,0,0,.55);
+
+    /* lane geometry, taken from the screenshot: 316px lanes, 16px gutters in a 1344px board */
+    --lane-pad: 1.1905%;
+    --lane-gap: 1.2195%;
+    --wrap: 1200px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--felt); color: var(--chalk);
+    font: 400 var(--t-base)/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: 0.005em; }
+  p { margin: 0; text-wrap: pretty; }
+  img { display: block; max-width: 100%; height: auto; }
+
+  .wrap { width: min(var(--wrap), 100% - 2 * var(--s3)); margin-inline: auto; }
+  .lanes {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--lane-gap); padding-inline: var(--lane-pad);
+  }
+
+  /* focus */
+  :focus-visible { outline: 3px solid var(--note); outline-offset: 3px; }
+  .card :focus-visible { outline-color: var(--ink); }
+
+  /* header */
+  .top { padding-block: var(--s3); }
+  .top .lanes { align-items: center; }
+  .mark { font: 700 var(--t-md)/1 var(--display); letter-spacing: .04em; text-transform: uppercase; display: flex; align-items: center; gap: var(--s1); }
+  .mark svg { flex: none; }
+  .top nav { grid-column: 3 / 5; display: flex; justify-content: flex-end; gap: var(--s3); }
+  .top nav a { color: var(--chalk); text-decoration: none; padding-block: var(--s1); border-bottom: 2px solid var(--rule); white-space: nowrap; }
+  .top nav a:hover { border-color: var(--chalk); }
+
+  /* hero */
+  .hero { padding-block: var(--s6) var(--s4); row-gap: var(--s4); align-items: end; }
+  .hero h1 { grid-column: 1 / 3; font-size: var(--t-xl); text-transform: uppercase; }
+  .hero .lede { color: var(--chalk); font-size: var(--t-md); line-height: 1.45; margin-top: var(--s2); max-width: 30ch; font-family: var(--body); text-transform: none; font-weight: 400; letter-spacing: 0; }
+  .hero-l { grid-column: 1 / 3; }
+  .hero-r { grid-column: 3 / 5; }
+
+  /* card: the unit */
+  .card {
+    background: var(--card); color: var(--ink); border-radius: var(--r);
+    box-shadow: var(--pin); padding: var(--s2);
+  }
+  .card-title { font-weight: 600; font-size: var(--t-base); line-height: 1.35; }
+  .meta { display: flex; align-items: center; gap: var(--s1) var(--s2); margin-top: var(--s2); font-size: var(--t-sm); flex-wrap: wrap; }
+  .tag { background: var(--tag); padding: 2px var(--s1); border-radius: 4px; white-space: nowrap; }
+  .who { margin-left: auto; width: 32px; height: 32px; border-radius: 50%; background: var(--tag); display: grid; place-items: center; font-weight: 600; font-size: var(--t-sm); }
+  .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .due { color: var(--due); font-weight: 600; white-space: nowrap; }
+  .bar { height: 4px; background: var(--tag); border-radius: 2px; margin-top: var(--s2); }
+  .bar i { display: block; height: 100%; background: var(--edge); border-radius: 2px; }
+
+  /* sign-up card */
+  .signup .lane-label { font: 600 var(--t-sm)/1 var(--body); letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; color: var(--ink); }
+  .signup label { display: block; font-weight: 600; margin-top: var(--s2); margin-bottom: var(--s1); }
+  .row { display: flex; gap: var(--s1); flex-wrap: wrap; }
+  .signup input {
+    flex: 1 1 14ch; min-width: 0; height: 48px; padding: 0 var(--s2);
+    font: inherit; color: var(--ink); background: var(--field);
+    border: 2px solid var(--edge); border-radius: var(--r);
+  }
+  .signup input:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .signup input[aria-invalid="true"] { border-color: var(--due); }
+  .msg { min-height: 1.6em; margin-top: var(--s1); font-size: var(--t-sm); color: var(--ink); }
+  .msg.err { color: var(--due); font-weight: 600; }
+
+  .btn {
+    font: 600 var(--t-base)/1 var(--body); height: 48px; padding: 0 var(--s3);
+    border-radius: var(--r); cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: var(--s1);
+    transition: transform 120ms var(--ease-out), background-color 150ms ease, border-color 150ms ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-go { background: var(--note); color: var(--ink); border: 2px solid var(--ink); }
+  .btn-go:hover { box-shadow: inset 0 -3px 0 var(--ink); }
+  .btn-line { background: transparent; color: var(--chalk); border: 2px solid var(--chalk); }
+  .btn-line:hover { background: var(--rule); }
+  .btn-text { background: transparent; color: var(--ink); border: 0; padding-inline: 0; text-decoration: underline; text-underline-offset: 4px; height: 44px; }
+
+  /* signature: the annotated board */
+  .board { margin: 0; }
+  .shot { position: relative; border-radius: var(--r); overflow: hidden; box-shadow: var(--pin); background: var(--card); aspect-ratio: 1344 / 610; }
+  .shot img { position: absolute; top: 0; left: -18.155%; width: 119.048%; max-width: none; }
+  .notes { margin-top: 0; padding-top: var(--s3); }
+  .note { border-top: 3px solid var(--chalk); padding-top: var(--s2); }
+  .note h3 { font-size: var(--t-lg); text-transform: uppercase; }
+  .note p { margin-top: var(--s1); color: var(--chalk); }
+  .board-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s4); padding-inline: var(--lane-pad); }
+  .board-bar p { color: var(--muted); font-size: var(--t-base); }
+
+  /* follow one card */
+  .follow { padding-block: var(--s12) var(--s8); }
+  .follow h2 { font-size: var(--t-lg); text-transform: uppercase; padding-inline: var(--lane-pad); margin-bottom: var(--s4); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .steps { list-style: none; margin: 0; }
+  /* each step spans three shared rows (head, card, sentence) so the lanes line up across */
+  .step { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: var(--s2); align-content: start; }
+  .step-head { font: 700 var(--t-md)/1 var(--display); text-transform: uppercase; letter-spacing: .04em; padding-bottom: var(--s1); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .step p.say { color: var(--chalk); }
+  .done-mark { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+
+  /* close */
+  .close { border-top: 1px solid var(--rule); padding-block: var(--s8); row-gap: var(--s3); align-items: center; }
+  .close h2 { grid-column: 1 / 4; font-size: var(--t-xl); text-transform: uppercase; }
+  .close .end { grid-column: 4 / 5; display: flex; justify-content: flex-end; }
+  footer { padding-block: var(--s3) var(--s6); }
+  footer p { color: var(--muted); font-size: 0.9375rem; padding-inline: var(--lane-pad); }
+
+  /* full board dialog */
+  dialog { border: 0; padding: 0; background: var(--card); color: var(--ink); border-radius: var(--r); width: min(1600px, 100% - 2 * var(--s2)); max-height: calc(100% - 2 * var(--s2)); overflow: auto; }
+  dialog::backdrop { background: rgba(15, 18, 22, .8); }
+  dialog[open] { animation: rise 220ms var(--ease-out); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: var(--s1) var(--s1) var(--s1) var(--s2); position: sticky; top: 0; background: var(--card); }
+  .dlg-head h2 { font-size: var(--t-md); text-transform: uppercase; letter-spacing: .04em; }
+  .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--edge); background: transparent; border-radius: var(--r); cursor: pointer; color: var(--ink); }
+  .icon-btn:hover { background: var(--tag); }
+  .icon-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .btn:active { transition: background-color 150ms ease; transform: none; }
+    dialog[open] { animation: fade 150ms ease; }
+    @keyframes fade { from { opacity: 0; } }
+  }
+
+  /* 1920: the board and its notes grow */
+  @media (min-width: 1600px) {
+    :root { --wrap: 1680px; }
+    body { font-size: 1.1875rem; }
+  }
+
+  @media (max-width: 900px) {
+    .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s3); padding-inline: 0; }
+    .hero h1, .hero-l, .hero-r, .close h2, .close .end { grid-column: 1 / -1; }
+    .top nav { grid-column: 2; }
+    .close .end { justify-content: flex-start; }
+    .notes, .steps { row-gap: var(--s4); }
+    .board-bar, .follow h2, footer p { padding-inline: 0; }
+  }
+  @media (max-width: 600px) {
+    /* one lane at readable scale: the To do column of the screenshot */
+    .shot { aspect-ratio: 348 / 490; max-height: 60vh; margin-inline: auto; }
+    .shot img { left: -70.115%; top: -24.49%; width: 459.77%; }
+    .lanes { grid-template-columns: minmax(0, 1fr); }
+    .top .lanes { grid-template-columns: auto 1fr; }
+    .top nav { gap: var(--s2); font-size: var(--t-sm); }
+    .hero { padding-top: var(--s3); }
+    .follow { padding-top: var(--s8); }
+    .wrap { width: calc(100% - 2 * var(--s2)); }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap lanes">
+    <div class="mark">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="2" width="5" height="18" rx="1" fill="#ecede8"/><rect x="8.5" y="2" width="5" height="12" rx="1" fill="#ecede8"/><rect x="16" y="2" width="5" height="7" rx="1" fill="#f5d547"/></svg>
+      Laneway
+    </div>
+    <nav aria-label="Page">
+      <a href="#board">The board</a>
+      <a href="#follow">Follow a card</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap lanes hero" aria-labelledby="h1">
+    <div class="hero-l">
+      <h1 id="h1">What's next, who has it, when it's due.</h1>
+      <p class="lede">One board for a small team. Write the task, put a name on it, move it along. Everyone reads the same four lanes.</p>
+    </div>
+    <form class="hero-r card signup" id="signup" novalidate>
+      <div class="lane-label" aria-hidden="true"><span>To do</span></div>
+      <label for="email">Start your team's board</label>
+      <div class="row">
+        <input id="email" name="email" type="email" autocomplete="email" placeholder="name@studio.com" aria-describedby="email-msg" required>
+        <button class="btn btn-go" type="submit">Start a board</button>
+      </div>
+      <p class="msg" id="email-msg" role="status" aria-live="polite"></p>
+      <button class="btn btn-text" type="button" id="learn">See one card move, start to finish</button>
+    </form>
+  </section>
+
+  <section class="wrap" id="board" aria-labelledby="board-h">
+    <h2 id="board-h" class="sr">The board</h2>
+    <figure class="board">
+      <div class="shot">
+        <img src="hero.png" width="1600" height="800" alt="The Website refresh board for a six-person studio team: five cards in To do, four in In progress, three in Review, five in Done. Each card shows a label, a date and the owner's initials.">
+      </div>
+      <figcaption class="lanes notes">
+        <div class="note"><h3>To do</h3><p>Each card names the job, its label, its date and whose it is. "Write copy for the pricing page," Content, Nov 12, AK.</p></div>
+        <div class="note"><h3>In progress</h3><p>The bar under a card shows how far along it is. "Due tomorrow" stands out before anyone has to ask.</p></div>
+        <div class="note"><h3>Review</h3><p>Comments are counted on the card, so a review waiting on you is hard to miss.</p></div>
+        <div class="note"><h3>Done</h3><p>Finished work stays on the board. The team can see what moved this month.</p></div>
+      </figcaption>
+    </figure>
+    <div class="board-bar">
+      <p>Filter by assignee, due date or label. Group by status.</p>
+      <button class="btn btn-line" type="button" onclick="go()">Open the full board</button>
+    </div>
+  </section>
+
+  <section class="wrap follow" id="follow" aria-labelledby="follow-h">
+    <h2 id="follow-h">One card, start to finish</h2>
+    <ol class="lanes steps">
+      <li class="step">
+        <span class="step-head">To do</span>
+        <div class="card"><p class="card-title">Rebuild the signup form</p><div class="meta"><span class="tag">Design</span><span class="when">Nov 8</span><span class="who" aria-label="Owner SO">SO</span></div></div>
+        <p class="say">Someone says it in a meeting. It goes on the board with a date before the meeting ends.</p>
+      </li>
+      <li class="step">
+        <span class="step-head">In progress</span>
+        <div class="card"><p class="card-title">Rebuild the signup form</p><div class="bar"><i style="width:60%"></i></div><div class="meta"><span class="tag">Design</span><span class="due">Due tomorrow</span><span class="who" aria-label="Owner SO">SO</span></div></div>
+        <p class="say">SO takes it. The card moves, so nobody has to ask who's on it.</p>
+      </li>
+      <li class="step">
+        <span class="step-head">Review</span>
+        <div class="card"><p class="card-title">Rebuild the signup form</p><div class="meta"><span class="tag">Design</span><span class="when">1 comment</span><span class="who" aria-label="Owner SO">SO</span></div></div>
+        <p class="say">A teammate checks it and leaves a note on the card, not in a chat thread.</p>
+      </li>
+      <li class="step">
+        <span class="step-head">Done</span>
+        <div class="card"><p class="card-title">Rebuild the signup form</p><div class="meta"><span class="tag">Design</span><span class="done-mark"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg>Done Nov 9</span><span class="who" aria-label="Owner SO">SO</span></div></div>      </li>
+    </ol>
+  </section>
+
+  <section class="wrap lanes close" aria-labelledby="close-h">
+    <h2 id="close-h">Put this week on one board.</h2>
+    <div class="end">
+      <button class="btn btn-line" type="button" id="to-form">Start your team's board</button>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap"><p>© 2026 Laneway</p></footer>
+
+<dialog id="full" aria-labelledby="full-h">
+  <div class="dlg-head">
+    <h2 id="full-h">Website refresh board</h2>
+    <button class="icon-btn" type="button" id="close" aria-label="Close the board"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2"/></svg></button>
+  </div>
+  <img src="hero.png" width="1600" height="800" loading="lazy" alt="The full Website refresh board with its sidebar: Inbox, My work, Board, Calendar and Docs, and three projects.">
+</dialog>
+
+<script>
+  const dlg = document.getElementById('full');
+  function go() {
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open', '');
+  }
+  document.getElementById('close').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+  document.getElementById('learn').addEventListener('click', () => {
+    document.getElementById('follow').scrollIntoView();
+  });
+  const email = document.getElementById('email');
+  document.getElementById('to-form').addEventListener('click', () => {
+    document.getElementById('signup').scrollIntoView({ block: 'center' });
+    email.focus({ preventScroll: true });
+  });
+
+  const msg = document.getElementById('email-msg');
+  document.getElementById('signup').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      email.setAttribute('aria-invalid', 'true');
+      msg.className = 'msg err';
+      msg.textContent = v
+        ? 'That address is missing a part. Use the form name@studio.com.'
+        : 'Enter your work email, like name@studio.com, to start a board.';
+      email.focus();
+      return;
+    }
+    email.removeAttribute('aria-invalid');
+    msg.className = 'msg';
+    msg.textContent = 'Got it. The link to your new board is on its way to ' + v + '.';
+  });
+  email.addEventListener('input', () => {
+    if (email.getAttribute('aria-invalid')) { email.removeAttribute('aria-invalid'); msg.textContent = ''; msg.className = 'msg'; }
+  });
+</script>
+</body>
+</html>
