@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter structured logs like a table</title>
+<meta name="description" content="grepline is an open-source CLI that searches JSON and logfmt logs across many files with a SQL-like filter. Written in Rust, one binary, MIT licensed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700&family=Atkinson+Hyperlegible+Next:wght@400;700&family=Martian+Mono:wdth,wght@75..112.5,400;75..112.5,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* paper: continuous-form stock · band: the green bar · ribbon: printer ink · match: grep's ms=01;31 */
+  --paper: #F7F8F2;
+  --band: #DDEBD6;
+  --ribbon: #1A1F1B;
+  --ribbon-faded: #4A574C;
+  --match: #B0121B;
+  --on-match: #FFFFFF;
+  --perf: #9DB39A;
+
+  --font-display: "Martian Mono", ui-monospace, monospace;
+  --font-body: "Atkinson Hyperlegible Next", "Segoe UI", sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* scale 1.25 from 16 */
+  --t-0: 0.875rem;  /* 14 — log rows at narrow widths, file column */
+  --t-1: 1rem;      /* 16 */
+  --t-2: 1.25rem;   /* 20 */
+  --t-3: 1.5625rem; /* 25 */
+  --t-4: 1.953rem;  /* 31 */
+  --t-5: 2.441rem;  /* 39 */
+
+  --s-1: 8px; --s-2: 16px; --s-3: 24px; --s-4: 32px; --s-6: 48px; --s-8: 64px; --s-12: 96px;
+  --row: 1.75rem;   /* one printed line, 6 lpi feel */
+  --gutter: 44px;   /* sprocket margin */
+  --measure: 1200px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  /* sprocket holes, both margins */
+  background-image:
+    radial-gradient(circle at 22px 18px, var(--perf) 0 6px, transparent 7px),
+    radial-gradient(circle at calc(100% - 22px) 18px, var(--perf) 0 6px, transparent 7px);
+  background-size: 100% 36px;
+  background-repeat: repeat-y;
+  color: var(--ribbon);
+  font-family: var(--font-body);
+  font-size: var(--t-1);
+  line-height: 1.6;
+}
+.feed {
+  margin-inline: var(--gutter);
+  border-inline: 2px dashed var(--perf);
+  min-height: 100vh;
+}
+.wrap { max-width: var(--measure); margin-inline: auto; padding-inline: var(--s-4); }
+
+h1, h2, h3 { font-family: var(--font-display); font-variation-settings: "wdth" 80; line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; text-wrap: pretty; }
+a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+code, kbd { font-family: var(--font-mono); }
+
+:focus-visible { outline: 3px solid var(--ribbon); outline-offset: 3px; }
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding-block: var(--s-2); border-bottom: 2px dashed var(--perf); }
+.mark { font-family: var(--font-display); font-weight: 700; font-size: var(--t-2); text-decoration: none; white-space: nowrap; }
+.mark span { color: var(--match); }
+.top nav ul { display: flex; gap: var(--s-3); list-style: none; margin: 0; padding: 0; }
+.top nav a { text-decoration: none; white-space: nowrap; display: inline-block; padding-block: var(--s-1); }
+.top nav a:hover { text-decoration: underline; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-6); align-items: end; padding-block: var(--s-6) var(--s-4); }
+.hero h1 { font-size: var(--t-5); font-weight: 700; }
+.hero .lede { margin-top: var(--s-2); font-size: var(--t-2); line-height: 1.5; max-width: 34ch; }
+
+/* install rows — printout lines */
+.install { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ribbon); }
+.cmd { display: flex; align-items: center; gap: var(--s-2); min-height: calc(var(--row) * 2); padding: var(--s-1) 0 var(--s-1) var(--s-2); border-bottom: 2px solid var(--ribbon); }
+.cmd:nth-child(2) { background: var(--band); }
+.cmd code { flex: 1; min-width: 0; font-size: var(--t-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cmd code::before { content: "$ "; color: var(--ribbon-faded); }
+.install-note { margin-top: var(--s-1); min-height: 1.6em; color: var(--ribbon); }
+
+.btn { font: 700 var(--t-1)/1 var(--font-mono); white-space: nowrap; min-height: 44px; padding: 0 var(--s-3); border: 2px solid var(--ribbon); border-radius: 0; background: var(--paper); color: var(--ribbon); cursor: pointer; transition: transform 120ms var(--ease-out), background-color 120ms ease; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--match); border-color: var(--match); color: var(--on-match); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--band); }
+  .btn-primary:hover { background: var(--ribbon); border-color: var(--ribbon); }
+}
+
+/* ---------- the filter sheet (signature) ---------- */
+.sheet { padding-bottom: var(--s-8); }
+.query { display: flex; align-items: stretch; border: 2px solid var(--ribbon); background: var(--paper); }
+.query label { display: flex; align-items: center; padding-inline: var(--s-2); font-family: var(--font-mono); font-weight: 700; font-size: var(--t-1); background: var(--ribbon); color: var(--paper); white-space: nowrap; }
+.query input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ribbon); font-family: var(--font-display); font-variation-settings: "wdth" 80; font-size: var(--t-4); font-weight: 700; padding: var(--s-2); }
+.query input:focus-visible { outline: none; }
+.query:focus-within { outline: 3px solid var(--match); outline-offset: 3px; }
+.query[data-state="error"] { border-color: var(--match); }
+
+.readout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-1) var(--s-3); padding-block: var(--s-2); }
+.count { font-family: var(--font-mono); font-size: var(--t-1); font-variant-numeric: tabular-nums; }
+.count strong { font-size: var(--t-2); }
+.count[data-state="error"]::before { content: "✕ "; color: var(--match); font-weight: 700; }
+.tries { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+.tries > span { color: var(--ribbon-faded); }
+.try { font: 400 var(--t-1)/1 var(--font-mono); min-height: 36px; padding: 0 var(--s-2); border: 2px solid var(--ribbon); background: var(--paper); color: var(--ribbon); cursor: pointer; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .try:hover { background: var(--band); } }
+
+/* green-bar rows: bands of three */
+.rows { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ribbon); border-bottom: 2px solid var(--ribbon); }
+.row { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: var(--s-2); padding: 6px var(--s-2); min-height: var(--row); font-family: var(--font-mono); font-size: var(--t-1); line-height: 1.6; color: var(--ribbon-faded); }
+.row:nth-child(6n+4), .row:nth-child(6n+5), .row:nth-child(6n+6) { background: var(--band); }
+.row .file { white-space: nowrap; font-size: var(--t-0); padding-top: 2px; }
+.line { min-width: 0; }
+.tok { white-space: pre; }
+.row.is-match { color: var(--ribbon); }
+.row.is-match .file::before { content: "▸ "; }
+/* design-nexus: keep R30 because grep paints a match in red (ms=01;31); here red marks only the fields your filter selected (the selection) and the install action */
+mark { background: none; color: var(--match); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* ---------- perforation between sections ---------- */
+.tear { border: 0; border-top: 2px dashed var(--perf); margin: 0; }
+
+/* ---------- formats: one event, two encodings ---------- */
+.formats { padding-block: var(--s-8); display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--s-6); align-items: start; }
+.formats h2, .record h2 { font-size: var(--t-4); }
+.formats p { margin-top: var(--s-2); max-width: 40ch; }
+.pair { margin: 0; border-top: 2px solid var(--ribbon); border-bottom: 2px solid var(--ribbon); }
+.pair .row { grid-template-columns: 7rem minmax(0, 1fr); color: var(--ribbon); }
+.pair .row:nth-child(2) { background: var(--band); }
+.pair dt { font-family: var(--font-mono); font-weight: 700; font-size: var(--t-0); padding-top: 2px; }
+.pair dd { margin: 0; min-width: 0; }
+
+/* ---------- the record ---------- */
+.record { padding-block: var(--s-8) var(--s-12); display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); grid-template-rows: auto 1fr; grid-template-areas: "kv head" "kv get"; gap: var(--s-4) var(--s-6); align-items: start; }
+.record .head { grid-area: head; }
+.record .kv { grid-area: kv; }
+.record .get { grid-area: get; }
+.record .head p { margin-top: var(--s-2); max-width: 36ch; }
+.kv { margin: 0; border-top: 2px solid var(--ribbon); border-bottom: 2px solid var(--ribbon); font-family: var(--font-mono); }
+.kv > div { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: var(--s-2); padding: 10px var(--s-2); }
+.kv > div:nth-child(6n+4), .kv > div:nth-child(6n+5), .kv > div:nth-child(6n+6) { background: var(--band); }
+.kv dt { color: var(--ribbon-faded); }
+.kv dt::after { content: "="; }
+.kv dd { margin: 0; font-size: var(--t-2); font-weight: 700; line-height: 1.3; }
+
+footer { border-top: 2px dashed var(--perf); padding-block: var(--s-3); font-family: var(--font-mono); font-size: var(--t-0); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); justify-content: space-between; }
+
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- widths ---------- */
+@media (min-width: 1600px) {
+  :root { --measure: 1560px; }
+  body { font-size: 1.0625rem; }
+  .row { grid-template-columns: 14rem minmax(0, 1fr); }
+  .hero h1 { font-size: 3.05rem; }
+}
+@media (max-width: 960px) {
+  .hero, .formats, .record { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .hero { align-items: start; }
+  .record { grid-template-rows: none; grid-template-areas: "head" "kv" "get"; }
+  .query input { font-size: var(--t-3); font-variation-settings: "wdth" 75; }
+}
+@media (max-width: 640px) {
+  :root { --gutter: 6px; }
+  body { background-image: none; }
+  .wrap { padding-inline: 12px; }
+  .try { white-space: normal; text-align: left; padding-block: 6px; line-height: 1.3; }
+  .top nav ul { gap: var(--s-2); }
+  .top nav .opt { display: none; }
+  .hero { padding-block: var(--s-3) var(--s-3); gap: var(--s-3); }
+  .hero h1 { font-size: var(--t-4); }
+  .hero .lede { font-size: var(--t-1); }
+  .cmd { flex-wrap: wrap; padding-right: var(--s-1); }
+  .cmd code { font-size: var(--t-1); flex-basis: 100%; }
+  .query { flex-direction: column; }
+  .query label { padding-block: 6px; }
+  .query input { font-size: var(--t-0); font-variation-settings: "wdth" 75; padding: 12px 6px; }
+  .row, .pair .row { grid-template-columns: minmax(0, 1fr); gap: 0; font-size: var(--t-0); padding-inline: var(--s-1); }
+  .kv > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .formats, .record { padding-block: var(--s-6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="feed">
+<header class="wrap top">
+  <a class="mark" href="#top" aria-label="grepline home">grep<span>line</span></a>
+  <nav aria-label="Page">
+    <ul>
+      <li><a href="#filter">Filter</a></li>
+      <li class="opt"><a href="#formats">Formats</a></li>
+      <li class="opt"><a href="#record">What's inside</a></li>
+      <li><a href="#install">Install</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="wrap hero" aria-labelledby="h1">
+    <div>
+      <h1 id="h1">Query your logs like a table, from the shell.</h1>
+      <p class="lede">grepline searches JSON and logfmt logs across many files with a SQL-like filter. One Rust binary, MIT licensed.</p>
+    </div>
+    <div id="install">
+      <h2 class="vh">Install grepline</h2>
+      <ul class="install">
+        <li class="cmd">
+          <code id="cmd-brew">brew install grepline</code>
+          <button class="btn btn-primary" type="button" data-copy="cmd-brew" aria-label="Copy brew install grepline">Copy</button>
+        </li>
+        <li class="cmd">
+          <code id="cmd-cargo">cargo install grepline</code>
+          <button class="btn" type="button" data-copy="cmd-cargo" aria-label="Copy cargo install grepline">Copy</button>
+        </li>
+      </ul>
+      <p class="install-note" role="status" aria-live="polite" data-note></p>
+    </div>
+  </section>
+
+  <section class="wrap sheet" id="filter" aria-labelledby="filter-h">
+    <h2 id="filter-h" class="vh">Try a filter on twelve log lines from three files</h2>
+    <form class="query" id="query" role="search" onsubmit="return false">
+      <label for="q">filter</label>
+      <input id="q" name="q" type="text" value="level=error and latency_ms>500" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="count">
+    </form>
+    <div class="readout">
+      <p class="count" id="count" aria-live="polite"><strong>4</strong> of 12 lines match, in 3 files</p>
+      <div class="tries">
+        <span>Try</span>
+        <button class="try" type="button">level=warn</button>
+        <button class="try" type="button">latency_ms>1000</button>
+        <button class="try" type="button">service=checkout and level=error</button>
+      </div>
+    </div>
+    <ol class="rows" id="rows" aria-label="Log lines"></ol>
+  </section>
+
+  <hr class="tear">
+
+  <section class="wrap formats" id="formats" aria-labelledby="formats-h">
+    <div>
+      <h2 id="formats-h">JSON or logfmt, one filter.</h2>
+      <p>Mixed services write mixed formats. The same <code>level=error and latency_ms&gt;500</code> catches this event in both encodings.</p>
+    </div>
+    <dl class="pair">
+      <div class="row is-match"><dt>JSON</dt><dd class="line"><span class="tok">{"ts":"2026-11-04T15:29:41Z",</span><wbr><span class="tok">"service":"checkout",</span><wbr><span class="tok">"<mark>level</mark>":"<mark>error</mark>",</span><wbr><span class="tok">"<mark>latency_ms</mark>":<mark>1284</mark>,</span><wbr><span class="tok">"path":"/cart/pay"}</span></dd></div>
+      <div class="row is-match"><dt>logfmt</dt><dd class="line"><span class="tok">ts=2026-11-04T15:29:41Z </span><wbr><span class="tok">service=checkout </span><wbr><span class="tok"><mark>level</mark>=<mark>error</mark> </span><wbr><span class="tok"><mark>latency_ms</mark>=<mark>1284</mark> </span><wbr><span class="tok">path=/cart/pay</span></dd></div>
+    </dl>
+  </section>
+
+  <hr class="tear">
+
+  <section class="wrap record" id="record" aria-labelledby="record-h">
+    <div class="head">
+      <h2 id="record-h">What you're installing.</h2>
+      <p>One binary to put on a box, in a container, or in CI. Either package manager installs the same one.</p>
+    </div>
+    <dl class="kv">
+      <div><dt>name</dt><dd>grepline</dd></div>
+      <div><dt>language</dt><dd>Rust</dd></div>
+      <div><dt>license</dt><dd>MIT</dd></div>
+      <div><dt>binaries</dt><dd>1</dd></div>
+      <div><dt>reads</dt><dd>JSON, logfmt</dd></div>
+      <div><dt>filter</dt><dd>SQL-like</dd></div>
+    </dl>
+    <div class="get">
+    <ul class="install">
+      <li class="cmd">
+        <code id="cmd-brew-2">brew install grepline</code>
+        <button class="btn btn-primary" type="button" data-copy="cmd-brew-2" aria-label="Copy brew install grepline">Copy</button>
+      </li>
+      <li class="cmd">
+        <code id="cmd-cargo-2">cargo install grepline</code>
+        <button class="btn" type="button" data-copy="cmd-cargo-2" aria-label="Copy cargo install grepline">Copy</button>
+      </li>
+    </ul>
+    <p class="install-note" role="status" aria-live="polite" data-note></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>grepline · open source · MIT license</span>
+  </div>
+</footer>
+</div>
+
+<script>
+(function () {
+  // Twelve lines from three files; JSON and logfmt mixed, as real fleets are.
+  var LINES = [
+    { file: "api-gateway.log:2210", fmt: "logfmt", f: { ts: "2026-11-04T15:29:12Z", level: "info", service: "api", latency_ms: 42, path: "/health" } },
+    { file: "checkout.jsonl:881", fmt: "json", f: { ts: "2026-11-04T15:29:14Z", level: "error", service: "checkout", latency_ms: 731, path: "/cart/pay" } },
+    { file: "worker.log:5530", fmt: "logfmt", f: { ts: "2026-11-04T15:29:15Z", level: "warn", service: "worker", latency_ms: 1890, job: "email.send" } },
+    { file: "api-gateway.log:2214", fmt: "logfmt", f: { ts: "2026-11-04T15:29:19Z", level: "error", service: "api", latency_ms: 120, path: "/login" } },
+    { file: "checkout.jsonl:884", fmt: "json", f: { ts: "2026-11-04T15:29:23Z", level: "info", service: "checkout", latency_ms: 88, path: "/cart" } },
+    { file: "worker.log:5536", fmt: "logfmt", f: { ts: "2026-11-04T15:29:27Z", level: "error", service: "worker", latency_ms: 2304, job: "invoice.pdf" } },
+    { file: "api-gateway.log:2231", fmt: "logfmt", f: { ts: "2026-11-04T15:29:31Z", level: "warn", service: "api", latency_ms: 512, path: "/search" } },
+    { file: "checkout.jsonl:890", fmt: "json", f: { ts: "2026-11-04T15:29:41Z", level: "error", service: "checkout", latency_ms: 1284, path: "/cart/pay" } },
+    { file: "worker.log:5541", fmt: "logfmt", f: { ts: "2026-11-04T15:29:44Z", level: "info", service: "worker", latency_ms: 301, job: "email.send" } },
+    { file: "api-gateway.log:2240", fmt: "logfmt", f: { ts: "2026-11-04T15:29:50Z", level: "error", service: "api", latency_ms: 905, path: "/orders" } },
+    { file: "checkout.jsonl:897", fmt: "json", f: { ts: "2026-11-04T15:29:55Z", level: "warn", service: "checkout", latency_ms: 640, path: "/cart/pay" } },
+    { file: "worker.log:5549", fmt: "logfmt", f: { ts: "2026-11-04T15:29:58Z", level: "info", service: "worker", latency_ms: 77, job: "cache.warm" } }
+  ];
+
+  var input = document.getElementById("q");
+  var form = document.getElementById("query");
+  var list = document.getElementById("rows");
+  var count = document.getElementById("count");
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  // key=value, key>number, key<number, joined by "and"
+  function parse(text) {
+    var t = text.trim();
+    if (!t) return [];
+    var parts = t.split(/\s+and\s+/i), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var m = parts[i].trim().match(/^([A-Za-z_][\w.]*)\s*(=|>|<)\s*("?)([^"\s]+)\3$/);
+      if (!m) return { error: parts[i].trim() || "and" };
+      out.push({ key: m[1], op: m[2], val: m[4] });
+    }
+    return out;
+  }
+
+  function test(f, c) {
+    if (!(c.key in f)) return false;
+    var v = f[c.key];
+    if (c.op === "=") return String(v) === c.val;
+    var n = Number(c.val);
+    if (isNaN(n) || typeof v !== "number") return false;
+    return c.op === ">" ? v > n : v < n;
+  }
+
+  function tokens(line, hitKeys) {
+    var keys = Object.keys(line.f), out = [];
+    keys.forEach(function (k, i) {
+      var v = line.f[k], hit = hitKeys.indexOf(k) > -1;
+      var K = hit ? "<mark>" + esc(k) + "</mark>" : esc(k);
+      var V = hit ? "<mark>" + esc(v) + "</mark>" : esc(v);
+      var last = i === keys.length - 1;
+      if (line.fmt === "json") {
+        var q = typeof v === "number" ? "" : '"';
+        out.push('<span class="tok">' + (i === 0 ? "{" : "") + '"' + K + '":' + q + V + q + (last ? "}" : ",") + "</span>");
+      } else {
+        out.push('<span class="tok">' + K + "=" + V + (last ? "" : " ") + "</span>");
+      }
+    });
+    return out.join("<wbr>");
+  }
+
+  function render() {
+    var q = parse(input.value);
+    if (q.error !== undefined) {
+      form.dataset.state = "error";
+      input.setAttribute("aria-invalid", "true");
+      count.dataset.state = "error";
+      count.textContent = "Can't read “" + q.error + "”. Write each condition as key=value or key>number, joined by and.";
+      return;
+    }
+    form.dataset.state = "";
+    input.removeAttribute("aria-invalid");
+    count.dataset.state = "";
+    var keys = q.map(function (c) { return c.key; });
+    var n = 0, files = {};
+    list.innerHTML = LINES.map(function (line) {
+      var ok = q.every(function (c) { return test(line.f, c); });
+      if (ok) { n++; files[line.file.split(":")[0]] = 1; }
+      return '<li class="row' + (ok ? " is-match" : "") + '"><span class="file">' + esc(line.file) + '</span><span class="line">' + tokens(line, ok ? keys : []) + "</span></li>";
+    }).join("");
+    var nf = Object.keys(files).length;
+    if (!q.length) count.innerHTML = "No filter: all <strong>12</strong> lines, 3 files";
+    else if (!n) count.innerHTML = "<strong>0</strong> of 12 lines match. Try a lower number, or level=warn.";
+    else count.innerHTML = "<strong>" + n + "</strong> of 12 lines match, in " + nf + (nf === 1 ? " file" : " files");
+  }
+
+  input.addEventListener("input", render);
+  document.querySelectorAll(".try").forEach(function (b) {
+    b.addEventListener("click", function () { input.value = b.textContent; render(); input.focus(); });
+  });
+  render();
+
+  // copy buttons
+  document.querySelectorAll("[data-copy]").forEach(function (b) {
+    // report beside the button that was pressed, not in the hero
+    var note = b.closest(".install").parentElement.querySelector("[data-note]");
+    b.addEventListener("click", function () {
+      var text = document.getElementById(b.dataset.copy).textContent;
+      var label = b.getAttribute("aria-label");
+      var done = function () {
+        b.textContent = "Copied"; b.setAttribute("aria-label", "Copied " + text);
+        note.textContent = "Copied “" + text + "”. Paste it into your terminal.";
+        setTimeout(function () { b.textContent = "Copy"; b.setAttribute("aria-label", label); }, 2000);
+      };
+      var fail = function () { note.textContent = "Couldn't reach the clipboard. Select the command and press Ctrl+C (⌘C on macOS)."; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fail); else fail();
+    });
+  });
+})();
+</script>
+</body>
+</html>

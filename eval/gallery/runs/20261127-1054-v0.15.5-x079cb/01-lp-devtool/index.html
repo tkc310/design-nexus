@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter JSON and logfmt logs like a table</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches structured logs (JSON, logfmt) across many files with a SQL-like filter. MIT licensed, one binary. brew install grepline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* greenbar continuous-form stock */
+    --paper: #F7F8F1;
+    --bar: #DDEBD8;
+    --ink: #18211C;
+    --faded: #4A574F;
+    --highlighter: #A0105C;
+    --danger: #A3261B;
+
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    /* 1.25 scale from 16px */
+    --t-small: 0.875rem;  /* 14 */
+    --t-base: 1rem;       /* 16 */
+    --t-m: 1.25rem;       /* 20 */
+    --t-l: 1.5625rem;     /* 25 */
+    --t-xl: 2.441rem;     /* 39 */
+    --t-xxl: 3.815rem;    /* 61 */
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s8: 96px;
+    --band: 48px;
+    --radius: 6px;
+    --edge: 40px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--t-base);
+    line-height: 1.6;
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { text-wrap: pretty; margin: 0; }
+  code, kbd, samp, pre { font-family: var(--font-mono); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- the continuous form: sprocket margins ---------- */
+  .form {
+    position: relative;
+    padding-inline: var(--s2);
+  }
+  @media (min-width: 768px) {
+    .form { padding-inline: calc(var(--edge) + var(--s4)); }
+    .form::before, .form::after {
+      content: "";
+      position: absolute; top: 0; bottom: 0;
+      width: var(--edge);
+      background-image: radial-gradient(circle at 50% 50%, var(--bar) 0 7px, transparent 7.5px);
+      background-size: var(--edge) 24px;
+      background-repeat: repeat-y;
+      pointer-events: none;
+    }
+    .form::before { left: 0; border-right: 2px dashed var(--bar); }
+    .form::after { right: 0; border-left: 2px dashed var(--bar); }
+  }
+  .wrap { max-width: 1240px; margin-inline: auto; }
+
+  /* ---------- header ---------- */
+  .top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s2); flex-wrap: wrap;
+    padding-block: var(--s2);
+  }
+  .mark {
+    font-family: var(--font-mono); font-weight: 500; font-size: var(--t-m);
+    color: var(--ink); text-decoration: none; letter-spacing: -0.01em;
+    padding-block: var(--s1);
+  }
+  .top nav ul { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; }
+  .top nav a {
+    color: var(--ink); text-decoration: none; font-size: var(--t-base);
+    white-space: nowrap; display: inline-block; padding-block: var(--s1);
+    border-bottom: 2px solid transparent;
+  }
+  .top nav a:hover { border-bottom-color: var(--ink); }
+
+  a:focus-visible, button:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--highlighter);
+    outline-offset: 2px;
+  }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "intro" "print" "facts";
+    gap: var(--s5) var(--s6);
+    padding-block: var(--s4) var(--s8);
+  }
+  .intro { grid-area: intro; min-width: 0; align-self: start; }
+  .printout { grid-area: print; min-width: 0; }
+  .facts { grid-area: facts; min-width: 0; }
+
+  h1 {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: var(--t-xl); line-height: 1.05; letter-spacing: -0.005em;
+    max-width: 14ch;
+  }
+  .lede { margin-top: var(--s3); font-size: var(--t-m); line-height: 1.5; max-width: 34ch; }
+
+  /* install bands */
+  .install { margin-top: var(--s4); display: grid; gap: var(--s1); }
+  .cmd {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s1) var(--s2);
+    flex-wrap: wrap; /* at 320 the button drops under the command instead of splitting it */
+    min-height: var(--band);
+    padding: var(--s1) var(--s1) var(--s1) var(--s2);
+    background: var(--bar);
+  }
+  .cmd code {
+    font-size: var(--t-base); font-weight: 500;
+    white-space: pre-wrap; overflow-wrap: normal; min-width: 0;
+  }
+  .cmd code::before { content: "$ "; color: var(--faded); font-weight: 400; }
+  .cmd-label { font-size: var(--t-small); color: var(--ink); margin-top: var(--s2); }
+  .copy-note { min-height: 1.6em; font-size: var(--t-small); margin-top: var(--s1); }
+
+  .btn {
+    font: 600 var(--t-base)/1 var(--font-body);
+    white-space: nowrap;
+    min-height: 40px; min-width: 88px;
+    padding: 0 var(--s2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: transform 120ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--highlighter); color: var(--paper); border: 2px solid var(--highlighter); }
+  .btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+  .btn-secondary { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+  .btn-secondary:hover { background: var(--ink); color: var(--paper); }
+
+  /* ---------- signature: the printout ---------- */
+  .sheet {
+    background: var(--paper);
+    border: 2px solid var(--bar);
+    box-shadow: 0 1px 0 var(--bar), 0 18px 40px -24px rgb(24 33 28 / 0.45);
+  }
+  .query {
+    padding: var(--s2);
+    border-bottom: 2px dashed var(--bar);
+  }
+  .query label {
+    display: block; font-family: var(--font-mono); font-size: var(--t-small);
+    margin-bottom: var(--s1);
+  }
+  .query textarea {
+    display: block; width: 100%;
+    resize: none; overflow: hidden;
+    field-sizing: content; /* wraps the filter at narrow widths instead of cutting it off */
+    white-space: pre-wrap; overflow-wrap: normal;
+    font: 500 var(--t-base)/1.4 var(--font-mono);
+    color: var(--ink); background: var(--paper);
+    border: 2px solid var(--ink); border-radius: var(--radius);
+    padding: 10px var(--s2);
+  }
+  .query textarea[aria-invalid="true"] { border-color: var(--danger); }
+  .query-msg { font-size: var(--t-small); margin-top: var(--s1); min-height: 1.6em; }
+  .query-msg.is-error { color: var(--danger); font-weight: 500; }
+  .presets { display: flex; flex-wrap: wrap; gap: var(--s1); margin-top: var(--s1); }
+  .preset {
+    font: 400 var(--t-small)/1 var(--font-mono);
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--faded); border-radius: var(--radius);
+    min-height: 32px; padding: 0 10px; cursor: pointer; white-space: nowrap;
+  }
+  .preset:hover { border-color: var(--ink); background: var(--bar); }
+  .preset[aria-pressed="true"] { border: 2px solid var(--highlighter); padding: 0 9px; }
+
+  .count {
+    display: flex; justify-content: space-between; gap: var(--s2); flex-wrap: wrap;
+    padding: var(--s1) var(--s2);
+    font-family: var(--font-mono); font-size: var(--t-small);
+    font-variant-numeric: tabular-nums;
+  }
+  .count strong { font-weight: 500; }
+
+  .records { list-style: none; margin: 0; padding: 0; }
+  .rec {
+    display: grid;
+    grid-template-columns: 12ch minmax(0, 1fr);
+    column-gap: var(--s2);
+    align-items: baseline;
+    min-height: var(--band);
+    padding: var(--s1) var(--s2) var(--s1) calc(var(--s2) - 4px);
+    border-left: 4px solid transparent;
+    font-family: var(--font-mono); font-size: var(--t-base); line-height: 1.5;
+  }
+  .rec:nth-child(4n+1), .rec:nth-child(4n+2) { background: var(--bar); }
+  .rec .src { color: var(--faded); white-space: nowrap; }
+  .rec samp { white-space: pre-wrap; overflow-wrap: normal; min-width: 0; font-size: inherit; }
+  .rec.hit { border-left-color: var(--ink); }
+  .rec.hit samp { font-weight: 500; }
+  .rec.miss samp {
+    color: var(--faded);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--faded);
+  }
+  .rec samp { transition: color 160ms ease; }
+  .empty {
+    padding: var(--s3) var(--s2);
+    font-size: var(--t-base);
+    border-top: 2px dashed var(--bar);
+  }
+  .empty[hidden] { display: none; }
+
+  /* ---------- facts: label–value bands ---------- */
+  .facts h2 { font-family: var(--font-mono); font-weight: 500; font-size: var(--t-base); margin-bottom: var(--s2); }
+  .facts dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+  .facts dl > div {
+    display: grid; grid-template-columns: 11ch minmax(0, 1fr); gap: var(--s2); align-items: baseline;
+    padding: var(--s1) var(--s2);
+    min-height: var(--band);
+  }
+  .facts dl > div:nth-child(odd) { background: var(--bar); }
+  .facts dt { font-size: var(--t-small); }
+  .facts dd { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: var(--t-l); line-height: 1.2; white-space: nowrap; }
+
+  /* ---------- anatomy of a filter ---------- */
+  .anatomy { padding-block: var(--s8); border-top: 2px dashed var(--bar); }
+  .anatomy h2, .get h2 {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: var(--t-xl); line-height: 1.1;
+  }
+  .expr {
+    margin: var(--s4) 0 0;
+    font-family: var(--font-mono); font-weight: 500;
+    font-size: var(--t-l); line-height: 1.3;
+    display: flex; flex-wrap: wrap; gap: 0 0.6ch;
+  }
+  .expr span { white-space: nowrap; border-bottom: 4px solid var(--ink); padding-bottom: 4px; }
+  .expr .op { border-bottom-style: dotted; }
+  .terms { list-style: none; margin: var(--s4) 0 0; padding: 0; }
+  .terms li {
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1);
+    padding: var(--s2);
+    min-height: var(--band);
+  }
+  .terms li:nth-child(odd) { background: var(--bar); }
+  .terms code { font-size: var(--t-base); font-weight: 500; white-space: nowrap; }
+  .terms p { max-width: 90ch; } /* each term is one sentence: one line at desktop, no orphaned tail */
+
+  /* ---------- install, again ---------- */
+  .get { padding-block: var(--s8); border-top: 2px dashed var(--bar); }
+  .get-grid { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); }
+  .get p.why { font-size: var(--t-m); line-height: 1.5; max-width: 40ch; margin-top: var(--s2); }
+  .get .rows { display: grid; gap: var(--s1); align-content: start; }
+  .get .row-label { font-size: var(--t-small); }
+  .get .cmd + .row-label { margin-top: var(--s2); }
+
+
+  /* ---------- widths ---------- */
+  @media (max-width: 559px) {
+    .rec { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  }
+  @media (min-width: 768px) {
+    h1 { font-size: var(--t-xxl); }
+    .expr { font-size: var(--t-xl); }
+    .terms li { grid-template-columns: 22ch minmax(0, 1fr); gap: var(--s3); align-items: baseline; }
+  }
+  @media (min-width: 1000px) {
+    /* same tracks as the hero, so the closing install bands sit under the printout */
+    .get-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s6); align-items: start; }
+  }
+  @media (min-width: 1100px) {
+    .hero {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      grid-template-rows: auto 1fr;
+      grid-template-areas: "intro print" "facts print";
+    }
+    .facts { align-self: start; }
+  }
+  @media (min-width: 1600px) {
+    .wrap { max-width: 1720px; }
+    .hero {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 7fr) minmax(0, 3fr);
+      grid-template-rows: auto;
+      grid-template-areas: "intro print facts";
+    }
+    .facts dl > div { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: var(--s2); }
+    .get-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr) minmax(0, 3fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .rec samp { transition: none; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="form">
+  <div class="wrap">
+    <header class="top">
+      <a class="mark" href="#top" aria-label="grepline home">grepline</a>
+      <nav aria-label="Page">
+        <ul>
+          <li><a href="#filter">Filters</a></li>
+          <li><a href="#facts">Facts</a></li>
+          <li><a href="#install">Install</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="h1">
+        <div class="intro">
+          <h1 id="h1">Filter JSON and logfmt logs like a table.</h1>
+          <p class="lede">grepline reads structured logs across many files and keeps the records that match a SQL-like filter.</p>
+
+          <div class="install">
+            <p class="cmd-label" id="brew-label">Install with Homebrew</p>
+            <div class="cmd">
+              <code id="cmd-brew">brew install grepline</code>
+              <button class="btn btn-primary" type="button" data-copy="cmd-brew" aria-label="Copy brew install grepline">Copy</button>
+            </div>
+            <p class="cmd-label">or with Cargo</p>
+            <div class="cmd">
+              <code id="cmd-cargo">cargo install grepline</code>
+              <button class="btn btn-secondary" type="button" data-copy="cmd-cargo" aria-label="Copy cargo install grepline">Copy</button>
+            </div>
+            <p class="copy-note" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <figure class="printout" style="margin:0" aria-labelledby="print-cap">
+          <figcaption id="print-cap" class="sr-only">Eleven log records from api.log, worker.log and gateway.log, filtered by the expression in the field above them.</figcaption>
+          <div class="sheet">
+            <div class="query">
+              <label for="q">filter</label>
+              <textarea id="q" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="q-msg">level=error and latency_ms&gt;500</textarea>
+              <p id="q-msg" class="query-msg">Try your own: field=value or field&gt;number, joined with and.</p>
+              <div class="presets" role="group" aria-label="Example filters">
+                <button class="preset" type="button" aria-pressed="false">level=error</button>
+                <button class="preset" type="button" aria-pressed="false">latency_ms&gt;500</button>
+                <button class="preset" type="button" aria-pressed="true">level=error and latency_ms&gt;500</button>
+              </div>
+            </div>
+            <p class="count" aria-live="polite"><span><strong id="n-hit">4</strong> of <span id="n-all">11</span> records match</span></p>
+            <ol class="records" id="records">
+              <li class="rec miss"><span class="src">api.log</span><samp>ts=09:41:02 level=info path=/v1/orders latency_ms=84 status=200</samp></li>
+              <li class="rec hit"><span class="src">worker.log</span><samp>{"ts":"09:41:03", "level":"error", "job":"invoice.render", "latency_ms":1240}</samp></li>
+              <li class="rec miss"><span class="src">gateway.log</span><samp>ts=09:41:03 level=warn upstream=payments latency_ms=640 status=504</samp></li>
+              <li class="rec hit"><span class="src">api.log</span><samp>ts=09:41:05 level=error path=/v1/checkout latency_ms=912 status=500</samp></li>
+              <li class="rec miss"><span class="src">worker.log</span><samp>{"ts":"09:41:06", "level":"info", "job":"email.send", "latency_ms":35}</samp></li>
+              <li class="rec miss"><span class="src">api.log</span><samp>ts=09:41:07 level=error path=/v1/cart latency_ms=41 status=400</samp></li>
+              <li class="rec hit"><span class="src">gateway.log</span><samp>ts=09:41:08 level=error upstream=search latency_ms=1503 status=502</samp></li>
+              <li class="rec miss"><span class="src">worker.log</span><samp>{"ts":"09:41:09", "level":"debug", "job":"cache.warm", "latency_ms":7}</samp></li>
+              <li class="rec miss"><span class="src">api.log</span><samp>ts=09:41:11 level=info path=/v1/orders/42 latency_ms=120 status=200</samp></li>
+              <li class="rec hit"><span class="src">worker.log</span><samp>{"ts":"09:41:12", "level":"error", "job":"export.csv", "latency_ms":3010}</samp></li>
+              <li class="rec miss"><span class="src">gateway.log</span><samp>ts=09:41:13 level=info upstream=auth latency_ms=22 status=200</samp></li>
+            </ol>
+            <p class="empty" id="empty" hidden></p>
+          </div>
+        </figure>
+
+        <section class="facts" id="facts" aria-labelledby="facts-h">
+          <h2 id="facts-h">What you install</h2>
+          <dl>
+            <div><dt>Written in</dt><dd>Rust</dd></div>
+            <div><dt>License</dt><dd>MIT</dd></div>
+            <div><dt>Ships as</dt><dd>1 binary</dd></div>
+            <div><dt>Reads</dt><dd>JSON, logfmt</dd></div>
+            <div><dt>Filter</dt><dd>SQL-like</dd></div>
+          </dl>
+        </section>
+      </section>
+
+      <section class="anatomy" id="filter" aria-labelledby="filter-h">
+        <h2 id="filter-h">Read a filter left to right.</h2>
+        <p class="expr" aria-label="level=error and latency_ms>500"><span>level=error</span><span class="op">and</span><span>latency_ms&gt;500</span></p>
+        <ol class="terms">
+          <li><code>level=error</code><p>The field <code>level</code> equals <code>error</code>. The same key works whether the record is JSON or logfmt.</p></li>
+          <li><code>and</code><p>Both sides must hold for a record to stay.</p></li>
+          <li><code>latency_ms&gt;500</code><p>The field <code>latency_ms</code> is greater than 500, compared as a number.</p></li>
+        </ol>
+      </section>
+
+      <section class="get" id="install" aria-labelledby="install-h">
+        <div class="get-grid">
+          <div>
+            <h2 id="install-h">Install grepline.</h2>
+            <p class="why">Pick either command. Both give you the single <code>grepline</code> binary, MIT licensed.</p>
+          </div>
+          <div class="rows">
+            <p class="row-label">Homebrew</p>
+            <div class="cmd">
+              <code id="cmd-brew-2">brew install grepline</code>
+              <button class="btn btn-primary" type="button" data-copy="cmd-brew-2" aria-label="Copy brew install grepline">Copy</button>
+            </div>
+            <p class="row-label">Cargo</p>
+            <div class="cmd">
+              <code id="cmd-cargo-2">cargo install grepline</code>
+              <button class="btn btn-secondary" type="button" data-copy="cmd-cargo-2" aria-label="Copy cargo install grepline">Copy</button>
+            </div>
+            <p class="copy-note" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ---- copy buttons ---- */
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = document.getElementById(btn.dataset.copy);
+      var text = code.textContent.trim();
+      var note = btn.closest('.install, .rows').querySelector('.copy-note');
+      function done() {
+        btn.textContent = 'Copied';
+        note.textContent = 'Copied “' + text + '”. Paste it into your terminal.';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+      }
+      function fail() {
+        var r = document.createRange(); r.selectNodeContents(code);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        note.textContent = 'Your browser blocked the clipboard. The command is selected: press Ctrl+C or ⌘C.';
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fail);
+      } else { fail(); }
+    });
+  });
+
+  /* ---- the printout filter ---- */
+  var input = document.getElementById('q');
+  var msg = document.getElementById('q-msg');
+  var hint = msg.textContent;
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#records .rec'));
+  var nHit = document.getElementById('n-hit');
+  var empty = document.getElementById('empty');
+  var presets = Array.prototype.slice.call(document.querySelectorAll('.preset'));
+
+  function fields(line) {
+    line = line.trim();
+    if (line.charAt(0) === '{') { try { return JSON.parse(line); } catch (e) { return {}; } }
+    var out = {};
+    line.split(/\s+/).forEach(function (pair) {
+      var i = pair.indexOf('=');
+      if (i > 0) out[pair.slice(0, i)] = pair.slice(i + 1);
+    });
+    return out;
+  }
+  var data = rows.map(function (li) { return fields(li.querySelector('samp').textContent); });
+
+  function parse(q) {
+    var terms = q.trim().split(/\s+and\s+/i);
+    return terms.map(function (t) {
+      var m = t.trim().match(/^([A-Za-z_][\w.]*)\s*(=|>)\s*"?([^"\s]+)"?$/);
+      if (!m) throw t.trim();
+      return { field: m[1], op: m[2], value: m[3] };
+    });
+  }
+  function test(rec, term) {
+    if (!(term.field in rec)) return false;
+    var v = rec[term.field];
+    if (term.op === '=') return String(v) === term.value;
+    var a = Number(v), b = Number(term.value);
+    return !isNaN(a) && !isNaN(b) && a > b;
+  }
+
+  function run() {
+    var q = input.value;
+    presets.forEach(function (p) { p.setAttribute('aria-pressed', String(p.textContent === q.trim())); });
+    if (!q.trim()) {
+      rows.forEach(function (li) { li.className = 'rec'; });
+      nHit.textContent = rows.length;
+      empty.hidden = true;
+      input.removeAttribute('aria-invalid');
+      msg.className = 'query-msg'; msg.textContent = 'No filter: every record is shown.';
+      return;
+    }
+    var terms;
+    try { terms = parse(q); }
+    catch (bad) {
+      input.setAttribute('aria-invalid', 'true');
+      msg.className = 'query-msg is-error';
+      msg.textContent = 'Can’t read “' + (bad || q.trim()) + '”. Write field=value or field>number, joined with and.';
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    msg.className = 'query-msg'; msg.textContent = hint;
+    var hits = 0;
+    rows.forEach(function (li, i) {
+      var ok = terms.every(function (t) { return test(data[i], t); });
+      li.className = 'rec ' + (ok ? 'hit' : 'miss');
+      if (ok) hits++;
+    });
+    nHit.textContent = hits;
+    if (hits === 0) {
+      empty.hidden = false;
+      empty.textContent = 'No record here matches ' + q.trim() + '. Loosen a term, for example latency_ms>100.';
+    } else { empty.hidden = true; }
+  }
+
+  /* one-line filter in a wrapping field: Enter and pasted newlines don't add lines */
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+  input.addEventListener('input', function () {
+    if (/[\r\n]/.test(input.value)) input.value = input.value.replace(/[\r\n]+/g, ' ');
+    run();
+  });
+  presets.forEach(function (p) {
+    p.addEventListener('click', function () { input.value = p.textContent; run(); });
+  });
+})();
+</script>
+</body>
+</html>

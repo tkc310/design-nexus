@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今月の給与 | みなと内科クリニック</title>
+<meta name="description" content="11月分の給与の進み具合。締め日までの残り日数、未承認の勤怠申請、スタッフ別の支給額と前月比を確認し、勤怠の承認と給与の確定を行います。">
+<!--
+  前提(質問できないため、以下を仮定して作成)
+  - 利用者はクリニックの事務長・院長など給与担当者1〜2名。PCでの利用が中心だが、スマートフォンでも確認できること。
+  - 「今日」は 2026-11-14 で固定(デモの再現性のため)。締め日は毎月20日、支給日は25日。
+  - 未承認の勤怠申請が残っている間は給与を確定できない(残業代が変わりうるため)。確定は振込データ作成前なら取り消せる。
+  - 残業申請を承認すると、該当スタッフの残業代と差引支給額に反映される。控除額の再計算は簡略化して据え置き。
+  - 前月比は差引支給額ベース。増減は良し悪しではないので、色ではなく記号と数値で示す。
+  - 氏名・金額はすべて架空のサンプル。画面下の「表示状態」切り替えはデモ用で、製品には含まれない。
+-->
+<style>
+/* design-nexus: keep R08 because the 40 hexes are two complete schemes (light + dark) of the same ~20 named tokens; nothing is used outside them. */
+/* design-nexus: keep R33 because the summary strip and the payroll table panels are the page's structure; replacing them is a relayout, outside this polish pass. */
+/* design-nexus: keep R29 because adding a 1600px+ arrangement is a relayout, outside this polish pass. */
+:root{
+  --bg:#f4f2ec; --surface:#fffefb; --sunken:#ebe8df; --line:#d9d4c6; --line-strong:#b9b2a0;
+  --ink:#1c2422; --ink-2:#4c5753; --ink-3:#6b7570;
+  --brand:#14524a; --brand-ink:#ffffff; --brand-soft:#dcebe6; --brand-hover:#0e3f39;
+  --warn:#8a4b00; --warn-soft:#fbecd2; --warn-line:#e2b566;
+  --danger:#a3261d; --danger-soft:#fbe4e0;
+  --ok:#1f6a3d; --ok-soft:#dff0e3;
+  --focus:#1d5fd1;
+  --radius:10px;
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Noto Sans JP","Meiryo",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#131816; --surface:#1b2220; --sunken:#232c29; --line:#33403c; --line-strong:#50605a;
+    --ink:#ecefe9; --ink-2:#bcc6c0; --ink-3:#97a39d;
+    --brand:#7fd0be; --brand-ink:#0b2420; --brand-soft:#1f3a35; --brand-hover:#9fe0d0;
+    --warn:#f1bd6a; --warn-soft:#3a2c12; --warn-line:#7a5a1e;
+    --danger:#ff9d92; --danger-soft:#3d1c18;
+    --ok:#8fd6a6; --ok-soft:#183322;
+    --focus:#8db8ff;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html:lang(ja){word-break:auto-phrase}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;padding-bottom:84px}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{text-wrap:balance}
+.nw{white-space:nowrap}
+button,input,select{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:8px;top:-60px;background:var(--surface);padding:8px 12px;border:1px solid var(--line-strong);border-radius:6px;z-index:50}
+.skip:focus{top:8px}
+
+/* top bar */
+.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.brand i{width:22px;height:22px;border-radius:6px;background:var(--brand);display:inline-block;position:relative}
+.brand i::after{content:"";position:absolute;inset:6px 9px;background:var(--brand-ink);box-shadow:-3px 3px 0 0 var(--brand-ink),3px 3px 0 0 var(--brand-ink);height:4px;width:4px;top:6px;left:9px}
+.top nav{display:flex;gap:4px;flex-wrap:wrap}
+.top nav a{padding:6px 10px;border-radius:6px;color:var(--ink-2);text-decoration:none;font-size:14px}
+.top nav a[aria-current]{color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--brand)}
+.top nav a:hover{background:var(--sunken)}
+.org{margin-left:auto;font-size:14px;color:var(--ink-2)}
+
+main{max-width:1180px;margin:0 auto;padding:24px 20px 40px}
+
+/* page head */
+.head{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end;margin-bottom:20px}
+.head .eyebrow{font-size:14px;color:var(--ink-2)}
+.head h1{font-size:26px;line-height:1.3;letter-spacing:.01em}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid var(--warn-line);background:var(--warn-soft);color:var(--warn);vertical-align:middle;margin-left:10px}
+.status.done{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.status.ready{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.actions .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hint{font-size:14px;line-height:1.75;color:var(--ink-2);max-width:32em;text-align:right}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:8px 16px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn.small{min-height:34px;padding:4px 12px;font-size:14px}
+.btn.quiet{border-color:transparent;background:transparent;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.btn[disabled]{cursor:not-allowed;background:var(--sunken);border-color:var(--line);color:var(--ink-2)}
+.badge{display:inline-block;min-width:22px;padding:0 6px;border-radius:999px;background:var(--brand-ink);color:var(--brand);font-size:13px;line-height:20px;text-align:center}
+
+/* steps */
+.steps{list-style:none;margin:0 0 20px;padding:0;display:flex;gap:0;font-size:14px;color:var(--ink-2);flex-wrap:wrap}
+.steps li{display:flex;align-items:center;gap:8px;padding-right:14px}
+.steps li+li::before{content:"";width:28px;height:1px;background:var(--line-strong);margin-right:6px}
+.steps b{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-strong);display:grid;place-items:center;font-size:12px;background:var(--surface)}
+.steps li.now{color:var(--ink);font-weight:700}
+.steps li.now b{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.steps li.past b{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+
+/* summary */
+.summary{display:grid;grid-template-columns:1.1fr 1.1fr 1.4fr 1fr;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);margin-bottom:24px;overflow:hidden}
+.cell{padding:16px 18px;border-left:1px solid var(--line);min-width:0}
+.cell:first-child{border-left:0}
+.cell h2{font-size:14px;font-weight:500;color:var(--ink-2)}
+.big{font-size:32px;font-weight:700;line-height:1.25;margin-top:2px}
+.big small{font-size:15px;font-weight:700;margin-left:2px}
+.sub{font-size:14px;color:var(--ink-2);margin-top:2px}
+.cell.alert{background:var(--warn-soft)}
+.cell.alert h2,.cell.alert .sub{color:var(--warn)}
+.cell .btn{margin-top:8px}
+.delta{display:inline-flex;align-items:baseline;gap:4px;font-weight:700}
+.delta .arrow{font-size:max(12px,.8em)}
+.meter{height:6px;border-radius:3px;background:var(--sunken);margin-top:10px;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--brand)}
+
+/* table section */
+.sec-head{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.sec-head h2{font-size:18px}
+.sec-head .count{font-size:14px;color:var(--ink-2)}
+.filters{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:2px;font-size:14px;color:var(--ink-2)}
+.field input,.field select{min-height:38px;padding:6px 10px;border:1px solid var(--ink-3);border-radius:8px;background:var(--surface);font-size:15px;color:var(--ink)}
+.field input{width:200px}
+.panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{font-size:14px;font-weight:500;color:var(--ink-2);background:var(--sunken);border-bottom:1px solid var(--line-strong);padding:0}
+thead th>span,thead th>button{display:block;width:100%;padding:9px 14px;text-align:inherit}
+thead th button{background:none;border:0;cursor:pointer;color:inherit;font-weight:inherit}
+thead th button:hover{color:var(--ink);background:var(--line)}
+thead th[aria-sort="ascending"] button::after{content:" ▲";font-size:12px}
+thead th[aria-sort="descending"] button::after{content:" ▼";font-size:12px}
+thead th[aria-sort] button{color:var(--ink);font-weight:700}
+.r{text-align:right}
+tbody tr:hover{background:color-mix(in srgb,var(--brand-soft) 45%,transparent)}
+tbody th{font-weight:700}
+/* design-nexus: keep R20 because the 12px kana is a furigana-style reading under each name, not information read on its own; the name above it is 15px bold. */
+.kana{display:block;font-size:12px;font-weight:400;color:var(--ink-3);line-height:1.3;white-space:nowrap}
+.net{font-weight:700;font-size:16px}
+.minus::before{content:"−"}
+.flag{display:inline-block;margin-left:8px;font-size:12px;font-weight:700;padding:0 7px;border-radius:4px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line);vertical-align:1px}
+.muted{color:var(--ink-3)}
+tfoot td,tfoot th{background:var(--sunken);font-weight:700;border-bottom:0;border-top:1px solid var(--line-strong)}
+.note{font-size:14px;color:var(--ink-2);margin-top:10px}
+
+/* state blocks */
+.state{padding:56px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state h3{font-size:18px}
+.state p{color:var(--ink-2);max-width:34em}
+.state .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.state .mark{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:700;background:var(--sunken);color:var(--ink-2)}
+.state.err .mark{background:var(--danger-soft);color:var(--danger)}
+.state code{font-size:12px;color:var(--ink-3)}
+.sk{display:block;height:14px;border-radius:4px;background:linear-gradient(90deg,var(--sunken) 0%,var(--line) 50%,var(--sunken) 100%);background-size:200% 100%;animation:sh 1.4s linear infinite}
+.sk.b{height:34px;width:60%;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:var(--radius);border:1px solid var(--ok);background:var(--ok-soft);color:var(--ok);margin-bottom:20px;font-weight:700}
+.banner .btn{margin-left:auto}
+
+/* dialog */
+dialog{border:1px solid var(--line-strong);border-radius:14px;padding:0;background:var(--surface);color:var(--ink);width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(15,22,20,.55)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 42px)}
+.dlg header{padding:18px 20px 12px;border-bottom:1px solid var(--line);display:flex;align-items:start;gap:12px}
+.dlg header h2{font-size:18px}
+.dlg header p{font-size:14px;color:var(--ink-2)}
+.dlg header .btn{margin-left:auto}
+.dlg .body{padding:8px 20px;overflow:auto}
+.dlg footer{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.req{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.req:last-child{border-bottom:0}
+.req .who{font-weight:700}
+.req .what{font-size:14px;color:var(--ink-2)}
+.req .tag{font-size:12px;font-weight:700;border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px}
+.req .ops{display:flex;gap:6px}
+dl.confirm{display:grid;grid-template-columns:auto 1fr;gap:8px 20px;margin:12px 0}
+dl.confirm dt{color:var(--ink-2)}
+dl.confirm dd{margin:0;font-weight:700;text-align:right}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;max-width:calc(100vw - 32px);z-index:40}
+.toast:empty{display:none}
+
+/* demo switcher */
+.demo{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:var(--bg);padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:13px;z-index:30}
+.demo fieldset{border:0;margin:0;padding:0;display:flex;gap:4px;flex-wrap:wrap}
+.demo legend{float:left;margin-right:10px;padding:6px 0;opacity:.8}
+.demo label{cursor:pointer}
+.demo input{position:absolute;opacity:0}
+.demo label span{display:block;padding:6px 12px;border-radius:6px;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent)}
+.demo input:checked+span{background:var(--bg);color:var(--ink);font-weight:700}
+.demo input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
+
+@media (max-width:960px){
+  .summary{grid-template-columns:1fr 1fr}
+  .cell:nth-child(3){border-left:0}
+  .cell:nth-child(n+3){border-top:1px solid var(--line)}
+}
+@media (max-width:820px){
+  main{padding:16px 16px 32px}
+  .head{grid-template-columns:1fr}
+  .head h1{font-size:22px}
+  .actions{align-items:stretch}
+  .actions .row{justify-content:stretch}
+  .actions .btn{flex:1}
+  .hint{text-align:left}
+  .org{display:none}
+  .filters{margin-left:0;width:100%}
+  .field{flex:1}.field input{width:100%}
+  .big{font-size:26px}
+  /* table -> cards */
+  .scroll{overflow:visible}
+  table,thead,tbody,tfoot,tr,td,th{display:block}
+  th,td{white-space:normal;border:0;padding:2px 0}
+  /* header row becomes a visible sort bar, so the focusable sort buttons stay seen */
+  thead tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;background:var(--sunken);border-bottom:1px solid var(--line-strong)}
+  thead tr::before{content:"並べ替え";font-size:14px;color:var(--ink-2);margin-right:4px}
+  thead th,thead th.r{padding:0;background:none;border:0;text-align:left}
+  thead th>button{display:inline-flex;align-items:center;width:auto;min-height:32px;padding:4px 10px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface)}
+  tbody tr,tfoot tr{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:2px 16px}
+  tfoot tr{background:var(--sunken)}
+  tbody th,tfoot th{grid-column:1/-1;font-size:16px;background:none;border:0}
+  td.job{grid-column:1/-1;color:var(--ink-2);font-size:13px;margin-bottom:6px}
+  td.r{text-align:left;display:flex;justify-content:space-between;gap:8px;background:none}
+  td[data-l]::before{content:attr(data-l);color:var(--ink-2);font-size:13px;font-weight:400}
+  td.netc{grid-column:1/-1;border-top:1px dashed var(--line-strong);margin-top:6px;padding-top:8px}
+  td.dc{grid-column:1/-1}
+  .kana{display:inline;margin-left:8px}
+  .req{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .summary{grid-template-columns:1fr}
+  .cell{border-left:0}.cell+.cell{border-top:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><i aria-hidden="true"></i>カルテ給与</div>
+    <nav aria-label="メイン">
+      <a href="#" aria-current="page">今月の給与</a>
+      <a href="#">勤怠</a>
+      <a href="#">スタッフ</a>
+      <a href="#">明細・帳票</a>
+      <a href="#">設定</a>
+    </nav>
+    <div class="org">みなと内科クリニック ・ 事務長 佐伯</div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1"></main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgApprove" aria-labelledby="dlgApproveT"></dialog>
+<dialog id="dlgFinal" aria-labelledby="dlgFinalT"></dialog>
+
+<div class="demo">
+  <fieldset>
+    <legend>表示状態(デモ用)</legend>
+    <label><input type="radio" name="view" value="ready" checked><span>通常</span></label>
+    <label><input type="radio" name="view" value="empty"><span>0件</span></label>
+    <label><input type="radio" name="view" value="loading"><span>読み込み中</span></label>
+    <label><input type="radio" name="view" value="error"><span>エラー</span></label>
+  </fieldset>
+</div>
+
+<script>
+(function(){
+"use strict";
+var TODAY = new Date(2026,10,14), CLOSE = new Date(2026,10,20), PAY = "11月25日(水)";
+var DAYS_LEFT = Math.round((CLOSE-TODAY)/864e5);
+var PREV_OT_TOTAL = 412600;
+
+// id, 氏名, かな, 職種, 基本給, 残業代, 控除, 前月の差引支給額(null=新規)
+var SEED = [
+ [1,"青木 誠一","あおき せいいち","医師",920000,0,268400,651600],
+ [2,"石原 由美子","いしはら ゆみこ","看護師",312000,28400,71200,262300],
+ [3,"上田 沙織","うえだ さおり","看護師",298000,41800,68900,255400],
+ [4,"大西 健","おおにし けん","理学療法士",285000,12600,62300,238900],
+ [5,"加藤 美咲","かとう みさき","医療事務",228000,9800,48100,192500],
+ [6,"木下 遥","きのした はるか","看護師",305000,36200,70400,259800],
+ [7,"小松 直樹","こまつ なおき","放射線技師",322000,18900,73800,271400],
+ [8,"坂本 理恵","さかもと りえ","医療事務",236000,0,49700,186300],
+ [9,"清水 智子","しみず ともこ","看護師",318000,52300,74600,281200],
+ [10,"鈴木 大輔","すずき だいすけ","臨床検査技師",296000,22100,66200,249700],
+ [11,"高橋 恵","たかはし めぐみ","看護助手",198000,14300,41200,168400],
+ [12,"田村 拓也","たむら たくや","理学療法士",279000,8400,60100,227300],
+ [13,"中村 彩","なかむら あや","医療事務",224000,16700,47800,null],
+ [14,"西川 涼子","にしかわ りょうこ","医師",780000,0,221500,558500],
+ [15,"野口 千春","のぐち ちはる","看護師",301000,31500,69300,258100],
+ [16,"藤井 優","ふじい ゆう","看護助手",192000,6200,39600,161900],
+ [17,"松田 香織","まつだ かおり","医療事務",241000,11200,51300,198600],
+ [18,"山本 真一","やまもと しんいち","看護師",326000,47600,76900,290400]
+];
+// 申請: id, staffId, 種別, 日付, 内容, 残業代への加算
+var SEED_REQ = [
+ [1,3,"残業","11月12日(木)","18:00〜20:30 急患対応",6900],
+ [2,9,"残業","11月11日(水)","18:00〜19:45 レセプト点検補助",5200],
+ [3,9,"打刻修正","11月10日(火)","退勤 18:02 → 18:40",1800],
+ [4,5,"有給休暇","11月18日(水)","全日",0],
+ [5,11,"残業","11月13日(金)","17:30〜19:00 病棟清掃応援",2700],
+ [6,18,"残業","11月9日(月)","18:00〜21:00 夜間診療延長",9400],
+ [7,13,"打刻修正","11月6日(金)","出勤 打刻漏れ → 8:25",0]
+];
+
+var S = { view:"ready", staff:[], reqs:[], finalized:false, q:"", job:"", sort:{k:"kana",d:1} };
+function seed(){
+  S.staff = SEED.map(function(a){return {id:a[0],name:a[1],kana:a[2],job:a[3],base:a[4],ot:a[5],ded:a[6],prev:a[7]};});
+  S.reqs = SEED_REQ.map(function(a){return {id:a[0],sid:a[1],type:a[2],date:a[3],text:a[4],add:a[5]};});
+  S.finalized=false;
+}
+seed();
+
+var $ = function(s,r){return (r||document).querySelector(s);};
+var main = $("#main"), toastEl = $("#toast"), toastT;
+function yen(n){return "¥"+Math.round(n).toLocaleString("ja-JP");}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function net(p){return p.base+p.ot-p.ded;}
+function toast(m){toastEl.textContent=m;clearTimeout(toastT);toastT=setTimeout(function(){toastEl.textContent="";},3600);}
+function delta(d,pct){
+  if(d===null) return '<span class="muted">新規(前月なし)</span>';
+  if(d===0) return '<span class="delta num"><span class="arrow" aria-hidden="true">―</span>増減なし</span>';
+  var up=d>0;
+  return '<span class="delta num"><span class="arrow" aria-hidden="true">'+(up?"▲":"▼")+'</span><span class="sr">'+(up?"増加":"減少")+'</span>'+(up?"+":"−")+yen(Math.abs(d)).slice(1)+'円'+(pct!=null?'('+(up?"+":"−")+Math.abs(pct).toFixed(1)+'%)':'')+'</span>';
+}
+function totals(list){
+  var t={base:0,ot:0,ded:0,net:0,prev:0,cmp:0};
+  list.forEach(function(p){t.base+=p.base;t.ot+=p.ot;t.ded+=p.ded;t.net+=net(p);if(p.prev!==null){t.prev+=p.prev;t.cmp+=net(p);}});
+  return t;
+}
+
+function head(pending, hasStaff){
+  var st = S.finalized?'<span class="status done">確定済み</span>'
+         : pending? '<span class="status">勤怠の承認待ち</span>'
+         : hasStaff? '<span class="status ready">確定できます</span>' : '';
+  var acts="";
+  if(S.view==="ready" && hasStaff && !S.finalized){
+    var hint = pending? '未承認の勤怠申請が'+pending+'件あるため、まだ確定できません。承認すると残業代に反映されます。'
+                      : '勤怠はすべて承認済みです。金額を確認して確定してください。';
+    acts = '<div class="actions"><div class="row">'
+      + '<button class="btn '+(pending?'primary':'')+'" id="bApprove" '+(pending?'':'disabled')+'>勤怠を承認する'+(pending?' <span class="badge num">'+pending+'</span>':'')+'</button>'
+      + '<button class="btn '+(pending?'':'primary')+'" id="bFinal" '+(pending?'disabled aria-describedby="finHint"':'')+'>給与を確定する</button>'
+      + '</div><p class="hint" id="finHint">'+hint+'</p></div>';
+  }
+  return '<div class="head"><div><p class="eyebrow"><span class="nw">2026年11月分</span> ・ <span class="nw">対象期間 10月21日〜11月20日</span></p><h1>今月の給与'+st+'</h1></div>'+acts+'</div>';
+}
+function steps(pending){
+  var n = S.finalized?3: pending?1:2;
+  var L=["勤怠を承認","金額を確認","給与を確定"];
+  return '<ol class="steps" aria-label="今月の進み具合">'+L.map(function(t,i){
+    var c = i+1<n||S.finalized?"past":(i+1===n?"now":"");
+    return '<li class="'+c+'"'+(c==="now"?' aria-current="step"':'')+'><b aria-hidden="true">'+(c==="past"?"✓":i+1)+'</b>'+t+(c==="past"?'<span class="sr">(完了)</span>':'')+'</li>';
+  }).join("")+'</ol>';
+}
+function summary(pending, hasStaff){
+  var t = totals(S.staff), d=t.cmp-t.prev, pct=t.prev?d/t.prev*100:null;
+  var od=t.ot-PREV_OT_TOTAL, opct=od/PREV_OT_TOTAL*100;
+  var elapsed = Math.min(100,Math.round((30-DAYS_LEFT)/30*100));
+  return '<section class="summary" aria-label="今月の概要">'
+  + '<div class="cell"><h2>締め日まで</h2><p class="big num">残り'+DAYS_LEFT+'<small>日</small></p><p class="sub"><span class="nw">締め日 11月20日(金)</span> ・ <span class="nw">支給日 '+PAY+'</span></p><div class="meter" aria-hidden="true"><span style="width:'+elapsed+'%"></span></div></div>'
+  + '<div class="cell '+(pending?'alert':'')+'"><h2>未承認の勤怠申請</h2><p class="big num">'+pending+'<small>件</small></p>'
+    + (pending? '<p class="sub">'+uniq(S.reqs.map(function(r){return r.sid;})).length+'名分 ・ 残業代 最大 +'+yen(S.reqs.reduce(function(a,r){return a+r.add;},0))+'</p><button class="btn small" id="bApprove2">申請を確認する</button>'
+              : '<p class="sub">'+(hasStaff?'すべて承認済みです':'申請はありません')+'</p>')+'</div>'
+  + '<div class="cell"><h2>差引支給額の合計'+(hasStaff?'('+S.staff.length+'名)':'')+'</h2><p class="big num">'+(hasStaff?yen(t.net):'—')+'</p><p class="sub">'+(hasStaff?'前月比 '+delta(d,pct)+'<br><span class="muted">前月から在籍する'+S.staff.filter(function(p){return p.prev!==null;}).length+'名で比較</span>':'スタッフ登録後に表示されます')+'</p></div>'
+  + '<div class="cell"><h2>残業代の合計</h2><p class="big num">'+(hasStaff?yen(t.ot):'—')+'</p><p class="sub">'+(hasStaff?'前月比 '+delta(od,opct):'　')+'</p></div>'
+  + '</section>';
+}
+function uniq(a){return a.filter(function(v,i){return a.indexOf(v)===i;});}
+
+var COLS=[["kana","氏名",0],["job","職種",0],["base","基本給",1],["ot","残業代",1],["ded","控除",1],["net","差引支給額",1],["diff","前月比",1]];
+function val(p,k){return k==="net"?net(p):k==="diff"?(p.prev===null?-Infinity:net(p)-p.prev):p[k];}
+function tableSec(){
+  var jobs = uniq(S.staff.map(function(p){return p.job;}));
+  var list = S.staff.filter(function(p){
+    return (!S.job||p.job===S.job) && (!S.q || (p.name+p.kana).replace(/\s/g,"").indexOf(S.q.replace(/\s/g,""))>-1);
+  }).sort(function(a,b){
+    var x=val(a,S.sort.k),y=val(b,S.sort.k);
+    return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*S.sort.d;
+  });
+  var pendIds = S.reqs.map(function(r){return r.sid;});
+  var t=totals(list), filtered = list.length!==S.staff.length;
+  var h = '<section aria-labelledby="tblT"><div class="sec-head"><h2 id="tblT">スタッフ別の支給額</h2><span class="count num" aria-live="polite">'+(filtered?list.length+'名を表示 / 全'+S.staff.length+'名':'全'+S.staff.length+'名')+'</span>'
+    + '<div class="filters"><label class="field">氏名で絞り込む<input type="search" id="fQ" value="'+esc(S.q)+'" placeholder="例: すずき" autocomplete="off"></label>'
+    + '<label class="field">職種<select id="fJob"><option value="">すべて</option>'+jobs.map(function(j){return '<option'+(j===S.job?' selected':'')+'>'+j+'</option>';}).join("")+'</select></label></div></div>'
+    + '<div class="panel">';
+  if(!list.length){
+    h+='<div class="state"><div class="mark" aria-hidden="true">?</div><h3>条件に合うスタッフがいません</h3><p>氏名の入力や職種の選択を変えてみてください。</p><div class="row"><button class="btn" id="bClear">絞り込みを解除</button></div></div>';
+  }else{
+    h+='<div class="scroll"><table><caption class="sr">2026年11月分 スタッフ別支給額。見出しのボタンで並べ替えできます。</caption><thead><tr>'
+     + COLS.map(function(c){var on=S.sort.k===c[0];
+        return '<th scope="col" class="'+(c[2]?'r':'')+'"'+(on?' aria-sort="'+(S.sort.d>0?'ascending':'descending')+'"':'')+'><button data-sort="'+c[0]+'">'+c[1]+'</button></th>';}).join("")
+     + '</tr></thead><tbody>'
+     + list.map(function(p){var n=net(p), d=p.prev===null?null:n-p.prev, pend=pendIds.indexOf(p.id)>-1&&!S.finalized;
+        return '<tr><th scope="row">'+p.name+(pend?'<span class="flag">勤怠未承認</span>':'')+'<span class="kana">'+p.kana+'</span></th>'
+         + '<td class="job">'+p.job+'</td>'
+         + '<td class="r num" data-l="基本給">'+yen(p.base)+'</td>'
+         + '<td class="r num" data-l="残業代">'+(p.ot?yen(p.ot):'<span class="muted">¥0</span>')+'</td>'
+         + '<td class="r num" data-l="控除"><span class="minus">'+yen(p.ded)+'</span></td>'
+         + '<td class="r num netc" data-l="差引支給額"><span class="net">'+yen(n)+'</span></td>'
+         + '<td class="r dc" data-l="前月比">'+delta(d, d===null?null:d/p.prev*100)+'</td></tr>';}).join("")
+     + '</tbody><tfoot><tr><th scope="row">'+(filtered?'表示中の合計':'合計')+'</th><td class="job">'+list.length+'名</td>'
+     + '<td class="r num" data-l="基本給">'+yen(t.base)+'</td><td class="r num" data-l="残業代">'+yen(t.ot)+'</td><td class="r num" data-l="控除"><span class="minus">'+yen(t.ded)+'</span></td>'
+     + '<td class="r num netc" data-l="差引支給額"><span class="net">'+yen(t.net)+'</span></td><td class="r dc" data-l="前月比">'+delta(t.cmp-t.prev,t.prev?(t.cmp-t.prev)/t.prev*100:null)+'</td></tr></tfoot></table></div>';
+  }
+  h+='</div><p class="note">控除は社会保険料・所得税・住民税の合計です。差引支給額 = 基本給 + 残業代 − 控除。金額は現時点の勤怠にもとづく見込みで、確定するまで変わることがあります。</p></section>';
+  return h;
+}
+function skeleton(){
+  var c='<div class="cell"><span class="sk" style="width:40%"></span><span class="sk b"></span><span class="sk" style="width:75%"></span></div>';
+  var rows="";for(var i=0;i<8;i++){rows+='<tr>'+[55,40,60,50,50,65,45].map(function(w){return '<td><span class="sk" style="width:'+w+'%"></span></td>';}).join("")+'</tr>';}
+  return '<div aria-busy="true"><p class="sr" role="status">今月の給与データを読み込んでいます。</p><div class="summary" aria-hidden="true">'+c+c+c+c+'</div><div class="panel" aria-hidden="true"><div class="scroll"><table><tbody>'+rows+'</tbody></table></div></div><p class="note" aria-hidden="true">勤怠と給与データを読み込んでいます…</p></div>';
+}
+
+function render(keepFocus){
+  var fid = keepFocus && document.activeElement && document.activeElement.id, pos;
+  if(fid==="fQ") pos=document.activeElement.selectionStart;
+  var v=S.view, h="";
+  if(v==="loading"){ h=head(0,false)+skeleton(); }
+  else if(v==="error"){
+    h=head(0,false)+'<div class="panel"><div class="state err" role="alert"><div class="mark" aria-hidden="true">!</div><h3>給与データを読み込めませんでした</h3><p>通信が不安定か、サーバーが混み合っている可能性があります。入力済みの勤怠や承認内容は失われていません。少し待ってから、もう一度お試しください。</p><div class="row"><button class="btn primary" id="bRetry">もう一度読み込む</button><a class="btn" href="#">障害情報を見る</a></div><code>エラー番号: PAY-503 ・ 11月14日 12:05</code></div></div>';
+  }
+  else if(v==="empty"){
+    var saved=S.staff, sr=S.reqs; S.staff=[]; S.reqs=[];
+    h=head(0,false)+summary(0,false)
+     +'<section aria-labelledby="tblT"><div class="sec-head"><h2 id="tblT">スタッフ別の支給額</h2><span class="count">0名</span></div><div class="panel"><div class="state"><div class="mark" aria-hidden="true">0</div><h3>11月分の給与データはまだありません</h3><p>スタッフを登録すると、勤怠から基本給・残業代・控除を自動で計算し、ここに一覧で表示します。締め日(11月20日)までに登録を済ませてください。</p><div class="row"><button class="btn primary">スタッフを登録する</button><button class="btn">CSVでまとめて取り込む</button></div></div></div></section>';
+    S.staff=saved; S.reqs=sr;
+  }
+  else{
+    var pending=S.reqs.length;
+    h=head(pending,true)+steps(pending)
+     +(S.finalized?'<div class="banner" role="status"><span>11月分の給与を確定しました。支給日は'+PAY+'です。</span><button class="btn small" id="bUndo">確定を取り消す</button></div>':'')
+     +summary(pending,true)+tableSec();
+  }
+  main.innerHTML=h;
+  if(fid){var el=document.getElementById(fid); if(el){el.focus(); if(pos!=null) el.setSelectionRange(pos,pos);}}
+}
+
+/* dialogs */
+var dA=$("#dlgApprove"), dF=$("#dlgFinal");
+function name(id){return S.staff.filter(function(p){return p.id===id;})[0];}
+function renderApprove(){
+  if(!S.reqs.length){dA.close();return;}
+  dA.innerHTML='<div class="dlg"><header><div><h2 id="dlgApproveT">未承認の勤怠申請 <span class="num">'+S.reqs.length+'</span>件</h2><p>承認した残業・打刻修正は、すぐに残業代へ反映されます。</p></div><button class="btn small" data-close aria-label="閉じる">閉じる</button></header><div class="body">'
+   + S.reqs.map(function(r){var p=name(r.sid);
+      return '<div class="req"><div><div class="who">'+p.name+' <span class="what">'+p.job+'</span></div><div class="what"><span class="tag">'+r.type+'</span>'+r.date+' ・ '+r.text+(r.add?' ・ <span class="num">残業代 +'+yen(r.add)+'</span>':'')+'</div></div><div class="ops"><button class="btn small" data-reject="'+r.id+'" aria-label="'+p.name+'の'+r.type+'申請を差し戻す">差し戻す</button><button class="btn small primary" data-ok="'+r.id+'" aria-label="'+p.name+'の'+r.type+'申請を承認する">承認</button></div></div>';}).join("")
+   +'</div><footer><button class="btn" data-close>あとで</button><button class="btn primary" data-all>'+S.reqs.length+'件すべて承認する</button></footer></div>';
+}
+function resolve(id,ok){
+  S.reqs=S.reqs.filter(function(r){
+    if(id!==null && r.id!==id) return true;
+    if(ok){name(r.sid).ot+=r.add;}
+    return false;
+  });
+}
+dA.addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  if(b.hasAttribute("data-close")){dA.close();return;}
+  var n=S.reqs.length;
+  if(b.hasAttribute("data-all")){resolve(null,true);toast(n+"件の申請を承認しました。給与を確定できます。");}
+  else if(b.dataset.ok){resolve(+b.dataset.ok,true);toast(S.reqs.length?"承認しました。残り"+S.reqs.length+"件です。":"承認しました。未承認の申請はなくなり、給与を確定できます。");}
+  else if(b.dataset.reject){resolve(+b.dataset.reject,false);toast("申請を差し戻しました。本人に通知されます。"+(S.reqs.length?"":"給与を確定できます。"));}
+  render(); renderApprove();
+  if(dA.open){var f=$("[data-ok]",dA); if(f) f.focus();}
+});
+dA.addEventListener("close",function(){
+  // the opener may have been re-rendered while the dialog was open; land focus on the next step
+  if(!document.activeElement||document.activeElement===document.body){
+    var nb=$("#bApprove:not([disabled])")||$("#bFinal:not([disabled])"); if(nb) nb.focus();
+  }
+});
+function openFinal(){
+  var t=totals(S.staff);
+  dF.innerHTML='<div class="dlg"><header><div><h2 id="dlgFinalT">11月分の給与を確定しますか?</h2><p>確定すると明細が作成され、スタッフに公開されます。</p></div></header><div class="body"><dl class="confirm"><dt>対象</dt><dd class="num">'+S.staff.length+'名</dd><dt>差引支給額の合計</dt><dd class="num">'+yen(t.net)+'</dd><dt>うち残業代</dt><dd class="num">'+yen(t.ot)+'</dd><dt>支給日</dt><dd>'+PAY+'</dd></dl><p class="note">振込データを作成するまでは、確定を取り消して修正できます。</p></div><footer><button class="btn" data-close autofocus>戻って確認する</button><button class="btn primary" data-go>確定する</button></footer></div>';
+  dF.showModal();
+}
+dF.addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  dF.close();
+  if(b.hasAttribute("data-go")){S.finalized=true;render();toast("11月分の給与を確定しました。");main.focus();}
+});
+
+/* events */
+main.addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  if(b.id==="bApprove"||b.id==="bApprove2"){renderApprove();dA.showModal();}
+  else if(b.id==="bFinal"){openFinal();}
+  else if(b.id==="bUndo"){S.finalized=false;render();toast("確定を取り消しました。");}
+  else if(b.id==="bClear"){S.q="";S.job="";render();}
+  else if(b.id==="bRetry"){setView("loading");setTimeout(function(){if(S.view==="loading")setView("ready");},1400);}
+  else if(b.dataset.sort){var k=b.dataset.sort;
+    S.sort = S.sort.k===k?{k:k,d:-S.sort.d}:{k:k,d:(k==="kana"||k==="job")?1:-1};
+    render(); var nb=$('[data-sort="'+k+'"]'); if(nb) nb.focus();}
+});
+main.addEventListener("input",function(e){ if(e.target.id==="fQ"){S.q=e.target.value;render(true);} });
+main.addEventListener("change",function(e){ if(e.target.id==="fJob"){S.job=e.target.value;render(true);} });
+function setView(v){
+  S.view=v;
+  var r=$('.demo input[value="'+v+'"]'); if(r) r.checked=true;
+  render();
+}
+$(".demo").addEventListener("change",function(e){ if(e.target.value==="ready"&&S.view!=="ready"){seed();S.q="";S.job="";} setView(e.target.value); });
+
+var m=/state=(\w+)/.exec(location.search+location.hash);
+setView(m&&["ready","empty","loading","error"].indexOf(m[1])>-1?m[1]:"ready");
+})();
+</script>
+</body>
+</html>

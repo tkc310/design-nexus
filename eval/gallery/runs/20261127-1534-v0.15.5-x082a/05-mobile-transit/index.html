@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="たちばな市コミュニティバス「ことりバス」の時刻表。停留所をえらぶと、次に来る3本のバスとあと何分かを大きく表示します。">
+<title>ことりバス 時刻表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@700&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+/* Tokens — 標柱（バス停の時刻表板）と車内の降車ボタンから */
+:root {
+  --ink: #16181B;        /* 時刻表板の印刷インク */
+  --plate: #FFFFFF;      /* 琺瑯の時刻表板 */
+  --pole: #59616B;       /* 支柱の亜鉛グレー：補助の文字 */
+  --rail: #E8EBEE;       /* 支柱の明るい面：発車済みの行 */
+  --press: #6A2C8E;      /* 降車ボタン「とまります」の紫：押すもの・選択中 */
+  --on-press: #FFFFFF;
+  --halt: #B3261E;       /* 運休 */
+  --band-bg: var(--ink);
+  --band-fg: var(--plate);
+
+  --f-text: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+  --f-fig: "BIZ UDGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  --t-0: 1.125rem;  /* 18 本文・最小 */
+  --t-1: 1.5rem;    /* 24 */
+  --t-2: 2rem;      /* 32 分の数字 */
+  --t-3: 2.625rem;  /* 42 */
+  --t-4: 3.5rem;    /* 56 次のバス */
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px;
+  --frame: 3px;
+  --r-plate: 12px;
+  --r-ctl: 8px;
+  --tap: 56px;
+  --band: 4.25rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #F1F2F4;
+    --plate: #121418;
+    --pole: #A9B1BB;
+    --rail: #23272D;
+    --press: #D2AEF2;
+    --on-press: #1B1024;
+    --halt: #FF8F86;
+    --band-bg: #2C3139;
+    --band-fg: #F1F2F4;
+  }
+}
+html.large { font-size: 118.75%; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--plate);
+  color: var(--ink);
+  font-family: var(--f-text);
+  font-size: var(--t-0);
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+}
+h1, h2, h3 { margin: 0; line-height: 1.35; text-wrap: balance; font-weight: 700; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.fig { font-family: var(--f-fig); font-variant-numeric: tabular-nums; overflow-wrap: normal; white-space: nowrap; letter-spacing: 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+:focus-visible { outline: 4px solid var(--press); outline-offset: 3px; }
+
+/* 上部 */
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s1) var(--s2);
+  padding: var(--s2) max(var(--s2), env(safe-area-inset-right)) var(--s2) max(var(--s2), env(safe-area-inset-left));
+  max-width: 600px; margin: 0 auto;
+}
+.brand { font-size: var(--t-1); }
+.top .btn { margin-left: auto; }
+html.large .top { flex-wrap: wrap; } /* 文字を大きくしたとき、320pxでボタンが画面からはみ出さないように */
+.brand small { display: block; font-size: var(--t-0); font-weight: 400; color: var(--pole); line-height: 1.4; }
+.btn {
+  font: inherit; font-weight: 700; color: var(--ink); background: var(--plate);
+  min-height: var(--tap); padding: 0 var(--s2);
+  border: var(--frame) solid var(--ink); border-radius: var(--r-ctl);
+  white-space: nowrap; cursor: pointer;
+  transition: background-color 120ms ease;
+}
+/* design-nexus: keep R25 because the filled control at 768 is the selected day tab (a current selection, not an action); the primary action is the stop select, which is on the first screen at every width */
+.btn[aria-pressed="true"] { background: var(--press); border-color: var(--press); color: var(--on-press); }
+
+main {
+  display: grid; gap: var(--s4);
+  padding: 0 var(--s2) var(--s5);
+  max-width: 600px; margin: 0 auto;
+}
+main > * { min-width: 0; }
+
+/* 停留所えらび */
+.pick label { display: block; font-weight: 700; font-size: var(--t-0); margin-bottom: var(--s1); }
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: ""; position: absolute; right: 20px; top: 50%; margin-top: -5px;
+  border: 10px solid transparent; border-top: 12px solid var(--ink); border-bottom: 0;
+  pointer-events: none;
+}
+select {
+  width: 100%; min-height: 64px;
+  font: inherit; font-size: var(--t-1); font-weight: 700; color: var(--ink);
+  background: var(--plate);
+  border: var(--frame) solid var(--ink); border-radius: var(--r-ctl);
+  padding: 0 56px 0 var(--s2);
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+
+/* 時刻表板（標柱）— このページの単位 */
+.plate { border: var(--frame) solid var(--ink); border-radius: var(--r-plate); overflow: hidden; background: var(--plate); }
+.plate-head { background: var(--band-bg); color: var(--band-fg); padding: var(--s2); }
+.plate-head .ruby { display: block; font-size: var(--t-0); font-weight: 400; line-height: 1.4; letter-spacing: 0.08em; }
+.plate-head h2 { font-size: var(--t-3); line-height: 1.2; letter-spacing: 0.04em; }
+.plate-head .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s2); margin-top: var(--s1); }
+.plate-head .now .fig { font-size: var(--t-1); }
+.plate-head.halt { background: var(--halt); color: var(--plate); }
+.plate-head.calm { background: var(--rail); color: var(--ink); }
+.plate-head h3 { font-size: var(--t-1); }
+
+/* 次の3本 */
+.next { list-style: none; margin: 0; padding: 0; }
+.next li { border-top: var(--frame) solid var(--ink); }
+.next li:first-child { border-top: 0; }
+.dep {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: 0 var(--s2); padding: var(--s2);
+}
+.dep .when { display: flex; align-items: baseline; gap: var(--s1); }
+.dep .time { font-size: var(--t-3); line-height: 1.15; }
+.dep .hatsu { font-weight: 700; }
+.dep .count { font-weight: 700; line-height: 1.2; }
+.dep .count .fig { font-size: var(--t-2); margin: 0 2px; }
+.dep.first .time { font-size: var(--t-4); }
+.dep.first .count .fig { font-size: var(--t-3); }
+.dep .soon { font-size: var(--t-2); }
+.dep .order { flex-basis: 100%; color: var(--pole); font-size: var(--t-0); line-height: 1.5; }
+.dep.cut { padding-block: var(--s1); }
+.dep.cut .time { font-size: var(--t-1); color: var(--halt); text-decoration: line-through; text-decoration-thickness: 3px; }
+.dep.cut .tag { font-weight: 700; color: var(--halt); }
+.dep.cut .why { flex-basis: 100%; font-size: var(--t-0); line-height: 1.5; }
+.ended { padding: var(--s2); }
+.ended p + p { margin-top: var(--s1); }
+.ended .big { font-size: var(--t-1); font-weight: 700; }
+
+/* お知らせ */
+.notice-body { padding: var(--s2); }
+.notice-body p + p, .notice-body ul { margin-top: var(--s1); }
+.notice-body ul { padding-left: 1.2em; margin-bottom: 0; }
+.notice-body .period { font-weight: 700; }
+
+/* 全時刻表 */
+.table-head { display: grid; gap: var(--s2); margin-bottom: var(--s2); }
+.table-head h2 { font-size: var(--t-1); }
+.days { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); }
+.days .btn { width: 100%; padding: 0 var(--s1); }
+.daynote { color: var(--pole); }
+.tt { list-style: none; margin: 0; padding: 0; }
+.tt li { display: grid; grid-template-columns: var(--band) 1fr; border-top: 2px solid var(--ink); }
+.tt li:first-child { border-top: 0; }
+.tt .hr {
+  background: var(--band-bg); color: var(--band-fg);
+  font-size: var(--t-2); text-align: center; padding: var(--s1) 0; line-height: 1.3;
+}
+.tt .mins { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); padding: var(--s1) var(--s2); align-items: center; min-width: 0; }
+.tt li.past { background: var(--rail); }
+.m { display: inline-flex; align-items: baseline; gap: 4px; padding: 0 6px; border: 3px solid transparent; border-radius: var(--r-ctl); line-height: 1.3; }
+.m .fig { font-size: var(--t-2); }
+.m.gone { color: var(--pole); }
+.m.nextbus { border-color: var(--ink); }
+.m.cut .fig { color: var(--halt); text-decoration: line-through; text-decoration-thickness: 3px; }
+.m .tag { font-size: var(--t-0); font-weight: 700; }
+.m.cut .tag { color: var(--halt); }
+.tt-empty { padding: var(--s2); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin-top: var(--s2); }
+.legend span { display: inline-flex; align-items: center; gap: var(--s1); }
+.legend .m { padding: 0 4px; }
+.legend .m .fig { font-size: var(--t-1); }
+
+/* 停留所の並び（路線図） */
+.route h2 { font-size: var(--t-1); margin-bottom: var(--s2); }
+.route ol { list-style: none; margin: 0; padding: 0; position: relative; }
+.route ol::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 28px; width: 6px; background: var(--ink); border-radius: 3px; }
+.route li + li { margin-top: var(--s1); }
+.stop {
+  position: relative; display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: var(--s2);
+  width: 100%; min-height: var(--tap); padding: var(--s1) var(--s2) var(--s1) 0;
+  font: inherit; color: var(--ink); text-align: left; background: transparent;
+  border: var(--frame) solid transparent; border-radius: var(--r-ctl); cursor: pointer;
+}
+.stop .dot { width: 32px; height: 32px; border-radius: 50%; background: var(--plate); border: 6px solid var(--ink); }
+.stop .nm { font-weight: 700; line-height: 1.4; }
+.stop .away { display: block; font-weight: 400; color: var(--pole); line-height: 1.4; }
+.stop[aria-current="location"] { border-color: var(--press); }
+.stop[aria-current="location"] .dot { background: var(--press); border-color: var(--press); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--rail); }
+  .btn[aria-pressed="true"]:hover { background: var(--press); }
+  .stop:hover { border-color: var(--ink); }
+}
+
+footer { max-width: 600px; margin: 0 auto; padding: 0 var(--s2) var(--s5); color: var(--pole); }
+footer p + p { margin-top: var(--s1); }
+
+@media (min-width: 900px) {
+  main {
+    max-width: 1160px;
+    grid-template-columns: 440px minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas: "pick table" "next table" "notice table" ". table" "route route";
+    column-gap: var(--s5); row-gap: var(--s4);
+  }
+  footer, .top { max-width: 1160px; }
+  .pick { grid-area: pick; } #nextSec { grid-area: next; } #noticeSec { grid-area: notice; }
+  .route { grid-area: route; } .table { grid-area: table; }
+  .table-head { grid-template-columns: 1fr auto; align-items: end; }
+  .days { min-width: 320px; }
+  .daynote { grid-column: 1 / -1; }
+}
+/* 900–1599：車内の路線図のように、停留所を横一列に並べる */
+@media (min-width: 900px) and (max-width: 1599.98px) {
+  .route ol { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .route ol::before { left: calc(100% / 16); right: calc(100% / 16); top: 24px; bottom: auto; width: auto; height: 6px; }
+  .route li + li { margin-top: 0; }
+  .stop { grid-template-columns: 1fr; justify-items: center; align-content: start; gap: var(--s1); height: 100%; padding: var(--s1) 4px; text-align: center; }
+  .stop .nm, .stop .away { line-height: 1.7; }
+}
+@media (min-width: 1600px) {
+  main, footer, .top { max-width: 1600px; }
+  main {
+    grid-template-columns: 320px 460px minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "route pick table" "route next table" "route notice table" "route . table";
+  }
+  .route { align-self: start; position: sticky; top: var(--s3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <p class="brand"><b>ことりバス</b><small><span class="nw">たちばな市</span><wbr><span class="nw">コミュニティバス</span></small></p>
+  <button type="button" class="btn" id="sizeBtn" aria-pressed="false">文字を大きく</button>
+</header>
+
+<main>
+  <section class="pick" aria-label="停留所をえらぶ">
+    <label for="stopSel">停留所をえらぶ</label>
+    <div class="select-wrap"><select id="stopSel"></select></div>
+  </section>
+
+  <section id="nextSec" class="plate" aria-labelledby="stopName">
+    <div class="plate-head">
+      <span class="ruby" id="stopRuby"></span>
+      <h2 id="stopName"></h2>
+      <div class="meta">
+        <span>みどり台循環・右回り</span>
+        <span class="now">いま <span class="fig" id="nowTime"></span></span>
+      </div>
+    </div>
+    <h3 class="sr">次に来るバス</h3>
+    <div id="nextBody"></div>
+  </section>
+
+  <section id="noticeSec" class="plate" aria-labelledby="noticeTitle"></section>
+
+  <section class="table" aria-labelledby="ttTitle">
+    <div class="table-head">
+      <h2 id="ttTitle"></h2>
+      <div class="days" role="group" aria-label="ダイヤをえらぶ">
+        <button type="button" class="btn" data-day="weekday" aria-pressed="false">平日</button>
+        <button type="button" class="btn" data-day="holiday" aria-pressed="false">土日・祝日</button>
+      </div>
+      <p class="daynote" id="dayNote"></p>
+    </div>
+    <div class="plate">
+      <ol class="tt" id="tt"></ol>
+    </div>
+    <div class="legend" id="legend" aria-hidden="true"></div>
+  </section>
+
+  <section class="route" aria-labelledby="routeTitle">
+    <h2 id="routeTitle">停留所の並び（右回り）</h2>
+    <ol id="route"></ol>
+  </section>
+</main>
+
+<footer>
+  <p>2026年10月1日改正の時刻表です。</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  // 停留所：始発（市役所前）からの所要分。循環1周 50分。
+  var LOOP = 50;
+  var STOPS = [
+    { id: "shiyakusho", name: "市役所前", ruby: "しやくしょまえ", off: 0 },
+    { id: "chuoeki", name: "中央駅北口", ruby: "ちゅうおうえき きたぐち", off: 6 },
+    { id: "byoin", name: "市立病院", ruby: "しりつびょういん", off: 13 },
+    { id: "toshokan", name: "図書館前", ruby: "としょかんまえ", off: 18 },
+    { id: "asahi", name: "旭町", ruby: "あさひまち", off: 24 },
+    { id: "honmachi", name: "本町商店街", ruby: "ほんまち しょうてんがい", off: 29 },
+    { id: "fureai", name: "ふれあいセンター", ruby: "ふれあいせんたー", off: 35 },
+    { id: "midori", name: "緑ヶ丘団地", ruby: "みどりがおか だんち", off: 42 }
+  ];
+  // 市役所前の発車時刻（分）
+  function hm(s) { var p = s.split(":"); return +p[0] * 60 + +p[1]; }
+  var BASE = {
+    weekday: ["7:05","7:35","8:05","8:35","9:10","9:50","10:30","11:10","11:50","12:30","13:10","13:50","14:30","15:10","15:50","16:30","17:10","17:45","18:20","19:00"].map(hm),
+    holiday: ["8:10","9:10","10:10","11:10","12:10","13:10","14:10","15:10","16:10","17:10","18:10"].map(hm)
+  };
+  var HOLIDAYS = ["2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11","2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23",
+    "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-22","2027-04-29","2027-05-03","2027-05-04","2027-05-05","2027-07-19","2027-08-11","2027-09-20","2027-09-23","2027-10-11","2027-11-03","2027-11-23"];
+  // 運休：始発の時刻で指定
+  var NOTICES = [{
+    title: "道路工事のため一部運休",
+    from: "2026-11-04", to: "2026-11-27", day: "weekday",
+    trips: ["11:10", "14:30"].map(hm),
+    body: "本町商店街の近くで道路工事を行うため、平日の2便を運休します。"
+  }];
+  var WD = ["日","月","火","水","木","金","土"];
+
+  var $ = function (id) { return document.getElementById(id); };
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function dayType(d) { var w = d.getDay(); return (w === 0 || w === 6 || HOLIDAYS.indexOf(ymd(d)) >= 0) ? "holiday" : "weekday"; }
+  function dayLabel(t) { return t === "weekday" ? "平日" : "土日・祝日"; }
+  function clock(m) { return Math.floor(m / 60) + ":" + pad(m % 60); }
+  function md(d) { return (d.getMonth() + 1) + "月" + d.getDate() + "日（" + WD[d.getDay()] + "）"; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function parseDate(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+  function activeNotices(d) {
+    var t = parseDate(ymd(d)).getTime(), type = dayType(d);
+    return NOTICES.filter(function (n) { return n.day === type && t >= parseDate(n.from).getTime() && t <= parseDate(n.to).getTime(); });
+  }
+  // その日・その停留所の全便 [{m, cut}]
+  function trips(stop, type, d) {
+    var cutSet = {};
+    if (d) activeNotices(d).forEach(function (n) { n.trips.forEach(function (t) { cutSet[t] = n; }); });
+    return BASE[type].map(function (b) { return { m: b + stop.off, cut: cutSet[b] || null }; });
+  }
+
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  var state = { stop: STOPS[2], view: null, large: store.get("kotori-large") === "1" };
+  var saved = store.get("kotori-stop");
+  STOPS.forEach(function (s) { if (s.id === saved) state.stop = s; });
+
+  // 停留所セレクト
+  var sel = $("stopSel");
+  sel.innerHTML = STOPS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
+  sel.addEventListener("change", function () { choose(sel.value, false); });
+
+  function choose(id, fromRoute) {
+    STOPS.forEach(function (s) { if (s.id === id) state.stop = s; });
+    store.set("kotori-stop", id);
+    render();
+    if (fromRoute) { var h = $("stopName"); h.tabIndex = -1; h.focus(); h.scrollIntoView({ block: "start" }); }
+  }
+
+  // 文字の大きさ
+  var sizeBtn = $("sizeBtn");
+  function applySize() { document.documentElement.classList.toggle("large", state.large); sizeBtn.setAttribute("aria-pressed", String(state.large)); }
+  sizeBtn.addEventListener("click", function () { state.large = !state.large; store.set("kotori-large", state.large ? "1" : "0"); applySize(); });
+
+  // 平日・土日祝
+  var dayBtns = document.querySelectorAll(".days .btn");
+  Array.prototype.forEach.call(dayBtns, function (b) {
+    b.addEventListener("click", function () { state.view = b.getAttribute("data-day"); renderTable(new Date()); });
+  });
+
+  function renderNext(now) {
+    var stop = state.stop, type = dayType(now), nowM = now.getHours() * 60 + now.getMinutes();
+    var list = trips(stop, type, now).filter(function (t) { return t.m >= nowM; });
+    var out = [], running = 0, lastRun = null;
+    for (var i = 0; i < list.length && running < 3; i++) {
+      var t = list[i];
+      if (t.cut) {
+        out.push('<li><div class="dep cut"><span class="when"><span class="time fig">' + clock(t.m) + '</span><span class="hatsu">発</span></span><span class="tag">運休</span><span class="why">' + esc(t.cut.title) + "</span></div></li>");
+        continue;
+      }
+      var diff = t.m - nowM, first = running === 0, cnt;
+      if (diff <= 0) cnt = '<span class="soon">まもなく</span>';
+      else if (diff < 60) cnt = 'あと<span class="fig">' + diff + "</span>分";
+      else cnt = 'あと<span class="fig">' + Math.floor(diff / 60) + '</span>時間<span class="fig">' + (diff % 60) + "</span>分";
+      running++; lastRun = t.m;
+      out.push('<li><div class="dep' + (first ? " first" : "") + '"><span class="when"><span class="time fig">' + clock(t.m) + '</span><span class="hatsu">発</span></span><span class="count">' + cnt + "</span></div></li>");
+    }
+    var html = "";
+    if (out.length) html += '<ol class="next">' + out.join("") + "</ol>";
+    if (running < 3) {
+      // 明日の始発
+      var tm = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      var tt = dayType(tm), firstT = trips(stop, tt, tm).filter(function (t) { return !t.cut; })[0];
+      html += '<div class="ended"' + (out.length ? ' style="border-top: var(--frame) solid var(--ink)"' : "") + ">" +
+        (running === 0 ? '<p class="big">今日のバスは終わりました。</p>' : '<p class="big"><span class="fig">' + clock(lastRun) + '</span> 発が今日の最終です。</p>') +
+        "<p>明日 " + md(tm) + " の始発は <b class=\"fig\">" + clock(firstT.m) + "</b> 発です（" + dayLabel(tt) + "ダイヤ）。</p></div>";
+    }
+    $("nextBody").innerHTML = html;
+  }
+
+  function renderNotice(now) {
+    var ns = activeNotices(now), stop = state.stop, el = $("noticeSec");
+    if (!ns.length) {
+      el.innerHTML = '<div class="plate-head calm"><h3 id="noticeTitle">運休のお知らせ</h3></div><div class="notice-body"><p>今日、運休するバスはありません。</p></div>';
+      return;
+    }
+    el.innerHTML = '<div class="plate-head halt"><h3 id="noticeTitle">運休のお知らせ</h3></div>' + ns.map(function (n) {
+      var f = parseDate(n.from), t = parseDate(n.to);
+      return '<div class="notice-body"><p><b>' + esc(n.title) + '</b></p><p class="period">' + md(f) + "〜" + md(t) + "の平日</p><p>" + esc(n.body) + "</p>" +
+        "<p>" + esc(stop.name) + "では、次の時刻のバスが来ません。</p><ul>" +
+        n.trips.map(function (b) { return '<li><span class="fig">' + clock(b + stop.off) + "</span> 発</li>"; }).join("") + "</ul></div>";
+    }).join("");
+  }
+
+  function renderTable(now) {
+    var today = dayType(now), view = state.view || today, isToday = view === today;
+    var stop = state.stop, nowM = now.getHours() * 60 + now.getMinutes();
+    Array.prototype.forEach.call(dayBtns, function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-day") === view)); });
+    $("ttTitle").textContent = stop.name + "　" + dayLabel(view) + "の時刻表";
+    $("dayNote").textContent = "今日 " + md(now) + " は" + dayLabel(today) + "ダイヤです。" + (isToday ? "" : "いまは" + dayLabel(view) + "の時刻を表示しています。");
+    var list = trips(stop, view, isToday ? now : null), byH = {}, hours = [];
+    var nextIdx = -1;
+    if (isToday) for (var i = 0; i < list.length; i++) if (list[i].m >= nowM && !list[i].cut) { nextIdx = i; break; }
+    list.forEach(function (t, i) {
+      var h = Math.floor(t.m / 60);
+      if (!byH[h]) { byH[h] = []; hours.push(h); }
+      byH[h].push({ t: t, i: i });
+    });
+    var last = list.length - 1;
+    $("tt").innerHTML = hours.map(function (h) {
+      var past = isToday && byH[h].every(function (x) { return x.t.m < nowM; });
+      return '<li' + (past ? ' class="past"' : "") + '><span class="hr fig"><span aria-hidden="true">' + h + '</span><span class="sr">' + h + '時</span></span><span class="mins">' +
+        byH[h].map(function (x) {
+          var t = x.t, cls = "m", extra = "", lbl = (t.m % 60) + "分";
+          if (t.cut) { cls += " cut"; extra = '<span class="tag">運休</span>'; }
+          else if (x.i === nextIdx) { cls += " nextbus"; extra = '<span class="sr">次のバス</span>'; }
+          else if (isToday && t.m < nowM) { cls += " gone"; extra = '<span class="sr">発車済み</span>'; }
+          if (x.i === last) extra += '<span class="tag">最終</span>';
+          return '<span class="' + cls + '"><span class="fig" aria-hidden="true">' + pad(t.m % 60) + '</span><span class="sr">' + lbl + "</span>" + extra + "</span>";
+        }).join("") + "</span></li>";
+    }).join("");
+    $("legend").innerHTML = isToday
+      ? '<span><span class="m nextbus"><span class="fig">00</span></span>次のバス</span><span><span class="m gone"><span class="fig">00</span></span>発車済み</span>'
+      : "";
+  }
+
+  function renderRoute() {
+    var cur = state.stop;
+    $("route").innerHTML = STOPS.map(function (s) {
+      var d = (s.off - cur.off + LOOP) % LOOP, here = s === cur;
+      return '<li><button type="button" class="stop" data-id="' + s.id + '"' + (here ? ' aria-current="location"' : "") + '><span class="dot" aria-hidden="true"></span><span><span class="nm">' + esc(s.name) + '</span><span class="away">' +
+        (here ? "えらんでいる停留所" : "ここから約" + d + "分") + "</span></span></button></li>";
+    }).join("");
+  }
+  $("route").addEventListener("click", function (e) {
+    var b = e.target.closest(".stop");
+    if (b) { sel.value = b.getAttribute("data-id"); choose(b.getAttribute("data-id"), true); }
+  });
+
+  function render() {
+    var now = new Date(), s = state.stop;
+    sel.value = s.id;
+    $("stopName").textContent = s.name;
+    $("stopRuby").textContent = s.ruby;
+    $("nowTime").textContent = clock(now.getHours() * 60 + now.getMinutes());
+    renderNext(now); renderNotice(now); renderTable(now); renderRoute();
+  }
+
+  applySize();
+  render();
+  setInterval(function () {
+    var now = new Date();
+    $("nowTime").textContent = clock(now.getHours() * 60 + now.getMinutes());
+    renderNext(now); renderTable(now); renderNotice(now);
+  }, 30000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>土と灯|京都・五条坂の陶芸工房と手びねり体験教室</title>
+<meta name="description" content="京都・五条坂の小さな陶芸工房「土と灯」。職人ふたりが日常使いの器を作り、月に二回、各回六名までの手びねり体験教室を開いています。">
+<!--
+  前提(質問できないため、以下を仮定して制作)
+  - 予約ページは同階層の reserve.html。日程つきリンクは ?date=YYYY-MM-DD を渡す想定。
+  - 教室は第2・第4土曜 13:30〜15:30 と仮定(「月に2回」のみが確定情報)。
+  - 料金、残席数、所要時間、焼成・発送の期間、職人の氏名と経歴、住所、電話、最寄り駅からの時間、
+    英語対応の程度、キャンセル規定はすべて仮の内容。ページ下部にも明記している。
+  - 写真は未支給のため、すべて斜線入りの枠で「写真プレースホルダー」と明示し、想定カットを書いた。
+  - 器の線画(断面の輪郭)は写真の代わりではなく装飾。寸法は仮。
+  - 日本語ページだが海外からの旅行者も読むため、日付は曜日つきで書き、屋号にふりがなを付け、
+    言葉に関する案内だけ一行の英語を添えた。
+  - 外部フォントは読み込まず、端末の明朝体・ゴシック体を使う(単一ファイルで完結させるため)。
+-->
+<style>
+  :root {
+    --ash: #eceee7;        /* 灰釉の白 */
+    --paper: #f7f7f2;
+    --ink: #22211e;
+    --ink-soft: #55534c;
+    --line: #c6c9be;
+    --kiln: #262622;       /* 窯の内側 */
+    --kiln-text: #eae9e1;
+    --kiln-soft: #b5b3a8;
+    --flame: #b3401a;      /* 灯。予約導線にだけ使う */
+    --flame-deep: #8f3113;
+    --ember: #e3a544;
+    --mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "Noto Serif CJK JP", serif;
+    --gothic: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", "Noto Sans JP", "Noto Sans CJK JP", Meiryo, sans-serif;
+    --wrap: 1120px;
+    --gutter: clamp(20px, 5vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+  body {
+    margin: 0;
+    background: var(--ash);
+    color: var(--ink);
+    font-family: var(--gothic);
+    font-size: 16px;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--flame); outline-offset: 3px; }
+  .on-kiln :focus-visible { outline-color: var(--ember); }
+  .wrap { max-width: var(--wrap); margin-inline: auto; padding-inline: var(--gutter); }
+  .skip {
+    position: absolute; left: 8px; top: -60px; z-index: 20;
+    background: var(--ink); color: var(--paper); padding: 8px 16px; text-decoration: none;
+  }
+  .skip:focus { top: 8px; }
+
+  h1, h2, h3, .mincho { font-family: var(--mincho); font-weight: 500; }
+  h2 {
+    font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+    line-height: 1.5; letter-spacing: .08em;
+  }
+  h2, h3, summary { text-wrap: balance; }
+  .label {
+    display: block; font-size: .8125rem; letter-spacing: .22em;
+    color: var(--ink-soft); margin-bottom: 14px;
+  }
+  .on-kiln .label { color: var(--kiln-soft); }
+  section { padding-block: clamp(64px, 10vw, 128px); }
+
+  /* 予約ボタン */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .7em;
+    min-height: 52px; padding: 12px 28px;
+    background: var(--flame); color: #fff;
+    font-weight: 600; letter-spacing: .1em; text-decoration: none;
+    border-radius: 2px; white-space: nowrap;
+    transition: background-color .2s ease;
+  }
+  .btn::after { content: "→"; transition: transform .2s ease; }
+  .btn:hover, .btn:active { background: var(--flame-deep); }
+  .btn:hover::after { transform: translateX(4px); }
+  .btn.small { min-height: 44px; padding: 8px 18px; font-size: .875rem; }
+  .textlink { text-underline-offset: .3em; text-decoration-thickness: 1px; }
+  .textlink:hover { color: var(--flame-deep); }
+
+  /* ヘッダー */
+  .site-header {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--ash) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 68px;
+  }
+  .logo { text-decoration: none; display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+  .logo b { font-family: var(--mincho); font-weight: 500; font-size: 1.5rem; letter-spacing: .18em; }
+  .logo small { font-size: .75rem; letter-spacing: .2em; color: var(--ink-soft); }
+  @media (max-width: 400px) {
+    .logo { flex-direction: column; gap: 0; line-height: 1.35; }
+  }
+  .nav { display: flex; align-items: center; gap: clamp(16px, 2.6vw, 32px); }
+  .nav ul { display: flex; gap: clamp(16px, 2.6vw, 32px); font-size: .875rem; letter-spacing: .1em; }
+  .nav ul a { text-decoration: none; padding-block: 12px; }
+  .nav ul a:hover { text-decoration: underline; text-underline-offset: .45em; }
+  @media (max-width: 760px) { .nav ul { display: none; } }
+
+  /* ヒーロー */
+  .hero { padding-block: clamp(32px, 6vw, 80px) clamp(56px, 8vw, 104px); }
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 400px) auto;
+    grid-template-areas: "copy photo title";
+    gap: clamp(24px, 4vw, 56px);
+    align-items: end;
+  }
+  .hero-title { grid-area: title; align-self: start; display: flex; flex-direction: row-reverse; gap: 18px; }
+  .hero-title h1 {
+    writing-mode: vertical-rl;
+    font-size: clamp(2rem, 4.4vw, 3.5rem);
+    line-height: 1.75; letter-spacing: .16em;
+  }
+  .hero-title h1 span { display: block; }
+  .hero-title h1 span + span { padding-top: 1.2em; }
+  .hero-title .place {
+    writing-mode: vertical-rl; font-size: .8125rem; letter-spacing: .3em; color: var(--ink-soft);
+    padding-top: .3em;
+  }
+  .hero-photo { grid-area: photo; }
+  .hero-copy { grid-area: copy; padding-bottom: 8px; }
+  .hero-copy .lead { font-size: 1.0625rem; max-width: 27em; }
+  .hero-copy .btn { margin-top: 32px; }
+  .next {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    display: grid; gap: 4px; max-width: 27em;
+  }
+  .next dt { font-size: .8125rem; letter-spacing: .2em; color: var(--ink-soft); }
+  .next dd { font-family: var(--mincho); font-size: 1.375rem; letter-spacing: .06em; }
+  .next dd small { font-family: var(--gothic); font-size: .875rem; margin-left: .8em; color: var(--flame-deep); font-weight: 600; white-space: nowrap; }
+  .lang-note { margin-top: 20px; font-size: .8125rem; color: var(--ink-soft); line-height: 1.7; }
+  @media (max-width: 860px) {
+    .hero .wrap {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "photo title" "copy copy";
+      align-items: start;
+    }
+    .hero-title { gap: 10px; }
+  }
+
+  /* 写真プレースホルダー */
+  .ph {
+    position: relative; display: grid; place-items: center; text-align: center;
+    padding: 20px;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 14px, rgba(34,33,30,.055) 14px 15px),
+      #dfe2d8;
+    border: 1px dashed #8d9084;
+    color: var(--ink-soft);
+    font-size: .8125rem; line-height: 1.7;
+  }
+  .ph b {
+    display: block; font-weight: 600; letter-spacing: .12em; color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .ph.tall { aspect-ratio: 3 / 4; }
+  .ph.wide { aspect-ratio: 16 / 9; }
+  .ph.square { aspect-ratio: 1; }
+  .ph.land { aspect-ratio: 4 / 3; }
+  .on-kiln .ph {
+    background:
+      repeating-linear-gradient(135deg, transparent 0 14px, rgba(234,233,225,.07) 14px 15px),
+      #33332e;
+    border-color: #77766c; color: var(--kiln-soft);
+  }
+  .on-kiln .ph b { color: var(--kiln-text); }
+
+  /* 教室 */
+  .on-kiln { background: var(--kiln); color: var(--kiln-text); }
+  .class-head { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 80px); align-items: start; }
+  .class-head p { margin-top: 24px; color: #d6d4ca; max-width: 30em; }
+  .facts { border-top: 1px solid #4a4a43; }
+  .facts div {
+    display: grid; grid-template-columns: 6.5em 1fr; gap: 16px;
+    padding-block: 16px; border-bottom: 1px solid #4a4a43;
+  }
+  .facts dt { font-size: .875rem; letter-spacing: .14em; color: var(--kiln-soft); padding-top: .2em; }
+  .facts dd strong { font-family: var(--mincho); font-weight: 500; font-size: 1.25rem; letter-spacing: .04em; }
+  .facts dd small { display: block; font-size: .8125rem; color: var(--kiln-soft); line-height: 1.7; }
+  .flow {
+    margin-top: clamp(48px, 7vw, 88px);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 40px);
+    counter-reset: step;
+  }
+  .flow li { counter-increment: step; }
+  .flow h3 { margin-top: 20px; font-size: 1.25rem; letter-spacing: .08em; display: flex; gap: .8em; align-items: baseline; }
+  .flow h3::before {
+    content: counter(step, cjk-ideographic); color: var(--ember);
+    font-size: .9375rem;
+  }
+  .flow p { margin-top: 8px; font-size: .9375rem; color: #d6d4ca; }
+  @media (max-width: 760px) {
+    .class-head, .flow { grid-template-columns: 1fr; }
+  }
+
+  /* 日程 */
+  .schedule-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 40px; }
+  .schedule-head p { color: var(--ink-soft); font-size: .9375rem; max-width: 28em; }
+  .dates { margin-top: 40px; border-top: 1px solid var(--ink); }
+  .dates li {
+    display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto auto;
+    gap: 12px 32px; align-items: center;
+    padding-block: 22px; border-bottom: 1px solid var(--line);
+  }
+  .dates time { font-family: var(--mincho); font-size: clamp(1.375rem, 2.6vw, 1.75rem); letter-spacing: .06em; }
+  .dates .hours { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .dates .seats { font-weight: 600; white-space: nowrap; }
+  .dates .seats.few { color: var(--flame-deep); }
+  .sample { margin-top: 16px; font-size: .8125rem; color: var(--ink-soft); }
+  @media (max-width: 760px) {
+    .dates li { grid-template-columns: 1fr auto; }
+    .dates time { grid-column: 1 / -1; }
+    .dates .hours { grid-column: 1 / -1; margin-top: -10px; }
+  }
+
+  /* 器 */
+  .wares { background: var(--paper); }
+  .wares-intro { max-width: 34em; margin-top: 24px; color: var(--ink-soft); }
+  .ware-list { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(24px, 4vw, 48px); }
+  .ware svg { display: block; width: 100%; max-width: 220px; height: auto; margin-bottom: 20px; }
+  .ware svg .body { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+  .ware svg .rim { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 5; }
+  .ware svg .ground { stroke: var(--line); stroke-width: 1; }
+  .ware h3 { margin-top: 20px; font-size: 1.375rem; letter-spacing: .14em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1em; }
+  .ware h3 small { font-family: var(--gothic); font-size: .75rem; letter-spacing: .06em; color: var(--ink-soft); font-weight: 400; }
+  .ware p { margin-top: 8px; font-size: .9375rem; color: var(--ink-soft); }
+  @media (max-width: 760px) {
+    .ware-list { grid-template-columns: 1fr; gap: 56px; }
+    .ware svg { max-width: 180px; }
+  }
+
+  /* 職人 */
+  .makers .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 88px); }
+  .makers .intro p { margin-top: 24px; color: var(--ink-soft); }
+  .maker-list { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 40px); }
+  .maker h3 { margin-top: 18px; font-size: 1.25rem; letter-spacing: .14em; }
+  .maker .role { font-size: .8125rem; letter-spacing: .14em; color: var(--ink-soft); }
+  .maker p { margin-top: 8px; font-size: .9375rem; color: var(--ink-soft); }
+  @media (max-width: 860px) { .makers .wrap { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .maker-list { grid-template-columns: 1fr; } }
+
+  /* よくある質問 */
+  .faq { padding-top: 0; }
+  .faq .wrap { max-width: 800px; }
+  .faq-list { margin-top: 32px; border-top: 1px solid var(--ink); }
+  details { border-bottom: 1px solid var(--line); }
+  summary {
+    cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; gap: 20px; align-items: center;
+    padding-block: 20px; font-family: var(--mincho); font-size: 1.125rem; letter-spacing: .04em;
+  }
+  summary:hover::after, details[open] summary::after { color: var(--ink); }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-family: var(--gothic); font-size: 1.25rem; color: var(--ink-soft); flex: none; }
+  details[open] summary::after { content: "−"; }
+  details p { padding-bottom: 24px; color: var(--ink-soft); max-width: 38em; }
+
+  /* アクセス */
+  .access { background: var(--paper); }
+  .access .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 80px); align-items: start; }
+  .access dl { margin-top: 28px; border-top: 1px solid var(--line); }
+  .access dl div { display: grid; grid-template-columns: 5.5em 1fr; gap: 16px; padding-block: 14px; border-bottom: 1px solid var(--line); }
+  .access dt { font-size: .875rem; letter-spacing: .14em; color: var(--ink-soft); }
+  @media (max-width: 760px) { .access .wrap { grid-template-columns: 1fr; } }
+
+  /* 結び */
+  .closing { text-align: center; }
+  .closing h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); }
+  .closing p { margin: 20px auto 36px; color: #d6d4ca; max-width: 26em; }
+
+  footer { padding-block: 40px 56px; font-size: .8125rem; color: var(--ink-soft); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 40px; }
+  footer ul { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+  footer ul a { display: inline-block; min-width: 24px; padding-block: 8px; text-align: center; }
+  .provisional { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); width: 100%; line-height: 1.8; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="土と灯(つちとひ) トップ">
+      <b>土と灯</b><small>つちとひ</small>
+    </a>
+    <nav class="nav" aria-label="主なメニュー">
+      <ul>
+        <li><a href="#class">体験教室</a></li>
+        <li><a href="#schedule">日程</a></li>
+        <li><a href="#wares">器</a></li>
+        <li><a href="#access">アクセス</a></li>
+      </ul>
+      <a class="btn small" href="reserve.html">教室を予約</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero" id="top">
+    <div class="wrap">
+      <div class="hero-title">
+        <p class="place">京都・五条坂 陶芸工房</p>
+        <h1><span>手びねりで、</span><span>自分の器をひとつ。</span></h1>
+      </div>
+
+      <div class="hero-photo">
+        <div class="ph tall" role="img" aria-label="写真プレースホルダー:手びねりで飯碗の縁を整える両手">
+          <span><b>写真<wbr>プレース<wbr>ホルダー</b>手びねりで飯碗の縁を整える両手<br>窓からの自然光・縦位置 3:4</span>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <p class="lead">土と灯は、職人ふたりの小さな工房です。ふだんは飯碗や湯呑を作り、月に二回だけ、六名までの手びねり教室を開いています。ろくろは使いません。手のひらと指で、二時間かけてひとつ作ります。</p>
+        <a class="btn" href="reserve.html">体験教室を予約する</a>
+        <dl class="next">
+          <dt>次回の教室</dt>
+          <dd><time datetime="2026-11-28">11月28日(土)</time> 13:30〜<small>残り2席</small></dd>
+        </dl>
+        <p class="lang-note">ご案内は日本語です。簡単な英語でもお手伝いします。<br><span lang="en">Classes are taught in Japanese, with simple English support.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="on-kiln" id="class" aria-labelledby="class-h">
+    <div class="wrap">
+      <div class="class-head">
+        <div>
+          <span class="label">体験教室</span>
+          <h2 id="class-h">六人で囲む、<br>ひとつの作業台。</h2>
+          <p>人数を六名までにしているのは、職人ふたりの目が全員の手元に届くのがそこまでだからです。初めての方がほとんどなので、土の扱いから順にお伝えします。作るものは飯碗、湯呑、小皿からお選びください。</p>
+        </div>
+        <dl class="facts">
+          <div><dt>開催</dt><dd><strong>月に二回・土曜</strong><small>13:30〜15:30(約2時間)</small></dd></div>
+          <div><dt>定員</dt><dd><strong>各回 6名まで</strong><small>おひとりでも、お連れさまとでも</small></dd></div>
+          <div><dt>料金</dt><dd><strong>6,500円</strong><small>税込。土、釉薬、焼成の費用を含みます</small></dd></div>
+          <div><dt>お届け</dt><dd><strong>約6週間後に発送</strong><small>送料は別。海外へもお送りできます</small></dd></div>
+          <div><dt>持ち物</dt><dd><strong>なし</strong><small>エプロンはお貸しします。爪は短めがおすすめです</small></dd></div>
+        </dl>
+      </div>
+
+      <ol class="flow">
+        <li>
+          <div class="ph land" role="img" aria-label="写真プレースホルダー:作業台に並んだ土の玉と道具">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>作業台に並んだ土の玉と道具</span>
+          </div>
+          <h3>土を選ぶ</h3>
+          <p>白い土と、鉄分の多い赤い土。焼き上がりの見本を見ながら、どちらかを選びます。</p>
+        </li>
+        <li>
+          <div class="ph land" role="img" aria-label="写真プレースホルダー:職人が参加者の手元に手を添えている様子">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>職人が参加者の手元に手を添える様子</span>
+          </div>
+          <h3>手で形をつくる</h3>
+          <p>玉にした土に親指を入れ、少しずつ壁を立ち上げます。厚みの揃え方は、職人が隣でお見せします。</p>
+        </li>
+        <li>
+          <div class="ph land" role="img" aria-label="写真プレースホルダー:釉薬の色見本の小皿">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>釉薬の色見本を並べた棚</span>
+          </div>
+          <h3>釉薬を決めて預ける</h3>
+          <p>四色の釉薬から一色を選んだら、作業はここまで。削り、施釉、焼成は工房でおこない、ご自宅へ送ります。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="schedule" aria-labelledby="schedule-h">
+    <div class="wrap">
+      <div class="schedule-head">
+        <div>
+          <span class="label">これからの日程</span>
+          <h2 id="schedule-h">空いている回を選ぶ</h2>
+        </div>
+        <p>日付を選ぶと、その回の予約ページへ進みます。お支払いは当日、工房で承ります。</p>
+      </div>
+      <ul class="dates">
+        <li>
+          <time datetime="2026-11-28">11月28日(土)</time>
+          <span class="hours">13:30〜15:30</span>
+          <span class="seats few">残り2席</span>
+          <a class="btn small" href="reserve.html?date=2026-11-28" aria-label="この回を予約:11月28日(土)">この回を予約</a>
+        </li>
+        <li>
+          <time datetime="2026-12-12">12月12日(土)</time>
+          <span class="hours">13:30〜15:30</span>
+          <span class="seats">残り5席</span>
+          <a class="btn small" href="reserve.html?date=2026-12-12" aria-label="この回を予約:12月12日(土)">この回を予約</a>
+        </li>
+        <li>
+          <time datetime="2026-12-26">12月26日(土)</time>
+          <span class="hours">13:30〜15:30</span>
+          <span class="seats">残り6席</span>
+          <a class="btn small" href="reserve.html?date=2026-12-26" aria-label="この回を予約:12月26日(土)">この回を予約</a>
+        </li>
+      </ul>
+      <p class="sample">※ 日程と残席はサンプル表示です。一月以降の日程は予約ページでご確認ください。</p>
+    </div>
+  </section>
+
+  <section class="wares" id="wares" aria-labelledby="wares-h">
+    <div class="wrap">
+      <span class="label">ふだんの仕事</span>
+      <h2 id="wares-h">毎日、食卓に出る器。</h2>
+      <p class="wares-intro">飾るためのものは作っていません。洗いやすく、重ねやすく、手に持ったときに軽すぎないこと。教室で作るのも、この三つと同じ形です。</p>
+
+      <ul class="ware-list">
+        <li class="ware">
+          <svg viewBox="0 0 200 120" aria-hidden="true">
+            <line class="ground" x1="10" y1="107" x2="190" y2="107"/>
+            <line class="rim" x1="30" y1="30" x2="170" y2="30"/>
+            <path class="body" d="M30 30 C34 76 68 98 84 98 L84 106 L116 106 L116 98 C132 98 166 76 170 30"/>
+          </svg>
+          <div class="ph square" role="img" aria-label="写真プレースホルダー:炊きたてのご飯をよそった飯碗">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>ご飯をよそった飯碗<br>正方形 1:1</span>
+          </div>
+          <h3>飯碗 <small>径 約12cm・高さ 約6cm</small></h3>
+          <p>高台をやや高くして、熱いご飯でも指が熱くならないようにしています。</p>
+        </li>
+        <li class="ware">
+          <svg viewBox="0 0 200 120" aria-hidden="true">
+            <line class="ground" x1="10" y1="107" x2="190" y2="107"/>
+            <line class="rim" x1="62" y1="20" x2="138" y2="20"/>
+            <path class="body" d="M62 20 C59 58 63 92 76 100 L76 106 L124 106 L124 100 C137 92 141 58 138 20"/>
+          </svg>
+          <div class="ph square" role="img" aria-label="写真プレースホルダー:ほうじ茶を注いだ湯呑">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>ほうじ茶を注いだ湯呑<br>正方形 1:1</span>
+          </div>
+          <h3>湯呑 <small>径 約7cm・高さ 約8cm</small></h3>
+          <p>胴にわずかなふくらみ。両手で包むと、ちょうどそこに掌が収まります。</p>
+        </li>
+        <li class="ware">
+          <svg viewBox="0 0 200 120" aria-hidden="true">
+            <line class="ground" x1="10" y1="107" x2="190" y2="107"/>
+            <line class="rim" x1="24" y1="72" x2="176" y2="72"/>
+            <path class="body" d="M24 72 C42 90 74 99 84 99 L84 106 L116 106 L116 99 C126 99 158 90 176 72"/>
+          </svg>
+          <div class="ph square" role="img" aria-label="写真プレースホルダー:漬物をのせた小皿を重ねたところ">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>重ねた小皿と、漬物をのせた一枚<br>正方形 1:1</span>
+          </div>
+          <h3>小皿 <small>径 約11cm・高さ 約2.5cm</small></h3>
+          <p>醤油にも、菓子にも。五枚重ねても棚の中でかさばらない浅さです。</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="makers" id="makers" aria-labelledby="makers-h">
+    <div class="wrap">
+      <div class="intro">
+        <span class="label">職人</span>
+        <h2 id="makers-h">ふたりで作り、<br>ふたりで教えます。</h2>
+        <p>五条坂は、清水焼の窯元と問屋が並んできた坂道です。その一角の町家を借り、成形から焼成までをふたりだけでおこなっています。教室の日も、作業台に立つのはこのふたりです。</p>
+      </div>
+      <ul class="maker-list">
+        <li class="maker">
+          <div class="ph tall" role="img" aria-label="写真プレースホルダー:職人ひとり目の肖像">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>職人の肖像(ひとり目)<br>作業中の横顔・縦位置 3:4</span>
+          </div>
+          <h3>職人名(仮)</h3>
+          <p class="role">成形・教室の進行</p>
+          <p>経歴の紹介文が入ります(二〜三行)。</p>
+        </li>
+        <li class="maker">
+          <div class="ph tall" role="img" aria-label="写真プレースホルダー:職人ふたり目の肖像">
+            <span><b>写真<wbr>プレース<wbr>ホルダー</b>職人の肖像(ふたり目)<br>窯の前・縦位置 3:4</span>
+          </div>
+          <h3>職人名(仮)</h3>
+          <p class="role">釉薬・焼成</p>
+          <p>経歴の紹介文が入ります(二〜三行)。</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="faq" aria-labelledby="faq-h">
+    <div class="wrap">
+      <span class="label">ご予約の前に</span>
+      <h2 id="faq-h">よくいただく質問</h2>
+      <div class="faq-list">
+        <details>
+          <summary>陶芸はまったく初めてです。大丈夫でしょうか。</summary>
+          <p>参加される方の多くが初めてです。手びねりはろくろより失敗が少なく、形が崩れてもその場で直せます。</p>
+        </details>
+        <details>
+          <summary>日本語があまり話せません。</summary>
+          <p>作業は職人が手元で見せながら進めますので、言葉が少なくても参加できます。簡単な英語での説明と、英語の手順書をご用意しています。</p>
+        </details>
+        <details>
+          <summary>作った器は、いつ、どうやって届きますか。</summary>
+          <p>乾燥と二度の焼成を経て、約六週間後に発送します。国内は宅配便、海外は国際郵便でお送りします。送料は当日ご案内します。</p>
+        </details>
+        <details>
+          <summary>予約の変更やキャンセルはできますか。</summary>
+          <p>開催日の三日前までは無料で変更・キャンセルを承ります。それ以降は、土の準備の都合で料金の半額をいただきます。</p>
+        </details>
+        <details>
+          <summary>服装に決まりはありますか。</summary>
+          <p>エプロンをお貸ししますが、袖に土がつくことがあります。汚れても構わない、袖をまくりやすい服でお越しください。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="access" id="access" aria-labelledby="access-h">
+    <div class="wrap">
+      <div>
+        <span class="label">アクセス</span>
+        <h2 id="access-h">五条坂の途中、<br>格子戸の町家です。</h2>
+        <dl>
+          <div><dt>住所</dt><dd>京都市東山区 五条坂(番地は仮)</dd></div>
+          <div><dt>電車</dt><dd>京阪本線「清水五条」駅から徒歩 約8分</dd></div>
+          <div><dt>バス</dt><dd>市バス「五条坂」停留所から徒歩 約3分</dd></div>
+          <div><dt>工房</dt><dd>教室の日のみ、13:00に開けます。<br>それ以外の日は制作のため閉めています。</dd></div>
+          <div><dt>電話</dt><dd>075-000-0000(仮)</dd></div>
+        </dl>
+      </div>
+      <div class="ph land" role="img" aria-label="地図プレースホルダー:清水五条駅から工房までの道順">
+        <span><b>地図<wbr>プレース<wbr>ホルダー</b>清水五条駅から工房までの道順<br>地図の埋め込み、または手描きの略図</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="on-kiln closing" aria-labelledby="closing-h">
+    <div class="wrap">
+      <h2 id="closing-h">次の教室は、<br>11月28日(土)です。</h2>
+      <p>各回六名まで。旅の日程が決まったら、お早めに席をお取りください。</p>
+      <a class="btn" href="reserve.html">体験教室を予約する</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><span class="mincho" style="font-size:1.125rem;letter-spacing:.18em;color:var(--ink)">土と灯</span> 京都・五条坂の陶芸工房</p>
+    <ul>
+      <li><a class="textlink" href="#class">体験教室</a></li>
+      <li><a class="textlink" href="#schedule">日程</a></li>
+      <li><a class="textlink" href="#wares">器</a></li>
+      <li><a class="textlink" href="#access">アクセス</a></li>
+      <li><a class="textlink" href="reserve.html">予約ページ</a></li>
+    </ul>
+    <p class="provisional">このページは制作中の案です。料金、日程と残席、所要時間、お届けまでの期間、キャンセルの規定、住所、電話番号、職人の紹介は仮の内容で、確定した情報に差し替える必要があります。斜線の枠はすべて、撮影前の写真・地図の場所です。</p>
+  </div>
+</footer>
+</body>
+</html>

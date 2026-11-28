@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Settings · Rowan</title>
+<meta name="description" content="Choose which events reach you by email, push, and Slack, and set quiet hours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFFFFF;
+  --surface: #F4F4F5;
+  --text: #1C1E23;
+  --muted: #575A62;
+  --accent: #A11D5E;
+  --border: #767981;
+  --rule: #DCDDE0;
+  --night: #24365C;
+  --success: #1D6B3F;
+  --danger: #B3261E;
+
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Public Sans", system-ui, sans-serif;
+
+  /* 16px base, 1.25 ratio */
+  --fs-sm: 0.875rem;  /* 14 */
+  --fs-base: 1rem;    /* 16 */
+  --fs-md: 1.25rem;   /* 20 */
+  --fs-lg: 1.5625rem; /* 25 */
+  --fs-xl: 2.4414rem; /* 39 */
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --radius: 6px;
+  --gutter: 15rem;          /* the label gutter every track shares */
+  --layout-max: 1120px;     /* content column; the title bar and tabs share its right edge */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--fs-base)/1.55 var(--font-body);
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.15; }
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.vh {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ---------- App chrome ---------- */
+.appbar {
+  display: flex; align-items: center; gap: var(--s5);
+  padding: 0 var(--s5); min-height: 56px;
+  border-bottom: 1px solid var(--rule);
+}
+.brand {
+  font: 600 var(--fs-md)/1 var(--font-display); letter-spacing: 0.02em;
+  color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: var(--s2);
+  min-height: 44px;
+}
+.brand svg { flex: none; }
+.appnav { display: flex; gap: var(--s1); margin-right: auto; }
+.appnav a {
+  color: var(--text); text-decoration: none; padding: var(--s2) var(--s3); border-radius: var(--radius);
+  white-space: nowrap; min-height: 40px; display: inline-flex; align-items: center;
+}
+.appnav a:hover { background: var(--surface); }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--night); color: var(--bg); font-weight: 600; font-size: var(--fs-sm);
+}
+
+.settings-head { padding: var(--s6) var(--s5) 0; display: contents; }
+.settings-head > * { margin-left: var(--s5); margin-right: var(--s5); max-width: var(--layout-max); }
+.settings-head > .crumb { padding-top: var(--s6); }
+.crumb { color: var(--muted); font-size: var(--fs-base); }
+.crumb a { color: var(--muted); }
+.settings-head h1 {
+  font: 600 var(--fs-xl)/1.05 var(--font-display); letter-spacing: 0.01em;
+}
+.tabs { display: flex; gap: var(--s1); margin-top: var(--s2); border-bottom: 1px solid var(--rule); overflow-x: auto; }
+.tabs a {
+  white-space: nowrap; color: var(--text); text-decoration: none;
+  padding: var(--s3) var(--s3); border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+.tabs a:hover { border-bottom-color: var(--rule); }
+.tabs a[aria-current="page"] { border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ---------- Page layout ---------- */
+.page { padding: 0 var(--s5); }
+.layout { max-width: var(--layout-max); }
+.region { padding: var(--s7) 0 var(--s5); }
+.region + .region { border-top: 1px solid var(--rule); }
+
+/* A track: label gutter on the left, content to the right. Every region is built from it. */
+.track {
+  display: grid;
+  grid-template-columns: var(--gutter) minmax(0, 1fr);
+  column-gap: var(--s5);
+  align-items: start;
+}
+.track > * { min-width: 0; }
+.track-label h2 {
+  font: 600 var(--fs-lg)/1.1 var(--font-display); letter-spacing: 0.01em;
+}
+.track-label p { color: var(--muted); margin-top: var(--s2); }
+
+/* ---------- Slack connection track ---------- */
+.connect {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+  border-left: 3px solid var(--border);
+  margin-bottom: var(--s4);
+}
+.connect p { flex: 1 1 16rem; }
+.connect[data-state="connected"] { border-left-color: var(--success); }
+.connect .ok { color: var(--success); font-weight: 600; }
+
+/* ---------- Routing table ---------- */
+.routing { width: 100%; border-collapse: collapse; }
+.routing th, .routing td { text-align: left; vertical-align: middle; }
+.routing thead th {
+  font: 600 var(--fs-md)/1.1 var(--font-display); letter-spacing: 0.02em;
+  padding: 0 var(--s2) var(--s2);
+  border-bottom: 2px solid var(--text);
+  text-align: center; white-space: nowrap;
+}
+.routing thead th:first-child { text-align: left; padding-left: 0; }
+.routing thead .chan-state { display: block; font: 400 var(--fs-sm)/1.3 var(--font-body); letter-spacing: 0; color: var(--text); }
+.routing tbody th { font-weight: 400; padding: var(--s3) var(--s3) var(--s3) 0; }
+.routing tbody tr { border-bottom: 1px solid var(--rule); }
+.routing tbody tr:hover { background: var(--surface); }
+.ev-name { font-weight: 600; display: block; }
+.ev-hint { color: var(--text); font-size: var(--fs-sm); display: block; margin-top: 2px; }
+.routing td { text-align: center; width: 18%; }
+.cell {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius);
+  cursor: pointer;
+}
+.cell input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); cursor: inherit; }
+.cell:has(input:disabled) { cursor: not-allowed; }
+/* Slack column while disconnected: a grey band continuing the connect track above it. */
+.routing td.ch-off { background: var(--surface); }
+.routing tfoot th { font-weight: 600; padding: var(--s3) var(--s3) var(--s3) 0; }
+.routing tfoot td { font-size: var(--fs-sm); padding: var(--s3) var(--s1); }
+.routing tfoot tr { border-bottom: 1px solid var(--rule); }
+.res { display: inline-flex; align-items: center; gap: var(--s1); white-space: nowrap; }
+.res[data-r="sent"] { color: var(--success); font-weight: 600; }
+.res[data-r="skip"] { color: var(--text); }
+.res[data-r="fail"] { color: var(--danger); font-weight: 600; }
+
+.test-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); margin-top: var(--s4); }
+#test-status { color: var(--text); font-size: var(--fs-sm); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s4); border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  font-weight: 600; white-space: nowrap; cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 120ms var(--ease-out);
+}
+.btn:hover { background: var(--surface); border-color: var(--text); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled, .btn[aria-disabled="true"] { cursor: not-allowed; color: var(--muted); border-color: var(--rule); background: var(--bg); transform: none; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn-primary:hover { background: var(--text); border-color: var(--text); }
+.btn-primary[aria-busy="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+.btn-text { border-color: transparent; background: transparent; padding: 0 var(--s2); color: var(--accent); }
+.btn-text:hover { background: var(--surface); border-color: transparent; }
+
+/* ---------- Quiet hours ---------- */
+.switch-row { display: flex; align-items: center; gap: var(--s3); min-height: 44px; }
+.switch-row label { font-weight: 600; cursor: pointer; }
+.switch {
+  appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+  width: 44px; height: 26px; border-radius: 13px; border: 2px solid var(--border);
+  background: var(--bg); position: relative; cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--border); transition: transform 150ms var(--ease-out), background-color 150ms ease;
+}
+.switch:checked { background: var(--accent); border-color: var(--accent); }
+.switch:checked::after { background: var(--bg); transform: translateX(18px); }
+
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 9rem)) minmax(0, 1fr); gap: var(--s4); margin-top: var(--s4); }
+.field label { display: block; font-weight: 600; margin-bottom: var(--s1); }
+.field input, .field select {
+  width: 100%; min-height: 44px; padding: 0 var(--s3);
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  font-variant-numeric: tabular-nums;
+}
+.field input:hover, .field select:hover { border-color: var(--text); }
+.field input[aria-invalid="true"] { border: 2px solid var(--danger); }
+.err { color: var(--danger); font-size: var(--fs-sm); font-weight: 600; margin-top: var(--s2); display: flex; gap: var(--s2); }
+.err svg { flex: none; margin-top: 2px; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled .field label, fieldset:disabled .ruler-cap { color: var(--muted); }
+fieldset:disabled .ruler { opacity: 0.5; }
+
+/* Signature: the 24-hour day ruler */
+.ruler-wrap { margin-top: var(--s5); }
+.ruler {
+  position: relative; height: 56px;
+  border-top: 2px solid var(--text); border-bottom: 1px solid var(--rule);
+  background:
+    repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px calc(100% / 24));
+}
+.band {
+  position: absolute; top: 0; bottom: 0; background: var(--night);
+  display: flex; align-items: center; padding: 0 var(--s2); overflow: hidden;
+}
+.now {
+  position: absolute; top: -10px; bottom: -6px; width: 2px; background: var(--text);
+  transform: translateX(-1px);
+}
+.now::before {
+  content: ""; position: absolute; top: -2px; left: -5px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text); border: 2px solid var(--bg);
+}
+.ticks { position: relative; height: 24px; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.ticks span { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; }
+.ticks span:first-child { transform: none; }
+.ticks .t-minor { display: inline; }
+.ruler-cap { margin-top: var(--s3); }
+.ruler-cap strong, .ruler-cap .nw { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- Summary ---------- */
+.summary dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s2) var(--s4); }
+.summary dt { font: 600 var(--fs-md)/1.4 var(--font-display); letter-spacing: 0.02em; }
+.summary dd { margin: 0; padding-top: 2px; }
+.summary dd.off { color: var(--muted); }
+
+/* ---------- Title bar (sticky, holds the one primary action) ---------- */
+.titlebar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3) var(--s5);
+  padding: var(--s2) 0;
+}
+.titlebar-text { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--s1) var(--s5); min-width: 0; }
+#save-status { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-base); }
+#save-status[data-s="ok"] { color: var(--success); font-weight: 600; }
+#save-status[data-s="fail"] { color: var(--danger); font-weight: 600; }
+#save-status svg { flex: none; align-self: center; }
+
+@media (max-width: 1100px) {
+  :root { --gutter: 12rem; }
+}
+@media (max-width: 860px) {
+  .track { grid-template-columns: minmax(0, 1fr); row-gap: var(--s4); }
+  .appnav { display: none; }
+}
+@media (max-width: 640px) {
+  .appbar, .page { padding-left: var(--s4); padding-right: var(--s4); }
+  .settings-head > * { margin-left: var(--s4); margin-right: var(--s4); }
+  .settings-head > .crumb { padding-top: var(--s5); }
+  .titlebar-text { flex-direction: column; align-items: flex-start; gap: 0; }
+  .settings-head h1 { font-size: var(--fs-lg); }
+  .region { padding-top: var(--s6); }
+  .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field-tz { grid-column: 1 / -1; }
+  .routing td { width: 56px; }
+  .routing thead th { font-size: var(--fs-base); padding-left: 0; padding-right: 0; }
+  .ticks .t-minor { display: none; }
+  #save-status { font-size: var(--fs-sm); }
+}
+/* Wide screens: the summary moves beside the controls, where it can be read while editing. */
+@media (min-width: 1600px) {
+  :root { --layout-max: 1480px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; column-gap: var(--s8); align-items: start; }
+  .main-col { grid-column: 1; }
+  .summary { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: var(--s5); border-top: 0 !important; padding-top: var(--s7); }
+  .summary .track { grid-template-columns: minmax(0, 1fr); row-gap: var(--s4); }
+  .summary-wrap { border-left: 1px solid var(--rule); padding-left: var(--s6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .switch, .switch::after { transition: background-color 150ms ease, border-color 150ms ease; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <a class="brand" href="#">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="3" width="20" height="3" fill="currentColor"/><rect x="1" y="9.5" width="13" height="3" fill="currentColor"/><rect x="1" y="16" width="17" height="3" fill="currentColor"/></svg>
+    Rowan
+  </a>
+  <nav class="appnav" aria-label="Main">
+    <a href="#">Projects</a>
+    <a href="#">My tasks</a>
+    <a href="#">Inbox</a>
+  </nav>
+  <span class="avatar" role="img" aria-label="Signed in as Maya Okafor">MO</span>
+</header>
+
+<div class="settings-head">
+  <p class="crumb"><a href="#">Settings</a></p>
+  <div class="titlebar">
+    <div class="titlebar-text">
+      <h1>Notifications</h1>
+      <p id="save-status" role="status" aria-live="polite"></p>
+    </div>
+    <button type="submit" form="form" class="btn btn-primary" id="save-btn">Save changes</button>
+  </div>
+  <nav class="tabs" aria-label="Settings">
+    <a href="#">Profile</a>
+    <a href="#" aria-current="page">Notifications</a>
+    <a href="#">Connected apps</a>
+    <a href="#">Security</a>
+  </nav>
+</div>
+
+<main class="page">
+<form id="form" class="layout" novalidate>
+  <div class="main-col">
+  <!-- Routing -->
+  <section class="region" aria-labelledby="h-routing">
+    <div class="track">
+      <div class="track-label">
+        <h2 id="h-routing">Where each event reaches you</h2>
+        <p>Tick a box to get that event on that channel.</p>
+      </div>
+      <div>
+        <div class="connect" id="slack-connect" data-state="disconnected">
+          <p id="slack-msg"><strong>Slack isn’t connected.</strong> Connect your workspace to choose Slack notifications.</p>
+          <button type="button" class="btn" id="slack-btn">Connect Slack</button>
+        </div>
+
+        <table class="routing" id="routing">
+          <caption class="vh">Notification events by channel</caption>
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Email</th>
+              <th scope="col">Push</th>
+              <th scope="col">Slack <span class="chan-state" id="slack-col-state">Off</span></th>
+            </tr>
+          </thead>
+          <tbody id="routing-body"></tbody>
+          <tfoot id="test-foot" hidden>
+            <tr>
+              <th scope="row">Test</th>
+              <td id="res-email"></td>
+              <td id="res-push"></td>
+              <td id="res-slack"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="test-row">
+          <button type="button" class="btn" id="test-btn">Send test notification</button>
+          <p id="test-status" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quiet hours -->
+  <section class="region" aria-labelledby="h-quiet">
+    <div class="track">
+      <div class="track-label">
+        <h2 id="h-quiet">Quiet hours</h2>
+        <p>No email, push, or Slack notifications between these times.</p>
+      </div>
+      <div>
+        <div class="switch-row">
+          <input type="checkbox" role="switch" class="switch" id="quiet-on" checked aria-describedby="quiet-cap">
+          <label for="quiet-on">Pause notifications every day</label>
+        </div>
+        <fieldset id="quiet-fields">
+          <legend class="vh">Quiet hours time range</legend>
+          <div class="fields">
+            <div class="field">
+              <label for="q-start">From</label>
+              <input type="time" id="q-start" value="22:00" step="900" required>
+            </div>
+            <div class="field">
+              <label for="q-end">To</label>
+              <input type="time" id="q-end" value="07:00" step="900" required aria-describedby="q-end-err">
+            </div>
+            <div class="field field-tz">
+              <label for="q-tz">Time zone</label>
+              <select id="q-tz"></select>
+            </div>
+          </div>
+          <p class="err" id="q-end-err" hidden></p>
+
+          <div class="ruler-wrap">
+            <div class="ruler" id="ruler" role="img" aria-label="">
+              <div class="band" id="band-a"></div>
+              <div class="band" id="band-b" hidden></div>
+              <div class="now" id="now"></div>
+            </div>
+            <div class="ticks" aria-hidden="true">
+              <span style="left:0">12 AM</span>
+              <span class="t-minor" style="left:12.5%">3 AM</span>
+              <span style="left:25%">6 AM</span>
+              <span class="t-minor" style="left:37.5%">9 AM</span>
+              <span style="left:50%">12 PM</span>
+              <span class="t-minor" style="left:62.5%">3 PM</span>
+              <span style="left:75%">6 PM</span>
+              <span class="t-minor" style="left:87.5%">9 PM</span>
+            </div>
+            <p class="ruler-cap" id="quiet-cap"></p>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- Summary -->
+  <section class="region summary" aria-labelledby="h-summary">
+    <div class="track summary-wrap">
+      <div class="track-label">
+        <h2 id="h-summary">What you’ll get</h2>
+      </div>
+      <dl id="summary-list"></dl>
+    </div>
+  </section>
+</form>
+</main>
+
+<script>
+(() => {
+  const EVENTS = [
+    { id: 'mentions', name: 'Mentions', hint: 'Someone @mentions you in a task or comment' },
+    { id: 'assigned', name: 'Assigned tasks', hint: 'A task is assigned to you' },
+    { id: 'due', name: 'Due-date reminders', hint: 'A task you own is due within a day' },
+    { id: 'digest', name: 'Weekly digest', hint: 'A Monday summary of your projects' },
+  ];
+  const CHANNELS = [
+    { id: 'email', name: 'Email', dest: 'maya.okafor@example.com' },
+    { id: 'push', name: 'Push', dest: 'this browser' },
+    { id: 'slack', name: 'Slack', dest: 'Slack' },
+  ];
+  const ZONES = [
+    'Pacific/Honolulu', 'America/Anchorage', 'America/Los_Angeles', 'America/Denver', 'America/Chicago',
+    'America/New_York', 'America/Sao_Paulo', 'Europe/London', 'Europe/Berlin', 'Africa/Lagos',
+    'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney',
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const icon = {
+    ok: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+    warn: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 4v5M8 11v1.5" stroke="currentColor" stroke-width="2"/></svg>',
+  };
+
+  // Current saved settings as the server returned them.
+  let saved = {
+    routes: {
+      mentions: { email: true, push: true, slack: false },
+      assigned: { email: true, push: true, slack: false },
+      due: { email: true, push: false, slack: false },
+      digest: { email: true, push: false, slack: false },
+    },
+    slack: false,
+    quiet: { on: true, start: '22:00', end: '07:00', tz: 'America/New_York' },
+  };
+  let state = structuredClone(saved);
+
+  // ---------- Mock API (same code path a real fetch would take) ----------
+  const api = {
+    save(payload) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const forced = new URLSearchParams(location.search).get('save') === 'fail';
+          if (!navigator.onLine || forced) reject(new Error('network'));
+          else resolve(structuredClone(payload));
+        }, 700);
+      });
+    },
+    test(channels) {
+      return new Promise((resolve) => setTimeout(() => resolve(channels), 600));
+    },
+    connectSlack() {
+      return new Promise((resolve, reject) => setTimeout(() => navigator.onLine ? resolve({ workspace: 'Northwind Studio' }) : reject(new Error('network')), 900));
+    },
+  };
+
+  // ---------- Routing table ----------
+  const body = $('routing-body');
+  body.innerHTML = EVENTS.map((ev) => `
+    <tr>
+      <th scope="row"><span class="ev-name">${ev.name}</span><span class="ev-hint">${ev.hint}</span></th>
+      ${CHANNELS.map((ch) => `
+        <td data-ch="${ch.id}"><label class="cell"><input type="checkbox" data-ev="${ev.id}" data-ch="${ch.id}"><span class="vh">${ev.name} by ${ch.name}</span></label></td>`).join('')}
+    </tr>`).join('');
+
+  body.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t.dataset.ev) return;
+    state.routes[t.dataset.ev][t.dataset.ch] = t.checked;
+    render();
+  });
+
+  // ---------- Slack ----------
+  $('slack-btn').addEventListener('click', async () => {
+    const btn = $('slack-btn');
+    if (state.slack) {
+      state.slack = false;
+      EVENTS.forEach((ev) => { state.routes[ev.id].slack = false; });
+      render();
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Connecting…';
+    try {
+      const res = await api.connectSlack();
+      state.slack = res.workspace;
+      state.routes.mentions.slack = true;
+      state.routes.assigned.slack = true;
+      saved.slack = res.workspace; // the connection itself is stored by the server immediately
+    } catch {
+      $('slack-msg').innerHTML = '<strong>Couldn’t reach Slack.</strong> Check your connection, then press Connect Slack again.';
+    }
+    btn.disabled = false;
+    render();
+    btn.focus();
+  });
+
+  // ---------- Quiet hours ----------
+  const tzSel = $('q-tz');
+  tzSel.innerHTML = ZONES.map((z) => `<option value="${z}">${z.replace(/_/g, ' ').replace('/', ' / ')}</option>`).join('');
+
+  $('quiet-on').addEventListener('change', (e) => { state.quiet.on = e.target.checked; render(); });
+  $('q-start').addEventListener('input', (e) => { state.quiet.start = e.target.value; render(); });
+  $('q-end').addEventListener('input', (e) => { state.quiet.end = e.target.value; render(); });
+  ['q-start', 'q-end'].forEach((id) => $(id).addEventListener('blur', () => { touched = true; validate(); }));
+  tzSel.addEventListener('change', (e) => { state.quiet.tz = e.target.value; render(); });
+
+  let touched = false;
+  const toMin = (v) => { const [h, m] = v.split(':').map(Number); return h * 60 + m; };
+  const fmt = (v) => {
+    const [h, m] = v.split(':').map(Number);
+    const ap = h < 12 ? 'AM' : 'PM'; const hh = h % 12 || 12;
+    return `${hh}:${String(m).padStart(2, '0')} ${ap}`;
+  };
+  const dur = (mins) => { const h = Math.floor(mins / 60), m = mins % 60; return `<span class="nw">${m ? `${h} h ${m} min` : `${h} h`}</span>`; };
+
+  function quietError() {
+    const q = state.quiet;
+    if (!q.on) return '';
+    if (!q.start || !q.end) return 'Enter both a start and an end time.';
+    if (q.start === q.end) return `The end time can’t be the same as the start (${fmt(q.start)}). Choose a different end time.`;
+    return '';
+  }
+  function validate(force) {
+    const msg = (touched || force) ? quietError() : '';
+    const err = $('q-end-err'), end = $('q-end');
+    if (msg) {
+      err.innerHTML = icon.warn + '<span>' + msg + '</span>';
+      err.hidden = false; end.setAttribute('aria-invalid', 'true');
+    } else {
+      err.hidden = true; err.textContent = ''; end.removeAttribute('aria-invalid');
+    }
+    return !msg;
+  }
+
+  function nowIn(tz) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date());
+    const h = Number(parts.find((p) => p.type === 'hour').value), m = Number(parts.find((p) => p.type === 'minute').value);
+    return h * 60 + m;
+  }
+
+  function renderRuler() {
+    const q = state.quiet;
+    const a = $('band-a'), b = $('band-b');
+    const s = toMin(q.start || '00:00'), e = toMin(q.end || '00:00');
+    const pct = (m) => (m / 1440) * 100;
+    const now = nowIn(q.tz);
+    $('now').style.left = pct(now) + '%';
+    const nowStr = fmt(`${Math.floor(now / 60)}:${String(now % 60).padStart(2, '0')}`);
+
+    if (s === e) {
+      a.hidden = true; b.hidden = true;
+    } else if (s < e) {
+      a.hidden = false; b.hidden = true;
+      a.style.left = pct(s) + '%'; a.style.width = pct(e - s) + '%';
+    } else {
+      a.hidden = false; b.hidden = false;
+      a.style.left = pct(s) + '%'; a.style.width = (100 - pct(s)) + '%';
+      b.style.left = '0%'; b.style.width = pct(e) + '%';
+    }
+
+    const length = ((e - s) + 1440) % 1440;
+    const inQuiet = s < e ? (now >= s && now < e) : (now >= s || now < e);
+    const zone = q.tz.split('/').pop().replace(/_/g, ' ');
+    let cap;
+    if (!q.on) cap = `Quiet hours are off. Notifications arrive at any time. It’s <strong>${nowStr}</strong> in ${zone}.`;
+    else if (s === e) cap = 'Choose an end time to see your quiet window.';
+    else if (inQuiet) {
+      const left = ((e - now) + 1440) % 1440;
+      cap = `Quiet now: <strong>${nowStr}</strong> in ${zone}. Notifications resume at <strong>${fmt(q.end)}</strong> (in ${dur(left)}).`;
+    } else {
+      const until = ((s - now) + 1440) % 1440;
+      cap = `<strong>${dur(length)}</strong> of quiet, ${fmt(q.start)} to ${fmt(q.end)}${s > e ? ' the next morning' : ''}. It’s <strong>${nowStr}</strong> in ${zone}; quiet hours start in ${dur(until)}.`;
+    }
+    $('quiet-cap').innerHTML = cap;
+    $('ruler').setAttribute('aria-label', q.on && s !== e ? `24-hour day with quiet hours from ${fmt(q.start)} to ${fmt(q.end)}; now ${nowStr}` : `24-hour day; now ${nowStr}`);
+  }
+
+  // ---------- Summary ----------
+  function renderSummary() {
+    const list = CHANNELS.map((ch) => {
+      const evs = EVENTS.filter((ev) => state.routes[ev.id][ch.id]).map((ev) => ev.name.toLowerCase());
+      let text, off = false;
+      if (ch.id === 'slack' && !state.slack) { text = 'Not connected'; off = true; }
+      else if (!evs.length) { text = 'Nothing'; off = true; }
+      else text = evs.join(', ').replace(/^./, (c) => c.toUpperCase());
+      return `<dt>${ch.name}</dt><dd class="${off ? 'off' : ''}">${text}</dd>`;
+    });
+    const q = state.quiet;
+    list.push(`<dt>Quiet</dt><dd class="${q.on ? '' : 'off'}">${q.on && q.start !== q.end ? `${fmt(q.start)} – ${fmt(q.end)}, ${q.tz.split('/').pop().replace(/_/g, ' ')} time` : 'Off'}</dd>`);
+    $('summary-list').innerHTML = list.join('');
+  }
+
+  // ---------- Save ----------
+  const dirty = () => JSON.stringify(state) !== JSON.stringify(saved);
+  let lastResult = null; // 'ok' | 'fail' | null
+
+  function setSaveStatus() {
+    const el = $('save-status');
+    if (lastResult === 'fail') return;
+    if (dirty()) { el.dataset.s = ''; el.textContent = 'Unsaved changes'; }
+    else if (lastResult === 'ok') { /* keep the saved message */ }
+    else { el.dataset.s = ''; el.textContent = 'All changes saved'; }
+  }
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('save-btn'), el = $('save-status');
+    if (!validate(true)) { touched = true; $('q-end').focus(); el.dataset.s = 'fail'; el.innerHTML = icon.warn + '<span>Fix the quiet-hours end time, then save.</span>'; lastResult = 'fail'; return; }
+    btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Saving…';
+    el.dataset.s = ''; el.textContent = 'Saving…';
+    try {
+      saved = await api.save(state);
+      state = structuredClone(saved);
+      lastResult = 'ok';
+      const t = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: state.quiet.tz }).format(new Date());
+      el.dataset.s = 'ok'; el.innerHTML = icon.ok + `<span>Saved at ${t}</span>`;
+    } catch {
+      lastResult = 'fail';
+      el.dataset.s = 'fail';
+      el.innerHTML = icon.warn + '<span>Not saved: no connection. Your changes are still here; press Save changes to try again.</span>';
+    }
+    btn.removeAttribute('aria-busy'); btn.textContent = 'Save changes';
+  });
+
+  // ---------- Test notification ----------
+  $('test-btn').addEventListener('click', async () => {
+    const btn = $('test-btn');
+    const targets = CHANNELS.filter((ch) => (ch.id !== 'slack' || state.slack) && EVENTS.some((ev) => state.routes[ev.id][ch.id]));
+    if (!targets.length) { $('test-status').textContent = 'Turn on at least one event for a channel, then send a test.'; return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    $('test-status').textContent = 'Sending a test notification…';
+    await api.test(targets.map((t) => t.id));
+    $('test-foot').hidden = false;
+    CHANNELS.forEach((ch) => {
+      const cell = $('res-' + ch.id);
+      if (targets.includes(ch)) cell.innerHTML = `<span class="res" data-r="sent">${icon.ok}Sent</span>`;
+      else if (ch.id === 'slack' && !state.slack) cell.innerHTML = '<span class="res" data-r="skip">Not connected</span>';
+      else cell.innerHTML = '<span class="res" data-r="skip">All off</span>';
+    });
+    $('test-status').textContent = 'Test sent to ' + targets.map((t) => t.id === 'email' ? `email (${t.dest})` : t.id === 'push' ? 'push (this browser)' : 'Slack').join(', ') + '.';
+    btn.disabled = false; btn.textContent = 'Send test notification';
+  });
+
+  // ---------- Render ----------
+  function render() {
+    body.querySelectorAll('input').forEach((inp) => {
+      const v = state.routes[inp.dataset.ev][inp.dataset.ch];
+      inp.checked = v;
+      if (inp.dataset.ch === 'slack') {
+        inp.disabled = !state.slack;
+        if (!state.slack) inp.setAttribute('aria-describedby', 'slack-msg'); else inp.removeAttribute('aria-describedby');
+      }
+    });
+    body.querySelectorAll('td[data-ch="slack"]').forEach((td) => td.classList.toggle('ch-off', !state.slack));
+    const c = $('slack-connect');
+    c.dataset.state = state.slack ? 'connected' : 'disconnected';
+    if (state.slack) {
+      $('slack-msg').innerHTML = `<span class="ok">Connected</span> to the ${state.slack} workspace.`;
+      $('slack-btn').textContent = 'Disconnect';
+      $('slack-col-state').textContent = 'On';
+    } else {
+      if (!/Couldn’t/.test($('slack-msg').textContent)) $('slack-msg').innerHTML = '<strong>Slack isn’t connected.</strong> Connect your workspace to choose Slack notifications.';
+      $('slack-btn').textContent = 'Connect Slack';
+      $('slack-col-state').textContent = 'Off';
+    }
+
+    $('quiet-on').checked = state.quiet.on;
+    $('quiet-fields').disabled = !state.quiet.on;
+    $('q-start').value = state.quiet.start;
+    $('q-end').value = state.quiet.end;
+    tzSel.value = state.quiet.tz;
+    validate();
+    renderRuler();
+    renderSummary();
+    if (dirty() && lastResult) lastResult = null;
+    setSaveStatus();
+  }
+
+  render();
+  setInterval(renderRuler, 60000);
+})();
+</script>
+</body>
+</html>

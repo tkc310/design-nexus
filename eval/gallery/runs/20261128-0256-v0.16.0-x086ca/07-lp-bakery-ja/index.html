@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパン予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の土曜受け取りのパン予約。焼き上がりは土曜8時と11時。予約は金曜18時まで、1人5点まで。受け取りは店頭で、現金と交通系ICが使えます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  /* 紙袋のクラフト紙 */
+  --kraft:#c6a47e;
+  /* よく焼けたクラストの焦げ茶 */
+  --ink:#2a1d14;
+  /* 店先の黒板 */
+  --board:#24372d;
+  /* チョーク／打ち粉 */
+  --chalk:#f3efe6;
+  /* 消しかけのチョーク */
+  --chalk-dim:#aebbb1;
+  /* 紙袋に押す店の朱肉 */
+  --stamp:#a8301f;
+  /* 予約票の紙 */
+  --slip:#f8f4ec;
+
+  --display:"Klee One","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  /* type scale 1.25 from 17 */
+  --t-s:14px; --t-0:17px; --t-1:21px; --t-2:27px; --t-3:34px; --t-4:53px;
+  /* space base 4 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  --r:6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+body{margin:0;background:var(--kraft);color:var(--ink);font-family:var(--body);font-size:var(--t-0);line-height:1.8;letter-spacing:.03em}
+h1,h2,h3{font-family:var(--display);font-weight:600;font-synthesis:none;line-height:1.4;text-wrap:balance;margin:0;font-feature-settings:"palt";letter-spacing:.01em}
+p{margin:0;text-wrap:pretty}
+.nw{white-space:nowrap}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.board :focus-visible{outline-color:var(--chalk)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4) var(--s5);border-bottom:2px solid var(--ink)}
+.logo{font-family:var(--display);font-weight:600;font-size:var(--t-2);line-height:1.2;color:var(--ink);text-decoration:none;white-space:nowrap}
+.top nav ul{display:flex;gap:var(--s5);list-style:none;margin:0;padding:0}
+.top nav a{color:var(--ink);text-decoration:underline;text-underline-offset:4px;white-space:nowrap;display:inline-block;padding:var(--s2) 0}
+
+/* layout */
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:var(--s6);max-width:1280px;margin:0 auto;padding:var(--s5) var(--s5) var(--s8)}
+.main{min-width:0}
+.intro{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--s3) var(--s5);margin-bottom:var(--s4)}
+.intro h1{font-size:var(--t-3)}
+.intro p{max-width:34em}
+.due{font-weight:700;border:2px solid var(--ink);border-radius:var(--r);padding:var(--s1) var(--s3)}
+.due[data-closed]{background:var(--ink);color:var(--slip)}
+
+/* ===== signature: the 焼き上がり黒板 ===== */
+.board{background:var(--board);color:var(--chalk);border-radius:var(--r);padding:var(--s5)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 10em 10em 8.5em;column-gap:var(--s3);align-items:center}
+.bakes{border:0;margin:0;padding:0 0 var(--s4);border-bottom:2px dashed var(--chalk-dim)}
+.glabel{font-weight:700;align-self:end;padding-bottom:var(--s2)}
+.bakes .grid{align-items:end}
+.bake{position:relative;display:block;cursor:pointer;border:2px dashed var(--chalk-dim);border-radius:var(--r);padding:var(--s2) var(--s3);text-align:center;transition:border-color .15s ease,background-color .15s ease}
+.bake input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.bake .time{display:block;white-space:nowrap;font-family:var(--display);font-weight:600;font-size:var(--t-4);line-height:1.1;letter-spacing:0;font-variant-numeric:tabular-nums}
+.bake .cap{display:block;font-size:var(--t-0)}
+.bake:hover{border-color:var(--chalk)}
+.bake:has(input:checked){border-style:solid;border-color:var(--chalk);background:var(--stamp)}
+.bake:has(input:focus-visible){outline:3px solid var(--chalk);outline-offset:3px}
+.bake:has(input:disabled){cursor:default;border-color:color-mix(in srgb,var(--board) 55%,var(--chalk-dim))}
+.bake:has(input:disabled:checked){background:transparent;border-color:var(--chalk-dim)}
+.bakes .note{grid-column:1;font-size:var(--t-0);color:var(--chalk-dim)}
+
+.rows{list-style:none;margin:0;padding:0}
+.row{padding:var(--s3) 0;border-bottom:1px solid color-mix(in srgb,var(--board) 82%,var(--chalk))}
+.row:last-child{border-bottom:0}
+.name{font-family:var(--display);font-weight:600;font-size:var(--t-1);line-height:1.5;white-space:nowrap}
+.left{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--chalk-dim);padding:var(--s1) 0;border-radius:var(--r)}
+.left b{font-size:var(--t-1);line-height:1.2;color:var(--chalk)}
+.left.on{color:var(--chalk);background:color-mix(in srgb,var(--board) 90%,var(--chalk))}
+.left.out{text-decoration:line-through;text-decoration-thickness:2px}
+.left .lbl{display:none}
+.row.gone .name{color:var(--chalk-dim);text-decoration:line-through;text-decoration-thickness:2px}
+.step{display:flex;align-items:center;justify-content:flex-end;gap:var(--s2)}
+.step button{width:44px;height:44px;border-radius:50%;border:2px solid var(--chalk);background:transparent;color:var(--chalk);display:grid;place-items:center;cursor:pointer;transition:background-color .15s ease,transform .1s ease}
+.step button:hover:not(:disabled){background:color-mix(in srgb,var(--board) 82%,var(--chalk))}
+.step button:active:not(:disabled){transform:scale(.94)}
+.step button:disabled{border-color:color-mix(in srgb,var(--board) 55%,var(--chalk-dim));color:color-mix(in srgb,var(--board) 35%,var(--chalk-dim));cursor:not-allowed}
+.step svg{width:18px;height:18px}
+.step output{min-width:1.6em;text-align:center;font-family:var(--display);font-size:var(--t-2);line-height:1;font-variant-numeric:tabular-nums}
+.step .sold{color:var(--chalk-dim);white-space:nowrap}
+.step output.tick{animation:tick .22s var(--ease-out)}
+@keyframes tick{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
+.board-foot{margin-top:var(--s4);padding-top:var(--s4);border-top:2px dashed var(--chalk-dim);display:flex;flex-wrap:wrap;gap:var(--s2) var(--s5);color:var(--chalk)}
+
+/* facts: same ruled row unit as the board, in ink on kraft */
+.facts{margin-top:var(--s7)}
+.facts h2{font-size:var(--t-2);margin-bottom:var(--s3)}
+.facts dl{margin:0;border-top:2px solid var(--ink)}
+.facts .grid{grid-template-columns:9em minmax(0,1fr);padding:var(--s3) 0;border-bottom:1px solid var(--ink)}
+.facts dt{font-weight:700}
+.facts dd{margin:0}
+
+/* ===== 予約票 slip ===== */
+.slip{position:sticky;top:var(--s4);align-self:start;background:var(--slip);border:2px solid var(--ink);border-radius:var(--r);padding:var(--s5);box-shadow:4px 4px 0 var(--ink)}
+.slip h2{font-size:var(--t-2);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--s3)}
+.slip h2 small{font-family:var(--body);font-weight:700;font-size:var(--t-0);white-space:nowrap}
+.when{margin:var(--s3) 0;padding:var(--s2) 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);font-weight:700}
+.picked{list-style:none;margin:0 0 var(--s3);padding:0}
+.picked li{display:flex;justify-content:space-between;gap:var(--s3);padding:var(--s1) 0;border-bottom:1px dotted var(--ink)}
+.picked .empty{border:0}
+.count{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3);font-weight:700}
+.msg{margin:var(--s2) 0 0}
+.msg:empty{margin:0}
+.field{margin-top:var(--s4)}
+.field label{display:block;font-weight:700}
+.field input{width:100%;font:inherit;color:var(--ink);background:var(--chalk);border:2px solid var(--ink);border-radius:var(--r);padding:var(--s2) var(--s3);min-height:48px}
+.field input[aria-invalid="true"]{border-width:3px;border-style:dashed}
+.err{display:flex;gap:var(--s2);align-items:flex-start;font-weight:700;margin-top:var(--s1)}
+.err:empty{display:none}
+.err::before{content:"！";flex:none}
+.primary{display:block;width:100%;margin-top:var(--s5);min-height:56px;font:inherit;font-weight:700;font-size:var(--t-1);color:var(--slip);background:var(--stamp);border:2px solid var(--ink);border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:transform .1s ease,background-color .15s ease}
+.primary:hover{background:color-mix(in srgb,var(--stamp) 82%,var(--ink))}
+.primary:active{transform:scale(.98)}
+.fine{margin-top:var(--s3)}
+.done h3{font-size:var(--t-2);margin-bottom:var(--s3)}
+.done .no{font-family:var(--display);font-size:var(--t-3);line-height:1.2;letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.closed h3{font-size:var(--t-2);margin-bottom:var(--s3)}
+
+/* mobile sticky bar */
+.bar{display:none}
+
+.foot{border-top:2px solid var(--ink);padding:var(--s5);text-align:center}
+
+@media (min-width:1600px){
+  .wrap{max-width:1840px;grid-template-columns:minmax(0,1fr) 400px 360px}
+  .main{display:contents}
+  .main>.lead{grid-column:1}
+  .facts{grid-column:3;grid-row:1;margin-top:0;align-self:start;position:sticky;top:var(--s4)}
+  .facts .grid{grid-template-columns:1fr}
+  .slip{grid-column:2;grid-row:1}
+  body{font-size:18.5px}
+}
+@media (max-width:1100px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding-bottom:calc(var(--s8) + 72px)}
+  .slip{position:static}
+  /* one column: the slip follows the board; the facts come after it (facts hold no focusable elements) */
+  .main{display:contents}
+  .main>.lead{order:1}
+  .slip{order:2}
+  .facts{order:3}
+  .bakes .note{grid-column:1 / -1}
+  .bar{display:flex;position:fixed;left:0;right:0;bottom:0;align-items:center;justify-content:space-between;gap:var(--s3);padding:var(--s2) var(--s4);background:var(--slip);border-top:2px solid var(--ink);z-index:10}
+  .bar a{display:inline-flex;align-items:center;min-height:44px;padding:0 var(--s3);background:var(--stamp);color:var(--slip);font-weight:700;border-radius:var(--r);text-decoration:none;white-space:nowrap;border:2px solid var(--ink)}
+  .bar span{font-weight:700;white-space:nowrap}
+}
+@media (max-width:760px){
+  .top{padding:var(--s3) var(--s4)}
+  .top nav{display:none}
+  .wrap{padding:var(--s4) var(--s4) calc(var(--s8) + 72px)}
+  .intro h1{font-size:var(--t-2)}
+  .board{padding:var(--s4)}
+  .bakes .grid{grid-template-columns:1fr 1fr;row-gap:var(--s2)}
+  .glabel{grid-column:1 / -1;padding-bottom:0}
+  .bake .time{font-size:var(--t-3)}
+  .bakes .note{grid-column:1 / -1}
+  .rows .grid{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n n" "a s" "b s";gap:var(--s1) var(--s3)}
+  .rows .name{grid-area:n;white-space:normal}
+  .rows .step{grid-area:s}
+  .rows .left:nth-of-type(2){grid-area:a}
+  .rows .left:nth-of-type(3){grid-area:b}
+  .left{text-align:left;padding:var(--s1) var(--s2);justify-self:start}
+  .left .lbl{display:inline}
+  .facts .grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="#">こむぎ舎</a>
+  <nav aria-label="ページ内">
+    <ul>
+      <li><a href="#board">パンをえらぶ</a></li>
+      <li><a href="#slip">予約票</a></li>
+      <li><a href="#facts">受け取りとお支払い</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="wrap">
+  <main class="main" id="main">
+    <div class="lead">
+      <div class="intro">
+        <h1 id="h1">土曜に焼くパンを、<wbr><span class="nw">金曜18時まで</span><wbr>予約できます</h1>
+        <p class="due" id="due">受付中 締め切りまで <span id="left">—</span></p>
+      </div>
+
+      <section class="board" id="board" aria-labelledby="board-h">
+        <h2 class="vh" id="board-h">今週のパン</h2>
+        <fieldset class="bakes">
+          <legend class="vh">受け取りの回</legend>
+          <div class="grid">
+            <span class="glabel" aria-hidden="true">受け取りの回</span>
+            <label class="bake"><input type="radio" name="bake" value="8" checked><span class="time">8:00</span><span class="cap">土曜 1回め</span></label>
+            <label class="bake"><input type="radio" name="bake" value="11"><span class="time">11:00</span><span class="cap">土曜 2回め</span></label>
+            <span aria-hidden="true"></span>
+            <p class="note">焼き上がりの時刻から受け取れます。</p>
+          </div>
+        </fieldset>
+        <ul class="rows" id="rows"></ul>
+        <p class="board-foot">どれも自家製酵母で仕込みます</p>
+      </section>
+    </div>
+
+    <section class="facts" id="facts" aria-labelledby="facts-h">
+      <h2 id="facts-h">受け取りとお支払い</h2>
+      <dl>
+        <div class="grid"><dt>受け取り</dt><dd>店頭のみです。配送はしていません。</dd></div>
+        <div class="grid"><dt>お支払い</dt><dd>受け取りのときに、現金か交通系ICで。</dd></div>
+        <div class="grid"><dt>予約の数</dt><dd>1人<span class="nw">5点</span>まで。同じパンを5つでもかまいません。</dd></div>
+        <div class="grid"><dt>締め切り</dt><dd>金曜<span class="nw">18時</span>。過ぎたあとはこのページから予約できません。</dd></div>
+      </dl>
+    </section>
+  </main>
+
+  <aside class="slip" id="slip" aria-labelledby="slip-h">
+    <div id="slip-form">
+      <h2 id="slip-h">予約票 <small id="slip-date"></small></h2>
+      <p class="when" id="when"></p>
+      <ul class="picked" id="picked"></ul>
+      <div class="count"><span class="nw">えらんだ数</span><span id="count" class="nw">0 / 5点</span></div>
+      <p class="msg" id="msg" aria-live="polite"></p>
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="name">お名前</label>
+          <input id="name" name="name" autocomplete="name" aria-describedby="name-err">
+          <p class="err" id="name-err"></p>
+        </div>
+        <div class="field">
+          <label for="tel">電話番号</label>
+          <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-hint tel-err">
+          <p id="tel-hint">ハイフンはあってもなくてもかまいません</p>
+          <p class="err" id="tel-err"></p>
+        </div>
+        <p class="err" id="items-err"></p>
+        <button class="primary" type="submit">この内容で予約する</button>
+        <p class="fine">お支払いは受け取りのときに、店頭で。</p>
+      </form>
+    </div>
+    <div id="slip-done" class="done" hidden tabindex="-1"></div>
+    <div id="slip-closed" class="closed" hidden></div>
+  </aside>
+</div>
+
+<div class="bar" id="bar"><span id="bar-count">0 / 5点</span><a href="#slip" id="bar-link">予約票へ</a></div>
+
+<footer class="foot"><p>こむぎ舎</p></footer>
+
+<script>
+(function(){
+  var MAX=5;
+  var breads=[
+    {id:"campagne",name:"カンパーニュ",stock:{8:6,11:8}},
+    {id:"walnut",name:"くるみレーズン",stock:{8:4,11:6}},
+    {id:"shoku",name:"山型食パン",stock:{8:8,11:0}},
+    {id:"batard",name:"バタール",stock:{8:5,11:5}},
+    {id:"cinnamon",name:"シナモンロール",stock:{8:0,11:0}},
+    {id:"shio",name:"塩バターロール",stock:{8:10,11:3}}
+  ];
+  var qty={}; breads.forEach(function(b){qty[b.id]=0});
+  var bake=8, closed=false, done=false;
+  var $=function(id){return document.getElementById(id)};
+  var W=["日","月","火","水","木","金","土"];
+
+  // clock: ?now=ISO overrides (for checking the closed state)
+  var q=new URLSearchParams(location.search).get("now");
+  var offset=q&&!isNaN(Date.parse(q))?Date.parse(q)-Date.now():0;
+  function now(){return new Date(Date.now()+offset)}
+  function week(){
+    var n=now(), sat=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+    var d=(6-sat.getDay()+7)%7; sat.setDate(sat.getDate()+d);
+    var dl=new Date(sat); dl.setDate(sat.getDate()-1); dl.setHours(18,0,0,0);
+    return {sat:sat,dl:dl};
+  }
+  function md(d){return (d.getMonth()+1)+"月"+d.getDate()+"日（"+W[d.getDay()]+"）"}
+  function total(){var t=0;for(var k in qty)t+=qty[k];return t}
+
+  var icon={
+    minus:'<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    plus:'<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h12M9 3v12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>'
+  };
+  function cell(n,t){
+    var on=t===bake?" on":"";
+    if(n<=0)return '<span class="left out'+on+'"><span class="lbl">'+t+'時 </span>売り切れ</span>';
+    return '<span class="left'+on+'"><span class="lbl">'+t+'時 </span>残り<b>'+n+'</b></span>';
+  }
+  function renderRows(){
+    var t=total(), html="";
+    breads.forEach(function(b){
+      var gone=b.stock[8]<=0&&b.stock[11]<=0, s=b.stock[bake], v=qty[b.id];
+      var step;
+      if(closed){step='<span class="sold">受付終了</span>'}
+      else if(gone){step='<span class="sold">今週は売り切れ</span>'}
+      else if(s<=0){step='<span class="sold">'+bake+'時は売り切れ</span>'}
+      else{
+        step='<button type="button" data-id="'+b.id+'" data-d="-1" aria-label="'+b.name+'を1つ減らす"'+(v<=0?" disabled":"")+'>'+icon.minus+'</button>'+
+             '<output id="o-'+b.id+'" aria-label="'+b.name+'の数">'+v+'</output>'+
+             '<button type="button" data-id="'+b.id+'" data-d="1" aria-label="'+b.name+'を1つ増やす"'+(v>=s||t>=MAX?" disabled":"")+'>'+icon.plus+'</button>';
+      }
+      html+='<li class="row'+(gone?" gone":"")+'"><div class="grid"><span class="name">'+b.name+'</span>'+cell(b.stock[8],8)+cell(b.stock[11],11)+'<span class="step">'+step+'</span></div></li>';
+    });
+    $("rows").innerHTML=html;
+  }
+  function renderSlip(){
+    var w=week(), t=total();
+    $("slip-date").textContent=md(w.sat)+"受け取り";
+    $("when").textContent="土曜 "+bake+":00 の回に店頭で受け取り";
+    var li="";
+    breads.forEach(function(b){if(qty[b.id]>0)li+='<li><span>'+b.name+'</span><span class="nw">'+qty[b.id]+'点</span></li>'});
+    $("picked").innerHTML=li||'<li class="empty">黒板の＋で、パンをえらんでください。</li>';
+    $("count").textContent=t+" / 5点";
+    $("bar-count").textContent=closed?"今週の受付は終了":"えらんだ数 "+t+" / 5点";
+    $("bar-link").textContent=closed?"くわしく":"予約票へ";
+  }
+  function render(){renderRows();renderSlip()}
+
+  $("rows").addEventListener("click",function(e){
+    var btn=e.target.closest("button[data-id]"); if(!btn||closed)return;
+    var id=btn.dataset.id,d=+btn.dataset.d,b=breads.filter(function(x){return x.id===id})[0];
+    var nv=qty[id]+d;
+    if(nv<0||nv>b.stock[bake])return;
+    if(d>0&&total()>=MAX){$("msg").textContent="1人5点までです。ほかのパンを減らすと追加できます。";return}
+    qty[id]=nv;
+    $("msg").textContent=total()>=MAX?"5点えらびました。1人5点までです。":"";
+    $("items-err").textContent="";
+    render();
+    var o=$("o-"+id); if(o){o.classList.add("tick")}
+    var again=document.querySelector('button[data-id="'+id+'"][data-d="'+d+'"]');
+    if(again&&!again.disabled)again.focus();
+    else{var other=document.querySelector('button[data-id="'+id+'"][data-d="'+(-d)+'"]');if(other)other.focus()}
+  });
+  document.querySelectorAll('input[name="bake"]').forEach(function(r){
+    r.addEventListener("change",function(){
+      bake=+r.value; var cut=[];
+      breads.forEach(function(b){if(qty[b.id]>b.stock[bake]){qty[b.id]=Math.max(0,b.stock[bake]);cut.push(b.name)}});
+      $("msg").textContent=cut.length?bake+"時の回は"+cut.join("、")+"の数が足りないため、数を減らしました。":"";
+      render();
+    });
+  });
+
+  function setErr(input,errId,text){
+    $(errId).textContent=text;
+    if(input)input.setAttribute("aria-invalid",text?"true":"false");
+  }
+  $("form").addEventListener("submit",function(e){
+    e.preventDefault(); if(closed)return;
+    var name=$("name").value.trim(), tel=$("tel").value.replace(/[\s\-ー－]/g,"");
+    var first=null;
+    if(!name){setErr($("name"),"name-err","お名前を入れてください。受け取りのときに確認します。");first=first||$("name")}else setErr($("name"),"name-err","");
+    if(!/^0\d{9,10}$/.test(tel)){setErr($("tel"),"tel-err","電話番号は0から始まる10桁か11桁で入れてください。");first=first||$("tel")}else setErr($("tel"),"tel-err","");
+    if(total()===0){$("items-err").textContent="パンがまだえらばれていません。黒板の＋で1点以上えらんでください。";first=first||document.querySelector('#rows button[data-d="1"]:not(:disabled)')}
+    else $("items-err").textContent="";
+    if(first){first.focus();return}
+    var w=week(),no=String(w.sat.getMonth()+1).padStart(2,"0")+String(w.sat.getDate()).padStart(2,"0")+"-"+String(Math.floor(100+Math.random()*900));
+    var li="";
+    breads.forEach(function(b){if(qty[b.id]>0){li+='<li><span>'+b.name+'</span><span class="nw">'+qty[b.id]+'点</span></li>';b.stock[bake]-=qty[b.id]}});
+    $("slip-done").innerHTML='<h3>予約を受け付けました</h3><p>受付番号</p><p class="no">'+no+'</p>'+
+      '<p class="when">'+md(w.sat)+' '+bake+':00 の回に店頭で受け取り</p><ul class="picked">'+li+'</ul>'+
+      '<p>受け取りのときに、お名前と受付番号をお伝えください。お支払いは現金か交通系ICです。</p>';
+    $("slip-form").hidden=true; $("slip-done").hidden=false; $("slip-done").focus();
+    for(var k in qty)qty[k]=0; done=true; renderRows();
+    document.querySelectorAll('input[name="bake"]').forEach(function(r){r.disabled=true});
+  });
+
+  function tick(){
+    var w=week(), ms=w.dl-now();
+    if(ms<=0&&!closed){
+      closed=true;
+      var due=$("due"); due.dataset.closed=""; due.textContent="受付終了";
+      $("h1").innerHTML='土曜に焼くパンの予約は、<wbr><span class="nw">金曜18時で</span><wbr>締め切りました';
+      document.querySelectorAll('input[name="bake"]').forEach(function(r){r.disabled=true});
+      if(!done){
+        $("slip-form").hidden=true;
+        var c=$("slip-closed"); c.hidden=false;
+        c.innerHTML='<h2>予約票 <small class="nw">受付終了</small></h2><p class="when">'+md(w.sat)+'受け取り</p><h3>この週の予約は締め切りました</h3>'+
+          '<p>'+md(w.sat)+'受け取りの分は、'+md(w.dl)+' 18時で締め切りました。</p>'+
+          '<p class="fine">ご予約がお済みの方は、選んだ回の時刻（8時か11時）から店頭で受け取れます。</p>';
+      }
+      render(); return;
+    }
+    if(closed)return;
+    var m=Math.floor(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mi=m%60;
+    $("left").textContent=(d?"あと"+d+"日"+h+"時間":"あと"+h+"時間"+mi+"分");
+    $("left").className="nw";
+  }
+  render(); tick(); setInterval(tick,30000);
+})();
+</script>
+</body>
+</html>

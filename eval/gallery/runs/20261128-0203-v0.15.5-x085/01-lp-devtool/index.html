@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline — filter structured logs like a table</title>
+<meta name="description" content="grepline is an open-source CLI, written in Rust, that searches JSON and logfmt logs across many files with a SQL-like filter. MIT licensed, one binary.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;700&family=Martian+Mono:wdth,wght@87.5,500;87.5,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Colors — sourced from the terminal pane the logs are read in */
+    --c-ground: #15171C;   /* terminal background */
+    --c-pane: #1E2128;     /* a split pane / scrollback panel */
+    --c-rule: #2F333C;     /* pane divider (decorative only) */
+    --c-stdout: #E6E8EC;   /* plain stdout text */
+    --c-dim: #9BA1AC;      /* a line the filter dropped */
+    --c-cursor: #7CC0FF;   /* the block cursor: what you act on */
+    --c-on-cursor: #0A1726;
+    --c-error: #FF8A80;    /* level=error */
+    --c-warn: #E9B55C;     /* level=warn */
+    --c-hit: #2C313B;      /* neutral match wash behind a matched field */
+
+    --f-display: "Martian Mono", "JetBrains Mono", ui-monospace, monospace;
+    --f-code: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --f-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+
+    /* Type scale 1.25 from 16 */
+    --t-sm: 14px;
+    --t-base: 16px;
+    --t-md: 20px;
+    --t-lg: 25px;
+    --t-xl: 39px;
+    --t-xxl: 49px;
+
+    /* Space: 8px base */
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+
+    --r-pane: 6px;
+    --r-control: 4px;
+    --wrap: 1200px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--c-ground);
+    color: var(--c-stdout);
+    font-family: var(--f-body);
+    font-size: var(--t-base);
+    line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0; text-wrap: pretty; }
+  code, kbd, pre { font-family: var(--f-code); }
+  a { color: var(--c-stdout); text-underline-offset: 3px; }
+  a:hover { color: var(--c-cursor); }
+  :focus-visible { outline: 2px solid var(--c-cursor); outline-offset: 3px; border-radius: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--s2); }
+  @media (min-width: 768px) { .wrap { padding: 0 var(--s4); } }
+
+  /* ---------- header ---------- */
+  .top { border-bottom: 1px solid var(--c-rule); }
+  .top .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 56px; }
+  .mark { font-family: var(--f-display); font-weight: 700; font-size: var(--t-md); text-decoration: none; white-space: nowrap; }
+  .top nav ul { display: flex; gap: var(--s2); list-style: none; margin: 0; padding: 0; }
+  .top nav a { display: inline-block; padding: var(--s1) 0; text-decoration: none; white-space: nowrap; font-size: var(--t-base); }
+  .top nav a:hover { text-decoration: underline; }
+
+  /* ---------- hero ---------- */
+  .hero { padding: var(--s6) 0 var(--s8); }
+  .hero-grid { display: grid; gap: var(--s4); }
+  .hero-copy { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
+  .hero h1 { font-size: var(--t-xl); max-width: 16ch; }
+  .lede { font-size: var(--t-md); line-height: 1.5; max-width: 40ch; }
+  .lede code { font-size: 0.9em; background: var(--c-pane); padding: 0 4px; border-radius: 3px; }
+  @media (max-width: 479px) {
+    .hero { padding-top: var(--s4); }
+    .hero h1 { font-size: var(--t-lg); max-width: none; }
+    .lede { font-size: var(--t-base); }
+  }
+  @media (min-width: 1024px) {
+    .hero-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6); align-items: center; }
+    .hero h1 { font-size: var(--t-xxl); }
+  }
+
+  /* ---------- the unit: a log line row (gutter + body) ---------- */
+  .line { display: grid; grid-template-columns: 1fr; gap: 2px var(--s2); padding: var(--s1) var(--s2); border-left: 3px solid transparent; }
+  .gutter { font-family: var(--f-code); font-size: var(--t-sm); color: var(--c-dim); white-space: nowrap; }
+  .body { font-family: var(--f-code); font-size: var(--t-sm); line-height: 1.55; white-space: pre-wrap; overflow-wrap: normal; word-break: normal; min-width: 0; }
+  @media (min-width: 640px) {
+    .line { grid-template-columns: 17ch minmax(0, 1fr); }
+  }
+
+  /* ---------- install commands (built from the line unit) ---------- */
+  .install { display: grid; gap: var(--s1); }
+  .cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s2); background: var(--c-pane); border: 1px solid var(--c-rule); border-radius: var(--r-pane); padding: var(--s1) var(--s1) var(--s1) var(--s2); }
+  .cmd code { font-size: var(--t-base); white-space: nowrap; min-width: 0; }
+  @media (max-width: 399px) {
+    .cmd { gap: var(--s1); padding-left: var(--s1); }
+    .cmd code { font-size: var(--t-sm); white-space: pre-wrap; overflow-wrap: normal; }
+  }
+  .cmd code::before { content: "$ "; color: var(--c-dim); }
+  .btn { font-family: var(--f-code); font-size: var(--t-sm); font-weight: 700; min-height: 40px; padding: 0 var(--s2); border-radius: var(--r-control); cursor: pointer; white-space: nowrap; transition: transform 120ms var(--ease-out), background-color 160ms ease, color 160ms ease; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--c-cursor); color: var(--c-on-cursor); border: 1px solid var(--c-cursor); }
+  .btn-primary:hover { background: var(--c-stdout); border-color: var(--c-stdout); }
+  .btn-quiet { background: transparent; color: var(--c-stdout); border: 1px solid var(--c-dim); }
+  .btn-quiet:hover { border-color: var(--c-stdout); }
+  .install-note { font-size: var(--t-base); color: var(--c-dim); min-height: 1.6em; }
+  .install-note.is-error { color: var(--c-error); }
+
+  /* ---------- signature: the filtered stream ---------- */
+  .stream { background: var(--c-pane); border: 1px solid var(--c-rule); border-radius: var(--r-pane); min-width: 0; }
+  .stream-head { display: grid; gap: var(--s2); padding: var(--s2); border-bottom: 1px solid var(--c-rule); }
+  .query { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); font-family: var(--f-code); }
+  .query { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .query-label { float: left; padding: 0; font-size: var(--t-sm); color: var(--c-dim); margin-right: var(--s1); }
+  .clause input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .clause span { display: inline-flex; align-items: center; gap: var(--s1); min-height: 36px; padding: 0 var(--s2); border: 1px solid var(--c-dim); border-radius: var(--r-control); font-size: var(--t-base); cursor: pointer; white-space: nowrap; color: var(--c-dim); text-decoration: line-through; transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease; }
+  .clause span::before { content: ""; width: 10px; height: 10px; border: 1px solid currentColor; border-radius: 2px; }
+  .clause input:checked + span { color: var(--c-on-cursor); background: var(--c-cursor); border-color: var(--c-cursor); text-decoration: none; }
+  .clause input:checked + span::before { background: var(--c-on-cursor); border-color: var(--c-on-cursor); }
+  .clause input:focus-visible + span { outline: 2px solid var(--c-stdout); outline-offset: 3px; }
+  .join { font-size: var(--t-base); color: var(--c-stdout); padding: 0 2px; transition: color 160ms ease; }
+  .join.is-off { color: var(--c-dim); text-decoration: line-through; }
+  .tally { font-family: var(--f-code); font-size: var(--t-sm); color: var(--c-stdout); }
+  .tally strong { font-size: var(--t-base); }
+
+  .rows { list-style: none; margin: 0; padding: var(--s1) 0; }
+  .rows .line { color: var(--c-dim); transition: color 200ms var(--ease-out), border-color 200ms var(--ease-out), background-color 200ms var(--ease-out); }
+  .rows .line.is-match { color: var(--c-stdout); border-left-color: var(--c-stdout); background: var(--c-ground); }
+  .rows .line.is-match .gutter { color: var(--c-stdout); }
+  .rows .line .lv { transition: color 200ms ease; }
+  .rows .line.is-match .lv-error { color: var(--c-error); }
+  .rows .line.is-match .lv-warn { color: var(--c-warn); }
+  .rows .line .f { border-radius: 3px; transition: background-color 200ms ease; }
+  .rows .line.is-match .f.is-hit { background: var(--c-hit); box-shadow: 0 0 0 2px var(--c-hit); }
+  .stream-foot { padding: var(--s2); border-top: 1px solid var(--c-rule); font-size: var(--t-base); color: var(--c-dim); }
+  .stream-empty { color: var(--c-stdout); }
+
+  /* ---------- sections ---------- */
+  section.block { padding: var(--s8) 0; border-top: 1px solid var(--c-rule); }
+  .block h2 { font-size: var(--t-lg); margin-bottom: var(--s3); }
+  .measure { max-width: 64ch; }
+
+  /* anatomy: the filter as a parsed figure */
+  .anatomy { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s2); align-items: flex-start; margin-top: var(--s4); }
+  .tok { display: grid; gap: var(--s1); justify-items: start; }
+  .tok b { font-family: var(--f-display); font-weight: 500; font-size: var(--t-xl); line-height: 1; padding-bottom: var(--s1); border-bottom: 2px solid var(--c-dim); white-space: nowrap; }
+  .tok.is-join b { color: var(--c-dim); border-bottom-style: dashed; }
+  .tok small { font-size: var(--t-base); color: var(--c-dim); white-space: nowrap; }
+  .clause-group { display: flex; flex-wrap: wrap; gap: var(--s1); }
+  @media (max-width: 479px) { .tok b { font-size: var(--t-lg); } }
+  @media (min-width: 1024px) {
+    .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6); align-items: center; }
+    .split .anatomy { margin-top: 0; row-gap: var(--s4); }
+    .split .tok b { font-size: var(--t-xxl); }
+  }
+  @media (min-width: 1600px) { .split { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+
+  /* formats: two-up, same event */
+  .two-up { display: grid; gap: var(--s3); margin-top: var(--s4); }
+  .two-up figure { margin: 0; background: var(--c-pane); border: 1px solid var(--c-rule); border-radius: var(--r-pane); min-width: 0; }
+  .two-up figcaption { padding: var(--s2); border-bottom: 1px solid var(--c-rule); font-size: var(--t-base); }
+  .two-up figcaption code { font-weight: 700; }
+  .two-up .line { border-left-color: var(--c-stdout); }
+  .two-up .lv-error { color: var(--c-error); }
+  .two-up .f.is-hit { background: var(--c-hit); box-shadow: 0 0 0 2px var(--c-hit); border-radius: 3px; }
+  @media (min-width: 900px) { .two-up { grid-template-columns: 1fr 1fr; } }
+
+  /* facts: one logfmt line, explained */
+  .facts-line { font-family: var(--f-code); font-size: var(--t-md); line-height: 1.5; margin: var(--s4) 0 var(--s3); white-space: pre-wrap; }
+  .facts-line .k { color: var(--c-dim); }
+  .facts { display: grid; gap: var(--s3); margin: 0; }
+  .facts dt { font-family: var(--f-code); font-size: var(--t-sm); color: var(--c-dim); }
+  .facts dd { margin: var(--s1) 0 0; font-size: var(--t-md); }
+  @media (min-width: 768px) { .facts { grid-template-columns: repeat(3, 1fr); } }
+
+  /* closing install */
+  .close-grid { display: grid; gap: var(--s4); }
+  @media (min-width: 900px) { .close-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; } }
+
+  footer { border-top: 1px solid var(--c-rule); padding: var(--s3) 0 var(--s6); }
+  footer .line { padding-left: 0; padding-right: 0; }
+  footer .body { color: var(--c-dim); font-size: var(--t-sm); }
+
+  /* 1920: the stream (the main figure) widens and shows lines unwrapped */
+  @media (min-width: 1600px) {
+    :root { --wrap: 1680px; }
+    .hero-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+    .line { grid-template-columns: 19ch minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 1ms !important; animation: none !important; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="#top">grepline</a>
+    <nav aria-label="Page">
+      <ul>
+        <li><a href="#filters">Filters</a></li>
+        <li><a href="#formats">Formats</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 id="hero-title">Filter structured logs like rows in a table.</h1>
+        <p class="lede">grepline searches JSON and logfmt logs across many files with a SQL-like filter. <code>level=error and latency_ms&gt;500</code> finds the slow failures in all of them at once.</p>
+        <div class="install" id="install-hero">
+          <div class="cmd">
+            <code id="cmd-cargo">cargo install grepline</code>
+            <button class="btn btn-primary" type="button" data-copy="cmd-cargo" aria-describedby="note-hero" aria-label="Copy cargo install command">Copy</button>
+          </div>
+          <div class="cmd">
+            <code id="cmd-brew">brew install grepline</code>
+            <button class="btn btn-quiet" type="button" data-copy="cmd-brew" aria-describedby="note-hero" aria-label="Copy brew install command">Copy</button>
+          </div>
+          <p class="install-note" id="note-hero" role="status" aria-live="polite">Written in Rust · MIT licensed · one binary</p>
+        </div>
+      </div>
+
+      <div class="stream" aria-labelledby="stream-title">
+        <div class="stream-head">
+          <h2 class="sr-only" id="stream-title">The filter applied to twelve log lines from three files</h2>
+          <fieldset class="query">
+            <legend class="query-label">filter</legend>
+            <label class="clause"><input type="checkbox" id="q-level" checked><span>level=error</span></label>
+            <span class="join" id="q-join" aria-hidden="true">and</span>
+            <label class="clause"><input type="checkbox" id="q-lat" checked><span>latency_ms&gt;500</span></label>
+          </fieldset>
+          <p class="tally" id="tally" role="status" aria-live="polite"><strong>3</strong> of 12 lines match, across 3 files</p>
+        </div>
+        <ol class="rows" id="rows">
+          <li class="line" data-level="info" data-lat="42"><span class="gutter">api-gw.json:1</span><span class="body">{<span class="f lv lv-info" data-k="level">"level":"info"</span>, <span class="f" data-k="lat">"latency_ms":42</span>, "msg":"GET /cart 200"}</span></li>
+          <li class="line is-match" data-level="error" data-lat="812"><span class="gutter">api-gw.json:2</span><span class="body">{<span class="f lv lv-error is-hit" data-k="level">"level":"error"</span>, <span class="f is-hit" data-k="lat">"latency_ms":812</span>, "msg":"upstream timeout: payments"}</span></li>
+          <li class="line" data-level="warn" data-lat="640"><span class="gutter">checkout.logfmt:1</span><span class="body"><span class="f lv lv-warn" data-k="level">level=warn</span> <span class="f" data-k="lat">latency_ms=640</span> msg="retrying charge"</span></li>
+          <li class="line" data-level="error" data-lat="120"><span class="gutter">checkout.logfmt:2</span><span class="body"><span class="f lv lv-error" data-k="level">level=error</span> <span class="f" data-k="lat">latency_ms=120</span> msg="card declined"</span></li>
+          <li class="line" data-level="info" data-lat="1350"><span class="gutter">worker.json:1</span><span class="body">{<span class="f lv lv-info" data-k="level">"level":"info"</span>, <span class="f" data-k="lat">"latency_ms":1350</span>, "msg":"nightly export finished"}</span></li>
+          <li class="line is-match" data-level="error" data-lat="2045"><span class="gutter">api-gw.json:3</span><span class="body">{<span class="f lv lv-error is-hit" data-k="level">"level":"error"</span>, <span class="f is-hit" data-k="lat">"latency_ms":2045</span>, "msg":"upstream timeout: inventory"}</span></li>
+          <li class="line" data-level="info" data-lat="88"><span class="gutter">checkout.logfmt:3</span><span class="body"><span class="f lv lv-info" data-k="level">level=info</span> <span class="f" data-k="lat">latency_ms=88</span> msg="order placed"</span></li>
+          <li class="line" data-level="error" data-lat="37"><span class="gutter">worker.json:2</span><span class="body">{<span class="f lv lv-error" data-k="level">"level":"error"</span>, <span class="f" data-k="lat">"latency_ms":37</span>, "msg":"job payload rejected"}</span></li>
+          <li class="line is-match" data-level="error" data-lat="930"><span class="gutter">checkout.logfmt:4</span><span class="body"><span class="f lv lv-error is-hit" data-k="level">level=error</span> <span class="f is-hit" data-k="lat">latency_ms=930</span> msg="db pool exhausted"</span></li>
+          <li class="line" data-level="warn" data-lat="505"><span class="gutter">api-gw.json:4</span><span class="body">{<span class="f lv lv-warn" data-k="level">"level":"warn"</span>, <span class="f" data-k="lat">"latency_ms":505</span>, "msg":"slow response"}</span></li>
+          <li class="line" data-level="info" data-lat="12"><span class="gutter">worker.json:3</span><span class="body">{<span class="f lv lv-info" data-k="level">"level":"info"</span>, <span class="f" data-k="lat">"latency_ms":12</span>, "msg":"heartbeat"}</span></li>
+          <li class="line" data-level="info" data-lat="498"><span class="gutter">api-gw.json:5</span><span class="body">{<span class="f lv lv-info" data-k="level">"level":"info"</span>, <span class="f" data-k="lat">"latency_ms":498</span>, "msg":"GET /search 200"}</span></li>
+        </ol>
+        <p class="stream-foot" id="stream-foot">Lit lines pass the filter. Turn a clause off to see what it was keeping out.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="filters" aria-labelledby="filters-title">
+    <div class="wrap split">
+      <div>
+        <h2 id="filters-title">A filter reads like a WHERE clause.</h2>
+        <p class="measure">Name a field, compare it to a value, and join conditions with <code>and</code>. No pipeline of tools, no regex for the shape of each format.</p>
+      </div>
+      <div class="anatomy" role="img" aria-label="The filter level=error and latency_ms>500, labelled: level is a field, = means equals, error is a value, and requires both conditions, latency_ms is a field, > means greater than, 500 is a number.">
+        <div class="clause-group">
+          <div class="tok"><b>level</b><small>field</small></div>
+          <div class="tok"><b>=</b><small>equals</small></div>
+          <div class="tok"><b>error</b><small>value</small></div>
+        </div>
+        <div class="tok is-join"><b>and</b><small>both hold</small></div>
+        <div class="clause-group">
+          <div class="tok"><b>latency_ms</b><small>field</small></div>
+          <div class="tok"><b>&gt;</b><small>greater than</small></div>
+          <div class="tok"><b>500</b><small>number</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="formats" aria-labelledby="formats-title">
+    <div class="wrap">
+      <h2 id="formats-title">JSON or logfmt, one filter.</h2>
+      <p class="measure">Services rarely agree on a log format. grepline reads both, so the same event matches whichever way it was written.</p>
+      <div class="two-up">
+        <figure>
+          <figcaption><code>JSON</code> lines</figcaption>
+          <div class="line"><span class="gutter">payments.json:7</span><span class="body">{<span class="f lv-error is-hit">"level":"error"</span>, <span class="f is-hit">"latency_ms":1210</span>, "msg":"refund timed out"}</span></div>
+        </figure>
+        <figure>
+          <figcaption><code>logfmt</code> lines</figcaption>
+          <div class="line"><span class="gutter">payments.logfmt:7</span><span class="body"><span class="f lv-error is-hit">level=error</span> <span class="f is-hit">latency_ms=1210</span> msg="refund timed out"</span></div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="facts-title">
+    <div class="wrap">
+      <h2 id="facts-title">The whole tool, as one log line.</h2>
+      <p class="facts-line" aria-hidden="true"><span class="k">lang=</span>rust <span class="k">license=</span>MIT <span class="k">binaries=</span>1 <span class="k">formats=</span>json,logfmt</p>
+      <dl class="facts">
+        <div><dt>lang=rust</dt><dd>Written in Rust.</dd></div>
+        <div><dt>license=MIT</dt><dd>Open source under the MIT license.</dd></div>
+        <div><dt>binaries=1</dt><dd>Ships as a single binary.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="block" id="install" aria-labelledby="install-title">
+    <div class="wrap close-grid">
+      <div>
+        <h2 id="install-title">Install it, then point it at your logs.</h2>
+        <p class="measure">Use cargo if you have a Rust toolchain, or Homebrew if you don't.</p>
+      </div>
+      <div class="install">
+        <div class="cmd">
+          <code id="cmd-cargo-2">cargo install grepline</code>
+          <button class="btn btn-quiet" type="button" data-copy="cmd-cargo-2" aria-describedby="note-close" aria-label="Copy cargo install command">Copy</button>
+        </div>
+        <div class="cmd">
+          <code id="cmd-brew-2">brew install grepline</code>
+          <button class="btn btn-quiet" type="button" data-copy="cmd-brew-2" aria-describedby="note-close" aria-label="Copy brew install command">Copy</button>
+        </div>
+        <p class="install-note" id="note-close" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="line"><span class="gutter">grepline</span><span class="body">level=info msg="open source, MIT licensed, written in Rust"</span></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#rows .line'));
+  var qLevel = document.getElementById('q-level');
+  var qLat = document.getElementById('q-lat');
+  var join = document.getElementById('q-join');
+  var tally = document.getElementById('tally');
+  var foot = document.getElementById('stream-foot');
+  var footDefault = foot.textContent;
+
+  function apply() {
+    var useLevel = qLevel.checked, useLat = qLat.checked;
+    var n = 0, files = {};
+    rows.forEach(function (row) {
+      var okLevel = !useLevel || row.dataset.level === 'error';
+      var okLat = !useLat || Number(row.dataset.lat) > 500;
+      var match = okLevel && okLat;
+      row.classList.toggle('is-match', match);
+      row.querySelector('[data-k="level"]').classList.toggle('is-hit', match && useLevel);
+      row.querySelector('[data-k="lat"]').classList.toggle('is-hit', match && useLat);
+      if (match) { n++; files[row.querySelector('.gutter').textContent.split(':')[0]] = 1; }
+    });
+    join.classList.toggle('is-off', !(useLevel && useLat));
+    var f = Object.keys(files).length;
+    tally.innerHTML = '<strong>' + n + '</strong> of ' + rows.length + ' lines match, across ' + f + (f === 1 ? ' file' : ' files');
+    if (!useLevel && !useLat) {
+      foot.textContent = 'No clauses on, so every line passes. Turn one back on to narrow it.';
+      foot.classList.add('stream-empty');
+    } else {
+      foot.textContent = footDefault;
+      foot.classList.remove('stream-empty');
+    }
+  }
+  qLevel.addEventListener('change', apply);
+  qLat.addEventListener('change', apply);
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      ok ? resolve() : reject();
+    });
+  }
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    var note = document.getElementById(btn.getAttribute('aria-describedby'));
+    var idle = note.textContent;
+    btn.addEventListener('click', function () {
+      var text = document.getElementById(btn.dataset.copy).textContent.trim();
+      copyText(text).then(function () {
+        note.classList.remove('is-error');
+        note.textContent = 'Copied "' + text + '". Paste it into your terminal.';
+      }, function () {
+        note.classList.add('is-error');
+        note.textContent = 'Couldn’t reach the clipboard. Select the command and press Ctrl+C (⌘C on macOS).';
+      });
+      clearTimeout(btn._t);
+      btn._t = setTimeout(function () { note.classList.remove('is-error'); note.textContent = idle; }, 6000);
+    });
+  });
+})();
+</script>
+</body>
+</html>

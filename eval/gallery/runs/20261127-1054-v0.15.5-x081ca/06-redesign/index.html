@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekfold: every job in its slot</title>
+<meta name="description" content="Weekfold is a board for small teams. A card for every job, a column for every stage, a name on every card.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* rack steel, channel groove, card stock: see DESIGN.md */
+    --steel: #41474e;
+    --groove: #2b3035;
+    --card: #f4f1e8;
+    --ink: #1d2125;
+    --muted: #b7bec6;
+    --yellow: #f2cf3a;
+    --stock-blue: #c4d7ec;
+    --stock-green: #cde3c3;
+    --stock-pink: #f1c8cf;
+    --danger: #a3241b;
+
+    --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --body: "Source Sans 3", "Segoe UI", sans-serif;
+
+    /* 17px base, ratio 1.333 */
+    --t-sm: 14px;
+    --t-base: 17px;
+    --t-md: 22px;
+    --t-lg: 40px;
+    --t-xl: clamp(54px, 9vw, 96px);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --r: 4px;
+    --wrap: 1200px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--steel);
+    color: var(--card);
+    font: 400 var(--t-base)/1.6 var(--body);
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 800; line-height: 1.05; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+  p { text-wrap: pretty; margin: 0; }
+  a { color: var(--card); text-underline-offset: 3px; }
+  .wrap { width: min(100% - 2 * var(--s3), var(--wrap)); margin-inline: auto; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+  /* ---------- label strip (header + footer share it) ---------- */
+  .strip { background: var(--groove); border-bottom: 1px solid #000; }
+  .strip .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 64px; flex-wrap: wrap; }
+  .mark { display: inline-flex; align-items: center; min-height: 44px; font: 800 var(--t-md)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; }
+  .strip nav { display: flex; gap: var(--s3); }
+  .strip nav a { white-space: nowrap; padding-block: var(--s1); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3);
+    font: 600 var(--t-base)/1 var(--body); white-space: nowrap;
+    border-radius: var(--r); border: 2px solid transparent; cursor: pointer; text-decoration: none;
+    transition: background-color .15s ease, color .15s ease, transform .12s var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-go { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+  .btn-line { background: transparent; color: var(--card); border-color: var(--card); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-go:hover { background: var(--card); border-color: var(--card); }
+    .btn-line:hover { background: var(--card); color: var(--ink); }
+  }
+
+  /* ---------- hero: one rack panel ---------- */
+  .hero { padding-block: var(--s6) var(--s8); }
+  .plate {
+    display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: var(--s4) var(--s6); align-items: center; margin-bottom: var(--s6);
+  }
+  .plate h1 { font-size: var(--t-xl); text-transform: uppercase; }
+  .lead { font-size: var(--t-md); line-height: 1.45; max-width: 36ch; }
+  .signup { margin-top: var(--s3); }
+  .signup label { display: block; font-weight: 600; margin-bottom: var(--s1); }
+  .row { display: flex; gap: var(--s1); flex-wrap: wrap; }
+  .row input {
+    flex: 1 1 220px; min-width: 0; min-height: 48px; padding: 0 var(--s2);
+    font: 400 var(--t-base)/1 var(--body); color: var(--ink);
+    background: var(--card); border: 2px solid var(--card); border-radius: var(--r);
+  }
+  .row input::placeholder { color: var(--steel); }
+  .row input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 4px 0 0 var(--danger); }
+  .msg:empty { display: none; }
+  .msg { margin-top: var(--s1); padding: var(--s1) var(--s2); border-radius: var(--r); color: var(--ink); font-size: var(--t-base); }
+  .msg.err { background: var(--stock-pink); box-shadow: inset 4px 0 0 var(--danger); }
+  .msg.ok { background: var(--stock-green); }
+  .after { margin-top: var(--s2); display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+
+  /* ---------- the rack (signature) ---------- */
+  .rack {
+    margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2);
+    padding: var(--s2); background: var(--groove); border-radius: var(--r);
+  }
+  .channel {
+    min-width: 0; padding: var(--s1) var(--s1) var(--s2);
+    background: var(--steel);
+    border-radius: 2px;
+    box-shadow: inset 0 -3px 0 var(--groove);
+  }
+  .channel-label {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--s1);
+    font: 700 var(--t-md)/1 var(--display); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: var(--s1) var(--s1) var(--s2);
+  }
+  .channel-label span { font: 600 var(--t-base)/1 var(--body); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slots { list-style: none; margin: 0; padding: 0; }
+
+  .t { color: var(--ink); position: relative; }
+  .t + .t { margin-top: -2px; }
+  .t .head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s1);
+    min-height: 45px; padding: var(--s1) 10px;
+    background: var(--stock, var(--card)); border-radius: var(--r) var(--r) 0 0;
+    box-shadow: 0 -1px 0 rgba(0,0,0,.35), 0 2px 3px rgba(0,0,0,.25);
+    font: 600 var(--t-sm)/1.3 var(--body);
+  }
+  .t .who {
+    flex: none; font-size: var(--t-sm); line-height: 1; padding: 4px 5px; border-radius: 50%;
+    border: 1px solid currentColor; font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    text-decoration: none; cursor: default;
+  }
+  .t .body {
+    margin-inline: var(--s1); padding: var(--s1) 10px var(--s2);
+    background: var(--stock, var(--card)); border-radius: 0 0 var(--r) var(--r);
+    box-shadow: 0 3px 4px rgba(0,0,0,.3);
+    display: flex; flex-wrap: wrap; gap: 4px var(--s1); font-size: var(--t-sm);
+  }
+  .t .body b { font-weight: 600; }
+  .t .body time, .t .body .note { white-space: nowrap; }
+  .t .body .soon { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+
+  .s-content, .s-product { --stock: var(--card); }
+  .s-design, .s-research { --stock: var(--stock-blue); }
+  .s-ops { --stock: var(--stock-green); }
+  .s-sales, .s-bug { --stock: var(--stock-pink); }
+
+  /* ---------- the board screenshot ---------- */
+  .board { padding-block: var(--s8); background: var(--groove); }
+  .board-top {
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-areas: "h p" "b p"; gap: var(--s3) var(--s6); align-items: start; margin-bottom: var(--s4);
+  }
+  .board-top h2 { grid-area: h; }
+  .board-top p { grid-area: p; max-width: 60ch; }
+  .board-top .btn { grid-area: b; justify-self: start; }
+  .board h2, .how h2 { font-size: var(--t-lg); text-transform: uppercase; }
+  .shot { margin: 0; padding: var(--s1); background: var(--steel); border-radius: var(--r); box-shadow: 0 4px 10px rgba(0,0,0,.4); }
+  .shot-frame { overflow: hidden; border-radius: 2px; background: var(--card); }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  /* ---------- how a card moves (same unit, four channels) ---------- */
+  .how { padding-block: var(--s8) var(--s12); }
+  .how h2 { margin-bottom: var(--s4); }
+  .moves { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); }
+  .moves > li { min-width: 0; }
+  .moves .channel { padding-bottom: var(--s1); margin-bottom: var(--s2); }
+  .moves h3 { font-size: var(--t-md); margin-bottom: var(--s1); }
+  .moves p { max-width: 34ch; }
+
+  footer.strip { border-bottom: 0; border-top: 1px solid #000; }
+  footer p { color: var(--muted); }
+  .top { width: 48px; height: 48px; padding: 0; }
+  .top svg { width: 20px; height: 20px; }
+
+  /* ---------- widths ---------- */
+  @media (max-width: 960px) {
+    .plate { grid-template-columns: minmax(0, 1fr); }
+    .board-top { grid-template-columns: minmax(0, 1fr); grid-template-areas: "h" "p" "b"; gap: var(--s2); }
+    .moves { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s4); }
+    .rack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* the screenshot is 1600px wide: show the sidebar and first columns at a readable scale until opened */
+    .shot:not(.open) .shot-frame { height: 400px; }
+    .shot:not(.open) img { width: 1100px; max-width: none; }
+  }
+  @media (max-width: 720px) {
+    .rack { padding: var(--s1); gap: var(--s1); }
+    .hero { padding-top: var(--s4); }
+    .plate { margin-bottom: var(--s4); }
+    .lead { font-size: var(--t-base); }
+  }
+  @media (max-width: 720px) {
+    .shot:not(.open) .shot-frame { height: 300px; }
+    .shot:not(.open) img { width: 600px; max-width: none; }
+  }
+  @media (max-width: 520px) {
+    .rack { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .strip nav { gap: var(--s2); }
+    .moves { grid-template-columns: minmax(0, 1fr); }
+    .wrap { width: min(100% - 2 * var(--s2), var(--wrap)); }
+  }
+  @media (min-width: 961px) {
+    .shot:not(.open) .shot-frame { max-height: 440px; }
+  }
+  @media (min-width: 1600px) {
+    :root { --wrap: 1680px; }
+    body { font-size: 19px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: background-color .15s ease, color .15s ease; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="strip">
+    <div class="wrap">
+      <a class="mark" href="#top" id="top">Weekfold</a>
+      <nav aria-label="Page">
+        <a href="#how">How a card moves</a>
+        <a href="#board">The board</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="h1">
+      <div class="wrap">
+        <div class="plate">
+          <h1 id="h1">Every job in its slot.</h1>
+          <div>
+            <p class="lead">One board for a small team: a card for every job, a column for every stage, a name on every card. Move the card and everyone can see where things stand.</p>
+            <form class="signup" id="signup" novalidate>
+              <label for="email">Work email</label>
+              <div class="row">
+                <input id="email" name="email" type="email" autocomplete="email" placeholder="you@yourteam.com" aria-describedby="email-msg">
+                <button class="btn btn-go" type="submit">Get started</button>
+              </div>
+              <p class="msg" id="email-msg" role="status"></p>
+            </form>
+            <div class="after">
+              <a class="btn btn-line" href="#how" id="learn">Learn how a card moves</a>
+            </div>
+          </div>
+        </div>
+
+        <figure class="rack" aria-label="A team's week on the rack: 17 jobs across four stages">
+          <div class="channel">
+            <p class="channel-label">To do <span>5</span></p>
+            <ul class="slots">
+              <li class="t s-content"><div class="head"><span>Write copy for the pricing page</span><abbr class="who" title="Assigned to AK">AK</abbr></div></li>
+              <li class="t s-sales"><div class="head"><span>Collect logos from three pilot clients</span><abbr class="who" title="Assigned to MR">MR</abbr></div></li>
+              <li class="t s-ops"><div class="head"><span>Decide on the help-center search tool</span><abbr class="who" title="Assigned to JL">JL</abbr></div></li>
+              <li class="t s-ops"><div class="head"><span>Book the venue for the team offsite</span><abbr class="who" title="Assigned to MR">MR</abbr></div></li>
+              <li class="t s-content"><div class="head"><span>Draft the November newsletter</span><abbr class="who" title="Assigned to AK">AK</abbr></div>
+                <div class="body"><b>Content</b><time datetime="2026-11-20">Nov 20</time></div></li>
+            </ul>
+          </div>
+          <div class="channel">
+            <p class="channel-label">In progress <span>4</span></p>
+            <ul class="slots">
+              <li class="t s-bug"><div class="head"><span>Fix CSV export for time reports</span><abbr class="who" title="Assigned to TD">TD</abbr></div></li>
+              <li class="t s-research"><div class="head"><span>Interview two customers about approvals</span><abbr class="who" title="Assigned to JL">JL</abbr></div></li>
+              <li class="t s-product"><div class="head"><span>Price the annual plan</span><abbr class="who" title="Assigned to PN">PN</abbr></div></li>
+              <li class="t s-design"><div class="head"><span>Rebuild the signup form</span><abbr class="who" title="Assigned to SO">SO</abbr></div>
+                <div class="body"><b>Design</b><span class="note soon">Due tomorrow</span></div></li>
+            </ul>
+          </div>
+          <div class="channel">
+            <p class="channel-label">Review <span>3</span></p>
+            <ul class="slots">
+              <li class="t s-ops"><div class="head"><span>Holiday schedule for support</span><abbr class="who" title="Assigned to MR">MR</abbr></div></li>
+              <li class="t s-sales"><div class="head"><span>Proposal for the Brightline account</span><abbr class="who" title="Assigned to PN">PN</abbr></div></li>
+              <li class="t s-design"><div class="head"><span>New onboarding checklist</span><abbr class="who" title="Assigned to SO">SO</abbr></div>
+                <div class="body"><b>Design</b><span class="note">2 comments</span></div></li>
+            </ul>
+          </div>
+          <div class="channel">
+            <p class="channel-label">Done <span>5</span></p>
+            <ul class="slots">
+              <li class="t s-design"><div class="head"><span>Archive the old style guide</span><abbr class="who" title="Assigned to SO">SO</abbr></div></li>
+              <li class="t s-product"><div class="head"><span>Set up weekly digest emails</span><abbr class="who" title="Assigned to PN">PN</abbr></div></li>
+              <li class="t s-content"><div class="head"><span>Photo shoot for the team page</span><abbr class="who" title="Assigned to AK">AK</abbr></div></li>
+              <li class="t s-content"><div class="head"><span>Update the careers page</span><abbr class="who" title="Assigned to JL">JL</abbr></div></li>
+              <li class="t s-ops"><div class="head"><span>Move the blog to the new domain</span><abbr class="who" title="Assigned to TD">TD</abbr></div>
+                <div class="body"><b>Ops</b><time datetime="2026-11-03">Nov 3</time></div></li>
+            </ul>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="board" id="board" aria-labelledby="board-h">
+      <div class="wrap">
+        <div class="board-top">
+          <h2 id="board-h">The same rack, on screen</h2>
+          <p>Filter by assignee, due date or label. Group by status. Inbox, My work, Calendar and Docs sit in the sidebar, and each project keeps its own board.</p>
+          <button class="btn btn-line" type="button" id="open" aria-controls="shot" aria-expanded="false" onclick="go()">Open the whole board</button>
+        </div>
+        <figure class="shot" id="shot">
+          <div class="shot-frame">
+            <img src="hero.png" width="1600" height="800" loading="lazy"
+              alt="The Weekfold board for the Website refresh project: To do, In progress, Review and Done columns of task cards, each with a label, a date and the owner's initials, beside a sidebar with Inbox, My work, Board, Calendar and Docs.">
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="how" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">How a card moves</h2>
+        <ol class="moves">
+          <li>
+            <div class="channel"><p class="channel-label">To do</p>
+              <div class="t s-design"><div class="head"><span>Rebuild the signup form</span></div></div></div>
+            <h3>Write it down</h3>
+            <p>One line for the job, a label, and a date if it has one. It goes in the first column.</p>
+          </li>
+          <li>
+            <div class="channel"><p class="channel-label">In progress</p>
+              <div class="t s-design"><div class="head"><span>Rebuild the signup form</span><abbr class="who" title="Assigned to SO">SO</abbr></div></div></div>
+            <h3>Pick it up</h3>
+            <p>Whoever takes the job moves the card over. Their initials go on it.</p>
+          </li>
+          <li>
+            <div class="channel"><p class="channel-label">Review</p>
+              <div class="t s-design"><div class="head"><span>Rebuild the signup form</span><abbr class="who" title="Assigned to SO">SO</abbr></div></div></div>
+            <h3>Hand it over</h3>
+            <p>When it's ready for someone else to look at, it waits here, in plain sight.</p>
+          </li>
+          <li>
+            <div class="channel"><p class="channel-label">Done</p>
+              <div class="t s-design"><div class="head"><span>Rebuild the signup form</span><abbr class="who" title="Assigned to SO">SO</abbr></div></div></div>
+            <h3>Let it land</h3>
+            <p>The card reaches the last column, and the team can see it's finished without asking.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="strip">
+    <div class="wrap">
+      <span class="mark">Weekfold</span>
+      <p>© 2026 Weekfold</p>
+      <button class="btn btn-line top" type="button" aria-label="Back to top" onclick="window.scrollTo({ top: 0 }); document.getElementById('top').focus();">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 16V4M4 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </footer>
+
+<script>
+  // "Open": show the whole board screenshot instead of the cropped view.
+  function go() {
+    const shot = document.getElementById('shot');
+    const btn = document.getElementById('open');
+    const open = shot.classList.toggle('open');
+    btn.setAttribute('aria-expanded', String(open));
+    btn.textContent = open ? 'Crop the board again' : 'Open the whole board';
+  }
+
+  const form = document.getElementById('signup');
+  const email = document.getElementById('email');
+  const msg = document.getElementById('email-msg');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = email.value.trim();
+    if (!v || !email.checkValidity()) {
+      email.setAttribute('aria-invalid', 'true');
+      msg.className = 'msg err';
+      msg.textContent = v
+        ? 'That email is missing something. Check it has an @ and a domain, like sam@studio.co.'
+        : 'Enter your work email to get started.';
+      email.focus();
+      return;
+    }
+    email.removeAttribute('aria-invalid');
+    msg.className = 'msg ok';
+    msg.textContent = 'Thanks. We will write to ' + v + ' with a link to set up your team’s board.';
+  });
+  email.addEventListener('input', () => {
+    if (email.getAttribute('aria-invalid')) { email.removeAttribute('aria-invalid'); msg.textContent = ''; msg.className = 'msg'; }
+  });
+</script>
+</body>
+</html>

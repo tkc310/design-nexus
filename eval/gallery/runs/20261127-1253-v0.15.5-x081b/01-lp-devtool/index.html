@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline: query structured logs from the shell</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches JSON and logfmt logs across many files with a SQL-like filter. Install with brew or cargo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=Martian+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#18202A; --surface:#212C39; --text:#E6E9EC; --muted:#9AA6B2;
+  --accent:#F5D547; --on-accent:#18202A; --border:#6E8094; --danger:#FF8A80;
+  --f-display:"Martian Mono", ui-monospace, monospace;
+  --f-body:"IBM Plex Sans", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, monospace;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s7:96px;
+  --t-sm:14px; --t-base:16px; --t-md:20px; --t-lg:25px; --t-xl:clamp(28px, 3.2vw, 39px);
+  --r:4px;
+  --wrap:1200px;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--text);font:400 var(--t-base)/1.6 var(--f-body);text-wrap:pretty}
+h1,h2,h3{text-wrap:balance;margin:0}
+a{color:var(--text);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--s3)}
+code,kbd,.mono{font-family:var(--f-mono)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);padding-block:var(--s2)}
+.mark{font:700 var(--t-md)/1 var(--f-display);display:inline-block;padding:var(--s1) 0;text-decoration:none;letter-spacing:-.02em;white-space:nowrap}
+.mark span{color:var(--muted)}
+.top nav{display:flex;gap:var(--s3)}
+.top nav a{font-size:var(--t-sm);white-space:nowrap;padding:var(--s1) 0;color:var(--muted)}
+.top nav a:hover{color:var(--text)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:var(--s5);align-items:start;padding-block:var(--s4) var(--s6)}
+.pitch{align-self:start;padding-top:var(--s2)}
+h1{font:700 var(--t-xl)/1.15 var(--f-display);letter-spacing:-.03em}
+.lede{font-size:var(--t-md);line-height:1.5;color:var(--muted);margin:var(--s3) 0 var(--s4);max-width:34ch}
+.lede strong{color:var(--text);font-weight:600}
+
+/* install box */
+.install{border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+.via{display:flex;border-bottom:1px solid var(--border)}
+.via label{position:relative;cursor:pointer}
+.via input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.via span{display:block;padding:var(--s1) var(--s2);font:600 var(--t-sm)/1.5 var(--f-mono);color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.via input:checked + span{color:var(--text);border-bottom-color:var(--text)}
+.via input:focus-visible + span{outline:2px solid var(--accent);outline-offset:-2px}
+.cmdrow{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s2);padding:var(--s3) var(--s2) var(--s2)}
+.cmdrow .cmd{flex:none;width:100%}
+.cmd{flex:1;min-width:0;font:600 var(--t-md)/1.4 var(--f-mono);white-space:pre-wrap}
+.cmd::before{content:"$ ";color:var(--muted)}
+.btn{font:600 var(--t-base)/1 var(--f-body);border-radius:var(--r);padding:12px var(--s2);min-height:44px;cursor:pointer;white-space:nowrap;
+  transition:background-color .16s ease, color .16s ease, transform .1s ease}
+.btn:active{transform:scale(.97)}
+.btn-fill{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent)}
+.btn-fill:hover{background:var(--text);border-color:var(--text)}
+.btn-line{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-line:hover{border-color:var(--text)}
+.copied{min-height:1.6em;font-size:var(--t-sm);margin:var(--s1) 0 0;color:var(--text)}
+
+/* signature: log pane */
+.pane{border:1px solid var(--border);border-radius:var(--r);background:var(--bg);min-width:0}
+.filter{display:flex;align-items:center;gap:var(--s1);padding:var(--s2);border-bottom:1px solid var(--border);background:var(--surface)}
+.filter label{font:600 var(--t-sm)/1 var(--f-mono);color:var(--muted);white-space:nowrap}
+.field{flex:1;min-width:0;display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);padding:0 var(--s1)}
+.field:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.field input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:600 var(--t-base)/1 var(--f-mono);padding:12px 0;outline:none}
+.err{color:var(--danger);font-size:var(--t-sm);margin:0;padding:0 var(--s2)}
+.err:empty{display:none}
+.err:not(:empty){padding:var(--s1) var(--s2);border-bottom:1px solid var(--border)}
+.presets{display:flex;flex-wrap:wrap;gap:var(--s1);padding:var(--s1) var(--s2);border-bottom:1px solid var(--border)}
+.presets span{font-size:var(--t-sm);color:var(--muted);align-self:center;margin-right:var(--s1)}
+.chip{font:400 var(--t-sm)/1 var(--f-mono);color:var(--text);background:transparent;border:1px solid var(--border);border-radius:var(--r);padding:6px var(--s1);min-height:32px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--text)}
+.chip[aria-pressed="true"]{background:var(--surface);border-color:var(--text)}
+.lines{list-style:none;margin:0;padding:var(--s1) 0}
+.lines li{display:grid;grid-template-columns:11ch minmax(0,1fr);gap:var(--s2);padding:6px var(--s2) 6px 12px;border-left:4px solid transparent;
+  font:400 var(--t-sm)/1.5 var(--f-mono);color:var(--muted);transition:background-color .16s ease, color .16s ease}
+.lines .file{white-space:nowrap}
+.lines .raw{white-space:pre-wrap;min-width:0}
+.lines li.hit{background:var(--surface);border-left-color:var(--text);color:var(--text)}
+.lines li.hit b{font-weight:600}
+.lines b{font-weight:400;white-space:nowrap}
+.lines .lv-error{color:var(--danger)}
+.tally{display:flex;justify-content:space-between;gap:var(--s2);flex-wrap:wrap;padding:var(--s1) var(--s2) var(--s2);border-top:1px solid var(--border);font:400 var(--t-sm)/1.5 var(--f-mono)}
+.tally strong{font-weight:600}
+.empty{padding:var(--s2);margin:0;font-size:var(--t-sm)}
+.empty[hidden]{display:none}
+
+/* anatomy: the filter at display size */
+.anatomy{border-top:1px solid var(--border);padding-block:var(--s6)}
+.anatomy h2,.close h2{font:500 var(--t-lg)/1.25 var(--f-display);letter-spacing:-.02em}
+.anatomy .expr{display:flex;flex-wrap:wrap;gap:var(--s3);margin:var(--s5) 0 0;padding:0;list-style:none;align-items:flex-start}
+.anatomy .expr li{display:flex;flex-direction:column;gap:var(--s1)}
+.anatomy .expr code{font:600 clamp(24px,4.6vw,88px)/1.1 var(--f-mono);padding-bottom:var(--s1);border-bottom:2px solid var(--border);white-space:nowrap}
+.anatomy .expr .join code{color:var(--muted);border-bottom-style:dashed}
+.anatomy .expr span{font-size:var(--t-base);color:var(--muted);max-width:18ch}
+.anatomy p{max-width:60ch;margin:var(--s4) 0 0;color:var(--muted);font-size:var(--t-md)}
+
+/* record: facts as one logfmt line */
+.record{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:var(--s4) 0 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.record div{padding:var(--s2) var(--s2) var(--s2) 0;min-width:0}
+.record div+div{padding-left:var(--s2);border-left:1px solid var(--border)}
+.record dt{font:400 var(--t-base)/1.4 var(--f-mono);color:var(--muted);white-space:nowrap}
+.record dt::after{content:"="}
+.record dd{margin:var(--s1) 0 0;font:700 var(--t-lg)/1.2 var(--f-display);letter-spacing:-.02em;white-space:nowrap}
+
+/* close: install again */
+.close{border-top:1px solid var(--border);padding-block:var(--s6) var(--s7)}
+.close ul{list-style:none;margin:var(--s4) 0 0;padding:0;border:1px solid var(--border);border-radius:var(--r)}
+.close li{display:flex;align-items:center;gap:var(--s2);padding:var(--s2) var(--s3);border-top:1px solid var(--border)}
+.close li:first-child{border-top:0}
+.close .who{font:400 var(--t-sm)/1.4 var(--f-mono);color:var(--muted);width:13ch;flex:none}
+.close .cmd{font-size:var(--t-md)}
+
+@media (max-width: 960px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:var(--s4)}
+  .lede{max-width:52ch}
+  .record{max-width:560px}
+}
+@media (max-width: 560px){
+  .wrap{padding:0 var(--s2)}
+  .hero{padding-top:var(--s2)}
+  .lede{font-size:var(--t-base);margin:var(--s2) 0 var(--s3)}
+  .cmdrow .btn{width:100%}
+  .lines li{grid-template-columns:minmax(0,1fr);gap:0}
+  .filter{flex-wrap:wrap}
+  .filter{padding:var(--s2) var(--s1)}
+  .field{flex-basis:100%;padding:0 var(--s1) 0 4px}
+  .field input{font-size:var(--t-sm)}
+  .cmd{font-size:var(--t-base)}
+  .record dt{font-size:var(--t-sm)}
+  .record dd{font-size:var(--t-md)}
+  .close li{flex-wrap:wrap;padding:var(--s2)}
+  .close .who,.close .cmd{width:auto;flex-basis:100%}
+  .close .cmd{font-size:var(--t-base)}
+  .close .btn{width:100%}
+  .anatomy,.close{padding-block:var(--s5)}
+}
+@media (min-width: 1600px){
+  :root{--wrap:1600px}
+  .hero{grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:var(--s6)}
+  .lines li{font-size:var(--t-base)}
+  .lines li{grid-template-columns:12ch minmax(0,1fr)}
+}
+@media (prefers-reduced-motion: reduce){
+  .btn,.lines li{transition:none}
+  .btn:active{transform:none}
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="mark" href="#">grep<span>|</span>line</a>
+  <nav aria-label="Page">
+    <a href="#syntax">Filter syntax</a>
+    <a href="#install">Install</a>
+  </nav>
+</header>
+
+<main>
+  <section class="wrap hero" aria-labelledby="h1">
+    <div class="pitch">
+      <h1 id="h1">Query your logs like a table, from the shell.</h1>
+      <p class="lede">grepline searches <strong>JSON and logfmt</strong> across many files with a SQL-like filter.</p>
+
+      <div class="install" id="get">
+        <div class="via" role="radiogroup" aria-label="Install with">
+          <label><input type="radio" name="via" value="brew install grepline" checked><span>brew</span></label>
+          <label><input type="radio" name="via" value="cargo install grepline"><span>cargo</span></label>
+        </div>
+        <div class="cmdrow">
+          <code class="cmd" id="hero-cmd">brew install grepline</code>
+          <button class="btn btn-fill" type="button" data-copy-from="hero-cmd">Copy install command</button>
+        </div>
+      </div>
+      <p class="copied" role="status" aria-live="polite"></p>
+      <dl class="record" aria-label="What you are installing">
+        <div><dt>lang</dt><dd>rust</dd></div>
+        <div><dt>license</dt><dd>MIT</dd></div>
+        <div><dt>binaries</dt><dd>1</dd></div>
+      </dl>
+    </div>
+
+    <div class="pane" aria-label="Filter twelve log lines from three files">
+      <div class="filter">
+        <label for="q">filter</label>
+        <div class="field"><input id="q" type="text" value="level=error and latency_ms>500" spellcheck="false" autocomplete="off" aria-describedby="q-err tally"></div>
+      </div>
+      <p class="err" id="q-err"></p>
+      <div class="presets">
+        <span>Try</span>
+        <button class="chip" type="button" aria-pressed="true">level=error and latency_ms&gt;500</button>
+        <button class="chip" type="button" aria-pressed="false">level=error</button>
+        <button class="chip" type="button" aria-pressed="false">latency_ms&gt;500</button>
+      </div>
+      <ol class="lines" id="lines"></ol>
+      <p class="empty" id="empty" hidden></p>
+      <div class="tally" id="tally" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="wrap anatomy" id="syntax" aria-labelledby="syntax-h">
+    <h2 id="syntax-h">Conditions on fields, joined by <code>and</code>.</h2>
+    <ol class="expr">
+      <li><code>level=error</code><span>a field equals a value</span></li>
+      <li class="join"><code>and</code><span>both must hold</span></li>
+      <li><code>latency_ms&gt;500</code><span>a number above a threshold</span></li>
+    </ol>
+    <p>The same filter reads a JSON object and a logfmt line, so mixed files answer one question.</p>
+  </section>
+
+  <section class="wrap close" id="install" aria-labelledby="install-h">
+    <h2 id="install-h">Install it, then point it at last night's logs.</h2>
+    <ul>
+      <li><span class="who">macOS, Linux</span><code class="cmd" id="c-brew">brew install grepline</code><button class="btn btn-line" type="button" data-copy-from="c-brew">Copy brew command</button></li>
+      <li><span class="who">Rust toolchain</span><code class="cmd" id="c-cargo">cargo install grepline</code><button class="btn btn-line" type="button" data-copy-from="c-cargo">Copy cargo command</button></li>
+    </ul>
+    <p class="copied" role="status" aria-live="polite"></p>
+  </section>
+</main>
+
+<script>
+(function(){
+  // Twelve lines from three files: two JSON, one logfmt.
+  var LOGS = [
+    ["api-1.json","json",{level:"info", latency_ms:120, msg:"GET /orders 200", ts:"10:29:41"}],
+    ["api-1.json","json",{level:"error",latency_ms:812, msg:"upstream timeout", ts:"10:29:42"}],
+    ["edge.log",  "fmt", {level:"info", latency_ms:34,  msg:"cache hit", ts:"10:29:42"}],
+    ["api-2.json","json",{level:"warn", latency_ms:640, msg:"slow query on carts", ts:"10:29:43"}],
+    ["edge.log",  "fmt", {level:"error",latency_ms:95,  msg:"tls handshake failed", ts:"10:29:44"}],
+    ["api-2.json","json",{level:"error",latency_ms:1430,msg:"payment gateway 504", ts:"10:29:45"}],
+    ["api-1.json","json",{level:"info", latency_ms:210, msg:"POST /cart 201", ts:"10:29:46"}],
+    ["edge.log",  "fmt", {level:"error",latency_ms:730, msg:"upstream reset", ts:"10:29:47"}],
+    ["api-2.json","json",{level:"info", latency_ms:48,  msg:"GET /health 200", ts:"10:29:48"}],
+    ["api-1.json","json",{level:"error",latency_ms:220, msg:"validation failed", ts:"10:29:49"}],
+    ["edge.log",  "fmt", {level:"warn", latency_ms:505, msg:"retrying upstream", ts:"10:29:50"}],
+    ["api-2.json","json",{level:"info", latency_ms:15,  msg:"GET /ping 200", ts:"10:29:51"}]
+  ];
+  var esc = function(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});};
+  function render(rec, fmt){
+    var keys = Object.keys(rec);
+    if (fmt === "json"){
+      return "{" + keys.map(function(k){
+        var v = typeof rec[k] === "number" ? rec[k] : '"' + rec[k] + '"';
+        var cls = k === "level" && rec[k] === "error" ? ' class="lv-error"' : "";
+        return '<b data-k="'+k+'"'+cls+'>"' + k + '": ' + esc(v) + "</b>";
+      }).join(", ") + "}";
+    }
+    return keys.map(function(k){
+      var v = typeof rec[k] === "string" && rec[k].indexOf(" ") > -1 ? '"' + rec[k] + '"' : rec[k];
+      var cls = k === "level" && rec[k] === "error" ? ' class="lv-error"' : "";
+      return '<b data-k="'+k+'"'+cls+'>' + k + "=" + esc(v) + "</b>";
+    }).join(" ");
+  }
+  var list = document.getElementById("lines");
+  list.innerHTML = LOGS.map(function(l){
+    return '<li><span class="file">'+l[0]+'</span><span class="raw"><span class="sr hit-label"></span>'+render(l[2], l[1])+'</span></li>';
+  }).join("");
+  var rows = list.children;
+
+  function parse(q){
+    q = q.trim();
+    if (!q) return [];
+    var parts = q.split(/\s+and\s+/i), out = [];
+    for (var i=0;i<parts.length;i++){
+      var m = parts[i].trim().match(/^([A-Za-z_][\w.]*)\s*(=|>)\s*"?([^"]*?)"?$/);
+      if (!m || m[3] === "") return null;
+      if (m[2] === ">" && isNaN(Number(m[3]))) return null;
+      out.push({k:m[1], op:m[2], v:m[3]});
+    }
+    return out;
+  }
+  function test(rec, c){
+    if (!(c.k in rec)) return false;
+    if (c.op === ">") return typeof rec[c.k] === "number" && rec[c.k] > Number(c.v);
+    return String(rec[c.k]) === c.v;
+  }
+
+  var input = document.getElementById("q"), err = document.getElementById("q-err"),
+      tally = document.getElementById("tally"), empty = document.getElementById("empty"),
+      chips = document.querySelectorAll(".chip");
+
+  function apply(){
+    var q = input.value, conds = parse(q);
+    chips.forEach(function(c){ c.setAttribute("aria-pressed", c.textContent === q.trim() ? "true" : "false"); });
+    if (conds === null){
+      input.setAttribute("aria-invalid","true");
+      err.textContent = "Couldn't read that filter. Write field=value or field>number, and join conditions with and.";
+      return;
+    }
+    input.removeAttribute("aria-invalid"); err.textContent = "";
+    var n = 0, files = {};
+    for (var i=0;i<LOGS.length;i++){
+      var rec = LOGS[i][2], hit = conds.length > 0 && conds.every(function(c){return test(rec,c);});
+      rows[i].classList.toggle("hit", hit);
+      rows[i].querySelector(".hit-label").textContent = hit ? "match: " : "";
+      if (hit){ n++; files[LOGS[i][0]] = 1; }
+    }
+    var nf = Object.keys(files).length;
+    if (!conds.length){
+      tally.innerHTML = "<span>Type a filter to pick lines out of 12.</span>";
+      empty.hidden = true;
+    } else if (!n){
+      tally.innerHTML = "<span><strong>0 of 12</strong> lines match</span>";
+      empty.hidden = false;
+      empty.textContent = "No line matches " + q.trim() + ". Lower a threshold or remove a condition.";
+    } else {
+      empty.hidden = true;
+      tally.innerHTML = "<span><strong>" + n + " of 12</strong> lines match</span><span>from " + nf + (nf === 1 ? " file" : " files") + "</span>";
+    }
+  }
+  input.addEventListener("input", apply);
+  chips.forEach(function(c){ c.addEventListener("click", function(){ input.value = c.textContent; apply(); }); });
+  apply();
+
+  // install method switch
+  var heroCmd = document.getElementById("hero-cmd");
+  document.querySelectorAll('.via input').forEach(function(r){
+    r.addEventListener("change", function(){ heroCmd.textContent = r.value; });
+  });
+
+  // copy buttons
+  document.querySelectorAll("[data-copy-from]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var text = document.getElementById(b.getAttribute("data-copy-from")).textContent.trim();
+      var status = b.closest("section").querySelector(".copied");
+      function done(ok){
+        status.textContent = ok ? "Copied: " + text + ". Paste it into your terminal."
+                                : "Couldn't reach the clipboard. Select the command and copy it by hand.";
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){done(true);}, function(){done(false);});
+      } else { done(false); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

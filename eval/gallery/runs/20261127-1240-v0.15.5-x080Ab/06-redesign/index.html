@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tackboard: one board for your team's work</title>
+<meta name="description" content="Tackboard is a shared task board for small teams: to do, in progress, review and done, with an owner and a due date on every card.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --graphite: #22262C;   /* ground: the product's own "New task" ink */
+    --slab: #2D323A;       /* surface: a column on the wall */
+    --chalk: #EEECE6;      /* text, index cards: whiteboard chalk */
+    --dust: #AEB2B9;       /* muted: the grey of column counts */
+    --sticky: #F2C94C;     /* accent: the sticky note a card replaces */
+    --rule: #8A9099;       /* field borders */
+    --flag: #FF9C8A;       /* errors only */
+    --sticky-lit: #F6D873; /* primary hover */
+    --line: #4A5059;       /* rules between lanes */
+    --shade: #0E1013;      /* shadow of pinned paper */
+
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", sans-serif;
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --t-sm: 15px; --t-base: 17px; --t-md: 22.7px; --t-lg: 30.2px; --t-xl: clamp(44px, 6.4vw, 92px);
+    --radius: 6px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--graphite); color: var(--chalk);
+    font: 400 var(--t-base)/1.6 var(--body);
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { text-wrap: pretty; margin: 0; }
+  a { color: var(--chalk); }
+  :focus-visible { outline: 3px solid var(--sticky); outline-offset: 3px; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding-inline: var(--s3); }
+
+  /* header */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding-block: var(--s3); flex-wrap: wrap; }
+  .mark { font: 700 var(--t-md)/1 var(--display); letter-spacing: .02em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; padding-block: 6px; }
+  .mark::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--chalk); box-shadow: inset 0 0 0 4px var(--slab); }
+  .top nav ul { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
+  .top nav a { text-decoration: none; color: var(--dust); white-space: nowrap; display: inline-block; padding-block: 4px; }
+  .top nav a:hover { color: var(--chalk); text-decoration: underline; }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--s4) var(--s8); align-items: end; padding-block: var(--s4) var(--s6); }
+  .hero h1 { font: 700 var(--t-xl)/.95 var(--display); letter-spacing: -.005em; text-transform: uppercase; }
+  .hero h1 span { display: block; }
+  .hero h1 .mid { color: var(--dust); }
+  .lede { max-width: 46ch; margin-bottom: var(--s3); }
+  form { display: grid; gap: var(--s1); }
+  label { font-weight: 600; font-size: var(--t-sm); }
+  .row { display: flex; gap: var(--s1); flex-wrap: wrap; }
+  input {
+    flex: 1 1 220px; min-width: 0; height: 48px; padding: 0 var(--s2);
+    font: inherit; color: var(--chalk); background: var(--graphite);
+    border: 1px solid var(--rule); border-radius: var(--radius);
+  }
+  input[aria-invalid="true"] { border-color: var(--flag); }
+  .btn {
+    height: 48px; padding: 0 var(--s3); border-radius: var(--radius);
+    font: 600 var(--t-base)/1 var(--body); white-space: nowrap; cursor: pointer;
+    transition: transform 120ms var(--ease-out), background-color 160ms ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--sticky); color: var(--graphite); border: 0; }
+  .btn-primary:hover { background: var(--sticky-lit); }
+  .btn-ghost { background: transparent; color: var(--chalk); border: 1px solid var(--chalk); }
+  .btn-ghost:hover { background: var(--slab); }
+  .msg { font-size: var(--t-sm); }
+  .msg.err { color: var(--flag); }
+  .after { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; margin-top: var(--s2); }
+  
+  /* signature: the pinned board */
+  .board { display: grid; grid-template-columns: 1fr; gap: var(--s3); }
+  .shot { position: relative; margin: 0; min-width: 0; }
+  .shot img { display: block; width: 100%; height: auto; aspect-ratio: 1600 / 620; object-fit: cover; object-position: top; border-radius: var(--radius); box-shadow: 0 24px 48px -16px var(--shade); }
+  .pin {
+    position: absolute; transform: translate(-50%, -50%);
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--graphite); color: var(--chalk);
+    font: 700 var(--t-base)/1 var(--display);
+    box-shadow: 0 0 0 3px var(--chalk);
+  }
+  .zoom {
+    position: absolute; right: var(--s2); bottom: var(--s2);
+    width: 44px; height: 44px; border-radius: var(--radius);
+    display: grid; place-items: center; cursor: pointer;
+    background: var(--graphite); color: var(--chalk); border: 1px solid var(--chalk);
+  }
+  .zoom svg { fill: none; stroke: currentColor; stroke-width: 1.75; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); }
+  .legend li {
+    background: var(--chalk); color: var(--graphite); border-radius: var(--radius);
+    padding: var(--s2) var(--s2) var(--s3); display: grid; grid-template-columns: 32px 1fr; gap: 4px var(--s2);
+    box-shadow: 0 10px 20px -12px var(--shade); transform: rotate(var(--tilt, 0deg));
+  }
+  .legend li:nth-child(1) { --tilt: -.6deg; }
+  .legend li:nth-child(3) { --tilt: .5deg; }
+  .legend b {
+    grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--graphite); color: var(--chalk); font: 700 var(--t-base)/1 var(--display);
+  }
+  .legend h3 { font: 600 var(--t-base)/1.3 var(--body); }
+  .legend p { font-size: var(--t-sm); }
+
+  /* four columns: the status-column header reused as the section's structure */
+  .columns { padding-block: var(--s12) var(--s8); }
+  .columns h2 { font: 700 var(--t-lg)/1.1 var(--display); text-transform: uppercase; letter-spacing: .02em; max-width: 24ch; margin-bottom: var(--s4); }
+  .lanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); list-style: none; margin: 0; padding: 0; }
+  .lanes li { background: var(--slab); border-radius: var(--radius); padding: var(--s2) var(--s2) var(--s3); min-width: 0; }
+  .lane-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--s1);
+    font: 600 var(--t-md)/1 var(--display); letter-spacing: .06em; text-transform: uppercase;
+    padding-bottom: var(--s2); margin-bottom: var(--s2); border-bottom: 1px solid var(--line);
+  }
+  .lane-head span { font-variant-numeric: tabular-nums; color: var(--dust); white-space: nowrap; }
+  .lane-head small { font: 400 var(--t-sm)/1 var(--body); letter-spacing: 0; text-transform: none; }
+  .lanes p { color: var(--dust); }
+
+  /* close */
+  .close { display: grid; grid-template-columns: 1fr auto; gap: var(--s3) var(--s6); align-items: center; padding-block: 0 var(--s8); }
+  .close::before { content: ""; grid-column: 1 / -1; border-top: 1px solid var(--line); margin-bottom: var(--s3); }
+  .close h2 { font: 700 var(--t-lg)/1.1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+  .close p { color: var(--dust); margin-top: var(--s1); }
+  footer { padding-block: var(--s3) var(--s6); color: var(--dust); font-size: var(--t-sm); }
+
+  dialog { padding: 0; border: 0; border-radius: var(--radius); background: var(--graphite); color: var(--chalk); max-width: min(1600px, 96vw); }
+  dialog::backdrop { background: rgb(14 16 19 / .8); }
+  dialog img { display: block; width: 100%; height: auto; }
+  dialog form { display: flex; justify-content: flex-end; padding: var(--s1); }
+
+  @media (max-width: 1000px) {
+    .hero { grid-template-columns: 1fr; align-items: start; }
+    .legend, .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding-inline: var(--s2); }
+    .top nav ul { gap: var(--s2); }
+    .hero { padding-block: var(--s2) var(--s4); }
+    .legend, .lanes { grid-template-columns: 1fr; }
+    .legend li { transform: none; }
+    .pin { width: 24px; height: 24px; font-size: var(--t-sm); box-shadow: 0 0 0 2px var(--chalk); }
+    .zoom { right: var(--s1); bottom: var(--s1); }
+    .close { grid-template-columns: 1fr; }
+    .columns { padding-block: var(--s8) var(--s6); }
+  }
+  /* 1920 gains the legend beside the board instead of under it */
+  @media (min-width: 1600px) {
+    .wrap { max-width: 1680px; padding-inline: var(--s6); }
+    .board { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+    .legend { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: background-color 160ms ease; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="wrap top">
+    <a class="mark" href="#">Tackboard</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#tour">The board</a></li>
+        <li><a href="#columns">Four columns</a></li>
+        <li><a href="#signup">Sign up</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="h-hero">
+      <h1 id="h-hero"><span>Who has it.</span> <span class="mid">When it’s due.</span> <span>Where it’s at.</span></h1>
+      <div>
+        <p class="lede">Tackboard puts your team’s tasks on one shared board: to do, in progress, review, done. Every card has an owner and a date, so nobody has to ask for a status update.</p>
+        <form id="signup" novalidate>
+          <label for="email">Work email</label>
+          <div class="row">
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@yourteam.com" aria-describedby="email-msg">
+            <button class="btn btn-primary" type="submit">Start a board</button>
+          </div>
+          <p class="msg" id="email-msg" aria-live="polite"></p>
+        </form>
+        <div class="after">
+          <button class="btn btn-ghost" type="button" id="learn">See how it works</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap board" id="tour" aria-label="The board">
+      <figure class="shot">
+        <img src="hero.png" width="1600" height="800" alt="A Tackboard board for the project Website refresh: seventeen tasks across To do, In progress, Review and Done, each with a label, a due date and the owner’s initials.">
+        <span class="pin" style="left:40.5%;top:16.8%" aria-hidden="true">A</span>
+        <span class="pin" style="left:70%;top:23.2%" aria-hidden="true">B</span>
+        <span class="pin" style="left:52.5%;top:30%" aria-hidden="true">C</span>
+        <span class="pin" style="left:9.5%;top:46.6%" aria-hidden="true">D</span>
+        <button class="zoom" type="button" aria-label="View the board full size" onclick="go()">
+          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6"/></svg>
+        </button>
+      </figure>
+      <ol class="legend" aria-label="What the pins point to">
+        <li><b aria-hidden="true">A</b><h3>Filter the board</h3><p>Narrow it to one person, this month’s due dates, or a label.</p></li>
+        <li><b aria-hidden="true">B</b><h3>Count per column</h3><p>Each status shows how many cards it holds: 5, 4, 3, 5.</p></li>
+        <li><b aria-hidden="true">C</b><h3>Progress on the card</h3><p>Work in progress carries a bar, so “halfway” is visible.</p></li>
+        <li><b aria-hidden="true">D</b><h3>One board per project</h3><p>The sidebar lists projects with their open tasks, 12 here.</p></li>
+      </ol>
+    </section>
+
+    <section class="wrap columns" id="columns" aria-labelledby="h-columns">
+      <h2 id="h-columns">Every task sits in one of four columns</h2>
+      <ol class="lanes">
+        <li><div class="lane-head">To do <span>5 <small>cards</small></span></div><p>Agreed, not started. It already has an owner and a date.</p></li>
+        <li><div class="lane-head">In progress <span>4 <small>cards</small></span></div><p>Someone is on it. The bar under the title shows how far.</p></li>
+        <li><div class="lane-head">Review <span>3 <small>cards</small></span></div><p>Waiting for a second look. Comments stay on the card.</p></li>
+        <li><div class="lane-head">Done <span>5 <small>cards</small></span></div><p>Finished work stays on the board, so the month has a record.</p></li>
+      </ol>
+    </section>
+
+    <section class="wrap close" aria-labelledby="h-close">
+      <div>
+        <h2 id="h-close">Look around a full board first</h2>
+        <p>The Website refresh board, at full size. Then <a href="#signup">start your own</a>.</p>
+      </div>
+      <button class="btn btn-ghost" type="button" onclick="go()">Open the board</button>
+    </section>
+  </main>
+
+  <footer class="wrap">© 2026 Tackboard</footer>
+
+  <dialog id="viewer" aria-label="Website refresh board, full size">
+    <form method="dialog"><button class="btn btn-ghost" type="submit">Close</button></form>
+    <img src="hero.png" width="1600" height="800" alt="" loading="lazy">
+  </dialog>
+
+<script>
+  function go() {
+    var d = document.getElementById('viewer');
+    if (d && typeof d.showModal === 'function') d.showModal();
+    else window.open('hero.png', '_blank');
+  }
+  document.getElementById('learn').addEventListener('click', function () {
+    document.getElementById('tour').scrollIntoView();
+  });
+  var form = document.getElementById('signup');
+  var email = document.getElementById('email');
+  var msg = document.getElementById('email-msg');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      email.setAttribute('aria-invalid', 'true');
+      msg.className = 'msg err';
+      msg.textContent = v ? 'That address is missing part of it. Check it reads like name@team.com.' : 'Enter your work email so we can set up your board.';
+      email.focus();
+      return;
+    }
+    email.removeAttribute('aria-invalid');
+    msg.className = 'msg';
+    msg.textContent = 'Thanks. We’ll email ' + v + ' a link to your new board.';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパンの予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンの予約ページ。金曜18時までのご予約で、土曜8時か11時の焼き上がりを店頭でお受け取りいただけます。おひとり5点まで。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  /* 小麦粉: 作業台に打つ粉 */
+  --flour:#FBF8F1;
+  /* 紙袋: 持ち帰りのクラフト袋 */
+  --kraft:#EFE4CF;
+  /* 皮: 焼き色の濃いところと焼印 */
+  --crust:#3A2618;
+  --crust-soft:#6B5747;
+  /* 暖簾の藍: 押す場所だけ */
+  --noren:#24407A;
+  --on-noren:#FFFFFF;
+  --rule:#8C7660;
+  --danger:#A3271D;
+  /* 麦: パンの上面の焼き色 */
+  --wheat:#E2B86A;
+  --soldout:#DDD6CC;
+
+  --font-display:"Klee One","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+  --font-body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  /* 17px, ratio 1.25 */
+  --t-s:16px;
+  --t-b:17px;
+  --t-m:21px;
+  --t-l:27px;
+  --t-xl:clamp(30px, 4.2vw, 42px);
+
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s8:96px;
+  --r:10px;
+  --disk:72px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--flour);color:var(--crust);
+  font-family:var(--font-body);font-size:var(--t-b);line-height:1.8;letter-spacing:.03em;
+  text-wrap:pretty;
+}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;font-synthesis:none;line-height:1.4;letter-spacing:.02em;margin:0;text-wrap:balance;font-feature-settings:"palt"}
+p{margin:0}
+a{color:var(--noren);text-underline-offset:.2em}
+:focus-visible{outline:3px solid var(--noren);outline-offset:3px;border-radius:4px}
+.nw{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- header ---------- */
+.top{border-bottom:1px solid var(--rule)}
+.top-in{max-width:1240px;margin:0 auto;padding:var(--s2) var(--s3);display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.logo{font-family:var(--font-display);font-weight:600;font-size:var(--t-l);line-height:1;color:var(--crust);text-decoration:none;display:flex;align-items:center;gap:12px;white-space:nowrap}
+.logo .disk{--disk:40px;font-size:20px}
+.top nav{margin-left:auto;display:flex;gap:var(--s3)}
+.top nav a{color:var(--crust);font-size:var(--t-s);white-space:nowrap;padding:10px 0}
+
+/* ---------- the unit: 焼印 ---------- */
+.disk{
+  width:var(--disk);height:var(--disk);flex:none;border-radius:50%;
+  background:var(--wheat);color:var(--crust);
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-weight:600;font-synthesis:none;
+  font-size:calc(var(--disk) * .44);line-height:1;
+  box-shadow:inset 0 0 0 3px var(--wheat), inset 0 0 0 5px var(--crust);
+  overflow:hidden;
+}
+.disk img{width:100%;height:100%;object-fit:cover}
+.disk.is-out{background:var(--soldout);box-shadow:inset 0 0 0 3px var(--soldout), inset 0 0 0 5px var(--crust-soft);color:var(--crust-soft)}
+
+/* ---------- layout ---------- */
+.layout{max-width:1240px;margin:0 auto;padding:0 var(--s3);display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:var(--s6);align-items:start}
+.col{min-width:0}
+
+/* hero */
+.hero{padding:var(--s5) 0 var(--s4)}
+.hero h1{font-size:var(--t-xl);max-width:16em}
+.lead{margin-top:var(--s2);max-width:34em}
+.deadline{margin:var(--s3) 0 0;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);align-items:baseline;padding:var(--s2) 0;border-top:2px solid var(--crust);border-bottom:1px solid var(--rule)}
+.deadline div{display:flex;gap:4px 12px;align-items:baseline;flex-wrap:wrap;min-width:0}
+.deadline dt{font-size:var(--t-s);white-space:nowrap;flex:none}
+.deadline dd{margin:0;font-weight:700;font-size:var(--t-m)}
+.deadline .left{font-weight:400;font-size:var(--t-s)}
+
+/* breads */
+.breads{padding:var(--s4) 0 var(--s5)}
+.breads-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--s1) var(--s3)}
+.breads h2,.pickup h2{font-size:var(--t-l)}
+.breads-head p{font-size:var(--t-s)}
+.list{list-style:none;margin:var(--s2) 0 0;padding:0;border-top:1px solid var(--rule)}
+.item{display:grid;grid-template-columns:var(--disk) minmax(0,1fr) auto;grid-template-areas:"disk name step" "disk avail step";column-gap:var(--s3);row-gap:4px;align-items:center;padding:var(--s3) 0;border-bottom:1px solid var(--rule)}
+.item .disk{grid-area:disk}
+.item-name{grid-area:name;align-self:end}
+.item-name h3{font-size:var(--t-m)}
+.item-name p{font-size:var(--t-s);color:var(--crust-soft)}
+.avail{grid-area:avail;align-self:start;display:flex;flex-wrap:wrap;gap:4px var(--s2);font-size:var(--t-s)}
+.avail span{white-space:nowrap}
+.avail .out b{display:inline-block;margin-left:4px;font-weight:700}.step{grid-area:step;display:flex;align-items:center;gap:var(--s1)}
+.step output{min-width:2ch;text-align:center;font-size:var(--t-m);font-weight:700;font-variant-numeric:tabular-nums}
+.round{width:44px;height:44px;border-radius:50%;border:2px solid var(--crust);background:var(--flour);color:var(--crust);display:grid;place-items:center;cursor:pointer;padding:0;transition:transform .12s var(--ease-out),background-color .15s ease}
+.round svg{width:18px;height:18px}
+.round:disabled{border-color:var(--soldout);color:var(--crust-soft);cursor:not-allowed;background:var(--flour)}
+.round:not(:disabled):active{transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){.round:not(:disabled):hover{background:var(--kraft)}}
+.item-why{grid-column:2 / -1;font-size:var(--t-s);font-weight:700}
+.item-why:empty{display:none}
+.item.is-out h3{color:var(--crust-soft)}
+.tag{display:inline-block;margin-left:var(--s1);padding:0 8px;border:1px solid var(--crust);border-radius:4px;font-family:var(--font-body);font-size:var(--t-s);font-weight:700;line-height:1.6;vertical-align:.15em;white-space:nowrap}
+
+/* pickup */
+.pickup{padding:var(--s4) 0 var(--s8);border-top:2px solid var(--crust)}
+.pickup dl{margin:var(--s3) 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
+.pickup dl div{display:grid;grid-template-columns:auto 1fr;column-gap:var(--s2);align-items:center}
+.pickup dt{grid-column:2;font-size:var(--t-s);color:var(--crust-soft)}
+.pickup dd{grid-column:2;margin:0;font-weight:700;font-size:var(--t-m);line-height:1.5}
+.pickup .disk{--disk:56px;grid-row:1 / span 2;font-size:22px}
+
+/* ---------- order panel ---------- */
+.panel{position:sticky;top:var(--s2);margin-top:var(--s5);background:var(--kraft);border-radius:var(--r);padding:var(--s3);scroll-margin-top:var(--s2)}
+.panel h2{font-size:var(--t-m)}
+.tray{list-style:none;margin:var(--s2) 0 0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:var(--s1)}
+.tray li{aspect-ratio:1;border-radius:50%;border:2px dashed var(--rule);display:grid;place-items:center;max-width:64px;width:100%;justify-self:center}
+.tray li .disk{--disk:100%;width:100%;height:100%;font-size:26px}
+.tray li.is-filled{border:0}
+.tray li.is-new .disk{animation:stamp .18s var(--ease-out)}
+@keyframes stamp{from{transform:scale(1.12);opacity:.4}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  @keyframes stamp{from{opacity:.4}to{opacity:1}}
+  .round{transition:background-color .15s ease}
+  .round:not(:disabled):active{transform:none}
+}
+.tray-status{margin-top:var(--s1);font-size:var(--t-s);font-weight:700;text-align:center}
+.picked{margin:var(--s1) 0 0;padding:0;list-style:none;font-size:var(--t-s)}
+.picked li{display:flex;justify-content:space-between;gap:var(--s2);border-bottom:1px dotted var(--rule)}
+.picked:empty{display:none}
+
+fieldset{border:0;margin:var(--s3) 0 0;padding:0;min-width:0}
+legend{font-weight:700;padding:0;margin-bottom:var(--s1)}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:var(--s1)}
+.slot{position:relative}
+.slot input{position:absolute;opacity:0;width:1px;height:1px}
+.slot label{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;min-height:72px;padding:var(--s1) 12px;border:2px solid var(--rule);border-radius:var(--r);background:var(--flour);cursor:pointer}
+.slot .t{white-space:nowrap;font-family:var(--font-display);font-weight:600;font-size:var(--t-l);line-height:1;font-variant-numeric:tabular-nums}
+.slot small{display:block;font-size:var(--t-s);line-height:1.6}
+.slot input:checked + label{border-color:var(--noren);box-shadow:inset 0 0 0 2px var(--noren)}
+.slot input:checked + label .t{color:var(--noren)}
+.slot input:focus-visible + label{outline:3px solid var(--noren);outline-offset:3px}
+.slot input:disabled + label{cursor:not-allowed;color:var(--crust-soft);background:var(--soldout)}
+
+.field{margin-top:var(--s2)}
+.field label{display:block;font-weight:700}
+.field input{display:block;width:100%;margin-top:4px;font:inherit;font-size:18px;padding:10px 12px;min-height:48px;border:2px solid var(--rule);border-radius:8px;background:var(--on-noren);color:var(--crust)}
+.field input:focus-visible{outline:3px solid var(--noren);outline-offset:1px;border-color:var(--noren)}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
+.field input:disabled{background:var(--soldout);color:var(--crust-soft);cursor:not-allowed}
+.hint{font-size:var(--t-s);margin-top:4px}
+.err{font-size:var(--t-s);color:var(--danger);font-weight:700;margin-top:4px}
+.err:empty{display:none}
+
+.go{display:flex;width:100%;justify-content:center;align-items:center;margin-top:var(--s3);min-height:56px;border:0;border-radius:var(--r);background:var(--noren);color:var(--on-noren);font:inherit;font-weight:700;font-size:var(--t-m);letter-spacing:.08em;cursor:pointer;white-space:nowrap;text-decoration:none;transition:transform .12s var(--ease-out)}
+.go:active{transform:scale(.98)}
+.go:disabled{background:var(--soldout);color:var(--crust);cursor:not-allowed}
+.go-why{margin-top:var(--s1);font-size:var(--t-s);font-weight:700;text-align:center}
+.go-why:empty{display:none}
+.pay{margin-top:var(--s2);font-size:var(--t-s)}
+
+/* confirmation */
+.slip{text-align:left}
+.slip[hidden]{display:none}
+.slip h2{display:flex;align-items:center;gap:12px}
+.slip h2 svg{width:28px;height:28px;flex:none}
+.slip dl{margin:var(--s2) 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px var(--s2)}
+.slip dt{font-size:var(--t-s)}
+.slip dd{margin:0;font-weight:700}
+.slip .tray{margin-top:var(--s2)}
+.slip p{margin-top:var(--s2);font-size:var(--t-s)}
+
+/* ---------- dock (narrow) ---------- */
+.dock{display:none}
+footer{border-top:1px solid var(--rule);padding:var(--s4) var(--s3);text-align:center;font-size:var(--t-s)}
+footer .logo{justify-content:center;font-size:var(--t-m)}
+
+@media (min-width:1600px){
+  .layout,.top-in{max-width:1760px}
+  .layout{grid-template-columns:minmax(0,1fr) 440px}
+  .list{display:grid;grid-template-columns:1fr 1fr;column-gap:var(--s5)}
+  .hero h1{max-width:none}
+}
+
+@media (max-width:1023px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:0;padding:0 var(--s2)}
+  .top-in{padding:12px var(--s2)}
+  .panel{position:static;margin:0 0 var(--s5)}
+  .pickup{padding-bottom:var(--s5)}
+  .pickup dl{grid-template-columns:minmax(0,1fr);gap:var(--s2)}
+  body{padding-bottom:76px}
+  .dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;gap:var(--s2);padding:10px var(--s2);background:var(--kraft);border-top:2px solid var(--crust)}
+  .dock-tray{display:flex;gap:4px;flex:none}
+  .dock-tray[hidden]{display:none}
+  .dock-tray i{width:16px;height:16px;border-radius:50%;border:2px dashed var(--rule)}
+  .dock-tray i.on{background:var(--wheat);border:2px solid var(--crust)}
+  .dock-txt{font-size:var(--t-s);font-weight:700;white-space:nowrap;flex:1;min-width:0}
+  .dock .go{width:auto;margin:0;min-height:48px;padding:0 var(--s2);font-size:var(--t-b)}
+  .dock .go.is-off{background:var(--flour);color:var(--crust);box-shadow:inset 0 0 0 2px var(--crust)}
+}
+@media (max-width:560px){
+  :root{--disk:56px}
+  .hero{padding:var(--s3) 0 var(--s3)}
+  .top nav{display:none}
+  .item{grid-template-columns:var(--disk) minmax(0,1fr);grid-template-areas:"disk name" "disk avail" "step step";column-gap:var(--s2)}
+  .step{justify-content:flex-end;margin-top:var(--s1)}
+  .item-why{grid-column:1 / -1;text-align:right}
+  .deadline{gap:4px var(--s3)}
+  .panel{padding:var(--s2)}
+  .slots{grid-template-columns:minmax(0,1fr)}
+  .slot label{flex-direction:row;align-items:center;gap:var(--s2);min-height:56px}
+  .slot small{white-space:nowrap}
+}
+@media (max-width:380px){
+  .dock{gap:12px}
+  .dock-tray i{width:14px;height:14px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="logo" href="#top" id="top"><span class="disk" aria-hidden="true">麦</span>こむぎ舎</a>
+    <nav aria-label="ページ内">
+      <a href="#breads">今週のパン</a>
+      <a href="#pickup">受け取りとお支払い</a>
+    </nav>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="col">
+    <section class="hero" aria-labelledby="h1">
+      <h1 id="h1">土曜のパンは、<span class="nw">金曜18時までに</span><span class="nw">ご予約ください</span></h1>
+      <p class="lead">自家製酵母のパンを、土曜の朝<span class="nw">8時</span>と<span class="nw">11時</span>の2回焼き上げます。おひとり<span class="nw">5点</span>まで予約できます。</p>
+      <dl class="deadline">
+        <div><dt>受け取り日</dt><dd class="num" data-pickup>11月7日（土）</dd></div>
+        <div><dt>予約の締切</dt><dd><span class="num" data-deadline>11月6日（金）18:00</span> <span class="left nw" data-left>あと2日と7時間</span></dd></div>
+      </dl>
+    </section>
+
+    <section class="breads" id="breads" aria-labelledby="breads-h">
+      <div class="breads-head">
+        <h2 id="breads-h">今週のパン</h2>
+        <p>数字は回ごとの残りの数です</p>
+      </div>
+      <ul class="list" data-list></ul>
+    </section>
+
+    <section class="pickup" id="pickup" aria-labelledby="pickup-h">
+      <h2 id="pickup-h">受け取りとお支払い</h2>
+      <dl>
+        <div><span class="disk" aria-hidden="true">店</span><dt>受け取り</dt><dd>店頭のみ</dd></div>
+        <div><span class="disk" aria-hidden="true">円</span><dt>お支払い</dt><dd><span class="nw">現金</span>・<span class="nw">交通系IC</span></dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <aside class="panel" id="order" aria-labelledby="order-h">
+    <form data-form novalidate>
+      <h2 id="order-h">ご予約</h2>
+      <ul class="tray" data-tray aria-label="選んだパン"></ul>
+      <p class="tray-status" data-tray-status aria-live="polite">あと5点選べます</p>
+      <ul class="picked" data-picked></ul>
+
+      <fieldset aria-describedby="slot-err">
+        <legend>受け取る回</legend>
+        <div class="slots">
+          <div class="slot"><input type="radio" name="slot" id="s8" value="8"><label for="s8"><span class="t">8:00</span><small>朝の焼き上がり</small></label></div>
+          <div class="slot"><input type="radio" name="slot" id="s11" value="11"><label for="s11"><span class="t">11:00</span><small>昼前の焼き上がり</small></label></div>
+        </div>
+        <p class="err" id="slot-err" data-err="slot"></p>
+      </fieldset>
+
+      <div class="field">
+        <label for="name">お名前</label>
+        <input id="name" name="name" autocomplete="name" aria-describedby="name-hint name-err">
+        <p class="hint" id="name-hint">受け取りのときにお伺いします</p>
+        <p class="err" id="name-err" data-err="name"></p>
+      </div>
+      <div class="field">
+        <label for="tel">電話番号</label>
+        <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-hint tel-err">
+        <p class="hint" id="tel-hint">ハイフンはあってもなくてもかまいません</p>
+        <p class="err" id="tel-err" data-err="tel"></p>
+      </div>
+
+      <p class="err" data-err="items" id="items-err"></p>
+      <button class="go" type="submit" data-submit aria-describedby="go-why items-err">予約する</button>
+      <p class="go-why" id="go-why" data-go-why></p>
+      <p class="pay">お支払いは受け取りのときに店頭で。現金と交通系ICが使えます。</p>
+    </form>
+
+    <div class="slip" data-slip hidden>
+      <h2 tabindex="-1" data-slip-h><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M8 14.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>予約しました</h2>
+      <dl>
+        <dt>予約番号</dt><dd class="num" data-slip-no></dd>
+        <dt>お名前</dt><dd data-slip-name></dd>
+        <dt>受け取り</dt><dd data-slip-when></dd>
+      </dl>
+      <ul class="tray" data-slip-tray aria-label="予約したパン"></ul>
+      <ul class="picked" data-slip-list></ul>
+      <p>店頭でお名前をお伝えください。お支払いは現金か交通系ICでお願いします。</p>
+    </div>
+  </aside>
+</main>
+
+<div class="dock" data-dock>
+  <span class="dock-tray" aria-hidden="true" data-dock-tray></span>
+  <span class="dock-txt" data-dock-txt>0／5点</span>
+  <a class="go" href="#order" data-dock-go>予約へ進む</a>
+</div>
+
+<footer>
+  <p class="logo"><span class="disk" aria-hidden="true">麦</span>こむぎ舎</p>
+</footer>
+
+<script>
+(() => {
+  const MAX = 5;
+  // stock: remaining per bake (8時 / 11時)
+  const BREADS = [
+    { id:'campagne', mark:'麦', name:'酵母のカンパーニュ', note:'ライ麦入り・ハーフサイズ', s8:4, s11:6 },
+    { id:'kurumi',   mark:'胡', name:'くるみとレーズン',   note:'酵母の生地にたっぷり', s8:3, s11:5 },
+    { id:'shoku',    mark:'角', name:'角食パン（1斤）',    note:'切らずにお渡しします', s8:0, s11:2 },
+    { id:'kuri',     mark:'栗', name:'栗とほうじ茶',       note:'11月の週末だけ',     s8:5, s11:4 },
+    { id:'an',       mark:'餡', name:'あんバター',         note:'粒あんと発酵バター', s8:0, s11:0 },
+    { id:'shio',     mark:'塩', name:'塩バターロール',     note:'2個入り',           s8:6, s11:8 },
+  ];
+  const cart = Object.fromEntries(BREADS.map(b => [b.id, 0]));
+  const $ = s => document.querySelector(s);
+  const form = $('[data-form]');
+  const list = $('[data-list]');
+  let closed = false;
+  let lastAdded = null;
+
+  // ---- time (always JST) ----
+  const param = new URLSearchParams(location.search).get('now');
+  const now = param && !isNaN(Date.parse(param)) ? new Date(param) : new Date();
+  const H = 3600e3, JST = 9 * H;
+  const j = new Date(now.getTime() + JST);
+  const dow = j.getUTCDay();
+  const ahead = (6 - dow + 7) % 7; // 0 on Saturday
+  const sat = new Date(Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() + ahead));
+  const deadline = new Date(Date.UTC(sat.getUTCFullYear(), sat.getUTCMonth(), sat.getUTCDate() - 1, 18) - JST);
+  const md = d => `${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
+  const fri = new Date(sat.getTime() - 24 * H);
+  const satTxt = `${md(sat)}（土）`;
+  const deadTxt = `${md(fri)}（金）18:00`;
+  closed = now >= deadline;
+  $('[data-pickup]').textContent = satTxt;
+  $('[data-deadline]').textContent = deadTxt;
+  const left = $('[data-left]');
+  if (closed) {
+    left.textContent = '締め切りました';
+  } else {
+    const ms = deadline - now;
+    const d = Math.floor(ms / (24 * H)), h = Math.floor(ms % (24 * H) / H), m = Math.ceil(ms % H / 60000);
+    left.textContent = d > 0 ? `あと${d}日と${h}時間` : h > 0 ? `あと${h}時間${m}分` : `あと${m}分`;
+  }
+
+  // ---- render list ----
+  const icon = p => `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="${p}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>`;
+  const MINUS = icon('M3 9h12'), PLUS = icon('M3 9h12M9 3v12');
+  list.innerHTML = BREADS.map(b => {
+    const out = b.s8 === 0 && b.s11 === 0;
+    const av = (t, n) => n > 0
+      ? `<span>${t}の回 残り<span class="num">${n}</span></span>`
+      : `<span class="out">${t}の回<b>売り切れ</b></span>`;
+    const step = out
+      ? ''
+      : `<div class="step">
+        <button type="button" class="round" data-dec aria-label="${b.name}を1つ減らす">${MINUS}</button>
+        <output aria-live="polite" aria-label="${b.name}の数">0</output>
+        <button type="button" class="round" data-inc aria-label="${b.name}を1つ増やす">${PLUS}</button>
+      </div>`;
+    return `<li class="item${out ? ' is-out' : ''}" data-id="${b.id}">
+      <span class="disk${out ? ' is-out' : ''}" aria-hidden="true">${b.mark}</span>
+      <div class="item-name"><h3>${b.name}${out ? '<span class="tag">売り切れ</span>' : ''}</h3><p>${b.note}</p></div>
+      <p class="avail">${av('8時', b.s8)}${av('11時', b.s11)}</p>
+      ${step}
+      <p class="item-why" data-why></p>
+    </li>`;
+  }).join('');
+
+  const total = () => Object.values(cart).reduce((a, n) => a + n, 0);
+  const slot = () => (form.querySelector('[name=slot]:checked') || {}).value;
+  const stockFor = (b, s) => s ? b['s' + s] : Math.max(b.s8, b.s11);
+
+  function trayHTML(entries, mark) {
+    const marks = entries.flatMap(([b, n]) => Array(n).fill(b.mark));
+    return Array.from({ length: MAX }, (_, i) => marks[i]
+      ? `<li class="is-filled${mark && i === marks.length - 1 ? ' is-new' : ''}"><span class="disk" aria-hidden="true">${marks[i]}</span><span class="vh">${BREADS.find(b => b.mark === marks[i]).name}</span></li>`
+      : `<li><span class="vh">空き</span></li>`).join('');
+  }
+  function pickedHTML(entries) {
+    return entries.map(([b, n]) => `<li><span>${b.name}</span><span class="num">${n}点</span></li>`).join('');
+  }
+
+  function update() {
+    const t = total(), s = slot();
+    const entries = BREADS.filter(b => cart[b.id] > 0).map(b => [b, cart[b.id]]);
+    $('[data-tray]').innerHTML = trayHTML(entries, lastAdded);
+    lastAdded = null;
+    $('[data-picked]').innerHTML = pickedHTML(entries);
+    const status = closed ? '受付は終了しました' : t === 0 ? 'あと5点選べます' : t < MAX ? `${t}点選びました。あと${MAX - t}点選べます` : '5点選びました（おひとり5点まで）';
+    $('[data-tray-status]').textContent = status;
+    $('[data-dock-txt]').textContent = closed ? '受付は終了しました' : `${t}／5点`;
+    if (!closed) $('[data-dock-tray]').innerHTML = Array.from({ length: MAX }, (_, i) => `<i class="${i < t ? 'on' : ''}"></i>`).join('');
+
+    list.querySelectorAll('.item').forEach(li => {
+      const b = BREADS.find(x => x.id === li.dataset.id);
+      const n = cart[b.id], stock = stockFor(b, s);
+      if (!li.querySelector('output')) return;
+      li.querySelector('output').textContent = n;
+      li.querySelector('[data-dec]').disabled = closed || n === 0;
+      li.querySelector('[data-inc]').disabled = closed || n >= stock || t >= MAX;
+      let why = '';
+      if (!closed && stock === 0 && b.s8 + b.s11 > 0) why = `${s}時の回は売り切れです`;
+      else if (!closed && n > 0 && n >= stock) why = `${s ? s + '時の回の' : ''}残りはこの数までです`;
+      li.querySelector('[data-why]').textContent = why;
+    });
+  }
+
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.disabled) return;
+    const id = btn.closest('.item').dataset.id;
+    if (btn.hasAttribute('data-inc')) { cart[id]++; lastAdded = id; }
+    else cart[id] = Math.max(0, cart[id] - 1);
+    setErr('items', '');
+    update();
+  });
+
+  form.addEventListener('change', e => {
+    if (e.target.name !== 'slot') return;
+    const s = slot(), removed = [];
+    BREADS.forEach(b => {
+      const st = b['s' + s];
+      if (cart[b.id] > st) { cart[b.id] = st; removed.push(b.name); }
+    });
+    setErr('slot', '');
+    setErr('items', removed.length ? `${s}時の回は残りが足りないため、${removed.join('、')}の数を減らしました。` : '');
+    update();
+  });
+
+  function setErr(key, msg) {
+    const el = form.querySelector(`[data-err="${key}"]`);
+    el.textContent = msg;
+    const input = form.querySelector(`[name="${key}"]`);
+    if (input && input.tagName === 'INPUT' && input.type !== 'radio') input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (closed) return;
+    const name = form.name.value.trim();
+    const tel = form.tel.value.replace(/[‐－ー\-\s()（）]/g, '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    const errs = {
+      items: total() === 0 ? 'パンが選ばれていません。「＋」を押して1点以上選んでください。' : '',
+      slot: slot() ? '' : '受け取る回が選ばれていません。8:00か11:00を選んでください。',
+      name: name ? '' : 'お名前が入っていません。受け取りのときのお名前を入れてください。',
+      tel: /^0\d{9,10}$/.test(tel) ? '' : (tel ? '電話番号の桁が合いません。0から始まる10桁か11桁で入れてください。' : '電話番号が入っていません。連絡のつく番号を入れてください。'),
+    };
+    Object.entries(errs).forEach(([k, v]) => setErr(k, v));
+    const first = ['items', 'slot', 'name', 'tel'].find(k => errs[k]);
+    if (first) {
+      const target = first === 'items' ? list.querySelector('[data-inc]:not(:disabled)') : first === 'slot' ? form.querySelector('[name=slot]') : form[first];
+      if (first === 'items') document.getElementById('breads').scrollIntoView();
+      target && target.focus({ preventScroll: first === 'items' });
+      return;
+    }
+    const entries = BREADS.filter(b => cart[b.id] > 0).map(b => [b, cart[b.id]]);
+    $('[data-slip-no]').textContent = `${String(sat.getUTCMonth() + 1).padStart(2, '0')}${String(sat.getUTCDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100)}`;
+    $('[data-slip-name]').textContent = `${name} 様`;
+    $('[data-slip-when]').textContent = `${satTxt} ${slot()}:00の回`;
+    $('[data-slip-tray]').innerHTML = trayHTML(entries, false);
+    $('[data-slip-list]').innerHTML = pickedHTML(entries);
+    form.hidden = true;
+    $('[data-slip]').hidden = false;
+    $('[data-dock-txt]').textContent = '予約しました';
+    $('[data-dock-go]').textContent = '予約内容を見る';
+    list.querySelectorAll('button').forEach(b => b.disabled = true);
+    $('[data-slip-h]').focus();
+  });
+
+  if (closed) {
+    form.querySelectorAll('input').forEach(i => i.disabled = true);
+    const go = $('[data-submit]');
+    go.disabled = true;
+    go.textContent = '予約の受付は終了しました';
+    $('[data-go-why]').textContent = `締切（${deadTxt}）を過ぎたため、予約できません。`;
+    $('[data-dock-go]').textContent = '詳しく';
+    $('[data-dock-go]').classList.add('is-off');
+    $('[data-dock-tray]').hidden = true;
+    $('#h1').textContent = `${satTxt}受け取り分の予約は締め切りました`;
+  }
+  update();
+})();
+</script>
+</body>
+</html>

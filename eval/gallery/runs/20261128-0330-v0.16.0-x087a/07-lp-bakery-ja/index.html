@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末限定パンの予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンは、土曜8時と11時の2回焼き上がります。金曜18時まで、土曜受け取りのご予約を受け付けています。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --board: #22302A;
+  --wiped: #2C3C35;
+  --chalk: #EEEAE0;
+  --chalk-faded: #B4BDB5;
+  --chalk-yellow: #F2CF5B;
+  --chalk-red: #F4A196;
+  --line: #8D9A91;
+  --ghost: #3E5047;
+
+  --font-display: "Klee One", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  --fs-1: 16px;
+  --fs-0: 17px;
+  --fs-2: 21px;
+  --fs-3: 26px;
+  --fs-4: 33px;
+  --fs-5: 41px;
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+  --radius: 8px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bar-h: 0px;
+}
+
+* { box-sizing: border-box; }
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--board);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: var(--fs-0);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+  padding-bottom: var(--bar-h);
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; font-synthesis: none; line-height: 1.4; text-wrap: balance; margin: 0; font-feature-settings: "palt"; letter-spacing: 0.02em; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
+[hidden] { display: none !important; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+:focus-visible { outline: 3px solid var(--chalk-yellow); outline-offset: 3px; }
+
+/* ---------- header ---------- */
+.top { border-bottom: 2px solid var(--line); }
+.top .wrap { display: flex; align-items: baseline; gap: var(--s2); padding-top: var(--s2); padding-bottom: var(--s2); flex-wrap: wrap; }
+.logo { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-3); line-height: 1.2; letter-spacing: 0.08em; }
+.top .sub { color: var(--chalk-faded); font-size: var(--fs-1); }
+
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: var(--s3); padding-right: var(--s3); }
+
+/* ---------- layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "board" "ticket" "guide";
+  gap: var(--s5);
+  padding-top: var(--s4);
+  padding-bottom: var(--s7);
+}
+.board { grid-area: board; min-width: 0; }
+.ticket { grid-area: ticket; min-width: 0; }
+.guide { grid-area: guide; min-width: 0; }
+@media (min-width: 1000px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 368px; grid-template-areas: "board ticket" "guide ticket"; column-gap: var(--s6); }
+  .ticket { align-self: start; position: sticky; top: var(--s3); }
+}
+@media (min-width: 1600px) {
+  .wrap { max-width: 1760px; }
+  .layout { grid-template-columns: 320px minmax(0, 1fr) 400px; grid-template-areas: "guide board ticket"; }
+  .guide { align-self: start; position: sticky; top: var(--s3); }
+  body { font-size: 18px; }
+}
+
+/* ---------- hero (inside board) ---------- */
+.hero h1 { font-size: var(--fs-4); }
+@media (min-width: 768px) { .hero h1 { font-size: var(--fs-5); } }
+.countdown { margin-top: var(--s1); font-size: var(--fs-2); color: var(--chalk); }
+.countdown .num { font-family: var(--font-display); }
+.lead { margin-top: var(--s1); color: var(--chalk-faded); }
+.lead:empty { display: none; }
+
+/* bake slots */
+.slots { margin: var(--s3) 0 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.slots legend { font-size: var(--fs-1); padding: 0; margin-bottom: var(--s1); }
+.slot { position: relative; display: block; }
+.slot input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.slot .box {
+  display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: var(--s2);
+  padding: var(--s2); border: 2px solid var(--line); border-radius: var(--radius);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.slot .time { font-family: var(--font-display); font-size: var(--fs-4); line-height: 1.1; grid-row: span 2; }
+.slot .what { font-size: var(--fs-1); line-height: 1.5; }
+.slot .left { font-size: var(--fs-1); line-height: 1.5; color: var(--chalk-faded); }
+.slot input:checked + .box { border-color: var(--chalk-yellow); box-shadow: inset 0 0 0 1px var(--chalk-yellow); }
+.slot input:checked + .box .what::before { content: "✓ "; color: var(--chalk-yellow); }
+.slot input:focus-visible + .box { outline: 3px solid var(--chalk-yellow); outline-offset: 3px; }
+.slot input:disabled { cursor: not-allowed; }
+@media (hover: hover) and (pointer: fine) { .slot input:not(:disabled):hover + .box { border-color: var(--chalk); } }
+@media (max-width: 480px) {
+  .slot .box { grid-template-columns: 1fr; padding: 12px var(--s2); }
+  .slot .time { font-size: var(--fs-3); grid-row: auto; }
+  .slot .what, .slot .left { white-space: nowrap; }
+  .slot input:checked + .box .what::before { content: "✓"; margin-right: 2px; }
+  .tally-wrap .tally { width: 88px; height: 88px; }
+  .tally-wrap { gap: var(--s2); }
+}
+
+/* ---------- bread board ---------- */
+.breads { margin-top: var(--s5); }
+.breads-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); padding-bottom: var(--s1); border-bottom: 3px solid var(--chalk); }
+.breads-head h2 { font-size: var(--fs-3); }
+.breads-head .for { font-size: var(--fs-1); color: var(--chalk-faded); }
+.rows-list { list-style: none; margin: 0; padding: 0; }
+.bread {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto auto;
+  grid-template-areas: "pic name stock step";
+  align-items: center; column-gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 2px solid var(--line);
+}
+.bread .pic { grid-area: pic; width: 72px; height: 54px; }
+.bread .pic svg { width: 100%; height: 100%; display: block; }
+.bread .name { grid-area: name; font-size: var(--fs-2); line-height: 1.5; font-family: var(--font-display); }
+.bread .note { display: block; font-family: var(--font-body); font-size: var(--fs-1); color: var(--chalk-faded); line-height: 1.6; }
+.bread .note button { font: inherit; color: var(--chalk-yellow); background: none; border: 0; padding: 4px 0; min-height: 32px; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.bread .stock { grid-area: stock; text-align: right; font-size: var(--fs-1); white-space: nowrap; }
+.bread .stock b { font-family: var(--font-display); font-size: var(--fs-3); font-weight: 600; margin-left: 4px; }
+.bread .step { grid-area: step; display: flex; align-items: center; gap: var(--s1); }
+.step button {
+  width: 44px; height: 44px; border-radius: var(--radius);
+  border: 2px solid var(--chalk); background: transparent; color: var(--chalk);
+  font: 700 24px/1 var(--font-body); cursor: pointer;
+  transition: transform 120ms var(--ease-out), border-color 160ms ease;
+}
+.step button:active:not(:disabled) { transform: scale(0.94); }
+.step button:disabled { border-color: var(--ghost); color: var(--chalk-faded); cursor: not-allowed; }
+@media (hover: hover) and (pointer: fine) { .step button:not(:disabled):hover { border-color: var(--chalk-yellow); } }
+.step output { min-width: 2ch; text-align: center; font-family: var(--font-display); font-size: var(--fs-3); }
+.bread.out .name { color: var(--chalk); }
+.bread.out .pic { opacity: .45; }
+.soldout {
+  grid-area: step; font-family: var(--font-display); color: var(--chalk-red);
+  font-size: var(--fs-2); border: 2px solid var(--chalk-red); border-radius: 4px;
+  padding: 0 var(--s1); transform: rotate(-4deg); white-space: nowrap;
+}
+.bread.out .stock { visibility: hidden; }
+@media (max-width: 640px) {
+  .bread { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "pic name name" "pic stock step"; row-gap: var(--s1); column-gap: var(--s2); }
+  .bread .pic { width: 56px; height: 42px; align-self: start; margin-top: 6px; }
+  .bread .stock { text-align: left; }
+  .bread.out .stock { display: none; }
+}
+
+/* ---------- ticket (reservation slip) ---------- */
+.ticket { background: var(--wiped); border-radius: var(--radius); padding: var(--s3); }
+.ticket h2 { font-size: var(--fs-3); }
+.tally-wrap { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s2); }
+.tally { width: 112px; height: 112px; flex: none; }
+.tally path { fill: none; stroke-linecap: round; stroke-width: 9; }
+.tally .g { stroke: var(--line); stroke-width: 3; stroke-dasharray: 3 5; }
+.tally .s { stroke: var(--chalk); stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 260ms var(--ease-out); }
+.tally .s.on { stroke-dashoffset: 0; }
+.tally-count { font-family: var(--font-display); font-size: var(--fs-4); line-height: 1.2; }
+.tally-count small { display: block; margin-top: 4px; font-family: var(--font-body); font-size: var(--fs-1); line-height: 1.6; color: var(--chalk-faded); }
+.picked { list-style: none; margin: var(--s2) 0 0; padding: 0; border-top: 2px solid var(--line); }
+.picked li { display: flex; justify-content: space-between; gap: var(--s2); padding: var(--s1) 0; border-bottom: 1px solid var(--line); font-size: var(--fs-1); }
+.picked .empty { color: var(--chalk-faded); justify-content: flex-start; }
+.pickup { margin-top: var(--s2); font-size: var(--fs-1); }
+.pickup b { font-weight: 700; }
+.field { margin-top: var(--s2); }
+.field label { display: block; font-size: var(--fs-1); font-weight: 700; }
+.field input {
+  width: 100%; margin-top: 4px; min-height: 48px; padding: var(--s1) 12px;
+  font: inherit; color: var(--chalk); background: var(--board);
+  border: 2px solid var(--line); border-radius: var(--radius);
+}
+.field input:focus-visible { outline: 3px solid var(--chalk-yellow); outline-offset: 2px; }
+.field input[aria-invalid="true"] { border-color: var(--chalk-red); }
+.err { color: var(--chalk-red); font-size: var(--fs-1); margin-top: 4px; line-height: 1.6; }
+.err:empty { display: none; }
+.primary {
+  display: block; width: 100%; margin-top: var(--s3); min-height: 56px;
+  font: 700 var(--fs-2)/1.3 var(--font-body); letter-spacing: 0.04em;
+  color: var(--board); background: var(--chalk-yellow);
+  border: 0; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+  transition: transform 120ms var(--ease-out);
+}
+.primary:active:not(:disabled) { transform: scale(0.98); }
+.primary:disabled { background: var(--ghost); color: var(--chalk-faded); cursor: not-allowed; }
+.reason { margin-top: var(--s1); font-size: var(--fs-1); }
+.reason:empty { display: none; }
+.done h3 { font-size: var(--fs-3); margin-top: var(--s2); }
+.done dl { margin: var(--s2) 0 0; }
+.done dt { font-size: var(--fs-1); color: var(--chalk-faded); margin-top: var(--s1); }
+.done dd { margin: 0; }
+
+/* ---------- guide ---------- */
+.guide h2 { font-size: var(--fs-3); padding-bottom: var(--s1); border-bottom: 3px solid var(--chalk); }
+.guide .rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s5); margin: 0; }
+.guide .row { padding: var(--s2) 0; border-bottom: 2px solid var(--line); display: grid; grid-template-columns: 6.5em minmax(0, 1fr); column-gap: var(--s2); align-items: baseline; }
+.guide dt { font-size: var(--fs-1); color: var(--chalk-faded); }
+.guide dd { margin: 0; font-family: var(--font-display); font-size: var(--fs-2); line-height: 1.5; }
+.guide .mini { width: 26px; height: 26px; vertical-align: -4px; margin-left: 6px; }
+.guide .mini path { fill: none; stroke: var(--chalk); stroke-width: 10; stroke-linecap: round; }
+@media (max-width: 640px), (min-width: 1600px) { .guide .rows { grid-template-columns: minmax(0, 1fr); } }
+
+
+/* ---------- sticky bar (narrow) ---------- */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: var(--wiped); border-top: 2px solid var(--line);
+  padding: var(--s1) var(--s2);
+  display: flex; align-items: center; gap: 12px;
+}
+.bar .tally { width: 36px; height: 36px; }
+.bar .tally .s { stroke-width: 11; }
+.bar .tally .g { stroke-width: 6; stroke-dasharray: 6 8; }
+.bar .bar-count { flex: 1; font-size: var(--fs-1); white-space: nowrap; overflow-wrap: normal; }
+.bar a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s2);
+  background: var(--chalk-yellow); color: var(--board); font-weight: 700; text-decoration: none;
+  border-radius: var(--radius); white-space: nowrap;
+}
+.bar.closed a { background: transparent; color: var(--chalk); border: 2px solid var(--line); }
+@media (max-width: 999px) { :root { --bar-h: 64px; } }
+@media (min-width: 1000px) { .bar { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tally .s, .step button, .primary, .slot .box { transition: none; }
+  .step button:active, .primary:active { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="logo">こむぎ舎</span>
+    <span class="sub">週末限定パンの予約</span>
+  </div>
+</header>
+
+<main class="wrap layout" id="main">
+
+  <section class="board" aria-labelledby="h1">
+    <div class="hero">
+      <h1 id="h1"><span id="h1-text"><span class="nw"><span data-sat-short>11月7日（土）</span>の</span><wbr>焼きたてを、<wbr><span class="nw">金曜18時まで</span>に<wbr>ご予約ください</span></h1>
+      <p class="countdown" id="countdown">締め切りまで <span class="num" id="remain">あと2日7時間30分</span></p>
+      <p class="lead" id="lead"></p>
+
+      <fieldset class="slots" id="slots">
+        <legend>受け取りの回（<span data-sat-short>11月7日（土）</span>）</legend>
+        <label class="slot">
+          <input type="radio" name="slot" value="8" checked>
+          <span class="box">
+            <span class="time num">8:00</span>
+            <span class="what">焼き上がり</span>
+            <span class="left" data-slot-left="8">残り15点</span>
+          </span>
+        </label>
+        <label class="slot">
+          <input type="radio" name="slot" value="11">
+          <span class="box">
+            <span class="time num">11:00</span>
+            <span class="what">焼き上がり</span>
+            <span class="left" data-slot-left="11">残り27点</span>
+          </span>
+        </label>
+      </fieldset>
+    </div>
+
+    <div class="breads">
+      <div class="breads-head">
+        <h2 id="breads-h">週末のパン</h2>
+        <span class="for" id="breads-for">8:00の回の残り</span>
+      </div>
+      <ul class="rows-list" id="rows" aria-labelledby="breads-h"></ul>
+    </div>
+  </section>
+
+  <aside class="ticket" id="ticket" aria-labelledby="ticket-h">
+    <h2 id="ticket-h">ご予約内容</h2>
+    <div id="form-area">
+      <div class="tally-wrap">
+        <svg class="tally" id="tally" viewBox="0 0 100 100" aria-hidden="true">
+          <path class="g" d="M20 16H80"/><path class="g" d="M50 16V86"/><path class="g" d="M50 50H76"/><path class="g" d="M26 48V86"/><path class="g" d="M12 86H88"/>
+          <path class="s" pathLength="100" d="M20 16H80"/><path class="s" pathLength="100" d="M50 16V86"/><path class="s" pathLength="100" d="M50 50H76"/><path class="s" pathLength="100" d="M26 48V86"/><path class="s" pathLength="100" d="M12 86H88"/>
+        </svg>
+        <p class="tally-count" aria-live="polite" id="tally-count"><span class="num">0点</span><small><span class="nw">1人5点まで</span><br><span class="nw">あと5点選べます</span></small></p>
+      </div>
+      <ul class="picked" id="picked"><li class="empty">まだ選ばれていません</li></ul>
+      <p class="pickup">受け取り：<b><span data-sat-short>11月7日（土）</span><span class="nw" id="pickup-time">8:00の回</span></b>、店頭で</p>
+
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="f-name">お名前</label>
+          <input id="f-name" name="name" type="text" autocomplete="name" aria-describedby="e-name">
+          <p class="err" id="e-name"></p>
+        </div>
+        <div class="field">
+          <label for="f-tel">電話番号</label>
+          <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="e-tel">
+          <p class="err" id="e-tel"></p>
+        </div>
+        <p class="err" id="e-items"></p>
+        <button class="primary" id="submit" type="submit" aria-describedby="reason">この内容で予約する</button>
+        <p class="reason" id="reason"></p>
+      </form>
+    </div>
+  </aside>
+
+  <section class="guide" aria-labelledby="guide-h">
+    <h2 id="guide-h">受け取りのご案内</h2>
+    <dl class="rows">
+      <div class="row"><dt>焼き上がり</dt><dd>土曜 <span class="num">8:00</span>と<wbr><span class="nw">11:00の2回</span></dd></div>
+      <div class="row"><dt>締め切り</dt><dd><span class="nw">金曜18:00</span></dd></div>
+      <div class="row"><dt>ご予約</dt><dd>1人5点まで<svg class="mini" viewBox="0 0 100 100" aria-hidden="true"><path d="M20 16H80M50 16V86M50 50H76M26 48V86M12 86H88"/></svg></dd></div>
+      <div class="row"><dt>受け取り</dt><dd>店頭のみ</dd></div>
+      <div class="row"><dt>お支払い</dt><dd>現金・<wbr><span class="nw">交通系IC</span></dd></div>
+      <div class="row"><dt>酵母</dt><dd>自家製酵母</dd></div>
+    </dl>
+  </section>
+
+</main>
+
+<div class="bar" id="bar">
+  <svg class="tally" id="bar-tally" viewBox="0 0 100 100" aria-hidden="true">
+    <path class="g" d="M20 16H80"/><path class="g" d="M50 16V86"/><path class="g" d="M50 50H76"/><path class="g" d="M26 48V86"/><path class="g" d="M12 86H88"/>
+    <path class="s" pathLength="100" d="M20 16H80"/><path class="s" pathLength="100" d="M50 16V86"/><path class="s" pathLength="100" d="M50 50H76"/><path class="s" pathLength="100" d="M26 48V86"/><path class="s" pathLength="100" d="M12 86H88"/>
+  </svg>
+  <span class="bar-count" id="bar-count"><span class="num">0点</span>／5点まで</span>
+  <a href="#ticket" id="bar-link">予約内容へ</a>
+</div>
+
+<p class="vh" aria-live="polite" id="live"></p>
+
+<script>
+(function () {
+  var SHAPES = {
+    boule: '<path d="M6 40C6 22 18 10 32 10S58 22 58 40Z"/><path d="M22 20l6 8M32 16l6 9M42 20l5 7"/>',
+    fig: '<path d="M10 38C10 24 20 14 32 14S54 24 54 38Z"/><circle cx="24" cy="28" r="2.5"/><circle cx="34" cy="23" r="2.5"/><circle cx="42" cy="31" r="2.5"/><circle cx="30" cy="33" r="2"/>',
+    yama: '<path d="M8 44V24C8 12 22 12 24 20C26 10 38 10 40 20C42 12 56 12 56 24V44Z"/><path d="M8 30H56"/>',
+    baguette: '<path d="M6 34C4 28 50 10 56 14S16 42 6 34Z"/><path d="M16 30l6-6M28 25l6-6M40 20l6-5"/>',
+    danish: '<circle cx="32" cy="27" r="17"/><path d="M32 27c0-4 6-4 6 0s-5 9-11 8-9-8-7-13 9-9 15-8"/>'
+  };
+  var BREADS = [
+    { id: 'campagne', name: 'カンパーニュ', shape: 'boule', stock: { 8: 6, 11: 9 } },
+    { id: 'fig', name: 'いちじくと<wbr><span class="nw">くるみのパン</span>', shape: 'fig', stock: { 8: 0, 11: 3 } },
+    { id: 'yama', name: '山型食パン', shape: 'yama', stock: { 8: 4, 11: 8 } },
+    { id: 'anbutter', name: 'あんバターの<wbr><span class="nw">バゲット</span>', shape: 'baguette', stock: { 8: 5, 11: 7 } },
+    { id: 'kuri', name: '栗のデニッシュ', shape: 'danish', stock: { 8: 0, 11: 0 } }
+  ];
+  BREADS.forEach(function (b) { b.plain = b.name.replace(/<[^>]+>/g, ''); });
+  var MAX = 5;
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+  var JST = 9 * 3600e3;
+
+  var params = new URLSearchParams(location.search);
+  function now() { var p = params.get('now'); var d = p ? new Date(p) : new Date(); return isNaN(d) ? new Date() : d; }
+
+  // The reservation week: the coming Saturday; closes Friday 18:00 JST.
+  function cycle(t) {
+    var j = new Date(t.getTime() + JST);
+    var dow = j.getUTCDay();
+    var add = (6 - dow + 7) % 7;
+    var sat = Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() + add) - JST; // Sat 00:00 JST
+    var deadline = new Date(sat - 6 * 3600e3); // Fri 18:00 JST
+    return { sat: new Date(sat), deadline: deadline, closed: t >= deadline };
+  }
+  function jd(d) { var j = new Date(d.getTime() + JST); return (j.getUTCMonth() + 1) + '月' + j.getUTCDate() + '日（' + WD[j.getUTCDay()] + '）'; }
+
+  var state = { slot: 8, qty: {}, closed: false, sent: false };
+  BREADS.forEach(function (b) { state.qty[b.id] = 0; });
+  var C = cycle(now());
+  state.closed = C.closed;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var rows = $('rows');
+
+  function total() { var n = 0; for (var k in state.qty) n += state.qty[k]; return n; }
+  function slotLeft(s) { return BREADS.reduce(function (a, b) { return a + b.stock[s]; }, 0); }
+  function other(s) { return s === 8 ? 11 : 8; }
+  function label(s) { return (s === 8 ? '8:00' : '11:00') + 'の回'; }
+
+  function buildRows() {
+    rows.innerHTML = BREADS.map(function (b) {
+      return '<li class="bread" data-id="' + b.id + '">' +
+        '<span class="pic"><svg viewBox="0 0 64 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' + SHAPES[b.shape] + '</svg></span>' +
+        '<span class="name">' + b.name + '<span class="note"></span></span>' +
+        '<span class="stock">残り<b class="num"></b></span>' +
+        '<span class="step">' +
+          '<button type="button" data-d="-1" aria-label="' + b.plain + 'を1つ減らす">−</button>' +
+          '<output aria-label="' + b.plain + 'の数">0</output>' +
+          '<button type="button" data-d="1" aria-label="' + b.plain + 'を1つ増やす">＋</button>' +
+        '</span>' +
+        '<span class="soldout" hidden>売り切れ</span>' +
+      '</li>';
+    }).join('');
+  }
+
+  function drawTally(svg, n) {
+    var s = svg.querySelectorAll('.s');
+    for (var i = 0; i < s.length; i++) s[i].classList.toggle('on', i < n);
+  }
+
+  function render() {
+    var n = total(), s = state.slot;
+    document.querySelectorAll('[data-sat-short]').forEach(function (el) { el.textContent = jd(C.sat); });
+    document.querySelectorAll('[data-slot-left]').forEach(function (el) {
+      var v = +el.getAttribute('data-slot-left');
+      el.textContent = state.closed ? '締め切りました' : '残り' + slotLeft(v) + '点';
+    });
+    document.querySelectorAll('#slots input').forEach(function (r) { r.disabled = state.closed || state.sent; r.checked = +r.value === s; });
+    $('breads-for').textContent = label(s) + 'の残り';
+    $('pickup-time').textContent = label(s);
+
+    BREADS.forEach(function (b) {
+      var li = rows.querySelector('[data-id="' + b.id + '"]');
+      var left = b.stock[s], q = state.qty[b.id], out = left === 0;
+      li.classList.toggle('out', out);
+      li.querySelector('.soldout').hidden = !out;
+      li.querySelector('.step').hidden = out;
+      li.querySelector('.stock b').textContent = left;
+      li.querySelector('output').textContent = q;
+      var lock = state.closed || state.sent;
+      li.querySelector('[data-d="-1"]').disabled = lock || q === 0;
+      li.querySelector('[data-d="1"]').disabled = lock || q >= left || n >= MAX;
+      var note = li.querySelector('.note');
+      var o = other(s);
+      if (out && b.stock[o] > 0 && !lock) {
+        note.innerHTML = label(o) + 'なら残り' + b.stock[o] + '点 <button type="button" data-switch="' + o + '">' + label(o) + 'に切り替える</button>';
+      } else if (out && b.stock[o] === 0) {
+        note.textContent = '今週分はどちらの回も売り切れました';
+      } else note.textContent = '';
+    });
+
+    drawTally($('tally'), n); drawTally($('bar-tally'), n);
+    $('tally-count').innerHTML = '<span class="num">' + n + '点</span><small>' +
+      '<span class="nw">1人5点まで</span><br><span class="nw">' + (state.closed ? '締め切りました' : n >= MAX ? '上限に達しました' :'あと' + (MAX - n) + '点選べます') + '</span></small>';
+    $('bar-count').innerHTML = '<span class="num">' + n + '点</span>／5点まで';
+
+    var picked = BREADS.filter(function (b) { return state.qty[b.id] > 0; });
+    $('picked').innerHTML = picked.length ? picked.map(function (b) {
+      return '<li><span>' + b.name + '</span><span class="num">' + state.qty[b.id] + '点</span></li>';
+    }).join('') : '<li class="empty">まだ選ばれていません</li>';
+
+    var closedMsg = jd(C.sat) + '分の予約は、' + jd(C.deadline) + '18時で締め切りました。';
+    if (state.closed) {
+      $('h1-text').innerHTML = '<span class="nw">' + jd(C.sat) + '</span>分の<wbr>ご予約は<wbr>締め切りました';
+      $('countdown').innerHTML = '土曜は<span class="num">8:00</span>と<span class="num">11:00</span>に<wbr><span class="nw">焼き上がります。</span>';
+      $('lead').innerHTML = 'ご予約済みの方は、<wbr>選んだ回の<wbr><span class="nw">焼き上がり後に</span><wbr>店頭で<wbr><span class="nw">お受け取りください。</span>';
+      $('submit').disabled = true;
+      $('reason').textContent = closedMsg;
+      ['f-name', 'f-tel'].forEach(function (id) { $(id).disabled = true; });
+      $('bar').classList.add('closed');
+      $('bar-link').textContent = 'ご案内へ';
+      $('bar-link').setAttribute('href', '#guide-h');
+    } else {
+      var ms = C.deadline - now();
+      var d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4);
+      $('remain').textContent = 'あと' + (d ? d + '日' : '') + (d || h ? h + '時間' : '') + m + '分';
+    }
+  }
+
+  function announce(t) { $('live').textContent = t; }
+
+  rows.addEventListener('click', function (e) {
+    var btn = e.target.closest('button'); if (!btn) return;
+    if (btn.hasAttribute('data-switch')) { setSlot(+btn.getAttribute('data-switch')); return; }
+    var id = btn.closest('.bread').getAttribute('data-id');
+    var b = BREADS.find(function (x) { return x.id === id; });
+    var d = +btn.getAttribute('data-d');
+    var q = state.qty[id] + d;
+    if (q < 0 || q > b.stock[state.slot] || (d > 0 && total() >= MAX)) return;
+    state.qty[id] = q;
+    $('e-items').textContent = '';
+    render();
+    announce(b.plain + ' ' + q + '点。合計' + total() + '点。' + (total() >= MAX ? '上限の5点です。' : 'あと' + (MAX - total()) + '点選べます。'));
+  });
+
+  function setSlot(s) {
+    state.slot = s;
+    var dropped = [];
+    BREADS.forEach(function (b) {
+      if (state.qty[b.id] > b.stock[s]) { dropped.push(b.plain); state.qty[b.id] = b.stock[s]; }
+    });
+    render();
+    announce(label(s) + 'に切り替えました。' + (dropped.length ? dropped.join('、') + 'は残りに合わせて数を減らしました。' : ''));
+  }
+  $('slots').addEventListener('change', function (e) { setSlot(+e.target.value); });
+
+  // Stand-in for the shop's reservation endpoint: rejects after the deadline or beyond stock.
+  function sendReservation(payload) {
+    return new Promise(function (resolve, reject) {
+      setTimeout(function () {
+        var c = cycle(now());
+        if (c.closed) return reject({ code: 'closed' });
+        for (var id in payload.items) {
+          var b = BREADS.find(function (x) { return x.id === id; });
+          if (payload.items[id] > b.stock[payload.slot]) return reject({ code: 'stock', name: b.plain });
+        }
+        resolve(payload);
+      }, 400);
+    });
+  }
+
+  function setErr(input, errId, msg) {
+    $(errId).textContent = msg;
+    if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (state.closed) return;
+    var name = $('f-name'), tel = $('f-tel'), first = null;
+    var telV = tel.value.replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).replace(/[－ー−‐]/g, '-');
+    if (!name.value.trim()) { setErr(name, 'e-name', 'お名前を入力してください。受け取りの際の確認に使います。'); first = first || name; } else setErr(name, 'e-name', '');
+    if (!/^[0-9-]{10,13}$/.test(telV) || telV.replace(/-/g, '').length < 10) { setErr(tel, 'e-tel', '電話番号を数字で入力してください（例：090-1234-5678）。'); first = first || tel; } else setErr(tel, 'e-tel', '');
+    if (total() === 0) { setErr(null, 'e-items', 'パンがまだ選ばれていません。表の「＋」で1点以上選んでください。'); first = first || rows.querySelector('[data-d="1"]:not(:disabled)'); } else setErr(null, 'e-items', '');
+    if (first) { first.focus(); return; }
+
+    var btn = $('submit');
+    btn.disabled = true; btn.textContent = '送信しています…';
+    var items = {}; BREADS.forEach(function (b) { if (state.qty[b.id]) items[b.id] = state.qty[b.id]; });
+    sendReservation({ slot: state.slot, items: items, name: name.value.trim(), tel: telV }).then(function (p) {
+      state.sent = true;
+      render();
+      var list = BREADS.filter(function (b) { return p.items[b.id]; }).map(function (b) { return b.name + ' ' + p.items[b.id] + '点'; }).join('<br>');
+      $('form-area').innerHTML =
+        '<div class="done" role="status">' +
+          '<h3>ご予約を受け付けました</h3>' +
+          '<dl><dt>受け取り</dt><dd>' + jd(C.sat) + ' ' + label(p.slot) + '、店頭で</dd>' +
+          '<dt>パン</dt><dd>' + list + '</dd>' +
+          '<dt>お名前</dt><dd>' + p.name.replace(/[<>&"]/g, '') + ' 様</dd>' +
+          '<dt>お支払い</dt><dd>受け取りの際に、現金または交通系ICで</dd></dl>' +
+        '</div>';
+      $('bar-count').innerHTML = '<span class="num">' + total() + '点</span> 予約済み';
+      $('bar-link').textContent = '予約内容を見る';
+      $('ticket').scrollIntoView({ block: 'start' });
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = 'この内容で予約する';
+      if (err.code === 'closed') {
+        state.closed = true; C = cycle(now()); render();
+      } else {
+        setErr(null, 'e-items', err.name + 'の残りが足りなくなりました。数を減らしてから、もう一度予約してください。');
+      }
+    });
+  });
+
+  buildRows();
+  render();
+  setInterval(function () {
+    if (state.sent) return;
+    var c = cycle(now());
+    if (c.closed && !state.closed) { state.closed = true; C = c; }
+    render();
+  }, 30000);
+})();
+</script>
+</body>
+</html>

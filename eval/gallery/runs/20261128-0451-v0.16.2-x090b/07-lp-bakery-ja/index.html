@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパン予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンの予約ページ。金曜18時までのご予約で、土曜に店頭でお渡しします。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Kaisei+Tokumin:wght@800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --kraft: #CBA57B;
+  --flour: #FAF6EE;
+  --crust: #2A1C12;
+  --muted: #5E4A38;
+  --line: #8A7560;
+  --mark: #5A2E14;
+  --ai: #1E3A6E;
+  --on-ai: #FAF6EE;
+  --danger: #A3271B;
+
+  --f-display: "Kaisei Tokumin", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  --t-s: 16px;
+  --t-b: 17px;
+  --t-m: 21px;
+  --t-l: 27px;
+  --t-xl: 34px;
+  --t-xxl: 42px;
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+  --r: 6px;
+  --slip-shadow: 0 1px 0 rgba(42, 28, 18, .18), 0 10px 24px -8px rgba(42, 28, 18, .45);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--kraft);
+  color: var(--crust);
+  font-family: var(--f-body);
+  font-size: var(--t-b);
+  line-height: 1.8;
+  letter-spacing: .03em;
+  text-wrap: pretty;
+}
+h1, h2, h3 { font-family: var(--f-display); font-weight: 800; font-synthesis: none; line-height: 1.35; letter-spacing: .02em; text-wrap: balance; margin: 0; font-feature-settings: "palt"; }
+p { margin: 0; }
+.nw { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--ai); outline-offset: 3px; }
+
+/* ---------- masthead ---------- */
+.mast {
+  max-width: 1200px; margin: 0 auto; padding: var(--s3) var(--s3) 0;
+  display: flex; align-items: center; gap: var(--s2);
+}
+.brand { display: flex; align-items: center; gap: var(--s1); font-family: var(--f-display); font-weight: 800; font-size: var(--t-m); line-height: 1; }
+.brand svg { width: 36px; height: 36px; flex: none; }
+
+/* ---------- layout ---------- */
+.page {
+  max-width: 1200px; margin: 0 auto; padding: var(--s3);
+  display: grid; gap: var(--s6) var(--s5);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "top" "info";
+  align-items: start;
+}
+.top {
+  grid-area: top; min-width: 0;
+  display: grid; gap: var(--s4) var(--s5);
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-areas: "order slip";
+  align-items: start;
+}
+.order { grid-area: order; min-width: 0; }
+.slipwrap { grid-area: slip; position: sticky; top: var(--s3); }
+.info { grid-area: info; min-width: 0; }
+
+/* ---------- hero ---------- */
+.lead h1 { font-size: var(--t-xxl); }
+.lead p { margin-top: var(--s1); font-size: var(--t-m); line-height: 1.6; }
+.until { margin-top: var(--s2); display: inline-flex; flex-wrap: wrap; gap: 0 var(--s1); align-items: baseline; font-weight: 700; }
+.until b { font-family: var(--f-display); font-weight: 800; font-size: var(--t-l); line-height: 1.2; }
+
+/* ---------- bread list ---------- */
+.breads { margin-top: var(--s4); background: var(--flour); border-radius: var(--r); padding: var(--s1) var(--s3); }
+.breads h2 { font-size: var(--t-m); padding: var(--s2) 0 var(--s1); }
+.breads ul { list-style: none; margin: 0; padding: 0; }
+.bread {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--s2);
+  padding: var(--s2) 0; border-top: 1px dashed var(--line);
+}
+.bread .name { font-weight: 700; font-size: var(--t-m); line-height: 1.4; }
+.bread .left { color: var(--muted); white-space: nowrap; }
+.bread .left b { color: var(--crust); font-variant-numeric: tabular-nums; }
+.step { display: flex; align-items: center; gap: var(--s1); }
+.step button {
+  width: 44px; height: 44px; border-radius: var(--r);
+  border: 2px solid var(--crust); background: var(--flour); color: var(--crust);
+  display: grid; place-items: center; cursor: pointer; padding: 0;
+  transition: background-color .15s ease, transform .12s ease;
+}
+.step button svg { width: 20px; height: 20px; }
+@media (hover: hover) and (pointer: fine) { .step button:hover:not(:disabled) { background: color-mix(in srgb, var(--kraft) 22%, var(--flour)); } }
+.step button:active:not(:disabled) { transform: scale(.94); }
+.step button:disabled { border-color: var(--line); color: var(--line); cursor: not-allowed; }
+.step output { min-width: 2ch; text-align: center; font-size: var(--t-m); font-weight: 700; font-variant-numeric: tabular-nums; }
+.bread.out .name { color: var(--muted); }
+.bread.out .soldmark { grid-column: 2 / -1; justify-self: end; }
+.soldmark { display: flex; align-items: center; gap: var(--s1); color: var(--mark); font-weight: 700; white-space: nowrap; }
+.stamp-sm {
+  width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--mark);
+  display: grid; place-items: center; transform: rotate(-12deg);
+  font-family: var(--f-display); font-weight: 800; font-size: var(--t-s); line-height: 1; letter-spacing: 0;
+}
+.breads .foot { border-top: 1px dashed var(--line); padding: var(--s2) 0 var(--s2); }
+
+/* ---------- 引換札 (signature) ---------- */
+.slip {
+  position: relative; background: var(--flour); border-radius: var(--r);
+  box-shadow: var(--slip-shadow);
+  padding: var(--s4) var(--s3) var(--s3) var(--s4);
+}
+/* perforated left edge */
+.slip::before {
+  content: ""; position: absolute; left: 12px; top: 12px; bottom: 12px;
+  border-left: 2px dashed var(--line);
+}
+/* punched string hole */
+.hole { position: absolute; top: 14px; right: 18px; width: 16px; height: 16px; border-radius: 50%; background: var(--kraft); box-shadow: inset 0 1px 2px rgba(42, 28, 18, .5); }
+.slip h2 { font-size: var(--t-l); }
+.slip .day { font-weight: 700; margin-top: 2px; }
+.slots { display: flex; gap: var(--s1); margin: var(--s3) 0 var(--s1); list-style: none; padding: 0; }
+.slot {
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
+  border: 2px dashed var(--line); display: grid; place-items: center;
+}
+.slot svg { width: 40px; height: 40px; color: var(--mark); }
+.slot.on { border: 2px solid var(--mark); }
+.slot.on svg { animation: burn .22s var(--ease-out) both; }
+@keyframes burn { from { transform: scale(1.25) rotate(var(--rot, 0deg)); opacity: 0; } to { transform: scale(1) rotate(var(--rot, 0deg)); opacity: 1; } }
+.count { font-weight: 700; }
+.count .num { font-family: var(--f-display); font-size: var(--t-m); }
+.picked { list-style: none; margin: var(--s1) 0 0; padding: 0; }
+.picked li { display: flex; justify-content: space-between; gap: var(--s2); border-bottom: 1px dotted var(--line); }
+.limit { color: var(--danger); font-weight: 700; margin-top: var(--s1); }
+.limit:empty { display: none; }
+
+fieldset { border: 0; margin: var(--s3) 0 0; padding: 0; min-width: 0; }
+legend, .field label { font-weight: 700; padding: 0; margin-bottom: var(--s1); }
+.rounds { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); }
+.round input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.round .tag {
+  position: relative; display: block; text-align: center; cursor: pointer;
+  border: 2px solid var(--line); border-radius: var(--r); padding: var(--s1) var(--s1) var(--s1) var(--s3);
+  background: var(--flour); line-height: 1.3; min-height: 56px;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.round .tag::before { content: ""; position: absolute; left: 10px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--kraft); box-shadow: inset 0 1px 2px rgba(42, 28, 18, .5); }
+.round .tag b { display: block; font-family: var(--f-display); font-weight: 800; font-size: var(--t-m); }
+.round input:checked + .tag { border-color: var(--ai); background: color-mix(in srgb, var(--ai) 10%, var(--flour)); box-shadow: inset 0 0 0 1px var(--ai); }
+.round input:focus-visible + .tag { outline: 3px solid var(--ai); outline-offset: 3px; }
+.round input:disabled + .tag { cursor: not-allowed; color: var(--muted); }
+
+.field { margin-top: var(--s2); }
+.field label { display: block; }
+.field input {
+  width: 100%; font: inherit; font-size: var(--t-b); color: var(--crust); background: var(--flour);
+  border: 2px solid var(--line); border-radius: var(--r); padding: 10px 12px; min-height: 48px;
+}
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.field input:disabled { background: color-mix(in srgb, var(--kraft) 15%, var(--flour)); }
+.err { color: var(--danger); font-weight: 700; margin-top: 4px; }
+.err:empty { display: none; }
+
+.go {
+  margin-top: var(--s3); width: 100%; min-height: 56px; border: 0; border-radius: var(--r);
+  background: var(--ai); color: var(--on-ai); font: inherit; font-weight: 700; font-size: var(--t-m);
+  cursor: pointer; white-space: nowrap; transition: transform .12s ease, background-color .15s ease;
+}
+@media (hover: hover) and (pointer: fine) { .go:hover:not(:disabled) { background: color-mix(in srgb, var(--ai) 85%, var(--crust)); } }
+.go:active:not(:disabled) { transform: scale(.97); }
+.go:disabled { background: color-mix(in srgb, var(--kraft) 20%, var(--flour)); color: var(--muted); border: 2px dashed var(--line); cursor: not-allowed; }
+.why { margin-top: var(--s1); }
+.why:empty { display: none; }
+
+/* closed + done stamps across the slip */
+/* the stamp sits on the slot row only, so it never covers the date line or the count */
+.slotrow { position: relative; }
+.slip.closed .slotrow, .slip.done .slotrow { padding-block: var(--s3); }
+.bigstamp {
+  display: none; position: absolute; right: 0; top: 50%; margin-top: -52px; z-index: 2; pointer-events: none;
+  width: 104px; height: 104px; border-radius: 50%; border: 4px double var(--mark); color: var(--mark);
+  place-items: center; text-align: center; transform: rotate(-14deg); background: rgba(250, 246, 238, .88);
+  font-family: var(--f-display); font-weight: 800; font-size: var(--t-m); line-height: 1.25;
+}
+.slip.closed .bigstamp, .slip.done .bigstamp { display: grid; }
+.done-box { display: none; margin-top: var(--s3); border-top: 2px dashed var(--line); padding-top: var(--s2); }
+.slip.done .done-box { display: block; }
+.slip.done form { display: none; }
+.done-box dl { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--s2); margin: var(--s1) 0 0; }
+.done-box dt { font-weight: 700; white-space: nowrap; }
+.done-box dd { margin: 0; }
+.done-box .no { font-family: var(--f-display); font-size: var(--t-l); letter-spacing: .06em; }
+.again { margin-top: var(--s2); background: none; border: 0; padding: 0; min-height: 44px; font: inherit; color: var(--ai); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; font-weight: 700; }
+
+/* ---------- 受け取りの前に: three 札 on one string ---------- */
+.info h2 { font-size: var(--t-xl); }
+.string { position: relative; margin-top: var(--s4); padding-top: var(--s3); display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: var(--s3); list-style: none; padding-left: 0; }
+.string::before { content: ""; position: absolute; left: 0; right: 0; top: 0; border-top: 2px solid var(--crust); }
+.tagcard { position: relative; background: var(--flour); border-radius: var(--r); padding: var(--s4) var(--s3) var(--s3); }
+.tagcard::before { content: ""; position: absolute; left: 50%; top: calc(-1 * var(--s3)); height: calc(var(--s3) + 14px); border-left: 2px solid var(--crust); }
+.tagcard::after { content: ""; position: absolute; left: calc(50% - 7px); top: 10px; width: 14px; height: 14px; border-radius: 50%; background: var(--kraft); box-shadow: inset 0 1px 2px rgba(42, 28, 18, .5); }
+.tagcard h3 { font-size: var(--t-m); }
+.tagcard .big { font-family: var(--f-display); font-weight: 800; font-size: var(--t-xxl); line-height: 1.2; margin-top: var(--s1); }
+.tagcard .big span + span { margin-left: var(--s2); }
+.tagcard p + p { margin-top: var(--s1); }
+
+.foot-site { max-width: 1200px; margin: 0 auto; padding: var(--s5) var(--s3) var(--s6); display: flex; align-items: center; gap: var(--s1); font-family: var(--f-display); font-weight: 800; }
+
+/* ---------- mobile one-line bar ---------- */
+.bar { display: none; }
+
+@media (max-width: 899px) {
+  .top { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s4) var(--s3); }
+  .lead h1 { font-size: var(--t-xl); }
+  .breads { padding: var(--s1) var(--s2); }
+  .slip { padding: var(--s4) var(--s2) var(--s3) var(--s4); }
+  .slots { gap: 6px; }
+  .slot { width: 46px; height: 46px; }
+  .slot svg { width: 36px; height: 36px; }
+  .string { grid-template-columns: 1fr 1fr; }
+  .string li:first-child { grid-column: 1 / -1; }
+  .bread { grid-template-columns: minmax(0, 1fr) auto; gap: 4px var(--s2); }
+  .bread .name { grid-column: 1 / -1; }
+  .bread .left { grid-column: 1; grid-row: 2; white-space: normal; }
+  .bread .step, .bread .soldmark { grid-column: 2; grid-row: 2; }
+  .bread.out .name { grid-column: 1; }
+  .bread.out .soldmark { grid-row: 1; }
+}
+@media (max-width: 719px) {
+  .mast { padding: var(--s2) var(--s2) 0; }
+  .page { padding: var(--s2); gap: var(--s5); }
+  .top { grid-template-columns: minmax(0, 1fr); grid-template-areas: "order" "slip"; }
+  .slipwrap { position: static; }
+  .lead h1 { font-size: var(--t-l); }
+  .lead p { font-size: var(--t-b); }
+  .until b { font-size: var(--t-m); }
+  .breads { margin-top: var(--s2); }
+  .bread { padding: 12px 0; }
+  .slip { padding: var(--s4) var(--s2) var(--s3) var(--s4); }
+  .slots { gap: 6px; }
+  .slot { width: 40px; height: 40px; }
+  .slot svg { width: 30px; height: 30px; }
+  .string { grid-template-columns: minmax(0, 1fr); }
+  .tagcard .big { font-size: var(--t-xl); }
+  body { padding-bottom: 72px; }
+  .bar {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    align-items: center; justify-content: space-between; gap: var(--s2);
+    padding: var(--s1) var(--s2); background: var(--flour); border-top: 2px solid var(--crust);
+    transition: transform .2s var(--ease-out);
+  }
+  .bar.hide { transform: translateY(110%); }
+  body.closed { padding-bottom: 0; }
+  body.closed .bar { display: none; }
+  .bar .mini { display: flex; gap: 4px; align-items: center; font-weight: 700; white-space: nowrap; }
+  .bar .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--line); }
+  .bar .dot.on { border: 2px solid var(--mark); background: var(--mark); }
+  .bar a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s2); border-radius: var(--r); background: var(--ai); color: var(--on-ai); text-decoration: none; font-weight: 700; white-space: nowrap; }
+}
+@media (min-width: 1600px) {
+  .mast, .foot-site { max-width: 1680px; }
+  .page { max-width: 1680px; grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "top info"; }
+  .top { grid-template-columns: minmax(0, 1fr) 400px; }
+  .lead h1 { font-size: 48px; }
+  .info h2 { font-size: var(--t-l); }
+  .string { grid-template-columns: minmax(0, 1fr); margin-top: var(--s3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot.on svg { animation: fade .2s ease both; transform: rotate(var(--rot, 0deg)); }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .bar, .go, .step button { transition: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="yakiin" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.5"/>
+      <path d="M20 31V10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <g fill="currentColor">
+        <ellipse cx="16" cy="13.5" rx="2.6" ry="4.4" transform="rotate(-28 16 13.5)"/>
+        <ellipse cx="24" cy="13.5" rx="2.6" ry="4.4" transform="rotate(28 24 13.5)"/>
+        <ellipse cx="15.6" cy="20" rx="2.6" ry="4.4" transform="rotate(-34 15.6 20)"/>
+        <ellipse cx="24.4" cy="20" rx="2.6" ry="4.4" transform="rotate(34 24.4 20)"/>
+        <ellipse cx="20" cy="8" rx="2.2" ry="3.8"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="mast">
+  <div class="brand"><svg aria-hidden="true"><use href="#yakiin"/></svg>こむぎ舎</div>
+</header>
+
+<main class="page">
+ <div class="top">
+  <section class="order" aria-labelledby="h1">
+    <div class="lead">
+      <h1 id="h1">土曜のパンは、<span class="nw">金曜18時まで</span>に<wbr>ご予約を</h1>
+      <p id="leadline">自家製酵母のパンを、土曜に店頭でお渡しします。</p>
+      <p class="until" id="until"><span>締め切りまで</span><b id="left">—</b></p>
+    </div>
+
+    <div class="breads">
+      <h2 id="breadsHead">週末のパン</h2>
+      <ul id="list" aria-labelledby="breadsHead"></ul>
+    </div>
+  </section>
+
+  <div class="slipwrap">
+    <section class="slip" id="slip" aria-labelledby="slipHead">
+      <span class="hole" aria-hidden="true"></span>
+      <h2 id="slipHead">引換札</h2>
+      <p class="day" id="slipDay">—</p>
+
+      <div class="slotrow">
+        <ol class="slots" id="slots" aria-hidden="true"></ol>
+        <div class="bigstamp" id="bigstamp" aria-hidden="true"></div>
+      </div>
+      <p class="count" id="count" aria-live="polite"></p>
+      <ul class="picked" id="picked"></ul>
+      <p class="limit" id="limit" role="status"></p>
+
+      <form id="form" novalidate>
+        <fieldset id="roundSet" aria-describedby="roundErr">
+          <legend>受け取りの回</legend>
+          <div class="rounds">
+            <label class="round"><input type="radio" name="round" value="8:00"><span class="tag"><b class="num">8:00</b>の回</span></label>
+            <label class="round"><input type="radio" name="round" value="11:00"><span class="tag"><b class="num">11:00</b>の回</span></label>
+          </div>
+          <p class="err" id="roundErr"></p>
+        </fieldset>
+        <div class="field">
+          <label for="nm">お名前</label>
+          <input id="nm" name="nm" autocomplete="name" aria-describedby="nmErr">
+          <p class="err" id="nmErr"></p>
+        </div>
+        <div class="field">
+          <label for="tel">電話番号</label>
+          <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="telErr">
+          <p class="err" id="telErr"></p>
+        </div>
+        <button class="go" id="go" type="submit" aria-describedby="why">予約する</button>
+        <p class="why" id="why"></p>
+        <p class="err" id="itemErr"></p>
+      </form>
+
+      <div class="done-box" id="done" role="status" tabindex="-1">
+        <h3>予約を受け付けました</h3>
+        <dl>
+          <dt>予約番号</dt><dd class="no num" id="dNo"></dd>
+          <dt>受け取り</dt><dd id="dWhen"></dd>
+          <dt>パン</dt><dd id="dItems"></dd>
+          <dt>お名前</dt><dd id="dName"></dd>
+        </dl>
+        <button class="again" id="again" type="button">予約内容を直す</button>
+      </div>
+    </section>
+  </div>
+ </div>
+
+  <section class="info" aria-labelledby="infoHead">
+    <h2 id="infoHead">受け取りの前に</h2>
+    <ul class="string">
+      <li class="tagcard">
+        <h3>土曜の焼き上がり</h3>
+        <p class="big num"><span>8:00</span><span>11:00</span></p>
+        <p>1日2回、焼き上がります。</p>
+      </li>
+      <li class="tagcard">
+        <h3>受け取り</h3>
+        <p class="big">店頭のみ</p>
+        <p>配達や発送はしていません。</p>
+      </li>
+      <li class="tagcard">
+        <h3>お支払い</h3>
+        <p class="big" style="font-size:var(--t-l)">現金<br>交通系IC</p>
+      </li>
+    </ul>
+  </section>
+</main>
+
+<footer class="foot-site">こむぎ舎</footer>
+
+<div class="bar" id="bar">
+  <span class="mini" id="mini"></span>
+  <a href="#slip">予約票へ進む</a>
+</div>
+
+<script>
+(() => {
+  const MAX = 5;
+  const BREADS = [
+    { id: 'inaka',  name: '田舎パン',            stock: 6 },
+    { id: 'kurumi', name: '胡桃とレーズンのパン', stock: 3 },
+    { id: 'baguette', name: '土曜のバゲット',     stock: 8 },
+    { id: 'anpan',  name: '酒種あんぱん',         stock: 0 },
+    { id: 'ringo',  name: 'りんごのパン',          stock: 2 },
+    { id: 'kokuto', name: '黒糖ブリオッシュ',      stock: 5 },
+  ];
+  const qty = Object.fromEntries(BREADS.map(b => [b.id, 0]));
+  const ROT = [-8, 5, -3, 9, -6];
+  const $ = id => document.getElementById(id);
+  const WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+  // ---- clock in Japan time ----
+  const param = new URLSearchParams(location.search).get('now');
+  const nowMs = param && !isNaN(Date.parse(param)) ? Date.parse(param) : Date.now();
+  const H = 3600e3, D = 24 * H, JST = 9 * H;
+  const j = new Date(nowMs + JST);
+  const dow = j.getUTCDay();
+  const midnight = Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate()) - JST;
+  const sat = midnight + ((6 - dow + 7) % 7) * D;          // this week's Saturday 0:00 JST
+  const deadline = sat - 6 * H;                             // Friday 18:00 JST
+  const closed = nowMs >= deadline;
+  const fmt = ms => { const d = new Date(ms + JST); return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日（${WD[d.getUTCDay()]}）`; };
+
+  const slip = $('slip');
+  $('slipDay').textContent = `${fmt(sat)} 受け取り`;
+
+  if (closed) {
+    slip.classList.add('closed');
+    document.body.classList.add('closed');
+    $('bigstamp').innerHTML = '受付<br>終了';
+    $('h1').innerHTML = `${fmt(sat)}の分は<wbr>締め切りました`;
+    $('leadline').textContent = `次は${fmt(sat + 7 * D)}受け取りの分です。`;
+    $('until').innerHTML = `<span>次の締め切り</span><b class="num">${fmt(deadline + 7 * D)} 18時</b>`;
+    $('why').textContent = `今週の予約は${fmt(deadline)}18時で締め切りました。`;
+    document.querySelectorAll('#form input').forEach(i => i.disabled = true);
+    $('go').disabled = true;
+  } else {
+    const rest = deadline - nowMs;
+    const d = Math.floor(rest / D), h = Math.floor(rest % D / H), m = Math.floor(rest % H / 60e3);
+    $('left').innerHTML = `<span class="nw">${fmt(deadline)} 18時</span> <span class="nw">あと${d ? d + '日' : ''}${h}時間${d ? '' : m + '分'}</span>`;
+  }
+
+  const total = () => Object.values(qty).reduce((a, b) => a + b, 0);
+  const svgMinus = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+  const svgPlus  = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M10 4v12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+
+  // ---- bread rows ----
+  $('list').innerHTML = BREADS.map(b => b.stock === 0 ? `
+    <li class="bread out">
+      <span class="name">${b.name}</span>
+      <span class="soldmark"><span class="stamp-sm" aria-hidden="true">完売</span><span class="vh">完売</span></span>
+    </li>` : `
+    <li class="bread" data-id="${b.id}">
+      <span class="name" id="n-${b.id}">${b.name}</span>
+      <span class="left">残り <b data-left>${b.stock}</b> 個</span>
+      <span class="step">
+        <button type="button" data-d="-1" aria-label="${b.name}を1個減らす">${svgMinus}</button>
+        <output aria-live="polite" aria-labelledby="n-${b.id}" data-q>0</output>
+        <button type="button" data-d="1" aria-label="${b.name}を1個増やす">${svgPlus}</button>
+      </span>
+    </li>`).join('');
+
+  $('list').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-d]');
+    if (!btn || closed) return;
+    const id = btn.closest('[data-id]').dataset.id;
+    const b = BREADS.find(x => x.id === id);
+    const d = +btn.dataset.d;
+    if (d > 0 && total() >= MAX) { $('limit').textContent = '予約は1人5点までです。ほかのパンを減らすと追加できます。'; return; }
+    qty[id] = Math.max(0, Math.min(b.stock, qty[id] + d));
+    $('limit').textContent = '';
+    $('itemErr').textContent = '';
+    render();
+  });
+
+  function render() {
+    const t = total();
+    document.querySelectorAll('.bread[data-id]').forEach(row => {
+      const b = BREADS.find(x => x.id === row.dataset.id);
+      row.querySelector('[data-q]').textContent = qty[b.id];
+      row.querySelector('[data-left]').textContent = b.stock - qty[b.id];
+      const [minus, plus] = row.querySelectorAll('button');
+      minus.disabled = closed || qty[b.id] === 0;
+      plus.disabled = closed || qty[b.id] >= b.stock || t >= MAX;
+    });
+    // slots
+    const slots = $('slots');
+    const prev = slots.querySelectorAll('.slot.on').length;
+    slots.innerHTML = Array.from({ length: MAX }, (_, i) => i < t
+      ? `<li class="slot on"><svg style="--rot:${ROT[i]}deg" class="${i < prev ? 'still' : ''}"><use href="#yakiin"/></svg></li>`
+      : `<li class="slot"></li>`).join('');
+    slots.querySelectorAll('svg.still').forEach(s => s.style.animation = 'none');
+    $('count').innerHTML = closed ? '今週の受付は終了しています'
+      : t === 0 ? `<span class="num">5</span>点まで選べます`
+      : t === MAX ? `<span class="num">5</span>点、いっぱいです`
+      : `<span class="num">${t}</span>点 選択中・あと<span class="num">${MAX - t}</span>点`;
+    $('picked').innerHTML = BREADS.filter(b => qty[b.id]).map(b => `<li><span>${b.name}</span><span class="num">${qty[b.id]}個</span></li>`).join('');
+    $('mini').innerHTML = closed ? '受付終了'
+      : Array.from({ length: MAX }, (_, i) => `<span class="dot${i < t ? ' on' : ''}" aria-hidden="true"></span>`).join('') + `<span>&nbsp;${t}/5点</span>`;
+  }
+  render();
+
+  // ---- submit ----
+  const form = $('form');
+  const setErr = (input, errId, msg) => { $(errId).textContent = msg; if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false'); return !msg; };
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (closed) return;
+    const round = form.round.value;
+    const nm = form.nm.value.trim();
+    const tel = form.tel.value.replace(/[‐－−ー\-\s]/g, '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    const ok = [
+      (() => { $('itemErr').textContent = total() ? '' : 'パンが選ばれていません。上の一覧の「増やす」で1点以上選んでください。'; return total() > 0; })(),
+      setErr(null, 'roundErr', round ? '' : '受け取りの回を、8:00か11:00から選んでください。'),
+      setErr(form.nm, 'nmErr', nm ? '' : 'お名前を入れてください。'),
+      setErr(form.tel, 'telErr', /^0\d{9,10}$/.test(tel) ? '' : '電話番号を、0から始まる10桁か11桁で入れてください（ハイフンはあってもなくても大丈夫です）。'),
+    ];
+    if (ok.includes(false)) {
+      const first = !ok[0] ? document.querySelector('.bread[data-id] button[data-d="1"]:not(:disabled)') : !ok[1] ? form.round[0] : !ok[2] ? form.nm : form.tel;
+      first && first.focus();
+      return;
+    }
+    const sd = new Date(sat + JST);
+    $('dNo').textContent = `${sd.getUTCMonth() + 1}${String(sd.getUTCDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100)}`;
+    $('dWhen').innerHTML = `<span class="nw">${fmt(sat)}</span> <span class="nw">${round}の回</span>・<span class="nw">店頭</span>`;
+    $('dItems').innerHTML = BREADS.filter(b => qty[b.id]).map(b => `${b.name} ${qty[b.id]}個`).join('<br>');
+    $('dName').textContent = `${nm} 様`;
+    $('bigstamp').innerHTML = '予約<br>済み';
+    slip.classList.add('done');
+    document.querySelectorAll('.bread button').forEach(b => b.disabled = true);
+    $('done').focus();
+  });
+  $('again').addEventListener('click', () => {
+    slip.classList.remove('done');
+    render();
+    form.nm.focus();
+  });
+
+  // ---- mobile bar hides while the slip is on screen ----
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([en]) => $('bar').classList.toggle('hide', en.isIntersecting), { threshold: 0.15 }).observe(slip);
+  }
+})();
+</script>
+</body>
+</html>

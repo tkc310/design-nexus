@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今月の給与 | あおば内科クリニック 給与計算</title>
+<meta name="description" content="締め日までの残り日数、未承認の勤怠申請、スタッフ別の支給額と前月比を確認して、勤怠の承認と給与の確定を行う画面です。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Barlow:wght@400;600&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 台紙: タイムカードの厚紙 */
+  --paper:#F3EEE3;
+  /* 押下済みの欄: 打刻で擦れた台紙 */
+  --punch:#E3D9C4;
+  /* 墨: タイムレコーダーの黒印字。押すもの(主操作)と本文 */
+  --ink:#22201C;
+  --ink-2:#575043;
+  /* 罫: カードに印刷された罫線 */
+  --rule:#C8BCA4;
+  --field:#857A66;
+  /* 赤印字: 規定外の打刻を示す赤。未承認・エラーのみ */
+  --red:#B3261E;
+  --red-wash:#F6DED7;
+
+  --display:"DotGothic16","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  --body:"Barlow","BIZ UDPGothic","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --t-sm:14px; --t-base:16px; --t-md:20px; --t-lg:25px; --t-xl:39px; --t-2xl:61px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --radius:6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:var(--t-base);line-height:1.7;letter-spacing:0.02em;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;line-height:1.3;text-wrap:balance;font-feature-settings:"palt";letter-spacing:0.01em}
+h1{font-size:var(--t-lg);font-weight:700}
+h2{font-size:var(--t-md);font-weight:700}
+p{margin:0;text-wrap:pretty}
+.num,.fig{font-variant-numeric:tabular-nums;white-space:nowrap;overflow-wrap:normal}
+.nw{white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* ---- app bar ---- */
+.appbar{display:flex;align-items:center;gap:var(--s5);padding:0 var(--s5);min-height:56px;border-bottom:2px solid var(--ink);flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:var(--s2);font-weight:700;white-space:nowrap}
+.brand small{font-size:var(--t-sm);font-weight:400;color:var(--ink)}
+.nav{display:flex;gap:var(--s1);margin-left:auto;overflow-x:auto}
+.nav a{display:inline-flex;align-items:center;min-height:40px;padding:0 var(--s3);color:var(--ink);text-decoration:none;white-space:nowrap;border-bottom:3px solid transparent}
+.nav a[aria-current]{border-bottom-color:var(--ink);font-weight:700}
+@media (hover:hover) and (pointer:fine){.nav a:hover{background:var(--punch)}}
+
+main{padding:var(--s5);max-width:1760px;margin:0 auto;display:grid;gap:var(--s5)}
+
+/* ---- title row ---- */
+.titlebar{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--s4) var(--s6)}
+.titlebar .meta{display:flex;flex-wrap:wrap;gap:0 var(--s4);color:var(--ink-2);margin-top:var(--s1)}
+.linkbtn{font:inherit;color:var(--ink);background:none;border:0;padding:0 var(--s1);min-height:32px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap}
+.closeout{display:grid;justify-items:end;gap:var(--s2);max-width:340px}
+.closeout .reason a{color:var(--ink);text-underline-offset:3px;white-space:nowrap}
+.closeout .reason{font-size:var(--t-sm);text-align:right}
+.closeout .reason b{color:var(--red)}
+.done-mark{display:inline-flex;align-items:center;gap:var(--s2);min-height:44px;padding:0 var(--s2);border-bottom:2px solid var(--ink);font-weight:700;white-space:nowrap}
+.done-mark::before{content:"";width:12px;height:7px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg) translate(1px,-2px)}
+
+/* ---- buttons ---- */
+.btn{font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);min-height:44px;padding:0 var(--s5);border-radius:var(--radius);border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .12s var(--ease-out),background-color .15s ease,color .15s ease}
+.btn:active{transform:scale(0.97)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+@media (hover:hover) and (pointer:fine){.btn:hover{background:var(--punch)}.btn.primary:hover{background:var(--ink-2)}}
+.btn[aria-disabled="true"],.btn:disabled{background:transparent;color:var(--ink-2);border-style:dashed;border-color:var(--field);cursor:not-allowed}
+.btn[aria-disabled="true"]:active{transform:none}
+.btn.small{min-height:36px;padding:0 var(--s4);font-size:var(--t-sm)}
+.btn .count{font-family:var(--display);font-weight:400}
+
+/* ---- signature: 締め期間のタイムカード ---- */
+.card{border:1.5px solid var(--ink);border-radius:var(--radius);padding:var(--s5);display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:var(--s5) var(--s6);align-items:end;position:relative}
+.kpi{display:grid;gap:var(--s1);position:relative}
+.kpi .label{font-weight:700}
+.kpi .value{font-family:var(--display);font-size:var(--t-2xl);line-height:1;white-space:nowrap;font-weight:400;font-synthesis:none}
+.kpi .value small{font-size:var(--t-lg)}
+.kpi .sub{font-size:var(--t-sm)}
+.kpi.alert .value{color:var(--red)}
+.kpi.clear .value{color:var(--ink)}
+.kpi + .kpi{padding-left:var(--s6);border-left:1px solid var(--rule)}
+.strip-wrap{min-width:0;position:relative}
+.strip-head{display:flex;justify-content:space-between;gap:var(--s3);font-size:var(--t-sm);margin-bottom:var(--s2)}
+.strip-head .end{font-weight:700}
+.weekhead{display:none}
+.strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--days,31),minmax(0,1fr));border:1px solid var(--ink);border-radius:3px;overflow:hidden}
+.day{position:relative;height:52px;display:grid;grid-template-rows:1fr 14px;justify-items:center;align-items:center;border-left:1px solid var(--rule);font-family:var(--display);font-size:var(--t-sm);line-height:1;font-variant-numeric:tabular-nums}
+.day:first-child{border-left:0}
+.day.m1{border-left:2px solid var(--ink)}
+.day.past{background:var(--punch);color:var(--ink-2)}
+.day.today{background:var(--ink);color:var(--paper)}
+.day.close{box-shadow:inset 0 -4px 0 var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);transition:transform .25s var(--ease-out),background-color .25s ease,opacity .25s ease}
+.today .dot{box-shadow:0 0 0 2px var(--paper)}
+.dot.ok{background:transparent;border-left:2px solid currentColor;border-bottom:2px solid currentColor;border-radius:0;width:9px;height:5px;transform:rotate(-45deg) translateY(-2px)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);margin-top:var(--s2);font-size:var(--t-sm)}
+.legend span{display:inline-flex;align-items:center;gap:var(--s2);white-space:nowrap}
+.sw{width:14px;height:14px;border:1px solid var(--ink);display:inline-block}
+.sw.past{background:var(--punch)}
+.sw.today{background:var(--ink)}
+.sw.okk{border:0;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);width:10px;height:6px;transform:rotate(-45deg) translateY(-2px)}
+.sw.dotk{border:0;width:8px;height:8px;border-radius:50%;background:var(--red)}
+
+/* ---- middle row ---- */
+.mid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--s5)}
+.region{border-top:2px solid var(--ink);padding-top:var(--s4);min-width:0}
+.region-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s2) var(--s4);margin-bottom:var(--s3)}
+.region-head .count-tag{font-family:var(--display);color:var(--red);font-size:var(--t-md);margin-left:var(--s2)}
+
+/* slips: one ruled line per request, dated with the same day cell */
+.slips{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.slip{display:grid;grid-template-columns:28px 52px minmax(0,1fr);gap:var(--s3);align-items:start;padding:var(--s3) 0;border-bottom:1px solid var(--rule);transition:opacity .25s ease,transform .25s var(--ease-out)}
+.slip.leaving{opacity:0;transform:translateX(16px)}
+.slip input{margin:4px 0 0;width:22px;height:22px;accent-color:var(--ink)}
+.stamp{width:52px;height:52px;border:1px solid var(--ink);border-radius:3px;display:grid;place-items:center;align-content:center;font-family:var(--display);line-height:1.1;text-align:center}
+.stamp .m{font-size:var(--t-sm)}
+.stamp .d{font-size:var(--t-md)}
+.slip .who{display:flex;flex-wrap:wrap;gap:0 var(--s3);align-items:baseline}
+.slip .who b{font-size:var(--t-base)}
+.kind{font-size:var(--t-sm);font-weight:700;color:var(--red);white-space:nowrap}
+.slip .detail{display:block;font-size:var(--t-sm)}
+.slip label{cursor:pointer}
+.slip-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3) var(--s4);margin-bottom:var(--s3)}
+.slip-actions .btn{margin-left:auto}
+.checkall{display:inline-flex;align-items:center;gap:var(--s2);min-height:32px;cursor:pointer}
+.checkall input{width:22px;height:22px;margin:0;accent-color:var(--ink)}
+.slip-actions .hint{font-size:var(--t-sm)}
+
+.empty{padding:var(--s5) 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);display:grid;gap:var(--s2)}
+.empty b{font-size:var(--t-md)}
+
+/* ledger of totals */
+.ledger{margin:0;display:grid;grid-template-columns:minmax(0,1fr) auto;border-top:1px solid var(--rule)}
+.ledger dt,.ledger dd{margin:0;padding:var(--s2) 0;border-bottom:1px solid var(--rule)}
+.ledger dd{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger .net{border-top:3px double var(--ink);border-bottom:0;padding-top:var(--s3);font-weight:700}
+.ledger dd.net{font-size:var(--t-xl);line-height:1.1;font-weight:600}
+.ledger dt.net{display:grid;align-content:end}
+.delta{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--s3);margin-top:var(--s2);padding:var(--s3) 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.delta .fig{font-size:var(--t-md);font-weight:600}
+.note{font-size:var(--t-sm);margin-top:var(--s3)}
+.note.warn{color:var(--red)}
+
+/* ---- staff table ---- */
+.lower{display:grid;gap:var(--s5)}
+.tools{display:flex;flex-wrap:wrap;align-items:end;gap:var(--s3) var(--s4)}
+.field{display:grid;gap:var(--s1)}
+.field label{font-size:var(--t-sm);font-weight:700}
+.field input{font:inherit;min-height:40px;width:min(280px,100%);padding:0 var(--s3);border:1.5px solid var(--field);border-radius:var(--radius);background:var(--paper);color:var(--ink)}
+.field input:focus-visible{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink)}
+.tablebox{border:1px solid var(--ink);border-radius:3px;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:15px}
+thead th{position:sticky;top:0;background:var(--punch);text-align:left;font-weight:700;border-bottom:1.5px solid var(--ink);padding:0;white-space:nowrap}
+th.r,td.r{text-align:right}
+.sortbtn{font:inherit;font-weight:700;color:var(--ink);background:none;border:0;width:100%;min-height:40px;padding:0 var(--s3);display:flex;align-items:center;gap:var(--s1);cursor:pointer;text-align:inherit;white-space:nowrap}
+th.r .sortbtn{justify-content:flex-end}
+th.r .sortbtn .arw{order:-1}
+.sortbtn .arw{width:10px;display:inline-block;font-size:12px}
+th[aria-sort] .sortbtn{text-decoration:underline;text-underline-offset:4px}
+tbody td{padding:var(--s2) var(--s3);border-bottom:1px solid var(--rule);height:44px;vertical-align:middle}
+tbody td.r{font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{transition:background-color .2s ease}
+@media (hover:hover) and (pointer:fine){tbody tr:hover{background:var(--punch)}}
+tbody tr.flash{background:var(--punch)}
+td.name{font-weight:700;min-width:8em;white-space:nowrap}
+td.role{white-space:nowrap}
+td.net{font-weight:700}
+.pending-tag{display:inline-block;margin-right:var(--s2);font-size:var(--t-sm);color:var(--red);font-weight:700}
+tr.err td.errcell{color:var(--ink)}
+.errline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}
+.errline .msg{color:var(--red);font-weight:700}
+tfoot td{padding:var(--s3);border-top:3px double var(--ink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.trow-empty td{padding:var(--s6) var(--s4);text-align:left}
+.trow-empty .empty{border:0;padding:0}
+
+/* skeletons */
+.sk{display:block;height:14px;border-radius:3px;background:var(--punch);animation:pulse 1.2s ease-in-out infinite}
+.sk.big{height:52px;width:140px}
+@keyframes pulse{50%{opacity:.55}}
+
+/* page-level error */
+.fail{border:1.5px solid var(--red);border-radius:var(--radius);padding:var(--s5);display:grid;gap:var(--s3);justify-items:start;background:var(--red-wash)}
+.fail h2{color:var(--red)}
+
+/* by-role aside: only from 1600 */
+.byrole{display:none}
+.byrole table{font-size:15px}
+.byrole td,.byrole th{padding:var(--s2) var(--s3)}
+.byrole thead th{padding:var(--s2) var(--s3);min-height:40px}
+
+/* dialog + toast */
+dialog{border:1.5px solid var(--ink);border-radius:var(--radius);background:var(--paper);color:var(--ink);padding:var(--s5);max-width:min(480px,calc(100vw - 32px));box-shadow:0 12px 32px rgba(34,32,28,.25)}
+dialog::backdrop{background:rgba(34,32,28,.4)}
+dialog p{margin-top:var(--s3)}
+dialog .row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--s3);margin-top:var(--s5)}
+.toast{position:fixed;left:50%;bottom:var(--s5);transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--paper);padding:var(--s3) var(--s5);border-radius:var(--radius);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s var(--ease-out);max-width:calc(100vw - 32px);z-index:20;box-shadow:0 8px 24px rgba(34,32,28,.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- responsive ---- */
+@media (max-width:1100px){
+  .card{grid-template-columns:auto minmax(0,1fr)}
+  .card .strip-wrap{grid-column:1 / -1}
+  .card{padding:var(--s4) var(--s5);gap:var(--s4) var(--s6)}
+  .kpi .value{font-size:var(--t-xl)}
+  .kpi .value small{font-size:var(--t-md)}
+  .day{height:44px}
+  .titlebar{column-gap:var(--s4)}
+  .closeout{max-width:290px}
+}
+@media (max-width:900px){
+  .mid{grid-template-columns:minmax(0,1fr)}
+  tbody td{padding:var(--s2)}
+  .sortbtn{padding:0 var(--s2)}
+  td.name{min-width:0}
+  .pending-tag{display:block;margin:0}
+  .titlebar .closeout{max-width:none;width:100%;grid-template-columns:auto minmax(0,1fr);justify-items:start;align-items:center;column-gap:var(--s4)}
+  .closeout .reason{text-align:left}
+}
+@media (max-width:639px){
+  main{padding:var(--s4);gap:var(--s5)}
+  .appbar{padding:0 var(--s4);gap:0 var(--s4)}
+  .nav{margin-left:0;width:100%;flex-wrap:wrap;overflow-x:visible;column-gap:0}
+  .nav a{padding:0 var(--s2)}
+  .titlebar .closeout{grid-template-columns:minmax(0,1fr)}
+  .closeout .reason{text-align:left}
+  .card{padding:var(--s4);gap:var(--s3);grid-template-columns:minmax(0,1fr)}
+  .kpi{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:var(--s3)}
+  .kpi .label{grid-column:1;grid-row:1}
+  .kpi .sub{grid-column:1;grid-row:2}
+  .kpi .value{grid-column:2;grid-row:1 / span 2}
+  .kpi + .kpi{padding:var(--s3) 0 0;border-left:0;border-top:1px solid var(--rule)}
+  .weekhead{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:var(--t-sm);text-align:center;margin-bottom:var(--s1)}
+  .strip{grid-template-columns:repeat(7,minmax(0,1fr));border:0;gap:2px;overflow:visible}
+  .day{border:1px solid var(--rule);border-radius:2px;height:40px;grid-template-rows:1fr 10px}
+  .day.m1{border-left:2px solid var(--ink)}
+  .day:first-child{grid-column-start:var(--start,1);border-left:1px solid var(--rule)}
+  .slip{grid-template-columns:28px 44px minmax(0,1fr)}
+  .stamp{width:44px;height:44px}
+  .slip-actions .btn{width:100%}
+  .field input{width:100%}
+  .tools .field{width:100%}
+  /* table → labelled blocks, net pay first */
+  .tablebox{border:0}
+  table, tbody, tr, td, tfoot{display:block}
+  thead{display:block;margin-bottom:var(--s2)}
+  thead tr{display:flex;flex-wrap:wrap;gap:var(--s1);align-items:center}
+  thead tr::before{content:"並べ替え";font-size:var(--t-sm);margin-right:var(--s2)}
+  thead th{display:block;position:static;border:1px solid var(--field);border-radius:var(--radius);background:transparent}
+  .sortbtn{min-height:32px;font-size:var(--t-sm);font-weight:400}
+  th.r .sortbtn{justify-content:flex-start}
+  th.r .sortbtn .arw{order:0}
+  td.net::before{content:attr(data-label);display:block;font-size:var(--t-sm);font-weight:400;text-align:right}
+  tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--rule)}
+  tbody td{border:0;padding:0;height:auto}
+  td.name{grid-column:1;grid-row:1}
+  td.role{grid-column:1;grid-row:2;font-size:var(--t-sm)}
+  td.net{grid-column:2;grid-row:1 / span 2;font-size:var(--t-md);align-self:center}
+  td.kv{grid-column:1 / -1;display:flex;justify-content:space-between;font-size:15px}
+  td.kv::before{content:attr(data-label);font-weight:400}
+  td.errcell{grid-column:1 / -1}
+  tfoot tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);border-top:3px double var(--ink);padding-top:var(--s3)}
+  tfoot td{border:0;padding:0}
+  tfoot td.fill{grid-column:1 / -1;display:flex;justify-content:space-between;font-weight:400}
+  tfoot td.fill:empty{display:none}
+  tfoot td.fill::before{content:attr(data-label)}
+  tfoot td.tnet{grid-column:2;grid-row:1;font-size:var(--t-md)}
+  .trow-empty{display:block}
+}
+@media (min-width:1600px){
+  .lower{grid-template-columns:minmax(0,1fr) 380px;align-items:start}
+  .byrole{display:block}
+}
+@media (prefers-reduced-motion:reduce){
+  .sk{animation:none}
+  .btn,.slip,.dot,.toast,tbody tr{transition:opacity .2s ease,background-color .2s ease,color .2s ease}
+  .btn:active{transform:none}
+  .slip.leaving{transform:none}
+  .toast,.toast.show{transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand">あおば内科クリニック <small>給与計算</small></div>
+  <nav class="nav" aria-label="メイン">
+    <a href="#" aria-current="page">今月の給与</a>
+    <a href="#">勤怠</a>
+    <a href="#">スタッフ</a>
+    <a href="#">給与明細</a>
+    <a href="#">設定</a>
+  </nav>
+</header>
+
+<main id="main" aria-busy="true">
+  <div class="titlebar">
+    <div>
+      <h1 id="title">今月の給与</h1>
+      <div class="meta">
+        <span id="periodText" class="nw">対象期間を読み込んでいます</span>
+        <button class="linkbtn" id="reload" type="button">最新の情報に更新</button>
+      </div>
+    </div>
+    <div class="closeout" id="closeout"></div>
+  </div>
+
+  <div id="body"></div>
+</main>
+
+<dialog id="confirmDlg" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle">給与を確定しますか</h2>
+  <p id="dlgText"></p>
+  <div class="row">
+    <button class="btn" type="button" id="dlgCancel">戻る</button>
+    <button class="btn primary" type="button" id="dlgOk">確定する</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+  const CLOSE_DAY = 20;            // 20日締め
+  const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+  const num = n => Math.round(n).toLocaleString('ja-JP');
+  const WD = ['日','月','火','水','木','金','土'];
+
+  // ---- today in Asia/Tokyo, as a plain calendar date ----
+  const tokyo = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const [ty,tm,td] = tokyo.split('-').map(Number);
+  const D = (y,m,d) => new Date(Date.UTC(y,m-1,d));
+  const today = D(ty,tm,td);
+  const closing = td <= CLOSE_DAY ? D(ty,tm,CLOSE_DAY) : D(ty,tm+1,CLOSE_DAY);
+  const start = D(closing.getUTCFullYear(), closing.getUTCMonth(), CLOSE_DAY + 1); // previous month, day 21
+  const DAY = 86400000;
+  const periodDays = Math.round((closing - start)/DAY) + 1;
+  const daysLeft = Math.round((closing - today)/DAY);
+  const md = d => `${d.getUTCMonth()+1}月${d.getUTCDate()}日`;
+  const mdw = d => `${md(d)}(${WD[d.getUTCDay()]})`;
+  const clampInPeriod = off => { const t = new Date(today.getTime() + off*DAY); return t < start ? start : t > closing ? closing : t; };
+  const monthLabel = `${closing.getUTCMonth()+1}月分`;
+
+  // ---- "server" (in-memory). Mutations persist across reloads of the view. ----
+  const server = {
+    confirmedAt: null,
+    staff: [
+      {id:1, name:'田中 裕介',   role:'医師',         base:620000, ot:0,     ded:151300, prev:466200},
+      {id:2, name:'森 千尋',     role:'医師(非常勤)', base:280000, ot:0,     ded:56400,  prev:223600},
+      {id:3, name:'佐藤 美咲',   role:'看護師',       base:285000, ot:18600, ded:61200,  prev:236900},
+      {id:4, name:'鈴木 香織',   role:'看護師',       base:292000, ot:24800, ded:64100,  prev:249300},
+      {id:5, name:'松本 陽子',   role:'看護師',       base:301000, ot:31200, ded:68800,  prev:255700},
+      {id:6, name:'伊藤 由紀',   role:'看護師',       base:279000, ot:0,     ded:58700,  prev:228400},
+      {id:7, name:'山本 彩',     role:'准看護師',     base:238000, ot:7600,  ded:49600,  prev:194100},
+      {id:8, name:'高橋 健',     role:'臨床検査技師', base:268000, ot:9200,  ded:56300,  prev:222000},
+      {id:9, name:'井上 大輔',   role:'臨床検査技師', base:259000, ot:5400,  ded:53300,  prev:214500},
+      {id:10,name:'小林 誠',     role:'診療放射線技師',base:281000,ot:15300, ded:60800,  prev:233800},
+      {id:11,name:'渡辺 直樹',   role:'理学療法士',   base:274000, ot:12400, ded:58900,  prev:224100},
+      {id:12,name:'山田 翔太',   role:'理学療法士',   base:266000, ot:21800, ded:59100,  prev:222600},
+      {id:13,name:'中村 さやか', role:'医療事務',     base:226000, ot:8900,  ded:47200,  prev:186300, importError:true},
+      {id:14,name:'加藤 美穂',   role:'医療事務',     base:219000, ot:4100,  ded:44800,  prev:178300},
+      {id:15,name:'山口 麻衣',   role:'医療事務',     base:214000, ot:6300,  ded:44000,  prev:179900},
+      {id:16,name:'吉田 恵',     role:'受付',         base:205000, ot:0,     ded:41200,  prev:163800},
+      {id:17,name:'佐々木 綾香', role:'看護助手',     base:198000, ot:3200,  ded:39900,  prev:158700},
+      {id:18,name:'宇佐美 沙也加',role:'看護助手',    base:162000, ot:0,     ded:28700,  prev:136800}
+    ],
+    requests: [
+      {id:'r1', staffId:3, kind:'残業申請', date:clampInPeriod(-2), detail:'18:30〜20:00(1.5時間)', note:'発熱外来の延長対応', otAdd:3340},
+      {id:'r2', staffId:8, kind:'打刻修正', date:clampInPeriod(-5), detail:'退勤の打刻漏れ → 18:15', note:'検査機器の点検で退勤が遅れたため'},
+      {id:'r3', staffId:6, kind:'有給休暇', date:clampInPeriod(5),  detail:'終日', note:'私用のため'}
+    ],
+    approvedDates: []
+  };
+
+  function fetchPayroll(delay){
+    return new Promise((resolve,reject) => {
+      setTimeout(() => {
+        if (navigator.onLine === false) reject(new Error('offline'));
+        else resolve(JSON.parse(JSON.stringify(server), (k,v) => (k==='date' || k==='approvedDates') ? (Array.isArray(v) ? v.map(x=>new Date(x)) : new Date(v)) : v));
+      }, delay);
+    });
+  }
+
+  // ---- view state ----
+  let data = null;              // last loaded snapshot
+  let status = 'loading';       // loading | ready | error
+  let selected = new Set();
+  let query = '';
+  let sort = {key:null, dir:1};
+  let retrying = new Set();
+
+  const $ = s => document.querySelector(s);
+  const body = $('#body'), closeout = $('#closeout'), main = $('#main');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const netOf = s => s.base + s.ot - s.ded;
+  const pct = (a,b) => b ? (a-b)/b*100 : 0;
+  function fmtPct(p){
+    if (Math.abs(p) < 0.05) return '±0.0%';
+    return (p > 0 ? '+' : '−') + Math.abs(p).toFixed(1) + '%';
+  }
+  function fmtDiff(d){ return (d > 0 ? '+' : d < 0 ? '−' : '±') + yen(Math.abs(d)); }
+
+  let toastTimer;
+  function toast(msg){
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // ---- signature: period strip ----
+  function stripHTML(reqs, approved){
+    const pendingDays = new Map();
+    reqs.forEach(r => { const k = r.date.getTime(); pendingDays.set(k,(pendingDays.get(k)||0)+1); });
+    const okDays = new Set(approved.map(d=>d.getTime()));
+    let cells = '';
+    for (let i=0;i<periodDays;i++){
+      const d = new Date(start.getTime()+i*DAY), k = d.getTime();
+      const cls = ['day'];
+      if (d < today) cls.push('past');
+      if (k === today.getTime()) cls.push('today');
+      if (k === closing.getTime()) cls.push('close');
+      if (d.getUTCDate() === 1) cls.push('m1');
+      const p = pendingDays.get(k);
+      const mark = p ? '<span class="dot"></span>' : okDays.has(k) ? '<span class="dot ok"></span>' : '<span></span>';
+      cells += `<li class="${cls.join(' ')}">${d.getUTCDate()}${mark}</li>`;
+    }
+    const startCol = ((start.getUTCDay()+6)%7)+1; // Monday-first calendar at narrow widths
+    return `<div class="strip-wrap">
+      <div class="strip-head"><span class="nw">${mdw(start)}から</span><span class="end nw">${mdw(closing)} 締め</span></div>
+      <div class="weekhead" aria-hidden="true"><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span></div>
+      <ol class="strip" aria-hidden="true" style="--days:${periodDays};--start:${startCol}">${cells}</ol>
+      <p class="sr">対象期間${periodDays}日のうち${Math.max(0,periodDays-daysLeft-1)}日が経過。${reqs.length ? '未承認の申請がある日: ' + reqs.map(r=>md(r.date)).join('、') : '未承認の申請はありません'}。</p>
+      <div class="legend" aria-hidden="true"><span><i class="sw past"></i>経過</span><span><i class="sw today"></i>今日</span><span><i class="sw dotk"></i>未承認の申請がある日</span>${approved.length ? '<span><i class="sw okk"></i>承認済みの申請がある日</span>' : ''}</div>
+    </div>`;
+  }
+
+  function cardHTML(d){
+    const n = d.requests.length;
+    const left = daysLeft === 0 ? `<span class="value">今日</span><span class="sub">今日が締め日です</span>`
+      : `<span class="value">あと${daysLeft}<small>日</small></span><span class="sub nw">${mdw(closing)}締め</span>`;
+    return `<section class="card" aria-labelledby="kpi1">
+      <div class="kpi"><span class="label" id="kpi1">締め日まで</span>${left}</div>
+      <div class="kpi ${n ? 'alert' : 'clear'}"><span class="label">未承認の勤怠申請</span><span class="value" id="pendingBig">${n}<small>件</small></span><span class="sub">${n ? '承認すると<span class="nw">給与に反映</span>されます' : 'すべて承認済みです'}</span></div>
+      ${stripHTML(d.requests, d.approvedDates)}
+    </section>`;
+  }
+
+  // ---- pending requests ----
+  function requestsHTML(d){
+    const n = d.requests.length;
+    const locked = !!d.confirmedAt;
+    if (!n){
+      return `<section class="region" id="requests" aria-labelledby="reqH">
+        <div class="region-head"><h2 id="reqH">未承認の勤怠申請</h2></div>
+        <div class="empty"><b>未承認の申請はありません</b><p>${locked ? `${monthLabel}の給与は確定済みです。` : (d.staff.some(s=>s.importError) ? '次に、スタッフ別の支給額にある取り込みエラーを「再取得する」で解消してください。解消すると給与を確定できます。' : '支給額を確認して、右上の「給与を確定する」から確定してください。')}</p></div>
+      </section>`;
+    }
+    const byId = new Map(d.staff.map(s=>[s.id,s]));
+    const rows = d.requests.map(r => {
+      const s = byId.get(r.staffId);
+      return `<li class="slip" data-id="${r.id}">
+        <input type="checkbox" id="c-${r.id}" ${selected.has(r.id)?'checked':''} aria-labelledby="who-${r.id}" aria-describedby="dt-${r.id}">
+        <div class="stamp" aria-hidden="true"><span class="m">${r.date.getUTCMonth()+1}月</span><span class="d">${r.date.getUTCDate()}</span></div>
+        <label for="c-${r.id}">
+          <span class="who" id="who-${r.id}"><b>${esc(s.name)}</b><span class="nw">${esc(s.role)}</span><span class="kind">${r.kind}</span></span>
+          <span class="detail" id="dt-${r.id}"><span class="nw">${mdw(r.date)}</span> ${esc(r.detail)}<br>理由:${esc(r.note)}</span>
+        </label>
+      </li>`;
+    }).join('');
+    const k = [...selected].filter(id => d.requests.some(r=>r.id===id)).length;
+    const all = k === n;
+    return `<section class="region" id="requests" aria-labelledby="reqH">
+      <div class="region-head"><h2 id="reqH">未承認の勤怠申請<span class="count-tag">${n}件</span></h2></div>
+      <div class="slip-actions">
+        <label class="checkall"><input type="checkbox" id="checkAll" ${all?'checked':''}>すべて選ぶ</label>
+        <span class="hint" id="apprHint">${k ? `${k}件を選択中` : '承認する申請を選んでください'}</span>
+        <button type="button" class="btn ${k?'primary':''}" id="approveBtn" ${k?'':'aria-disabled="true"'} aria-describedby="apprHint">勤怠を承認する<span class="count">${k}件</span></button>
+      </div>
+      <ul class="slips">${rows}</ul>
+    </section>`;
+  }
+
+  // ---- totals ledger ----
+  function totals(d){
+    const ok = d.staff.filter(s=>!s.importError);
+    const sum = f => ok.reduce((a,s)=>a+f(s),0);
+    return {base:sum(s=>s.base), ot:sum(s=>s.ot), ded:sum(s=>s.ded), net:sum(netOf), prev:sum(s=>s.prev), count:ok.length, errs:d.staff.filter(s=>s.importError)};
+  }
+  function ledgerHTML(d){
+    const t = totals(d), diff = t.net - t.prev;
+    return `<section class="region" id="totals" aria-labelledby="totH">
+      <div class="region-head"><h2 id="totH">${monthLabel}の支給合計</h2><span class="nw">${t.count}名分</span></div>
+      <dl class="ledger">
+        <dt>基本給</dt><dd>${yen(t.base)}</dd>
+        <dt>残業代</dt><dd>${yen(t.ot)}</dd>
+        <dt>控除</dt><dd>−${yen(t.ded)}</dd>
+        <dt class="net">差引支給額</dt><dd class="net">${yen(t.net)}</dd>
+      </dl>
+      <div class="delta"><span>前月比 <span class="nw">(前月 ${yen(t.prev)})</span></span><span class="fig">${fmtDiff(diff)}<span class="sr">、</span> ${fmtPct(pct(t.net,t.prev))}</span></div>
+      ${t.errs.length ? `<p class="note warn">${t.errs.map(s=>esc(s.name)).join('、')} さんの分は勤怠データを取り込めていないため、合計に含まれていません。</p>` : ''}
+    </section>`;
+  }
+
+  // ---- staff table ----
+  const COLS = [
+    {key:'name', label:'氏名'}, {key:'role', label:'職種'},
+    {key:'base', label:'基本給', r:1}, {key:'ot', label:'残業代', r:1}, {key:'ded', label:'控除', r:1},
+    {key:'net', label:'差引支給額', r:1}, {key:'delta', label:'前月比', r:1}
+  ];
+  const val = (s,k) => k==='net' ? netOf(s) : k==='delta' ? (s.importError ? -Infinity : pct(netOf(s),s.prev)) : s[k];
+
+  function tableHTML(d){
+    const q = query.trim();
+    let rows = d.staff.filter(s => !q || s.name.replace(/\s/g,'').includes(q.replace(/\s/g,'')) || s.role.includes(q));
+    if (sort.key) rows = rows.slice().sort((a,b) => { const x=val(a,sort.key), y=val(b,sort.key); return (typeof x==='string' ? x.localeCompare(y,'ja') : x-y) * sort.dir; });
+    const pendingOT = new Map(d.requests.filter(r=>r.kind==='残業申請').map(r=>[r.staffId,true]));
+    const locked = !!d.confirmedAt;
+    const head = COLS.map(c => {
+      const on = sort.key===c.key, dir = on ? (sort.dir>0?'ascending':'descending') : null;
+      return `<th scope="col" class="${c.r?'r':''}" ${dir?`aria-sort="${dir}"`:''}><button type="button" class="sortbtn" data-sort="${c.key}">${c.label}<span class="arw" aria-hidden="true">${on?(sort.dir>0?'▲':'▼'):''}</span></button></th>`;
+    }).join('');
+    let bodyRows;
+    if (!d.staff.length){
+      bodyRows = `<tr class="trow-empty"><td colspan="7"><div class="empty"><b>スタッフが登録されていません</b><p>「スタッフ」からスタッフを登録すると、ここに支給額が表示されます。</p></div></td></tr>`;
+    } else if (!rows.length){
+      bodyRows = `<tr class="trow-empty"><td colspan="7"><div class="empty"><b>「${esc(q)}」に当てはまるスタッフはいません</b><p>氏名か職種の一部で探せます。<button type="button" class="linkbtn" id="clearQ">絞り込みを解除する</button></p></div></td></tr>`;
+    } else {
+      bodyRows = rows.map(s => {
+        const name = `<td class="name">${esc(s.name)}</td><td class="role">${esc(s.role)}</td>`;
+        if (s.importError){
+          const busy = retrying.has(s.id);
+          return `<tr class="err" data-row="${s.id}">${name}<td colspan="5" class="errcell"><div class="errline"><span class="msg">勤怠データを取り込めませんでした</span><span>${busy ? '取り込み中です…' : 'もう一度取り込んでください。続けて失敗するときは「勤怠」で打刻を確認してください。'}</span>${busy?'':`<button type="button" class="btn small ${!d.requests.length && !locked ? 'primary' : ''}" data-retry="${s.id}" ${locked?'disabled':''}>再取得する</button>`}</div></td></tr>`;
+        }
+        const n = netOf(s), p = pct(n,s.prev);
+        return `<tr data-row="${s.id}">${name}
+          <td class="r kv" data-label="基本給">${num(s.base)}</td>
+          <td class="r kv" data-label="残業代">${pendingOT.has(s.id)?'<span class="pending-tag">申請中あり</span>':''}${num(s.ot)}</td>
+          <td class="r kv" data-label="控除">−${num(s.ded)}</td>
+          <td class="r net" data-label="差引支給額">${yen(n)}</td>
+          <td class="r kv" data-label="前月比">${fmtPct(p)}</td></tr>`;
+      }).join('');
+    }
+    const t = totals(d);
+    return `<section class="region" id="staff" aria-labelledby="staffH">
+      <div class="region-head"><h2 id="staffH">スタッフ別の支給額</h2>
+        <div class="tools"><div class="field"><label for="q">氏名・職種で絞り込む</label><input id="q" type="search" value="${esc(query)}" autocomplete="off"></div>
+        <span class="nw" aria-live="polite">${rows.length}名を表示</span></div></div>
+      <div class="tablebox"><table>
+        <caption class="sr">スタッフ別の支給額(単位: 円)。列見出しのボタンで並べ替えられます。</caption>
+        <thead><tr>${head}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+        ${rows.length ? `<tfoot><tr><td>合計 <span class="nw">(${t.count}名)</span></td><td class="fill"></td><td class="r fill" data-label="基本給">${num(t.base)}</td><td class="r fill" data-label="残業代">${num(t.ot)}</td><td class="r fill" data-label="控除">−${num(t.ded)}</td><td class="r tnet">${yen(t.net)}</td><td class="r fill" data-label="前月比">${fmtPct(pct(t.net,t.prev))}</td></tr></tfoot>` : ''}
+      </table></div>
+    </section>`;
+  }
+
+  function byRoleHTML(d){
+    const m = new Map();
+    d.staff.filter(s=>!s.importError).forEach(s => {
+      const k = s.role.replace('(非常勤)','');
+      const g = m.get(k) || {n:0,net:0,prev:0}; g.n++; g.net+=netOf(s); g.prev+=s.prev; m.set(k,g);
+    });
+    const rows = [...m].sort((a,b)=>b[1].net-a[1].net).map(([k,g]) => `<tr><td>${esc(k)}</td><td class="r">${g.n}名</td><td class="r">${yen(g.net)}</td><td class="r">${fmtPct(pct(g.net,g.prev))}</td></tr>`).join('');
+    return `<aside class="byrole region" aria-labelledby="roleH">
+      <div class="region-head"><h2 id="roleH">職種別の差引支給額</h2></div>
+      <div class="tablebox"><table><thead><tr><th scope="col">職種</th><th scope="col" class="r">人数</th><th scope="col" class="r">差引支給額</th><th scope="col" class="r">前月比</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </aside>`;
+  }
+
+  // ---- closeout (primary action) ----
+  function closeoutHTML(d){
+    if (d.confirmedAt){
+      const t = d.confirmedAt;
+      const hm = new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(t);
+      return `<span class="done-mark">${monthLabel}の給与は確定済み</span><p class="reason">${hm}に確定しました</p>`;
+    }
+    const n = d.requests.length, e = d.staff.filter(s=>s.importError).length;
+    const ready = !n && !e;
+    const why = [n ? `未承認の勤怠申請が<b>${n}件</b>` : '', e ? `取り込みエラーが<b>${e}件</b>` : ''].filter(Boolean).join('、');
+    return `<button type="button" class="btn ${ready?'primary':''}" id="confirmBtn" ${ready?'':'aria-disabled="true"'} aria-describedby="confirmWhy">給与を確定する</button>
+      <p class="reason" id="confirmWhy">${ready ? `${d.staff.length}名分の差引支給額 ${yen(totals(d).net)} を確定します` : `${why}あります。解消すると確定できます。${n ? '<a href="#requests">申請を確認する</a>' : ''}`}</p>`;
+  }
+
+  // ---- skeleton / error ----
+  function skeletonHTML(){
+    const cells = Array.from({length:periodDays},()=>'<li class="day"></li>').join('');
+    const lines = n => Array.from({length:n},(_,i)=>`<li class="slip"><span></span><span class="sk big" style="width:52px"></span><span><span class="sk" style="width:60%"></span></span></li>`).join('');
+    const trs = Array.from({length:8},()=>`<tr>${'<td><span class="sk"></span></td>'.repeat(7)}</tr>`).join('');
+    return `<section class="card" aria-label="締め期間を読み込み中">
+      <div class="kpi"><span class="label">締め日まで</span><span class="sk big"></span></div>
+      <div class="kpi"><span class="label">未承認の勤怠申請</span><span class="sk big"></span></div>
+      <div class="strip-wrap"><ol class="strip" aria-hidden="true">${cells}</ol></div></section>
+      <div class="mid"><section class="region"><div class="region-head"><h2>未承認の勤怠申請</h2></div><ul class="slips">${lines(3)}</ul></section>
+      <section class="region"><div class="region-head"><h2>支給合計</h2></div><span class="sk" style="height:160px"></span></section></div>
+      <div class="lower"><section class="region"><div class="region-head"><h2>スタッフ別の支給額</h2></div><div class="tablebox"><table><thead><tr>${COLS.map(c=>`<th scope="col" class="${c.r?'r':''}"><span class="sortbtn">${c.label}</span></th>`).join('')}</tr></thead><tbody>${trs}</tbody></table></div></section></div>
+      <p class="sr" role="status">給与データを読み込んでいます</p>`;
+  }
+  function errorHTML(err){
+    const off = err && err.message === 'offline';
+    return `<section class="fail" role="alert" aria-labelledby="failH">
+      <h2 id="failH">給与データを読み込めませんでした</h2>
+      <p>${off ? 'インターネットに接続されていません。接続を確認してから、もう一度読み込んでください。' : 'サーバーから応答がありませんでした。少し待ってから、もう一度読み込んでください。'}入力済みの承認や確定は失われていません。</p>
+      <button type="button" class="btn primary" id="retryAll">もう一度読み込む</button>
+    </section>`;
+  }
+
+  // ---- render ----
+  function render(focusSel){
+    const active = focusSel || (document.activeElement && document.activeElement.id ? '#'+document.activeElement.id : null);
+    main.setAttribute('aria-busy', status==='loading' ? 'true' : 'false');
+    if (status === 'loading'){ body.innerHTML = skeletonHTML(); closeout.innerHTML = `<button type="button" class="btn" aria-disabled="true">給与を確定する</button><p class="reason">読み込み中です</p>`; }
+    else if (status === 'error'){ body.innerHTML = errorHTML(lastErr); closeout.innerHTML = ''; }
+    else {
+      body.innerHTML = cardHTML(data) + `<div class="mid">${requestsHTML(data)}${ledgerHTML(data)}</div><div class="lower">${tableHTML(data)}${byRoleHTML(data)}</div>`;
+      closeout.innerHTML = closeoutHTML(data);
+      $('#title').textContent = `${monthLabel}の給与`;
+    }
+    $('#periodText').textContent = `対象期間 ${md(start)}〜${md(closing)}(${CLOSE_DAY}日締め)`;
+    if (active){ const el = document.querySelector(active); if (el){ el.focus(); if (el.id==='q') el.setSelectionRange(el.value.length, el.value.length); } }
+  }
+
+  let lastErr = null;
+  function load(delay){
+    status = 'loading'; render();
+    return fetchPayroll(delay).then(d => {
+      data = d; status = 'ready';
+      selected = new Set(d.requests.map(r=>r.id));
+      render();
+    }).catch(err => { lastErr = err; status = 'error'; render('#retryAll'); });
+  }
+
+  // ---- actions ----
+  function approve(){
+    const ids = data.requests.filter(r => selected.has(r.id)).map(r=>r.id);
+    if (!ids.length){ toast('承認する申請を選んでください'); return; }
+    if (navigator.onLine === false){ toast('接続できないため承認できませんでした。接続を確認して、もう一度押してください。'); return; }
+    const leaving = ids.map(id => document.querySelector(`.slip[data-id="${id}"]`)).filter(Boolean);
+    leaving.forEach(el => el.classList.add('leaving'));
+    setTimeout(() => {
+      const changed = [];
+      ids.forEach(id => {
+        const i = server.requests.findIndex(r=>r.id===id); if (i<0) return;
+        const r = server.requests[i];
+        if (r.otAdd){ const s = server.staff.find(s=>s.id===r.staffId); s.ot += r.otAdd; changed.push(s.id); }
+        server.approvedDates.push(r.date); server.requests.splice(i,1);
+      });
+      data = JSON.parse(JSON.stringify(server), (k,v) => (k==='date' || k==='approvedDates') ? (Array.isArray(v) ? v.map(x=>new Date(x)) : new Date(v)) : v);
+      ids.forEach(id => selected.delete(id));
+      render(data.requests.length ? '#approveBtn' : (document.querySelector('#confirmBtn') ? '#confirmBtn' : null));
+      changed.forEach(id => { const tr = document.querySelector(`tr[data-row="${id}"]`); if (tr){ tr.classList.add('flash'); setTimeout(()=>tr.classList.remove('flash'), 1600); } });
+      toast(`${ids.length}件の勤怠を承認しました`);
+    }, leaving.length ? 260 : 0);
+  }
+
+  function retryRow(id){
+    retrying.add(id); render();
+    setTimeout(() => {
+      retrying.delete(id);
+      if (navigator.onLine === false){ render(); toast('接続できないため取り込めませんでした。接続を確認してください。'); return; }
+      const s = server.staff.find(s=>s.id===id); s.importError = false;
+      data.staff.find(s=>s.id===id).importError = false;
+      render();
+      const tr = document.querySelector(`tr[data-row="${id}"]`); if (tr){ tr.classList.add('flash'); setTimeout(()=>tr.classList.remove('flash'),1600); }
+      toast(`${s.name} さんの勤怠データを取り込みました`);
+    }, 700);
+  }
+
+  const dlg = $('#confirmDlg');
+  function openConfirm(){
+    const btn = $('#confirmBtn');
+    if (btn.getAttribute('aria-disabled') === 'true'){
+      toast(data.requests.length ? '先に未承認の勤怠申請を承認してください' : '先に取り込みエラーを解消してください');
+      const target = data.requests.length ? $('#approveBtn') : document.querySelector('[data-retry]');
+      if (target) target.focus();
+      return;
+    }
+    const t = totals(data);
+    $('#dlgText').textContent = `${monthLabel}の給与を、${t.count}名分・差引支給額 ${yen(t.net)} で確定します。`;
+    dlg.showModal();
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'approveBtn') approve();
+    else if (t.id === 'confirmBtn') openConfirm();
+    else if (t.id === 'reload') load(700);
+    else if (t.id === 'retryAll') load(700);
+    else if (t.id === 'clearQ'){ query=''; render('#q'); }
+    else if (t.dataset.retry) retryRow(Number(t.dataset.retry));
+    else if (t.dataset.sort){
+      const k = t.dataset.sort;
+      sort = sort.key===k ? {key:k, dir:-sort.dir} : {key:k, dir: (k==='name'||k==='role') ? 1 : -1};
+      render(`[data-sort="${k}"]`);
+    }
+  });
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'checkAll'){ selected = t.checked ? new Set(data.requests.map(r=>r.id)) : new Set(); render('#checkAll'); }
+    else if (t.id && t.id.startsWith('c-')){ const id = t.id.slice(2); t.checked ? selected.add(id) : selected.delete(id); render('#'+t.id); }
+  });
+  document.addEventListener('input', e => { if (e.target.id === 'q'){ query = e.target.value; render('#q'); } });
+  $('#dlgCancel').addEventListener('click', () => dlg.close());
+  $('#dlgOk').addEventListener('click', () => {
+    server.confirmedAt = new Date(); data.confirmedAt = server.confirmedAt;
+    dlg.close(); render(); toast('給与を確定しました');
+  });
+
+  load(150);
+})();
+</script>
+</body>
+</html>

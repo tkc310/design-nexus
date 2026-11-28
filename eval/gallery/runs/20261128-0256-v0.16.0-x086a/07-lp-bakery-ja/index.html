@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末のパンの予約｜こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンは、金曜18:00までの予約で土曜に店頭でお渡しします。焼き上がりは土曜8:00と11:00、予約は1人5点まで。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --kraft: #D6BE97;      /* 紙袋のクラフト紙：地 */
+  --slip: #FBF7EE;       /* 予約票のレシート紙：面 */
+  --ink: #2A1E12;        /* 焼き色の濃い茶：文字 */
+  --ink-soft: #5B4630;   /* 紙袋の印刷インク：補助の文字 */
+  --ai: #22385C;         /* 暖簾の藍：押すもの */
+  --shu: #A8331C;        /* 朱肉：店のハンコ・エラー */
+  --fold: #8A6C46;       /* 紙袋の折り目：枠 */
+
+  --f-display: "Klee One", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --f-body: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  /* 17px × 1.25 */
+  --t-0: 1rem;        /* 16 */
+  --t-1: 1.0625rem;   /* 17 本文 */
+  --t-2: 1.328rem;    /* 21 */
+  --t-3: 1.66rem;     /* 26.5 */
+  --t-4: 2.075rem;    /* 33 */
+  --t-5: clamp(2.075rem, 1.2rem + 3.2vw, 3.24rem); /* 33–52 */
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+  --masu: 56px;
+  --r-btn: 6px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --lift: 0 1px 0 color-mix(in srgb, var(--ink) 18%, transparent), 0 18px 32px -18px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+html:lang(ja) { word-break: auto-phrase; line-break: strict; overflow-wrap: anywhere; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--kraft);
+  color: var(--ink);
+  font: 400 var(--t-1)/1.8 var(--f-body);
+  letter-spacing: 0.03em;
+}
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; font-synthesis: none; line-height: 1.35; text-wrap: balance; margin: 0; letter-spacing: 0.02em; }
+p { margin: 0; text-wrap: pretty; }
+.nw { white-space: nowrap; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+a { color: var(--ai); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--ai); outline-offset: 3px; }
+
+/* ---------- header ---------- */
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
+  max-width: 1200px; margin: 0 auto; padding: var(--s2) var(--s2) 0;
+}
+.logo { font-family: var(--f-display); font-weight: 600; font-size: var(--t-3); color: var(--ink); text-decoration: none; letter-spacing: 0.08em; line-height: 1.2; display: inline-block; padding: 4px 0; }
+.top nav a { color: var(--ink); font-size: var(--t-0); white-space: nowrap; display: inline-block; padding: 10px 0; }
+
+/* ---------- layout ---------- */
+.page {
+  max-width: 1200px; margin: 0 auto; padding: var(--s4) var(--s2) var(--s7);
+  display: grid; gap: var(--s5);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "hero" "breads" "slip" "info";
+}
+.hero { grid-area: hero; }
+.breads { grid-area: breads; min-width: 0; }
+.slip-col { grid-area: slip; min-width: 0; }
+.info { grid-area: info; min-width: 0; }
+
+@media (min-width: 720px) {
+  .top { padding: var(--s3) var(--s3) 0; }
+  .page {
+    padding: var(--s5) var(--s3) var(--s7);
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-areas: "hero slip" "breads slip" "info info";
+    column-gap: var(--s4); row-gap: var(--s6);
+  }
+  .slip-col { align-self: start; position: sticky; top: var(--s2); }
+}
+@media (min-width: 1024px) {
+  .page { grid-template-columns: minmax(0, 1fr) 368px; column-gap: var(--s6); }
+}
+@media (min-width: 1600px) {
+  .top, .page { max-width: 1640px; }
+  .page { grid-template-columns: minmax(0, 1fr) 400px; column-gap: var(--s7); }
+  .bread-list { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* ---------- hero ---------- */
+.hero h1 { font-size: var(--t-5); line-height: 1.3; max-width: 15em; }
+.hero h1 .line { display: inline-block; }
+.lead { margin-top: var(--s3); font-size: var(--t-2); line-height: 1.7; max-width: 30em; }
+.until {
+  margin-top: var(--s3); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s2);
+  font-size: var(--t-1);
+}
+.until strong { font-family: var(--f-display); font-weight: 600; font-size: var(--t-3); line-height: 1.3; }
+.until .left { color: var(--ink); }
+
+/* 曜日のマス */
+.week { margin-top: var(--s4); }
+.week ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; max-width: 560px; }
+.day { border: 1px solid var(--fold); margin-left: -1px; background: color-mix(in srgb, var(--slip) 35%, var(--kraft)); aspect-ratio: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.25; text-align: center; padding: 2px; min-width: 0; }
+.day:first-child { margin-left: 0; }
+.day .wd { font-family: var(--f-display); font-weight: 600; font-size: var(--t-2); }
+.day .dt { font-size: var(--t-0); white-space: nowrap; }
+.day.is-today { box-shadow: inset 0 0 0 3px var(--ink); }
+.day.is-key { background: var(--slip); }
+.week-notes { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--t-0); max-width: 560px; }
+.week-notes b { font-family: var(--f-display); font-weight: 600; font-size: var(--t-1); margin-right: var(--s1); }
+
+/* ---------- breads ---------- */
+.breads-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); margin-bottom: var(--s3); }
+.breads-head h2 { font-size: var(--t-4); }
+.breads-head p { font-size: var(--t-1); }
+.bread-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2); }
+@media (min-width: 1024px) { .bread-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bread {
+  position: relative; background: var(--slip); border: 1px solid var(--fold);
+  padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: var(--s2); row-gap: 4px; align-items: center;
+  min-height: 128px; align-content: center;
+}
+.bread h3 { font-size: var(--t-2); grid-column: 1; }
+.stock { grid-column: 1; font-size: var(--t-0); }
+.stock .n { font-weight: 700; }
+.alt { grid-column: 1 / -1; font-size: var(--t-0); margin-top: 4px; }
+.linkish { font: inherit; color: var(--ai); background: none; border: 0; padding: 6px 0; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; white-space: nowrap; min-height: 32px; }
+.stepper { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 0; }
+.step {
+  width: 48px; height: 48px; border: 2px solid var(--ai); background: var(--slip); color: var(--ai);
+  font: 600 var(--t-3)/1 var(--f-body); display: grid; place-items: center; cursor: pointer; padding: 0;
+  transition: transform 120ms var(--ease-out), background-color 160ms ease;
+}
+.step:first-child { border-radius: var(--r-btn) 0 0 var(--r-btn); }
+.step:last-child { border-radius: 0 var(--r-btn) var(--r-btn) 0; }
+.step:active:not(:disabled) { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) { .step:hover:not(:disabled) { background: color-mix(in srgb, var(--ai) 10%, var(--slip)); } }
+.step:disabled { border-color: color-mix(in srgb, var(--fold) 70%, var(--slip)); color: var(--ink-soft); cursor: not-allowed; background: var(--slip); }
+.qty { width: 44px; height: 48px; display: grid; place-items: center; border-block: 2px solid var(--fold); font: 600 var(--t-2)/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.bread.is-out .qty { border-color: color-mix(in srgb, var(--fold) 70%, var(--slip)); color: var(--ink-soft); }
+.bread.is-out h3 { color: var(--ink-soft); }
+
+/* 店のハンコ */
+.stamp {
+  display: inline-block; font-family: var(--f-display); font-weight: 600; color: var(--shu);
+  border: 3px double var(--shu); padding: 2px 10px; line-height: 1.4; transform: rotate(-6deg);
+  white-space: nowrap; font-size: var(--t-1); letter-spacing: 0.1em; background: var(--slip);
+}
+.bread .stamp { position: absolute; top: 10px; right: 12px; }
+.bread.is-out { grid-template-columns: minmax(0, 1fr); }
+.bread.is-out .stepper { display: none; }
+.bread.is-out h3 { padding-right: 5.5em; }
+
+/* ---------- slip (予約票) ---------- */
+.slip {
+  position: relative; background: var(--slip); box-shadow: var(--lift);
+  padding: var(--s3) var(--s3) var(--s4);
+}
+.slip h2 { font-size: var(--t-3); }
+.slip h2 small { display: block; font-family: var(--f-body); font-weight: 400; font-size: var(--t-0); letter-spacing: 0.03em; line-height: 1.6; }
+#fields > .block:first-child { margin-top: var(--s3); }
+.slip fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.slip legend, .field label { font-weight: 700; font-size: var(--t-0); padding: 0; margin-bottom: 6px; }
+.block { margin-top: var(--s3); }
+
+.times { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); }
+.time { position: relative; }
+.time input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.time span {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 64px;
+  border: 2px solid var(--fold); background: var(--slip); line-height: 1.3; text-align: center;
+}
+.time b { font-family: var(--f-display); font-weight: 600; font-size: var(--t-3); font-variant-numeric: tabular-nums; }
+.time small { font-size: var(--t-0); }
+.time input:checked + span { border: 3px solid var(--ink); background: color-mix(in srgb, var(--kraft) 30%, var(--slip)); }
+.time input:checked + span b::before { content: "✓ "; font-size: var(--t-1); }
+.time input:focus-visible + span { outline: 3px solid var(--ai); outline-offset: 3px; }
+.time input:disabled + span { opacity: 0.7; }
+
+/* 5つのマス */
+.masu-label { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--t-0); font-weight: 700; }
+.masu-label .count { font-family: var(--f-display); font-size: var(--t-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.masu { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+.masu li {
+  aspect-ratio: 1; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); display: grid; place-items: center;
+  font-family: var(--f-display); font-weight: 600; font-size: var(--t-0); line-height: 1.1; text-align: center; padding: 2px; min-width: 0;
+  background: var(--slip);
+}
+.masu li.filled { background: var(--kraft); animation: press 160ms var(--ease-out); }
+@keyframes press { from { transform: scale(1.08); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .masu li.filled { animation: none; } .step { transition: background-color 160ms ease; } }
+.picked { margin-top: var(--s1); font-size: var(--t-0); line-height: 1.6; }
+.limit-note { margin-top: 4px; font-size: var(--t-0); font-weight: 700; }
+
+.field { margin-top: var(--s2); display: grid; }
+.field input {
+  font: inherit; font-size: var(--t-1); color: var(--ink); background: var(--slip);
+  border: 2px solid var(--fold); border-radius: 4px; padding: 10px 12px; min-height: 50px; width: 100%;
+}
+.field input:focus-visible { outline: 3px solid var(--ai); outline-offset: 1px; border-color: var(--ai); }
+.field input[aria-invalid="true"] { border-color: var(--shu); }
+.hint { font-size: var(--t-0); color: var(--ink); margin-top: 4px; }
+.err { color: var(--shu); font-size: var(--t-0); font-weight: 700; margin-top: 4px; }
+.err:empty { display: none; }
+
+.primary {
+  margin-top: var(--s3); width: 100%; min-height: 56px; border: 0; border-radius: var(--r-btn);
+  background: var(--ai); color: var(--slip); font: 700 var(--t-2)/1.2 var(--f-body); letter-spacing: 0.06em; cursor: pointer;
+  white-space: nowrap; padding: 0 var(--s2);
+  transition: transform 120ms var(--ease-out), background-color 160ms ease;
+}
+.primary:active:not(:disabled) { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .primary:hover:not(:disabled) { background: color-mix(in srgb, var(--ai) 86%, var(--ink)); } }
+.primary:disabled { background: color-mix(in srgb, var(--fold) 45%, var(--slip)); color: var(--ink); cursor: not-allowed; }
+.pay { margin-top: var(--s2); font-size: var(--t-0); line-height: 1.6; }
+
+.slip .stamp.big { position: absolute; top: 18px; right: 14px; font-size: var(--t-2); padding: 4px 14px; transform: rotate(-8deg); }
+/* 予約票が狭い幅では、受付終了の印を見出しの上に置き、日付に重ねない */
+@media (max-width: 1023px) { .slip .stamp.closed-stamp { position: static; margin-bottom: var(--s2); } }
+
+/* 予約済み */
+.done h2 { font-size: var(--t-2); padding-right: 4.5em; }
+.done .masu li.filled { animation: none; }
+.done dl { margin: var(--s3) 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s1) var(--s2); }
+.done dt { font-weight: 700; font-size: var(--t-0); white-space: nowrap; }
+.done dd { margin: 0; }
+.done .num { font-family: var(--f-display); font-size: var(--t-4); line-height: 1.1; letter-spacing: 0.1em; font-variant-numeric: tabular-nums; }
+.done .masu { margin-top: var(--s3); }
+.done .then { margin-top: var(--s3); }
+.secondary { margin-top: var(--s3); min-height: 48px; width: 100%; background: var(--slip); color: var(--ai); border: 2px solid var(--ai); border-radius: var(--r-btn); font: 700 var(--t-1)/1.2 var(--f-body); cursor: pointer; }
+
+/* ---------- info: 4つのマス ---------- */
+.info h2 { font-size: var(--t-4); margin-bottom: var(--s3); }
+.facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); }
+@media (min-width: 1024px) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fact { border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink); padding: var(--s3) var(--s2); min-height: 168px; display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.fact dt { font-size: var(--t-0); font-weight: 700; }
+.fact dd { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: var(--t-3); line-height: 1.35; }
+.fact dd small { display: block; font-family: var(--f-body); font-weight: 400; font-size: var(--t-0); line-height: 1.6; margin-top: 4px; }
+@media (max-width: 479px) {
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .fact { min-height: 0; }
+  .bread { grid-template-columns: minmax(0, 1fr); }
+  .stepper { grid-column: 1; grid-row: auto; margin-top: var(--s1); }
+}
+
+
+/* ---------- mobile bar ---------- */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: var(--slip); border-top: 2px solid var(--ink);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s1);
+  padding: 8px var(--s2) calc(8px + env(safe-area-inset-bottom));
+}
+.bar-masu { display: flex; align-items: center; gap: var(--s1); font-weight: 700; font-size: var(--t-0); white-space: nowrap; }
+.bar-masu i { display: flex; }
+.bar-masu i span { width: 16px; height: 16px; border: 2px solid var(--ink); margin-left: -2px; background: var(--slip); }
+.bar-masu i span:first-child { margin-left: 0; }
+.bar-masu i span.filled { background: var(--kraft); }
+.bar a[hidden] { display: none; }
+.bar a {
+  background: var(--ai); color: var(--slip); text-decoration: none; font-weight: 700; border-radius: var(--r-btn);
+  padding: 0 var(--s2); min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap;
+}
+.bar .bar-closed { font-weight: 700; color: var(--shu); white-space: nowrap; }
+body { padding-bottom: 72px; }
+@media (min-width: 720px) { .bar { display: none; } body { padding-bottom: 0; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="#top" id="top">こむぎ舎</a>
+  <nav aria-label="ページ内"><a href="#info">受け取りについて</a></nav>
+</header>
+
+<main class="page">
+  <section class="hero" aria-labelledby="hero-title">
+    <h1 id="hero-title"><span class="line">土曜のパンは、</span><span class="line">金曜18時までに</span><span class="line">ご予約を。</span></h1>
+    <p class="lead">こむぎ舎の、週末だけの自家製酵母のパン。焼き上がりは土曜の<span class="nw">8:00</span>と<span class="nw">11:00</span>です。</p>
+    <p class="until" id="until"><span>受付は</span><strong id="deadline-text">金曜 18:00まで</strong><span class="left" id="left-text"></span></p>
+
+    <div class="week" aria-label="今週の予定">
+      <ol id="week"></ol>
+      <ul class="week-notes">
+        <li><b>金</b><span id="note-fri">18:00 予約の締め切り</span></li>
+        <li><b>土</b><span>受け取りの日</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="breads" aria-labelledby="breads-title">
+    <div class="breads-head">
+      <h2 id="breads-title">今週のパン</h2>
+      <p id="breads-sub">数は、選んでいる回の残りです。</p>
+    </div>
+    <ul class="bread-list" id="bread-list"></ul>
+  </section>
+
+  <div class="slip-col" id="slip-col">
+    <section class="slip" id="slip" aria-labelledby="slip-title">
+      <form id="form" novalidate>
+        <h2 id="slip-title">予約票 <small id="slip-day">土曜受け取り</small></h2>
+        <fieldset id="fields">
+          <fieldset class="block">
+            <legend>受け取りの回</legend>
+            <div class="times">
+              <label class="time"><input type="radio" name="time" value="8" checked><span><b>8:00</b><small>1回目</small></span></label>
+              <label class="time"><input type="radio" name="time" value="11"><span><b>11:00</b><small>2回目</small></span></label>
+            </div>
+          </fieldset>
+
+          <div class="block" id="masu-block">
+            <p class="masu-label"><span>選んだパン</span><span class="count" id="count">0 / 5点</span></p>
+            <ol class="masu" id="masu" aria-hidden="true"><li></li><li></li><li></li><li></li><li></li></ol>
+            <p class="picked" id="picked" aria-live="polite">まだ選んでいません。「今週のパン」の＋&#8288;で選べます。</p>
+            <p class="limit-note" id="limit-note" hidden>5点そろいました。替えるときは、どれかを−で減らしてください。</p>
+          </div>
+
+          <div class="field">
+            <label for="name">お名前</label>
+            <input id="name" name="name" autocomplete="name" aria-describedby="name-err">
+            <p class="err" id="name-err"></p>
+          </div>
+          <div class="field">
+            <label for="tel">電話番号</label>
+            <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="tel-hint tel-err">
+            <p class="hint" id="tel-hint">数字だけでも、ハイフン入りでも大丈夫です。</p>
+            <p class="err" id="tel-err"></p>
+          </div>
+
+          <p class="err" id="form-err" role="alert"></p>
+          <button class="primary" type="submit" id="submit" aria-describedby="closed-reason">この内容で予約する</button>
+        </fieldset>
+        <p class="pay" id="closed-reason">お代は受け取りのときに、店頭で。現金と交通系ICが使えます。</p>
+      </form>
+
+      <div class="done" id="done" hidden tabindex="-1">
+        <span class="stamp big" aria-hidden="true">予約済</span>
+        <h2><span class="nw">予約を</span><wbr><span class="nw">受け付けました</span></h2>
+        <dl>
+          <dt>予約番号</dt><dd class="num" id="d-num"></dd>
+          <dt>受け取り</dt><dd id="d-when"></dd>
+          <dt>お名前</dt><dd id="d-name"></dd>
+          <dt>パン</dt><dd id="d-items"></dd>
+        </dl>
+        <ol class="masu" id="d-masu" aria-hidden="true"><li></li><li></li><li></li><li></li><li></li></ol>
+        <p class="then">受け取りの日に、店頭で予約番号かお名前をお伝えください。お支払いは現金か交通系ICです。</p>
+        <button class="secondary" type="button" id="edit">内容を直す</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="info" id="info" aria-labelledby="info-title">
+    <h2 id="info-title">受け取りについて</h2>
+    <dl class="facts">
+      <div class="fact"><dt>焼き上がり</dt><dd><span class="nw">土曜 8:00</span><br><span class="nw">土曜 11:00</span></dd></div>
+      <div class="fact"><dt>受け取り</dt><dd>店頭のみ<small>選んだ回の焼き上がりから、お店でお渡しします。</small></dd></div>
+      <div class="fact"><dt>予約</dt><dd>1人5点まで</dd></div>
+      <div class="fact"><dt>お支払い</dt><dd>現金・交通系IC<small>受け取りのときに、店頭で。</small></dd></div>
+    </dl>
+  </section>
+</main>
+
+<div class="bar" id="bar">
+  <span class="bar-masu"><i aria-hidden="true" id="bar-masu"><span></span><span></span><span></span><span></span><span></span></i><span id="bar-count">0 / 5点</span></span>
+  <a href="#slip" id="bar-link">予約票へ進む</a>
+</div>
+
+<script>
+(() => {
+  const MAX = 5;
+  // stock: 残り数。null はその回に焼かないパン。
+  const BREADS = [
+    { id: 'inaka',   name: '田舎パン',         short: '田舎',  stock: { 8: 5, 11: 8 } },
+    { id: 'kaku',    name: '角食パン',         short: '角食',  stock: { 8: 3, 11: 6 } },
+    { id: 'kurumi',  name: 'くるみとレーズン', short: 'くるみ', stock: { 8: 0, 11: 4 } },
+    { id: 'kokuto',  name: '黒糖ロール',       short: '黒糖',  stock: { 8: 7, 11: 9 } },
+    { id: 'ringo',   name: 'りんごとシナモン', short: 'りんご', stock: { 8: null, 11: 5 } },
+    { id: 'hojicha', name: 'ほうじ茶あんぱん', short: 'あん',  stock: { 8: 0, 11: 0 } },
+  ];
+  const WD = ['日', '月', '火', '水', '木', '金', '土'];
+  const $ = (id) => document.getElementById(id);
+  const state = { time: 8, qty: Object.fromEntries(BREADS.map((b) => [b.id, 0])), closed: false };
+
+  // ---- 日付（日本時間で計算） ----
+  const JST = 9 * 3600e3, DAY = 864e5;
+  function cycle(now) {
+    const j = new Date(now + JST);
+    const dow = j.getUTCDay();
+    const midnight = Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate()) - JST; // 今日0時(JST)
+    const toSat = (6 - dow + 7) % 7;
+    const sat = midnight + toSat * DAY;
+    const deadline = sat - DAY + 18 * 3600e3; // 金曜18:00
+    return { now, dow, midnight, sat, deadline, closed: now >= deadline };
+  }
+  const md = (t) => { const d = new Date(t + JST); return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日`; };
+  const wd = (t) => WD[new Date(t + JST).getUTCDay()];
+  const full = (t) => `${md(t)}（${wd(t)}）`;
+
+  let C = cycle(Date.now());
+
+  function renderTime() {
+    C = cycle(Date.now());
+    $('slip-day').textContent = `${full(C.sat)} 受け取り`;
+    $('deadline-text').innerHTML = `<span class="nw">${full(C.deadline)}</span> <span class="nw">18:00まで</span>`;
+    const week = $('week'); week.innerHTML = '';
+    const mon = C.sat - 5 * DAY;
+    for (let i = 0; i < 6; i++) {
+      const t = mon + i * DAY;
+      const li = document.createElement('li');
+      li.className = 'day';
+      if (t === C.midnight) li.classList.add('is-today');
+      if (i >= 4) li.classList.add('is-key');
+      const d = new Date(t + JST);
+      li.innerHTML = `<span class="wd">${WD[d.getUTCDay()]}</span><span class="dt">${d.getUTCMonth() + 1}/${d.getUTCDate()}</span>${t === C.midnight ? '<span class="vh">（今日）</span>' : ''}`;
+      week.appendChild(li);
+    }
+    if (C.closed) { $('left-text').textContent = ''; }
+    else {
+      const m = Math.floor((C.deadline - C.now) / 60e3);
+      const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mi = m % 60;
+      $('left-text').textContent = 'あと' + (d ? `${d}日` : '') + (d || h ? `${h}時間` : '') + `${mi}分`;
+    }
+    if (C.closed !== state.closed) { state.closed = C.closed; applyClosed(); }
+  }
+
+  function applyClosed() {
+    const closed = state.closed;
+    document.body.classList.toggle('is-closed', closed);
+    $('fields').disabled = closed;
+    let stamp = document.querySelector('#slip > .stamp.big.closed-stamp');
+    if (closed) {
+      $('hero-title').innerHTML = '<span class="line">今週の予約は、</span><span class="line">締め切りました。</span>';
+      $('until').innerHTML = `<span>${full(C.sat)}受け取りの分は、</span><strong><span class="nw">${full(C.deadline)}</span> <span class="nw">18:00</span></strong><span>で受付を終えました。</span>`;
+      $('closed-reason').textContent = `受付は${full(C.deadline)} 18:00で終わりました。来週の分の受付が始まると、ここから予約できます。`;
+      $('closed-reason').classList.add('err');
+      $('submit').textContent = '受付を終了しました';
+      if (!stamp) { stamp = document.createElement('span'); stamp.className = 'stamp big closed-stamp'; stamp.setAttribute('aria-hidden', 'true'); stamp.textContent = '受付終了'; $('slip').prepend(stamp); }
+      $('bar-link').hidden = true;
+      if (!$('bar-closed')) { const s = document.createElement('span'); s.id = 'bar-closed'; s.className = 'bar-closed'; s.textContent = '今週の受付は終了'; $('bar').appendChild(s); }
+      $('breads-sub').textContent = '今週の予約は締め切りました。';
+      $('note-fri').textContent = '18:00 予約の締め切り（終了）';
+    }
+    renderBreads();
+  }
+
+  // ---- パンの一覧 ----
+  const total = () => Object.values(state.qty).reduce((a, b) => a + b, 0);
+  const stockOf = (b) => b.stock[state.time];
+  const other = state.time === 8 ? 11 : 8;
+
+  function renderBreads() {
+    const list = $('bread-list');
+    const t = total();
+    list.innerHTML = '';
+    for (const b of BREADS) {
+      const s = stockOf(b), q = state.qty[b.id];
+      const otherT = state.time === 8 ? 11 : 8, os = b.stock[otherT];
+      const allOut = b.stock[8] !== null && b.stock[8] <= 0 && (b.stock[11] ?? 0) <= 0 || (b.stock[8] === null && b.stock[11] <= 0);
+      const out = s === null || s <= 0;
+      const li = document.createElement('li');
+      li.className = 'bread' + (out ? ' is-out' : '');
+      let stockText, alt = '';
+      if (allOut) stockText = '今週の分は、どちらの回も売り切れました。';
+      else if (s === null) stockText = `${state.time}:00の回には焼きません。`;
+      else if (s <= 0) stockText = `${state.time}:00の回は売り切れました。`;
+      else stockText = `${state.time}:00の回 残り<span class="n">${s}</span>`;
+      if (out && !allOut && os > 0) alt = `<p class="alt">${otherT}:00の回は残り${os}。<button type="button" class="linkish" data-switch="${otherT}">${otherT}:00の回にする</button></p>`;
+      const stamp = allOut || (s !== null && s <= 0) ? '<span class="stamp" aria-hidden="true">売り切れ</span>' : '';
+      const open = !state.closed && !state.locked;
+      const canAdd = open && !out && q < s && t < MAX;
+      const canSub = open && q > 0;
+      li.innerHTML = `${stamp}<h3>${b.name}</h3><p class="stock">${stockText}</p>
+        <div class="stepper" role="group" aria-label="${b.name}の数">
+          <button type="button" class="step" data-id="${b.id}" data-d="-1" ${canSub ? '' : 'disabled'}><span aria-hidden="true">−</span><span class="vh">${b.name}を1つ減らす</span></button>
+          <span class="qty" aria-live="polite"><span class="vh">${b.name} </span>${q}<span class="vh">点</span></span>
+          <button type="button" class="step" data-id="${b.id}" data-d="1" ${canAdd ? '' : 'disabled'}><span aria-hidden="true">＋</span><span class="vh">${b.name}を1つ増やす</span></button>
+        </div>${alt}`;
+      list.appendChild(li);
+    }
+    renderSlip();
+  }
+
+  function fillMasu(ol) {
+    const cells = [...ol.children];
+    const seq = BREADS.flatMap((b) => Array(state.qty[b.id]).fill(b.short));
+    cells.forEach((c, i) => {
+      const v = seq[i] || '';
+      if (c.textContent !== v) { c.textContent = v; c.classList.toggle('filled', !!v); }
+    });
+    return seq.length;
+  }
+
+  function renderSlip() {
+    const n = fillMasu($('masu'));
+    $('count').textContent = `${n} / 5点`;
+    $('bar-count').textContent = `${n} / 5点`;
+    [...$('bar-masu').children].forEach((c, i) => c.classList.toggle('filled', i < n));
+    const picked = BREADS.filter((b) => state.qty[b.id] > 0).map((b) => `${b.name} ×${state.qty[b.id]}`);
+    $('picked').textContent = picked.length ? picked.join('、') : (state.closed ? '今週の受付は終了しました。' : 'まだ選んでいません。「今週のパン」の＋⁠で選べます。');
+    $('limit-note').hidden = n < MAX;
+    if (n > 0 && $('form-err').dataset.kind === 'empty') { $('form-err').textContent = ''; $('form-err').dataset.kind = ''; }
+  }
+
+  $('bread-list').addEventListener('click', (e) => {
+    const sw = e.target.closest('[data-switch]');
+    if (sw) { setTime(Number(sw.dataset.switch)); document.querySelector(`input[name=time][value="${sw.dataset.switch}"]`).checked = true; return; }
+    const btn = e.target.closest('.step');
+    if (!btn || btn.disabled) return;
+    const id = btn.dataset.id, d = Number(btn.dataset.d);
+    const b = BREADS.find((x) => x.id === id);
+    const next = state.qty[id] + d;
+    if (next < 0 || (d > 0 && (total() >= MAX || next > (stockOf(b) || 0)))) return;
+    state.qty[id] = next;
+    renderBreads();
+    const again = document.querySelector(`.step[data-id="${id}"][data-d="${d}"]`);
+    (again && !again.disabled ? again : document.querySelector(`.step[data-id="${id}"]:not(:disabled)`) || $('picked'))?.focus?.();
+  });
+
+  function setTime(t) {
+    state.time = t;
+    const removed = [];
+    for (const b of BREADS) {
+      const s = stockOf(b) ?? 0;
+      if (state.qty[b.id] > s) { removed.push(b.name); state.qty[b.id] = Math.max(0, s); }
+    }
+    renderBreads();
+    if (removed.length) $('picked').textContent = `${t}:00の回に替えたので、${removed.join('、')}を外しました（この回は数が足りません）。` + ($('picked').textContent.startsWith('まだ') ? '' : ' いまの内容：' + BREADS.filter((b) => state.qty[b.id] > 0).map((b) => `${b.name} ×${state.qty[b.id]}`).join('、'));
+  }
+  document.querySelectorAll('input[name=time]').forEach((r) => r.addEventListener('change', () => setTime(Number(r.value))));
+
+  // ---- 送信 ----
+  function setErr(input, errEl, msg) {
+    $(errEl).textContent = msg;
+    if (input) $(input).setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    renderTime();
+    if (state.closed) return;
+    const name = $('name').value.trim();
+    const tel = $('tel').value.replace(/[‐－ー−\-\s]/g, '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    let first = null;
+    setErr('name', 'name-err', name ? '' : 'お名前を入れてください。受け取りのときに確認します。');
+    if (!name) first = first || $('name');
+    const telOk = /^0\d{9,10}$/.test(tel);
+    setErr('tel', 'tel-err', telOk ? '' : (tel ? '電話番号は0から始まる10桁か11桁で入れてください（例：090-1234-5678）。' : '電話番号を入れてください。予約の内容でお店から連絡するときに使います。'));
+    if (!telOk) first = first || $('tel');
+    const n = total();
+    $('form-err').textContent = n ? '' : 'パンがまだ選ばれていません。「今週のパン」の＋で、1点以上選んでください。';
+    $('form-err').dataset.kind = n ? '' : 'empty';
+    if (!n) first = first || document.querySelector('.step[data-d="1"]:not(:disabled)');
+    if (first) { first.focus(); return; }
+
+    $('d-num').textContent = String(Math.floor(1000 + Math.random() * 9000));
+    $('d-when').textContent = `${full(C.sat)} ${state.time}:00の焼き上がりから`;
+    $('d-name').textContent = name + ' さま';
+    $('d-items').textContent = BREADS.filter((b) => state.qty[b.id] > 0).map((b) => `${b.name} ×${state.qty[b.id]}`).join('、');
+    fillMasu($('d-masu'));
+    state.locked = true; renderBreads();
+    $('form').hidden = true; $('done').hidden = false; $('done').focus();
+    $('bar-link').textContent = '予約票を見る';
+  });
+  $('edit').addEventListener('click', () => {
+    state.locked = false;
+    $('done').hidden = true; $('form').hidden = false; $('bar-link').textContent = '予約票へ進む';
+    renderBreads();
+    renderTime(); $('name').focus();
+  });
+
+  renderTime();
+  renderBreads();
+  setInterval(renderTime, 30e3);
+})();
+</script>
+</body>
+</html>

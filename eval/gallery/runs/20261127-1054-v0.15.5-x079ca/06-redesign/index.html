@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slotboard — a task board for small teams</title>
+<meta name="description" content="Slotboard puts every task on a card and every card in a column: To do, In progress, Review, Done. Start your team's board with a work email.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* rack */
+    --steel: #3D4A51;   /* painted steel of the rack board: page ground */
+    --slot: #263035;    /* groove of a rack slot */
+    --chalk: #EEF1EF;   /* printed label white: text on steel, field fill */
+    --haze: #C3CCD0;    /* secondary text on steel */
+    /* card stock */
+    --buff: #F3E7C9;    /* manila T-card */
+    --sky: #CFE3EE;     /* blue T-card */
+    --mint: #D3E8D4;    /* green T-card */
+    --ink: #1F2629;     /* text on cards */
+    --pink: #F2A7C3;    /* the blank pink card: the action */
+    --danger: #A3261A;
+
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Source Sans 3", "Segoe UI", sans-serif;
+
+    --fs-1: 14px; --fs-2: 17px; --fs-3: 22px; --fs-4: 30px; --fs-5: 52px;
+    --fs-h1: clamp(44px, 3.2rem + 2.6vw, 80px);
+
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s8: 96px;
+    --r: 4px;
+    --lift: 0 1px 0 rgba(0,0,0,.25), 0 6px 14px -6px rgba(0,0,0,.55);
+    --page: 1200px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  @media (min-width: 1600px) {
+    :root { --page: 1560px; --fs-2: 18px; }
+    .hero .lede { max-width: 44ch; } /* wider column at 1920: fill more of the void under the h1 */
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--steel); color: var(--chalk);
+    font: 400 var(--fs-2)/1.55 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: 0; }
+  p { margin: 0; text-wrap: pretty; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--chalk); outline-offset: 3px; border-radius: 2px; }
+  .card :focus-visible, .signup :focus-visible { outline-color: var(--ink); }
+  .wrap { max-width: calc(var(--page) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- top bar ---------- */
+  .bar { padding: var(--s2) 0; }
+  .bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+  .mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+    font: 700 var(--fs-3)/1 var(--display); letter-spacing: .02em; min-height: 44px; }
+  .bar nav { display: flex; gap: var(--s3); }
+  .bar nav a { font-weight: 600; text-decoration: none; padding: 10px 0; white-space: nowrap;
+    border-bottom: 2px solid transparent; }
+  .bar nav a:hover { border-bottom-color: var(--haze); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: var(--s4) 0 var(--s6); }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s4) var(--s5); align-items: start; }
+  .hero h1 { font-size: var(--fs-h1); }
+  .lede { margin-top: var(--s3); font-size: var(--fs-3); line-height: 1.4; max-width: 34ch; }
+  .more { display: inline-block; margin-top: var(--s3); font-weight: 600; padding: 10px 0;
+    text-decoration-thickness: 2px; text-underline-offset: 5px; }
+
+  /* the T-card: shared unit */
+  .card {
+    position: relative; background: var(--buff); color: var(--ink);
+    border-radius: var(--r); box-shadow: var(--lift);
+  }
+  .card.sky { background: var(--sky); }
+  .card.mint { background: var(--mint); }
+  /* the stem of the T, pushed into the slot */
+  .card::after {
+    content: ""; position: absolute; left: 14%; right: 14%; bottom: -12px; height: 12px;
+    background: inherit; border-radius: 0 0 2px 2px;
+  }
+  .slot { position: relative; padding-bottom: 12px; }
+  .slot::after {
+    content: ""; position: absolute; left: -6px; right: -6px; bottom: 0; height: 6px; z-index: 1;
+    background: var(--slot); border-radius: 3px;
+    box-shadow: inset 0 2px 2px rgba(0,0,0,.45);
+  }
+
+  /* signup card */
+  .signup { padding: var(--s3); flex: 1; min-width: 0; }
+  .signup-wrap { display: flex; flex-direction: column; }
+  .signup-wrap .slot { flex: 1; display: flex; }
+  .signup .card-head { display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 2px solid var(--ink); padding-bottom: var(--s1); margin-bottom: var(--s2);
+    font: 700 var(--fs-3)/1 var(--display); }
+  .signup label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .signup input {
+    width: 100%; min-height: 48px; padding: 10px 12px; font: inherit; color: var(--ink);
+    background: var(--chalk); border: 2px solid var(--ink); border-radius: var(--r);
+  }
+  .signup input[aria-invalid="true"] { border-color: var(--danger); }
+  .signup .hint { font-size: var(--fs-1); margin-top: 6px; }
+  .signup .msg { font-size: var(--fs-2); font-weight: 600; margin-top: var(--s1); min-height: 0; }
+  .signup .msg.err { color: var(--danger); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 48px; padding: 0 var(--s3); margin-top: var(--s2); width: 100%;
+    font: 700 var(--fs-3)/1 var(--display); letter-spacing: .02em; white-space: nowrap;
+    color: var(--ink); background: var(--pink); border: 2px solid var(--ink); border-radius: var(--r);
+    cursor: pointer; transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out);
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+  /* the rack */
+  .rack {
+    grid-column: 1 / -1; margin-top: var(--s3);
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+    background: var(--slot); border-radius: 6px; padding: 6px;
+  }
+  .rail { background: var(--steel); padding: 0 var(--s2) var(--s2); min-width: 0; }
+  .rail + .rail { border-left: 6px solid var(--slot); }
+  .strip {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 0 calc(-1 * var(--s2)) var(--s2); padding: 10px var(--s2);
+    background: var(--slot); font: 700 var(--fs-3)/1 var(--display); letter-spacing: .03em;
+  }
+  .strip span { font-variant-numeric: tabular-nums; color: var(--haze); }
+  .rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+  .t { padding: 12px 14px; }
+  .t h3 { font: 600 var(--fs-2)/1.3 var(--body); }
+  .meta { display: flex; align-items: center; gap: var(--s1); margin-top: 10px; font-size: var(--fs-1); flex-wrap: wrap; }
+  .tag { padding: 1px 8px; border: 1px solid currentColor; border-radius: 2px; white-space: nowrap; }
+  .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .who {
+    margin-left: auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--ink); color: var(--chalk); font-size: var(--fs-1); font-weight: 600; flex: none;
+  }
+  .bar-p { height: 6px; margin-top: 10px; background: rgba(31,38,41,.18); border-radius: 3px; }
+  .bar-p i { display: block; height: 100%; background: var(--ink); border-radius: 3px; }
+  .flag { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; white-space: nowrap; }
+
+  /* ---------- the board (screenshot) ---------- */
+  .board { padding: var(--s8) 0 var(--s6); background: var(--slot); }
+  .board-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .board h2 { font-size: var(--fs-5); max-width: 18ch; }
+  .shot { margin: 0; }
+  /* crop the screenshot's empty lower band (cards end at y≈594 of 800); the dialog shows it whole */
+  .shot img { display: block; width: 100%; height: auto; aspect-ratio: 1600 / 624; object-fit: cover; object-position: top; border-radius: var(--r); box-shadow: var(--lift); border: 6px solid var(--steel); }
+  .shot figcaption { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-top: var(--s2); flex-wrap: wrap; }
+  .ghost {
+    display: inline-flex; align-items: center; gap: var(--s1); min-height: 44px; padding: 0 var(--s2);
+    font: 600 var(--fs-2)/1 var(--body); color: var(--chalk); background: transparent;
+    border: 2px solid var(--haze); border-radius: var(--r); cursor: pointer; white-space: nowrap;
+    transition: border-color 120ms ease, transform 120ms var(--ease-out);
+  }
+  .ghost:hover { border-color: var(--chalk); }
+  .ghost:active { transform: scale(.97); }
+  .index { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; background: var(--steel); padding: 6px; border-radius: 6px; }
+  .index > div { background: var(--slot); padding: var(--s2); }
+  .index dt { font: 700 var(--fs-3)/1.1 var(--display); letter-spacing: .03em; }
+  .index dd { margin: 6px 0 0; color: var(--haze); }
+
+  /* ---------- a week ---------- */
+  .week { padding: var(--s8) 0; }
+  .week-head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s5); align-items: baseline; margin-bottom: var(--s5); }
+  .week h2 { font-size: var(--fs-5); }
+  .week-head p { font-size: var(--fs-3); line-height: 1.4; max-width: 40ch; }
+  .lanes-head, .day { display: grid; grid-template-columns: 112px repeat(4, minmax(0, 1fr)); gap: 0 var(--s2); }
+  .lanes-head { font: 700 var(--fs-3)/1 var(--display); letter-spacing: .03em; padding-bottom: var(--s2); color: var(--haze); }
+  .lanes-head span:first-child { visibility: hidden; }
+  .days { list-style: none; margin: 0; padding: 0; }
+  .day { padding: var(--s2) 0 var(--s3); border-top: 6px solid var(--slot); align-items: start; }
+  .day time { font: 700 var(--fs-4)/1 var(--display); white-space: nowrap; }
+  .day time small { display: block; font: 400 var(--fs-1)/1.4 var(--body); color: var(--chalk); margin-top: 4px; }
+  .day .slot { grid-row: 1; }
+  .day .t { min-width: 0; }
+  .day .lane { display: none; }
+  .day p.what { grid-row: 1; font-size: var(--fs-2); color: var(--haze); padding-top: 12px; }
+  .c1 { grid-column: 2; } .c2 { grid-column: 3; } .c3 { grid-column: 4; } .c4 { grid-column: 5; }
+  .w1 { grid-column: 3 / 6; } .w2 { grid-column: 4 / 6; } .w3 { grid-column: 5; } .w4 { grid-column: 2 / 5; }
+
+  .closing { margin-top: var(--s6); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2) var(--s3); }
+  .closing p { font: 700 var(--fs-4)/1.1 var(--display); }
+
+  /* ---------- footer ---------- */
+  footer { background: var(--slot); padding: var(--s4) 0; font-size: var(--fs-2); }
+  footer .wrap { display: flex; justify-content: space-between; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+  footer nav { display: flex; gap: var(--s3); }
+  footer a { padding: 10px 0; }
+
+  /* ---------- full-size dialog ---------- */
+  dialog { padding: 0; border: 0; background: var(--slot); color: var(--chalk); max-width: min(1640px, 96vw); width: 100%; border-radius: 6px; }
+  dialog::backdrop { background: rgba(20,26,29,.8); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: var(--s1) var(--s1) var(--s1) var(--s2); }
+  .dlg-head p { font: 700 var(--fs-3)/1 var(--display); }
+  .x { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; color: var(--chalk);
+    border: 2px solid var(--haze); border-radius: var(--r); cursor: pointer; }
+  .dlg-body { overflow: auto; max-height: 82vh; }
+  .dlg-body img { display: block; width: 100%; min-width: 900px; height: auto; }
+
+  /* ---------- widths ---------- */
+  @media (max-width: 1000px) {
+    .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+    .lede { max-width: 40ch; }
+    .signup-wrap { max-width: 480px; }
+    .rack { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .rail + .rail { border-left: 0; }
+    .index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .week-head { grid-template-columns: minmax(0, 1fr); gap: var(--s2); }
+    .lanes-head { display: none; }
+    .day { grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 0 var(--s2); }
+    .day .slot, .day .slot.c1, .day .slot.c2, .day .slot.c3, .day .slot.c4 { grid-column: 2; }
+    .day p.what, .day p.what.w1, .day p.what.w2, .day p.what.w3, .day p.what.w4 { grid-column: 3; }
+    .day .lane { display: block; font: 700 var(--fs-1)/1 var(--body); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  }
+  /* tablet: lede beside the signup card, so the row is full and the rack comes up */
+  @media (min-width: 601px) and (max-width: 1000px) {
+    .hero .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .hero-copy { display: contents; }
+    .hero h1 { grid-column: 1 / -1; }
+    .lede { grid-column: 1; grid-row: 2; margin-top: 0; }
+    .more { grid-column: 1; grid-row: 3; margin-top: 0; justify-self: start; align-self: start; }
+    .signup-wrap { grid-column: 2; grid-row: 2 / span 2; max-width: none; }
+  }
+  @media (max-width: 600px) {
+    .bar nav { gap: var(--s2); }
+    .rack { grid-template-columns: minmax(0, 1fr); }
+    .rail ol { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+    .index { grid-template-columns: minmax(0, 1fr); }
+    .day { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+    .day .slot, .day .slot.c1, .day .slot.c2, .day .slot.c3, .day .slot.c4,
+    .day p.what, .day p.what.w1, .day p.what.w2, .day p.what.w3, .day p.what.w4 { grid-column: 1; grid-row: auto; }
+    .day p.what { padding-top: 0; }
+    .board h2, .week h2 { font-size: var(--fs-4); }
+  }
+  @media (max-width: 380px) {
+    .bar nav a:first-child { display: none; }
+  }
+  /* 1920: the index strip becomes a legend column beside the screenshot it labels */
+  @media (min-width: 1600px) {
+    .board-grid { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+    .board h2 { grid-column: 1 / -1; }
+    .index { grid-column: 2; grid-row: 2; grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .ghost { transition: none; }
+    .btn:active, .ghost:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="mark" href="#top" aria-label="Slotboard, top of page">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="2" y="3" width="22" height="11" rx="2" fill="#F2A7C3"/><rect x="7" y="14" width="12" height="7" fill="#F2A7C3"/><rect x="1" y="20" width="24" height="4" rx="2" fill="#263035"/></svg>
+      Slotboard
+    </a>
+    <nav aria-label="Page">
+      <a href="#board">The board</a>
+      <a href="#week">A week on it</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="h1">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1 id="h1">Every task on a card. Every card in its slot.</h1>
+        <p class="lede">A board for small teams: what's waiting, what's moving, what's in review, and what's done, on one screen.</p>
+        <a class="more" href="#board">See the board</a>
+      </div>
+
+      <div class="signup-wrap" id="signup">
+        <div class="slot">
+          <form class="card signup" novalidate onsubmit="return start(event)">
+            <p class="card-head">New board</p>
+            <label for="email">Work email</label>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="sam@yourteam.com" aria-describedby="email-hint email-msg" required>
+            <p class="hint" id="email-hint">We send the next step here. Nothing else.</p>
+            <p class="msg" id="email-msg" role="status" aria-live="polite"></p>
+            <button class="btn" type="submit">Start your board</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="rack" role="group" aria-label="Website refresh board">
+        <section class="rail" aria-labelledby="r1">
+          <h2 class="strip" id="r1">To do <span aria-label="3 cards">3</span></h2>
+          <ol>
+            <li class="slot"><article class="card t"><h3>Write copy for the pricing page</h3><p class="meta"><span class="tag">Content</span><span class="when">Nov 12</span><span class="who" aria-label="Assigned to AK">AK</span></p></article></li>
+            <li class="slot"><article class="card t mint"><h3>Collect logos from three pilot clients</h3><p class="meta"><span class="tag">Sales</span><span class="when">Nov 14</span><span class="who" aria-label="Assigned to MR">MR</span></p></article></li>
+            <li class="slot"><article class="card t sky"><h3>Book the venue for the team offsite</h3><p class="meta"><span class="tag">Ops</span><span class="when">Dec 1</span><span class="who" aria-label="Assigned to MR">MR</span></p></article></li>
+          </ol>
+        </section>
+        <section class="rail" aria-labelledby="r2">
+          <h2 class="strip" id="r2">In progress <span aria-label="2 cards">2</span></h2>
+          <ol>
+            <li class="slot"><article class="card t"><h3>Rebuild the signup form</h3><div class="bar-p" role="img" aria-label="About two thirds done"><i style="width:66%"></i></div><p class="meta"><span class="tag">Design</span><span class="flag">Due tomorrow</span><span class="who" aria-label="Assigned to SO">SO</span></p></article></li>
+            <li class="slot"><article class="card t sky"><h3>Fix CSV export for time reports</h3><div class="bar-p" role="img" aria-label="About a third done"><i style="width:35%"></i></div><p class="meta"><span class="tag">Bug</span><span class="when">Nov 9</span><span class="who" aria-label="Assigned to TD">TD</span></p></article></li>
+          </ol>
+        </section>
+        <section class="rail" aria-labelledby="r3">
+          <h2 class="strip" id="r3">Review <span aria-label="2 cards">2</span></h2>
+          <ol>
+            <li class="slot"><article class="card t"><h3>New onboarding checklist</h3><p class="meta"><span class="tag">Design</span><span class="when">2 comments</span><span class="who" aria-label="Assigned to SO">SO</span></p></article></li>
+            <li class="slot"><article class="card t mint"><h3>Proposal for the Brightline account</h3><p class="meta"><span class="tag">Sales</span><span class="when">Nov 10</span><span class="who" aria-label="Assigned to PN">PN</span></p></article></li>
+          </ol>
+        </section>
+        <section class="rail" aria-labelledby="r4">
+          <h2 class="strip" id="r4">Done <span aria-label="2 cards">2</span></h2>
+          <ol>
+            <li class="slot"><article class="card t sky"><h3>Move the blog to the new domain</h3><p class="meta"><span class="tag">Ops</span><span class="when">Nov 3</span><span class="who" aria-label="Assigned to TD">TD</span></p></article></li>
+            <li class="slot"><article class="card t"><h3>Set up weekly digest emails</h3><p class="meta"><span class="tag">Product</span><span class="when">Oct 30</span><span class="who" aria-label="Assigned to PN">PN</span></p></article></li>
+          </ol>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="board" id="board" aria-labelledby="board-h">
+    <div class="wrap board-grid">
+      <h2 id="board-h">The full rack, as your team sees it</h2>
+      <figure class="shot">
+        <img src="hero.png" width="1600" height="800" loading="lazy" decoding="async"
+             alt="The Slotboard board for a project called Website refresh: a left rail with Inbox, My work, Board, Calendar, Docs and three projects, filters for assignee, due date and label, and four columns, To do, In progress, Review and Done, holding task cards with a label, a due date and the assignee's initials.">
+        <figcaption>
+          <span>Board view, project “Website refresh”, grouped by status.</span>
+          <button class="ghost" type="button" onclick="go()">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2h6v6M16 2l-6 6M8 16H2v-6M2 16l6-6"/></svg>
+            Open full size
+          </button>
+        </figcaption>
+      </figure>
+      <dl class="index">
+        <div><dt>Columns</dt><dd>To do, In progress, Review, Done</dd></div>
+        <div><dt>Filters</dt><dd>Assignee, due date, label</dd></div>
+        <div><dt>Grouping</dt><dd>By status, switchable from the top bar</dd></div>
+        <div><dt>Left rail</dt><dd>Inbox, My work, Calendar, Docs, and each project with its card count</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="week" id="week" aria-labelledby="week-h">
+    <div class="wrap">
+      <div class="week-head">
+        <h2 id="week-h">One card, Monday to Friday</h2>
+        <p>“Rebuild the signup form” crosses the rack in a week. Nobody asks where it is, because the card is always in exactly one slot.</p>
+      </div>
+      <div class="lanes-head" aria-hidden="true"><span>Day</span><span>To do</span><span>In progress</span><span>Review</span><span>Done</span></div>
+      <ol class="days">
+        <li class="day">
+          <time datetime="2026-11-02">Mon<small>Nov 2</small></time>
+          <div class="slot c1"><div class="card t"><span class="lane">To do</span><h3>Rebuild the signup form</h3><p class="meta"><span class="tag">Design</span><span class="when">Due Nov 6</span></p></div></div>
+          <p class="what w1">PN adds the card, labels it Design and sets Friday as the due date.</p>
+        </li>
+        <li class="day">
+          <time datetime="2026-11-03">Tue<small>Nov 3</small></time>
+          <div class="slot c2"><div class="card t"><span class="lane">In progress</span><h3>Rebuild the signup form</h3><p class="meta"><span class="tag">Design</span><span class="when">Due Nov 6</span><span class="who" aria-label="Assigned to SO">SO</span></p></div></div>
+          <p class="what w2">SO takes it and moves it to In progress. The initials go on the card.</p>
+        </li>
+        <li class="day">
+          <time datetime="2026-11-04">Wed<small>Nov 4</small></time>
+          <div class="slot c2"><div class="card t"><span class="lane">In progress</span><h3>Rebuild the signup form</h3><div class="bar-p" role="img" aria-label="About two thirds done"><i style="width:66%"></i></div><p class="meta"><span class="tag">Design</span><span class="when">Due Nov 6</span><span class="who" aria-label="Assigned to SO">SO</span></p></div></div>
+          <p class="what w2">Two thirds through. The bar on the card says so without a status meeting.</p>
+        </li>
+        <li class="day">
+          <time datetime="2026-11-05">Thu<small>Nov 5</small></time>
+          <div class="slot c3"><div class="card t"><span class="lane">Review</span><h3>Rebuild the signup form</h3><p class="meta"><span class="tag">Design</span><span class="flag">Due tomorrow</span><span class="who" aria-label="Assigned to SO">SO</span></p></div></div>
+          <p class="what w3">In Review, with two comments to answer.</p>
+        </li>
+        <li class="day">
+          <time datetime="2026-11-06">Fri<small>Nov 6</small></time>
+          <div class="slot c4"><div class="card t"><span class="lane">Done</span><h3>Rebuild the signup form</h3><p class="meta"><span class="tag">Design</span><span class="when">Nov 6</span><span class="who" aria-label="Assigned to SO">SO</span></p></div></div>
+          <p class="what w4">Done on the day it was due. It stays in the Done column for the record.</p>
+        </li>
+      </ol>
+      <div class="closing">
+        <p>Your team's first card is one email away.</p>
+        <a class="more" href="#signup">Back to the signup card</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 Slotboard</p>
+    <nav aria-label="Footer">
+      <a href="#board">The board</a>
+      <a href="#week">A week on it</a>
+    </nav>
+  </div>
+</footer>
+
+<dialog id="full" aria-labelledby="full-h">
+  <div class="dlg-head">
+    <p id="full-h">Board view, full size</p>
+    <form method="dialog">
+      <button class="x" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l12 12M14 2L2 14"/></svg>
+      </button>
+    </form>
+  </div>
+  <div class="dlg-body" tabindex="0" aria-label="Board screenshot, scrolls sideways on small screens">
+    <img src="hero.png" width="1600" height="800" loading="lazy" alt="The same board at full size: Website refresh project, four status columns with their task cards.">
+  </div>
+</dialog>
+
+<script>
+  // "Open" from the original page: opens the board screenshot at full size.
+  function go() {
+    var d = document.getElementById('full');
+    if (d && typeof d.showModal === 'function') d.showModal();
+    else window.location.href = 'hero.png';
+  }
+
+  function start(e) {
+    e.preventDefault();
+    var input = document.getElementById('email');
+    var msg = document.getElementById('email-msg');
+    var v = input.value.trim();
+    msg.className = 'msg';
+    if (!v) {
+      fail('Enter your work email so we know where to send the next step.');
+    } else if (!input.checkValidity() || !/\.[^.@]+$/.test(v)) {
+      fail('“' + v + '” is missing part of an address. Check it has an @ and a domain, like sam@yourteam.com.');
+    } else {
+      input.removeAttribute('aria-invalid');
+      msg.textContent = 'Board started. We sent the next step to ' + v + '.';
+    }
+    return false;
+
+    function fail(text) {
+      input.setAttribute('aria-invalid', 'true');
+      msg.className = 'msg err';
+      msg.textContent = text;
+      input.focus();
+    }
+  }
+</script>
+</body>
+</html>

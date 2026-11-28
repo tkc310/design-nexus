@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週末パンの予約 | こむぎ舎</title>
+<meta name="description" content="こむぎ舎の週末限定パンの予約票。金曜18時までに予約すると、土曜8時か11時の焼き上がりを店頭でお渡しします。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap">
+<style>
+:root{
+  --kraft:#CDAE82;      /* 紙袋: the bread bag, page ground */
+  --slip:#FBF7EE;       /* 伝票: order-pad paper */
+  --ink:#2B2118;        /* 墨: print and pen ink */
+  --ink-soft:#5B4E42;   /* muted ink, 15px+ only */
+  --ai:#2D3C8C;         /* 藍: stamp-pad indigo, what you press */
+  --on-ai:#FFFFFF;
+  --rule:#7C6B5A;       /* ruling and field lines */
+  --shu:#A8321F;        /* 朱: the shop's hanko, status stamps, errors */
+
+  --f-display:"Klee One","UD Digi Kyokasho NK-R","UD デジタル 教科書体 NK-R","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,sans-serif;
+
+  --t-1:17px; --t-2:21px; --t-3:26px; --t-4:33px; --t-5:41px;
+  --t-s:16px;
+
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
+  --r:6px;
+  --paper-shadow:0 1px 0 rgba(43,33,24,.18),0 10px 28px -12px rgba(43,33,24,.45);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --dock-h:0px;
+}
+*{box-sizing:border-box}
+html:lang(ja){word-break:auto-phrase;line-break:strict;overflow-wrap:anywhere}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--kraft);color:var(--ink);
+  font-family:var(--f-body);font-size:var(--t-1);line-height:1.8;letter-spacing:.03em;
+  padding-bottom:var(--dock-h);
+}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;font-synthesis:none;line-height:1.35;margin:0;text-wrap:balance;font-feature-settings:"palt";letter-spacing:.02em}
+p{margin:0;text-wrap:pretty}
+.nw{white-space:nowrap}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+:focus-visible{outline:3px solid var(--ai);outline-offset:3px}
+button{font:inherit;color:inherit}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--s3)}
+
+/* shop mark */
+.shop{display:flex;align-items:center;gap:var(--s2);padding:var(--s3) 0 var(--s2)}
+.hanko{
+  width:44px;height:44px;border-radius:50%;flex:none;
+  border:2.5px solid var(--shu);color:var(--shu);
+  display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:var(--t-2);line-height:1;
+  background:var(--slip);transform:rotate(-8deg);
+}
+.shop-name{font-family:var(--f-display);font-weight:600;font-size:var(--t-2);letter-spacing:.12em}
+
+/* page grid */
+.page{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s3);padding-bottom:var(--s6)}
+.intro{display:grid;gap:var(--s1);padding-top:var(--s1)}
+.intro h1{font-size:var(--t-5)}
+.lead{font-size:var(--t-2);line-height:1.6}
+
+/* the slip */
+.slip{
+  background:var(--slip);border-radius:var(--r);box-shadow:var(--paper-shadow);
+  position:relative;min-width:0;
+}
+.slip-head{
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:var(--s2) var(--s4);
+  padding:var(--s3) var(--s4);border-bottom:2px solid var(--ink);
+}
+.slip-title{font-size:var(--t-4);letter-spacing:.2em;white-space:nowrap}
+.slip-meta{display:grid;gap:0;font-size:var(--t-1)}
+.slip-meta b{font-weight:700}
+.deadline{font-size:var(--t-1)}
+.deadline .left{font-family:var(--f-display);font-weight:600;font-size:var(--t-2)}
+
+/* bake-time stamps (the signature unit: 丸印) */
+.bakes{border:0;margin:0;padding:0;min-width:0;display:flex;gap:var(--s3);align-items:center}
+.bakes legend{float:left;font-size:var(--t-s);font-weight:700;margin-right:var(--s1);line-height:1.5}
+.bake{position:relative;display:grid;justify-items:center;gap:4px;cursor:pointer}
+.bake input{position:absolute;opacity:0;width:1px;height:1px}
+.stamp{
+  width:92px;height:92px;border-radius:50%;
+  border:2.5px solid var(--ink);display:grid;place-content:center;text-align:center;
+  font-family:var(--f-display);font-weight:600;line-height:1.15;
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease;
+  background:var(--slip);
+}
+.stamp::before{content:"";position:absolute;inset:auto}
+.stamp .hh{font-size:var(--t-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stamp .sub{font-size:14px;letter-spacing:.02em}
+.bake input:checked + .stamp{background:var(--ai);color:var(--on-ai);border-color:var(--ai)}
+.bake input:focus-visible + .stamp{outline:3px solid var(--ai);outline-offset:4px}
+.bake input:disabled + .stamp{border-style:dashed;border-color:var(--rule);color:var(--ink-soft);background:var(--slip)}
+.stock-total.is-sold{color:var(--shu)}
+.stock-total{font-size:var(--t-s);white-space:nowrap;line-height:1.4}
+@media (hover:hover) and (pointer:fine){
+  .bake:hover input:not(:checked):not(:disabled) + .stamp{border-color:var(--ai);color:var(--ai)}
+}
+
+.slip-body{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+
+/* ledger */
+.ledger{border:0;margin:0;padding:var(--s3) var(--s4) var(--s4);min-width:0}
+.ledger-head{
+  display:grid;grid-template-columns:1fr 92px 148px;gap:var(--s2);
+  font-size:var(--t-s);font-weight:700;padding-bottom:var(--s1);border-bottom:1px solid var(--rule);
+}
+.ledger-head span:nth-child(2){text-align:right}
+.ledger-head span:nth-child(3){text-align:center}
+.rows{list-style:none;margin:0;padding:0}
+.row{
+  display:grid;grid-template-columns:minmax(0,1fr) 92px 148px;gap:4px var(--s2);align-items:center;
+  padding:var(--s2) 0;border-bottom:1px solid var(--rule);position:relative;
+}
+.row h3{font-size:var(--t-2)}
+.row .desc{font-size:var(--t-s);line-height:1.6;color:var(--ink-soft)}
+.row .left{text-align:right;font-size:var(--t-1);white-space:nowrap}
+.row .left b{font-family:var(--f-display);font-weight:600;font-size:var(--t-2);font-variant-numeric:tabular-nums}
+.row .note{grid-column:1 / -1;font-size:var(--t-s);color:var(--ink);line-height:1.5}
+.row .note:empty{display:none}
+.row.is-out-slot .left{color:var(--shu)}
+
+.step{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;justify-items:center;width:148px}
+.step button{
+  width:44px;height:44px;border-radius:var(--r);border:2px solid var(--ink);background:var(--slip);
+  font-size:var(--t-3);line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;
+  transition:transform .12s var(--ease-out),border-color .16s ease,color .16s ease;
+}
+.step button:active:not(:disabled){transform:scale(.94)}
+.step button:disabled{border-color:var(--rule);color:var(--ink-soft);cursor:not-allowed;border-style:dashed}
+@media (hover:hover) and (pointer:fine){
+  .step button:hover:not(:disabled){border-color:var(--ai);color:var(--ai)}
+}
+.step output{font-family:var(--f-display);font-weight:600;font-size:var(--t-3);font-variant-numeric:tabular-nums;min-width:2ch;text-align:center}
+
+/* sold-out: stamp replaces the stepper */
+.soldout{
+  justify-self:center;width:84px;height:84px;border-radius:50%;
+  border:2.5px solid var(--shu);color:var(--shu);display:grid;place-content:center;text-align:center;
+  font-family:var(--f-display);font-weight:600;font-size:var(--t-2);line-height:1.1;transform:rotate(-10deg);
+}
+.soldout small{display:block;font-size:14px;letter-spacing:.06em}
+.row.is-soldout h3,.row.is-soldout .desc{color:var(--ink-soft)}
+
+/* stub (控え), with a perforation */
+.stub{
+  padding:var(--s3) var(--s4) var(--s4);min-width:0;position:relative;
+  border-left:2px dashed var(--rule);display:grid;gap:var(--s3);align-content:start;
+}
+.stub::before,.stub::after{
+  content:"";position:absolute;left:-12px;width:22px;height:22px;border-radius:50%;background:var(--kraft);
+}
+.stub::before{top:-12px}
+.stub::after{bottom:-12px}
+.stub-title{font-size:var(--t-2);letter-spacing:.12em}
+
+.count{display:grid;gap:var(--s1)}
+.rings{display:flex;gap:var(--s1);list-style:none;margin:0;padding:0}
+.rings li{
+  width:44px;height:44px;border-radius:50%;border:2px dashed var(--rule);
+  display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:var(--t-2);color:var(--slip);
+}
+.rings li.on{border:2px solid var(--ink);background:var(--ink)}
+.rings li.pressed{animation:press .18s var(--ease-out)}
+@keyframes press{from{transform:scale(1.18)}to{transform:scale(1)}}
+.count-text{font-size:var(--t-1);line-height:1.6}
+.count-text b{font-family:var(--f-display);font-weight:600;font-size:var(--t-2)}
+.count-note{font-size:var(--t-s);line-height:1.6}
+.count-note:empty{display:none}
+
+.picked{list-style:none;margin:0;padding:0;font-size:var(--t-1);line-height:1.6}
+.picked li{display:flex;justify-content:space-between;gap:var(--s2);border-bottom:1px dotted var(--rule);padding:2px 0}
+.picked .q{font-family:var(--f-display);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.picked .none{color:var(--ink-soft);justify-content:flex-start}
+
+.field{display:grid;gap:4px}
+.field label{font-size:var(--t-s);font-weight:700}
+.field input{
+  font:inherit;font-size:var(--t-1);color:var(--ink);background:var(--slip);
+  border:2px solid var(--rule);border-radius:var(--r);padding:10px 12px;min-height:48px;width:100%;
+}
+.field input:focus-visible{outline:3px solid var(--ai);outline-offset:1px;border-color:var(--ai)}
+.field input[aria-invalid="true"]{border-color:var(--shu)}
+.field input:disabled{border-style:dashed;color:var(--ink-soft)}
+.err{font-size:var(--t-s);color:var(--shu);line-height:1.5;font-weight:700}
+.err:empty{display:none}
+
+.go{display:grid;gap:var(--s1)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);
+  min-height:56px;padding:0 var(--s4);border-radius:var(--r);border:2px solid var(--ai);
+  background:var(--ai);color:var(--on-ai);font-weight:700;font-size:var(--t-2);letter-spacing:.12em;
+  cursor:pointer;white-space:nowrap;transition:transform .12s var(--ease-out),background-color .16s ease;
+}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn:disabled{background:var(--slip);color:var(--ink-soft);border:2px dashed var(--rule);cursor:not-allowed}
+.btn-quiet{background:var(--slip);color:var(--ai);min-height:48px;font-size:var(--t-1)}
+.go .why{font-size:var(--t-s);line-height:1.6}
+.go .why:empty{display:none}
+.pay{font-size:var(--t-s);line-height:1.6}
+.form-err{font-size:var(--t-s);color:var(--shu);font-weight:700;line-height:1.6}
+.form-err:empty{display:none}
+
+/* closed: the 締切 stamp across the slip */
+.closed-stamp{
+  display:none;position:absolute;z-index:2;top:12px;right:20px;
+  width:156px;height:156px;border-radius:50%;
+  border:4px solid var(--shu);color:var(--shu);background:var(--slip);
+  place-content:center;text-align:center;font-family:var(--f-display);font-weight:600;
+  transform:rotate(-12deg);pointer-events:none;
+}
+.closed-stamp b{display:block;font-size:var(--t-5);letter-spacing:.2em;line-height:1.2}
+.closed-stamp span{font-size:var(--t-s);display:block;line-height:1.4}
+.slip.is-closed .closed-stamp{display:grid}
+.slip.is-closed .count,.slip.is-closed .picked{display:none}
+.slip.is-closed .stub{min-height:280px}
+.slip.is-closed .stub-title{min-height:156px}
+.closed-msg{font-size:var(--t-1);line-height:1.7;border:2px solid var(--shu);border-radius:var(--r);padding:var(--s2)}
+.closed-msg b{color:var(--shu)}
+
+/* done */
+.done{display:grid;gap:var(--s2);justify-items:start}
+.done[hidden]{display:none}
+.done-stamp{
+  width:104px;height:104px;border-radius:50%;border:3px solid var(--shu);color:var(--shu);
+  display:grid;place-content:center;text-align:center;font-family:var(--f-display);font-weight:600;transform:rotate(-8deg);line-height:1.2;
+}
+.done-stamp b{font-size:var(--t-3);letter-spacing:.1em}
+.done-stamp span{font-size:14px}
+.done dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px var(--s2);font-size:var(--t-1);line-height:1.6;width:100%}
+.done dt{font-weight:700;white-space:nowrap}
+.done dd{margin:0}
+.done .no{font-family:var(--f-display);font-weight:600;font-size:var(--t-3);font-variant-numeric:tabular-nums;letter-spacing:.06em}
+
+/* the day: Saturday morning rule with the two bake stamps */
+.day{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:var(--s4) var(--s5);align-items:start;padding-top:var(--s4)}
+.day h2{font-size:var(--t-4);grid-column:1 / -1}
+.rule{position:relative;height:150px;margin:0 22px}
+.rule .line{position:absolute;left:0;right:0;top:74px;border-top:2px solid var(--ink)}
+.tick{position:absolute;top:66px;transform:translateX(-50%);display:grid;justify-items:center}
+.tick::before{content:"";width:2px;height:16px;background:var(--ink)}
+.tick span{font-size:var(--t-s);margin-top:6px;white-space:nowrap}
+.mark{position:absolute;top:0;transform:translateX(-50%);display:grid;justify-items:center}
+.mark .dot{
+  width:60px;height:60px;border-radius:50%;border:2.5px solid var(--ink);background:var(--slip);
+  display:grid;place-content:center;font-family:var(--f-display);font-weight:600;font-size:var(--t-2);line-height:1;
+}
+.rule .cap{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;font-size:var(--t-s)}
+.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:var(--s1) var(--s3);font-size:var(--t-1)}
+.facts dt{font-family:var(--f-display);font-weight:600;font-size:var(--t-2);white-space:nowrap;line-height:1.6}
+.facts dd{margin:0;line-height:1.7;padding-top:3px;border-bottom:1px solid var(--ink);padding-bottom:var(--s1)}
+.facts dt{border-bottom:1px solid var(--ink);padding-bottom:var(--s1)}
+
+
+/* sticky dock under 900px */
+.dock{display:none}
+
+@media (max-width:899px){
+  .slip-head{grid-template-columns:auto minmax(0,1fr);padding:var(--s2) var(--s3)}
+  .slip-head .bakes{grid-column:1 / -1}
+  .slip-body{grid-template-columns:minmax(0,1fr)}
+  .stub{border-left:0;border-top:2px dashed var(--rule)}
+  .stub::before,.stub::after{top:-12px;left:auto;bottom:auto}
+  .stub::before{left:-12px}
+  .stub::after{right:-12px}
+  .ledger{padding:var(--s2) var(--s3) var(--s3)}
+  .stub{padding:var(--s3)}
+  .day{grid-template-columns:minmax(0,1fr)}
+  .dock{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:var(--s2);
+    padding:var(--s1) var(--s3);background:var(--slip);border-top:2px solid var(--ink);min-height:68px;
+  }
+  .dock[hidden]{display:none}
+  .dock .d-count{font-size:var(--t-1);white-space:nowrap}
+  .dock .d-count b{font-family:var(--f-display);font-weight:600;font-size:var(--t-2)}
+  .dock .btn{min-height:50px;padding:0 var(--s3)}
+  body{--dock-h:68px}
+}
+@media (max-width:599px){
+  .wrap{padding:0 var(--s2)}
+  .shop{padding:var(--s2) 0 var(--s1)}
+  .intro h1{font-size:var(--t-3)}
+  .lead{font-size:var(--t-1)}
+  .slip-title{font-size:var(--t-3)}
+  .slip-head{gap:var(--s1) var(--s2)}
+  .slip-meta{grid-column:1 / -1}
+  .bakes{gap:var(--s2);flex-wrap:wrap}
+  .bakes legend{float:none;width:100%;margin:0}
+  .ledger-head{display:none}
+  .row{grid-template-columns:minmax(0,1fr) auto;padding:var(--s2) 0}
+  .row .meta{grid-column:1 / -1}
+  .row .left{text-align:left}
+  .row .left::before{content:"残り ";font-size:var(--t-s)}
+  .row.is-soldout .left::before{content:""}
+  .soldout{width:72px;height:72px;font-size:var(--t-1)}
+  .closed-stamp{width:128px;height:128px;top:8px;right:12px}
+  .closed-stamp b{font-size:var(--t-4)}
+  .slip.is-closed .stub-title{min-height:128px}
+  .facts{grid-template-columns:minmax(0,1fr)}
+  .facts dt{border-bottom:0;padding-bottom:0}
+}
+@media (min-width:1600px){
+  .wrap{max-width:1640px}
+  .page{grid-template-columns:400px minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:var(--s5);align-items:start}
+  .intro{grid-column:1;grid-row:1}
+  .slip{grid-column:2;grid-row:1 / span 2}
+  .day{grid-column:1;grid-row:2;grid-template-columns:minmax(0,1fr);padding-top:0}
+  .day h2{font-size:var(--t-3)}
+  .slip-body{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .rings li.pressed{animation:none}
+  .btn,.step button{transition:background-color .16s ease}
+  .btn:active:not(:disabled),.step button:active:not(:disabled){transform:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="shop">
+    <span class="hanko" aria-hidden="true">麦</span>
+    <span class="shop-name">こむぎ舎</span>
+  </header>
+
+  <main class="page">
+    <div class="intro">
+      <h1>週末のパン、<wbr>とっておきます</h1>
+      <p class="lead">自家製酵母のパンを、土曜に店頭でお渡しします。</p>
+    </div>
+
+    <form class="slip" id="rsv" novalidate aria-labelledby="slip-title">
+      <div class="slip-head">
+        <h2 class="slip-title" id="slip-title">予約票</h2>
+        <div class="slip-meta">
+          <span>受け取り <b class="nw" data-sat>11月7日（土）</b></span>
+          <span class="deadline" data-deadline-line>締切 <span class="nw" data-deadline>11月6日（金）18時</span> <span class="left nw" data-left></span></span>
+        </div>
+        <fieldset class="bakes" data-bakes>
+          <legend>焼き上がりの回</legend>
+          <label class="bake">
+            <input type="radio" name="bake" value="8" checked>
+            <span class="stamp"><span class="hh">8:00</span><span class="sub">焼き上がり</span></span>
+            <span class="stock-total" data-total="8"></span>
+          </label>
+          <label class="bake">
+            <input type="radio" name="bake" value="11">
+            <span class="stamp"><span class="hh">11:00</span><span class="sub">焼き上がり</span></span>
+            <span class="stock-total" data-total="11"></span>
+          </label>
+        </fieldset>
+      </div>
+
+      <div class="slip-body">
+        <fieldset class="ledger" data-ledger>
+          <legend class="vh">パンを選ぶ</legend>
+          <div class="ledger-head" aria-hidden="true"><span>品名</span><span>残り</span><span>数</span></div>
+          <ul class="rows" data-rows></ul>
+        </fieldset>
+
+        <div class="stub" data-stub>
+          <h2 class="stub-title">控え</h2>
+          <div class="closed-stamp" aria-hidden="true"><b>締切</b><span data-closed-date>11月6日 18時</span></div>
+
+          <div data-edit>
+            <div class="count">
+              <ol class="rings" data-rings aria-hidden="true"><li></li><li></li><li></li><li></li><li></li></ol>
+              <p class="count-text" data-count-text aria-live="polite"><b>0</b>点 ／ 1人5点まで</p>
+              <p class="count-note" data-count-note></p>
+            </div>
+          </div>
+
+          <ul class="picked" data-picked data-edit></ul>
+
+          <div class="field" data-edit>
+            <label for="f-name">お名前</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" aria-describedby="e-name" required>
+            <p class="err" id="e-name"></p>
+          </div>
+          <div class="field" data-edit>
+            <label for="f-tel">電話番号</label>
+            <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="e-tel" required>
+            <p class="err" id="e-tel"></p>
+          </div>
+
+          <div class="go" data-edit>
+            <p class="closed-msg" data-closed-msg hidden></p>
+            <p class="form-err" data-form-err role="alert"></p>
+            <button class="btn" type="submit" data-submit>予約する</button>
+            <p class="why" data-why></p>
+            <p class="pay">お代は受け取りのときに。<span class="nw">現金・交通系IC</span>が使えます。</p>
+          </div>
+
+          <section class="done" data-done hidden aria-labelledby="done-title" tabindex="-1">
+            <div class="done-stamp" aria-hidden="true"><b>受付</b><span data-done-date></span></div>
+            <h3 id="done-title" class="stub-title">予約を受け付けました</h3>
+            <dl>
+              <dt>予約番号</dt><dd class="no" data-done-no></dd>
+              <dt>受け取り</dt><dd data-done-when></dd>
+              <dt>パン</dt><dd data-done-items></dd>
+              <dt>お名前</dt><dd data-done-name></dd>
+            </dl>
+            <button class="btn btn-quiet" type="button" data-edit-again>内容を変える</button>
+          </section>
+        </div>
+      </div>
+    </form>
+
+    <section class="day" aria-labelledby="day-title">
+      <h2 id="day-title">土曜の朝</h2>
+      <div class="rule" aria-hidden="true">
+        <div class="line"></div>
+        <div class="tick" style="left:0%"><span>7時</span></div>
+        <div class="tick" style="left:20%"><span>8時</span></div>
+        <div class="tick" style="left:40%"><span>9時</span></div>
+        <div class="tick" style="left:60%"><span>10時</span></div>
+        <div class="tick" style="left:80%"><span>11時</span></div>
+        <div class="tick" style="left:100%"><span>12時</span></div>
+        <div class="mark" style="left:20%"><span class="dot">焼</span></div>
+        <div class="mark" style="left:80%"><span class="dot">焼</span></div>
+      </div>
+      <dl class="facts">
+        <dt>焼き上がり</dt><dd>土曜の<span class="nw">8時</span>と<span class="nw">11時</span>、2回です。</dd>
+        <dt>受け取り</dt><dd>店頭のみです。</dd>
+        <dt>お支払い</dt><dd>現金と交通系IC。</dd>
+      </dl>
+    </section>
+  </main>
+
+</div>
+
+<div class="dock" data-dock>
+  <p class="d-count" data-dock-count><b>0</b>点 ／ 5点まで</p>
+  <button class="btn" type="submit" form="rsv" data-dock-submit>予約する</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var LIMIT = 5;
+  var BREADS = [
+    {id:"campagne", name:"カンパーニュ", desc:"皮は香ばしく、なかはしっとり。", stock:{8:3, 11:6}},
+    {id:"yamagata", name:"山型食パン", desc:"トーストにすると、耳までさくっと。", stock:{8:0, 11:4}},
+    {id:"kurumi", name:"くるみとレーズン", desc:"くるみとレーズンをたっぷり。", stock:{8:2, 11:5}},
+    {id:"batard", name:"バタール", desc:"外はぱりっと、なかは軽く。", stock:{8:6, 11:8}},
+    {id:"cinnamon", name:"シナモンロール", desc:"週末だけの、甘いひと巻き。", stock:{8:4, 11:2}},
+    {id:"apple", name:"りんごのデニッシュ", desc:"煮たりんごを包んだデニッシュ。", stock:{8:0, 11:0}}
+  ];
+  var WD = ["日","月","火","水","木","金","土"];
+  var H = 3600e3, D = 24*H, JST = 9*H;
+
+  var form = document.getElementById("rsv");
+  var $ = function(s, el){ return (el||document).querySelector(s); };
+  var $$ = function(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); };
+
+  var qty = {};
+  BREADS.forEach(function(b){ qty[b.id] = 0; });
+  var state = {closed:false, done:false};
+
+  /* ---- time: everything in shop time (JST, no DST) ---- */
+  function jstParts(ms){ var d = new Date(ms + JST); return {y:d.getUTCFullYear(), m:d.getUTCMonth(), d:d.getUTCDate(), w:d.getUTCDay()}; }
+  function week(now){
+    var p = jstParts(now);
+    var toSat = (6 - p.w + 7) % 7;
+    var satMs = Date.UTC(p.y, p.m, p.d + toSat) - JST;           // Saturday 00:00 JST
+    var deadline = satMs - D + 18*H;                             // Friday 18:00 JST
+    return {sat:satMs, deadline:deadline};
+  }
+  function fmtDate(ms){ var p = jstParts(ms); return (p.m+1) + "月" + p.d + "日（" + WD[p.w] + "）"; }
+  function fmtShort(ms){ var p = jstParts(ms); return (p.m+1) + "月" + p.d + "日"; }
+  function fmtLeft(ms){
+    var m = Math.max(0, Math.floor(ms/60000));
+    var d = Math.floor(m/1440), h = Math.floor(m%1440/60), mi = m%60;
+    if (d > 0) return "あと" + d + "日" + h + "時間";
+    if (h > 0) return "あと" + h + "時間" + mi + "分";
+    return "あと" + mi + "分";
+  }
+
+  /* ---- build ledger rows ---- */
+  var rowsEl = $("[data-rows]");
+  BREADS.forEach(function(b){
+    var li = document.createElement("li");
+    li.className = "row";
+    li.dataset.id = b.id;
+    var soldAll = b.stock[8] + b.stock[11] === 0;
+    if (soldAll) li.classList.add("is-soldout");
+    li.innerHTML =
+      '<div class="meta"><h3 id="n-' + b.id + '">' + b.name + '</h3><p class="desc">' + b.desc + '</p></div>' +
+      '<p class="left" data-left-of></p>' +
+      (soldAll
+        ? '<p class="soldout"><span>売切</span><small>両方の回</small></p>'
+        : '<div class="step" role="group" aria-labelledby="n-' + b.id + '">' +
+            '<button type="button" data-minus aria-label="' + b.name + 'を減らす −">−</button>' +
+            '<output aria-live="polite" aria-label="' + b.name + 'の数" data-q>0</output>' +
+            '<button type="button" data-plus aria-label="' + b.name + 'を増やす ＋">＋</button>' +
+          '</div>') +
+      '<p class="note" data-note></p>';
+    rowsEl.appendChild(li);
+  });
+
+  function bake(){ var r = $("input[name=bake]:checked"); return r ? +r.value : 8; }
+  function total(){ var t = 0; for (var k in qty) t += qty[k]; return t; }
+
+  function render(){
+    var slot = bake(), t = total();
+    // slot totals
+    [8, 11].forEach(function(s){
+      var sum = BREADS.reduce(function(a, b){ return a + b.stock[s]; }, 0);
+      var el = $('[data-total="' + s + '"]');
+      var input = $('input[name=bake][value="' + s + '"]');
+      el.textContent = sum > 0 ? "残り" + sum + "点" : "売切";
+      el.classList.toggle("is-sold", sum === 0);
+      input.disabled = sum === 0 || state.closed || state.done;
+    });
+    // rows
+    BREADS.forEach(function(b){
+      var li = $('.row[data-id="' + b.id + '"]');
+      var left = b.stock[slot];
+      var leftEl = $("[data-left-of]", li);
+      var note = $("[data-note]", li);
+      var soldAll = b.stock[8] + b.stock[11] === 0;
+      li.classList.toggle("is-out-slot", !soldAll && left === 0);
+      if (soldAll){ leftEl.textContent = ""; note.textContent = ""; return; }
+      leftEl.innerHTML = left > 0 ? "<b>" + left + "</b>" : "売切";
+      var q = qty[b.id];
+      $("[data-q]", li).textContent = q;
+      var lock = state.closed || state.done;
+      $("[data-minus]", li).disabled = lock || q === 0;
+      $("[data-plus]", li).disabled = lock || q >= left || t >= LIMIT;
+      if (left === 0){
+        var other = slot === 8 ? 11 : 8;
+        note.textContent = slot + "時の回は売り切れました。" + (b.stock[other] > 0 ? other + "時の回なら残り" + b.stock[other] + "点あります。" : "");
+      } else if (q > 0 && q >= left){
+        note.textContent = "この回の残りはここまでです。";
+      } else note.textContent = "";
+    });
+    // rings
+    var picked = [];
+    BREADS.forEach(function(b){ for (var i = 0; i < qty[b.id]; i++) picked.push(b); });
+    $$("[data-rings] li").forEach(function(r, i){
+      var on = i < picked.length;
+      r.classList.toggle("on", on);
+      r.textContent = on ? picked[i].name.charAt(0) : "";
+    });
+    $("[data-count-text]").innerHTML = "<b>" + t + "</b>点 ／ 1人5点まで";
+    $("[data-count-note]").textContent = t >= LIMIT ? "5点になりました。ほかのパンにするときは、どれかを減らしてください。" : "";
+    $("[data-dock-count]").innerHTML = "<b>" + t + "</b>点 ／ 5点まで";
+    // picked list
+    var ul = $("[data-picked]");
+    var items = BREADS.filter(function(b){ return qty[b.id] > 0; });
+    ul.innerHTML = items.length
+      ? items.map(function(b){ return '<li><span>' + b.name + '</span><span class="q">× ' + qty[b.id] + '</span></li>'; }).join("")
+      : '<li class="none">パンを選ぶと、ここに並びます。</li>';
+  }
+
+  function press(){
+    var t = total();
+    var r = $$("[data-rings] li")[t-1];
+    if (!r) return;
+    r.classList.remove("pressed"); void r.offsetWidth; r.classList.add("pressed");
+  }
+
+  rowsEl.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if (!btn || btn.disabled) return;
+    var id = btn.closest(".row").dataset.id;
+    var b = BREADS.filter(function(x){ return x.id === id; })[0];
+    if (btn.hasAttribute("data-plus")){
+      if (qty[id] < b.stock[bake()] && total() < LIMIT){ qty[id]++; render(); press(); }
+    } else if (qty[id] > 0){ qty[id]--; render(); }
+    $("[data-form-err]").textContent = "";
+    if (btn.disabled){ var alt = btn.parentNode.querySelector("button:not([disabled])"); if (alt) alt.focus(); }
+  });
+
+  form.addEventListener("change", function(e){
+    if (e.target.name !== "bake") return;
+    var slot = bake(), cut = [];
+    BREADS.forEach(function(b){
+      if (qty[b.id] > b.stock[slot]){ qty[b.id] = b.stock[slot]; cut.push(b.name + "を" + qty[b.id] + "点に"); }
+    });
+    render();
+    $("[data-form-err]").textContent = cut.length ? slot + "時の回は残りが少ないため、" + cut.join("、") + "しました。" : "";
+  });
+
+  /* ---- validation and submit ---- */
+  function setErr(input, msg){
+    input.setAttribute("aria-invalid", msg ? "true" : "false");
+    document.getElementById(input.getAttribute("aria-describedby")).textContent = msg;
+  }
+  ["f-name","f-tel"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){ if (this.getAttribute("aria-invalid") === "true") setErr(this, ""); });
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var now = Date.now();
+    applyTime(now);
+    var fe = $("[data-form-err]");
+    if (state.closed){
+      fe.textContent = "締切の" + fmtDate(week(now).deadline) + "18時を過ぎたため、予約できませんでした。";
+      return;
+    }
+    var name = document.getElementById("f-name"), tel = document.getElementById("f-tel");
+    var first = null;
+    var nm = name.value.trim();
+    setErr(name, nm ? "" : "お名前を入れてください。");
+    if (!nm) first = first || name;
+    var digits = tel.value.replace(/[\s\-‐－ー()（）]/g, "").replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 65248); });
+    var telOk = /^0\d{9,10}$/.test(digits);
+    setErr(tel, telOk ? "" : (tel.value.trim() ? "電話番号は0から始まる10桁か11桁の数字で入れてください（例: 090-1234-5678）。" : "電話番号を入れてください。"));
+    if (!telOk) first = first || tel;
+    if (total() === 0){
+      fe.textContent = "パンがまだ選ばれていません。品名の横の＋で1点以上選んでください。";
+      var p = $(".row [data-plus]:not([disabled])");
+      if (!first && p){ p.focus(); p.scrollIntoView({block:"center"}); }
+      if (first){ first.focus(); }
+      return;
+    }
+    fe.textContent = "";
+    if (first){ first.focus(); return; }
+
+    // accepted
+    var w = week(now), slot = bake();
+    BREADS.forEach(function(b){ b.stock[slot] -= qty[b.id]; });
+    state.done = true;
+    $("[data-done-no]").textContent = String(1000 + Math.floor(Math.random()*9000));
+    $("[data-done-when]").textContent = fmtDate(w.sat) + " " + slot + "時の回";
+    $("[data-done-items]").textContent = BREADS.filter(function(b){ return qty[b.id] > 0; }).map(function(b){ return b.name + " ×" + qty[b.id]; }).join("、");
+    $("[data-done-name]").textContent = nm + " 様";
+    $("[data-done-date]").textContent = fmtShort(now);
+    $$("[data-edit]").forEach(function(el){ el.hidden = true; });
+    var done = $("[data-done]"); done.hidden = false;
+    $("[data-dock]").hidden = true;
+    render();
+    done.focus();
+  });
+
+  $("[data-edit-again]").addEventListener("click", function(){
+    var slot = bake();
+    BREADS.forEach(function(b){ b.stock[slot] += qty[b.id]; });
+    state.done = false;
+    $$("[data-edit]").forEach(function(el){ el.hidden = false; });
+    $("[data-done]").hidden = true;
+    $("[data-dock]").hidden = false;
+    applyTime(Date.now());
+    render();
+    var f = $(".row [data-plus]:not([disabled])") || document.getElementById("f-name");
+    f.focus();
+  });
+
+  /* ---- deadline ---- */
+  function applyTime(now){
+    var w = week(now);
+    var closed = now >= w.deadline;
+    $("[data-sat]").textContent = fmtDate(w.sat);
+    $("[data-deadline]").textContent = fmtDate(w.deadline) + "18時";
+    $("[data-closed-date]").textContent = fmtShort(w.deadline) + " 18時";
+    $("[data-left]").textContent = closed ? "受付終了" : fmtLeft(w.deadline - now);
+    if (closed !== state.closed){
+      state.closed = closed;
+      form.classList.toggle("is-closed", closed);
+      ["f-name","f-tel"].forEach(function(id){ document.getElementById(id).disabled = closed; });
+      var msg = $("[data-closed-msg]");
+      msg.hidden = !closed;
+      msg.innerHTML = closed
+        ? '<b><span class="nw">' + fmtDate(w.sat) + "</span>受け取りの予約は、締め切りました。</b>締切は" + '<span class="nw">' + fmtDate(w.deadline) + "18時</span>でした。"
+        : "";
+      $("[data-submit]").disabled = closed;
+      $("[data-dock-submit]").disabled = closed;
+      $("[data-dock-submit]").textContent = closed ? "受付終了" : "予約する";
+      $("[data-why]").textContent = closed ? "締切を過ぎたため、予約できません。" : "";
+      render();
+    }
+  }
+
+  /* hide the dock while the slip's own button is on screen */
+  if ("IntersectionObserver" in window){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(en){ document.body.classList.toggle("go-visible", en.isIntersecting); });
+      $("[data-dock]").style.visibility = document.body.classList.contains("go-visible") ? "hidden" : "";
+    });
+    io.observe($("[data-submit]"));
+  }
+
+  render();
+  applyTime(Date.now());
+  setInterval(function(){ applyTime(Date.now()); }, 30000);
+})();
+</script>
+</body>
+</html>

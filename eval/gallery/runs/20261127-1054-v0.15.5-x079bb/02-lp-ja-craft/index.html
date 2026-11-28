@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>土と灯(つちとひ)|京都・五条坂の陶芸工房と手びねり体験教室</title>
+<meta name="description" content="京都・五条坂の小さな陶芸工房「土と灯」。職人二人で飯碗・湯呑・小皿をつくり、月に二回、各回六名までの手びねり体験教室をひらいています。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Antique&display=swap">
+<style>
+:root {
+  /* 生土・白化粧・鉄釉・棚板・呉須 */
+  --clay: #C3B9AC;
+  --slip: #F2EEE7;
+  --tetsu: #26201C;
+  --tetsu-soft: #4E453E;
+  --tana: #5B4F45;
+  --gosu: #1F3A72;
+  --on-gosu: var(--slip);
+
+  --font-display: "Zen Antique", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+
+  --fs-s: 14px;
+  --fs-0: 16px;
+  --fs-1: 20px;
+  --fs-2: 25px;
+  --fs-3: 31px;
+  --fs-4: clamp(31px, 3.4vw + 10px, 52px);
+
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-6: 48px;
+  --sp-8: 64px;
+  --sp-12: 96px;
+
+  --r-plate: 12px;
+  --r-ctl: 8px;
+  --plank: 8px;
+  --gutter: 24px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+html:lang(ja) {
+  word-break: auto-phrase;
+  line-break: strict;
+  overflow-wrap: anywhere;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--clay);
+  color: var(--tetsu);
+  font-family: var(--font-body);
+  font-size: var(--fs-0);
+  line-height: 1.85;
+  letter-spacing: 0.03em;
+}
+p { margin: 0; text-wrap: pretty; }
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  font-feature-settings: "palt";
+  text-wrap: balance;
+}
+.nowrap { white-space: nowrap; }
+a { color: var(--gosu); text-underline-offset: 0.25em; }
+a:focus-visible, input:focus-visible, button:focus-visible {
+  outline: 3px solid var(--gosu);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.skip {
+  position: absolute; left: var(--sp-2); top: -64px;
+  background: var(--slip); color: var(--gosu); padding: var(--sp-1) var(--sp-2);
+}
+.skip:focus { top: var(--sp-1); }
+
+/* header */
+.site-head .wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-2); flex-wrap: wrap;
+  padding-top: var(--sp-2); padding-bottom: var(--sp-2);
+}
+.logo {
+  display: inline-flex; align-items: baseline; gap: var(--sp-1);
+  color: var(--tetsu); text-decoration: none;
+  font-family: var(--font-display); font-size: var(--fs-2); line-height: 1.2;
+  font-synthesis: none; white-space: nowrap;
+}
+.logo small { font-family: var(--font-body); font-size: var(--fs-s); letter-spacing: 0.08em; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-1) var(--sp-3); flex-wrap: wrap; }
+.site-nav a {
+  display: inline-block; padding: var(--sp-1) 4px; min-height: 24px; min-width: 32px; text-align: center;
+  color: var(--tetsu); text-decoration: none; white-space: nowrap; font-size: var(--fs-0);
+}
+.site-nav a:hover { text-decoration: underline; color: var(--gosu); }
+
+/* hero */
+.hero { padding: var(--sp-4) 0 var(--sp-8); }
+.hero-grid {
+  display: grid; gap: var(--sp-4);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "seats" "lead";
+}
+.hero-head { grid-area: head; align-self: start; }
+.hero-lead { grid-area: lead; align-self: start; max-width: 36em; }
+.seats { grid-area: seats; min-width: 0; }
+.hero-aside { display: none; }
+.place {
+  font-size: var(--fs-0); letter-spacing: 0.12em; margin-bottom: var(--sp-2);
+}
+.hero h1 { font-size: var(--fs-4); line-height: 1.35; }
+.hero-lead p + p { margin-top: var(--sp-2); }
+
+/* signature: 六つの席の棚 */
+.seats {
+  background: var(--slip);
+  border-radius: var(--r-plate);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3);
+}
+.seats fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.seats legend {
+  padding: 0; font-family: var(--font-display); font-size: var(--fs-2); line-height: 1.3; font-synthesis: none;
+}
+.seats-sub {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3);
+  margin: var(--sp-1) 0 var(--sp-3); font-size: var(--fs-s);
+}
+.key { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.key svg { width: 18px; height: 17px; }
+
+.session {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 6.6em minmax(0, 1fr) 4.6em;
+  grid-template-areas: "radio date shelf status";
+  align-items: end;
+  column-gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2) var(--sp-1);
+  border: 2px solid transparent;
+  border-radius: var(--r-ctl);
+  cursor: pointer;
+}
+.session + .session { margin-top: var(--sp-1); }
+.session:has(input:checked) { border-color: var(--gosu); }
+.session:has(input:disabled) { cursor: not-allowed; }
+@media (hover: hover) and (pointer: fine) {
+  .session:not(:has(input:disabled)):hover { border-color: var(--tana); }
+  .session:has(input:checked):hover { border-color: var(--gosu); }
+}
+.session input {
+  grid-area: radio; align-self: center;
+  appearance: none; margin: 0;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--tetsu); background: var(--slip);
+  display: grid; place-content: center; cursor: inherit;
+}
+.session input::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--gosu); transform: scale(0);
+}
+.session input:checked::before { transform: scale(1); }
+.session input:disabled { border-style: dashed; border-color: var(--tana); }
+.s-date { grid-area: date; align-self: center; line-height: 1.3; white-space: nowrap; }
+.s-date b { display: block; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-1); font-synthesis: none; }
+.s-date span { font-size: var(--fs-s); }
+.s-shelf { grid-area: shelf; display: block; min-width: 0; }
+.cups {
+  display: flex; justify-content: space-around; align-items: flex-end;
+  padding: 0 4px;
+}
+.cups svg { width: 30px; height: auto; aspect-ratio: 32 / 28; display: block; }
+.plank {
+  display: block; height: var(--plank); background: var(--tana); border-radius: 2px;
+}
+.s-status { grid-area: status; align-self: center; text-align: right; white-space: nowrap; font-size: var(--fs-0); }
+.s-status b { font-weight: 700; }
+
+.cup-taken { fill: var(--tetsu); }
+.cup-open { fill: var(--slip); stroke: var(--tetsu); stroke-width: 1.6; }
+
+.book { margin-top: var(--sp-3); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: 12px var(--sp-3);
+  background: var(--gosu); color: var(--on-gosu);
+  border-radius: var(--r-ctl);
+  font-size: var(--fs-1); line-height: 1.4; font-weight: 700; letter-spacing: 0.04em;
+  text-decoration: none; text-align: center;
+  transition: transform 120ms var(--ease-out), background-color 120ms ease;
+}
+.btn:hover { text-decoration: underline; text-underline-offset: 0.3em; }
+.btn:active { transform: scale(0.97); }
+.btn:focus-visible { outline-color: var(--tetsu); }
+.book .btn { width: 100%; }
+.book-note { margin-top: var(--sp-1); font-size: var(--fs-s); }
+
+/* sections */
+section { padding: var(--sp-12) 0 0; }
+.sec-title { font-size: var(--fs-3); }
+.sec-lede { margin-top: var(--sp-2); max-width: 36em; }
+
+/* placeholder photo plates */
+.ph {
+  position: relative;
+  display: grid; place-items: center;
+  background:
+    repeating-linear-gradient(135deg,
+      color-mix(in srgb, var(--tana) 22%, transparent) 0 1px,
+      transparent 1px 11px),
+    var(--slip);
+  border-radius: var(--r-plate);
+  color: var(--tetsu);
+  text-align: center;
+  padding: var(--sp-2);
+}
+.ph span {
+  background: var(--slip); padding: 4px 12px; border-radius: 4px;
+  font-size: var(--fs-s); line-height: 1.6;
+}
+
+/* ware on the shelf */
+.ware-shelf {
+  margin-top: var(--sp-6);
+  display: grid; gap: var(--sp-4) var(--sp-3);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 5fr);
+  align-items: end;
+}
+.ware { margin: 0; }
+.ware .ph.bowl { aspect-ratio: 4 / 3; }
+.ware .ph.cup { aspect-ratio: 3 / 4; }
+.ware .ph.plate { aspect-ratio: 16 / 9; }
+.shelf-line {
+  grid-column: 1 / -1; height: var(--plank); background: var(--tana); border-radius: 2px;
+  margin-top: calc(-1 * var(--sp-4) + var(--sp-1));
+}
+.ware-caps {
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 5fr);
+  margin-top: var(--sp-2);
+}
+.ware-caps h3 { font-size: var(--fs-2); line-height: 1.3; }
+.ware-caps p { margin-top: 4px; }
+
+/* class overview */
+.class-grid {
+  display: grid; gap: var(--sp-6);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: start;
+}
+.facts {
+  background: var(--slip); border-radius: var(--r-plate);
+  padding: var(--sp-2) var(--sp-4);
+  margin: 0;
+}
+.facts div {
+  display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: 2px solid var(--clay);
+}
+.facts div:last-child { border-bottom: 0; }
+.facts dt { font-weight: 700; white-space: nowrap; }
+.facts dd { margin: 0; }
+.facts .big { font-family: var(--font-display); font-size: var(--fs-2); line-height: 1.3; font-synthesis: none; }
+.class-ph { aspect-ratio: 16 / 7; margin-top: var(--sp-3); }
+
+/* craftsmen */
+/* one plank under the text and both portraits: the text stands on the shelf too */
+.makers-grid {
+  display: grid; gap: 0 var(--sp-6);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: end;
+}
+.makers-text { grid-column: 1; grid-row: 1; align-self: end; padding-bottom: var(--sp-3); }
+.makers-shelf { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); align-items: end; }
+.makers-shelf .ph { aspect-ratio: 4 / 3; }
+.makers-plank { grid-column: 1 / -1; grid-row: 2; height: var(--plank); background: var(--tana); border-radius: 2px; }
+.makers-names { grid-column: 2; grid-row: 3; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); margin-top: var(--sp-1); }
+.makers-names p { font-family: var(--font-display); font-size: var(--fs-1); font-synthesis: none; }
+
+/* visit + closing */
+.visit {
+  margin-top: var(--sp-12);
+  padding: var(--sp-8) 0;
+  border-top: var(--plank) solid var(--tana);
+}
+.visit-grid {
+  display: grid; gap: var(--sp-6);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+}
+.visit address { font-style: normal; margin-top: var(--sp-2); font-size: var(--fs-1); }
+.visit-book {
+  background: var(--slip); border-radius: var(--r-plate);
+  padding: var(--sp-4);
+}
+.visit-book p { margin-bottom: var(--sp-2); }
+.visit-book .next { font-family: var(--font-display); font-size: var(--fs-2); line-height: 1.4; font-synthesis: none; }
+
+.site-foot { padding: var(--sp-4) 0 var(--sp-6); font-size: var(--fs-s); }
+.site-foot .wrap { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); justify-content: space-between; }
+
+/* widths */
+@media (min-width: 960px) {
+  .hero { padding-top: var(--sp-6); }
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    /* head + lead sit centred against the seat shelf instead of leaving a void under them */
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: ". seats" "head seats" "lead seats" ". seats";
+    column-gap: var(--sp-8);
+    row-gap: var(--sp-4);
+  }
+  .hero-lead { font-size: var(--fs-1); line-height: 1.8; }
+  .cups svg { width: 34px; }
+  .s-shelf { padding-right: var(--sp-1); }
+}
+@media (min-width: 1600px) {
+  .wrap { max-width: 1600px; padding: 0 var(--sp-8); }
+  body { font-size: 17px; }
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 0.7fr);
+    grid-template-areas: ". seats aside" "head seats aside" "lead seats aside" ". seats aside";
+  }
+  .hero-aside {
+    display: block; grid-area: aside; align-self: start;
+    border-left: var(--plank) solid var(--tana);
+    padding-left: var(--sp-4);
+  }
+  .hero-aside h2 { font-size: var(--fs-2); }
+  .hero-aside dl { margin: var(--sp-2) 0 0; }
+  .hero-aside dt { font-weight: 700; margin-top: var(--sp-2); }
+  .hero-aside dd { margin: 0; }
+}
+@media (max-width: 959px) {
+  .class-grid, .makers-grid, .visit-grid { grid-template-columns: minmax(0, 1fr); }
+  .class-grid { gap: var(--sp-4); }
+  .makers-text, .makers-shelf, .makers-plank, .makers-names { grid-column: 1; grid-row: auto; }
+  .makers-text { padding-bottom: var(--sp-4); }
+}
+@media (max-width: 640px) {
+  :root { --gutter: 16px; }
+  section { padding-top: var(--sp-8); }
+  .hero { padding-top: var(--sp-1); }
+  .hero-grid { gap: var(--sp-3); }
+  .site-head .wrap { padding-top: var(--sp-1); padding-bottom: var(--sp-1); row-gap: 0; }
+  .site-nav ul { gap: 0 var(--sp-2); }
+  .place { margin-bottom: var(--sp-1); }
+  .seats { padding: var(--sp-2) 12px; }
+  .seats-sub { margin-bottom: var(--sp-1); }
+  .session {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-areas: "radio date status" "shelf shelf shelf";
+    row-gap: 4px; column-gap: 12px;
+    padding: var(--sp-1) var(--sp-1) 6px;
+  }
+  .s-date b, .s-date span { display: inline; }
+  .s-date b { font-size: var(--fs-0); margin-right: 4px; }
+  .cups svg { width: 24px; }
+  .ware-shelf { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1fr); gap: var(--sp-1); }
+  .ware-caps { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1fr); gap: var(--sp-1); }
+  .ware-caps h3 { font-size: var(--fs-1); }
+  .ware-caps p { font-size: var(--fs-s); line-height: 1.7; }
+  .makers-shelf .ph { aspect-ratio: 1 / 1; }
+  .ware .ph, .makers-shelf .ph { padding: 4px; }
+  .ware .ph span, .makers-shelf .ph span { padding: 2px 4px; }
+  .facts { padding: var(--sp-1) var(--sp-2); }
+  .facts div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .visit-book { padding: var(--sp-3) var(--sp-2); }
+  .btn { font-size: var(--fs-0); padding: 12px var(--sp-2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: background-color 120ms ease; }
+  .btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- 手びねりの器 3種:少しずつ形が違う -->
+    <symbol id="cup-a" viewBox="0 0 32 28"><path d="M4 5.5C4 4.4 8 3.6 16 3.6S28 4.5 28 5.6L26.2 21.4C25.9 24 23.6 25.2 20.4 25.2H11.8C8.6 25.2 6.4 24 6 21.3Z"/><rect x="11" y="25" width="10" height="3" rx="1"/></symbol>
+    <symbol id="cup-b" viewBox="0 0 32 28"><path d="M2.2 9.2C2.4 8 6 7.2 16.2 7.2S29.8 8.1 29.8 9.3C29.2 19 24.4 25.2 16 25.2S2.9 18.8 2.2 9.2Z"/><rect x="11.5" y="25" width="9" height="3" rx="1"/></symbol>
+    <symbol id="cup-c" viewBox="0 0 32 28"><path d="M7.4 2.6C7.4 1.9 10.6 1.4 16.6 1.5S25.4 2.2 25.3 2.9L24.6 22.6C24.4 24.7 22.2 25.3 16.2 25.3S8.3 24.6 8.1 22.4Z"/><rect x="11" y="25" width="10" height="3" rx="1"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="#top" id="top">土と灯<small>つちとひ</small></a>
+    <nav class="site-nav" aria-label="ページ内">
+      <ul>
+        <li><a href="#utsuwa">器</a></li>
+        <li><a href="#kyoshitsu">体験教室</a></li>
+        <li><a href="#kobo">工房</a></li>
+        <li><a href="#access">アクセス</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-head">
+        <p class="place">京都・五条坂の陶芸工房</p>
+        <h1>手びねりで、<wbr>自分の器を<wbr>ひとつ。</h1>
+      </div>
+
+      <form class="seats" id="seats" action="/reserve/" method="get" aria-labelledby="seats-title">
+        <fieldset>
+          <legend id="seats-title">次の体験教室</legend>
+          <p class="seats-sub">
+            <span>各回<b class="nowrap">6名まで</b></span>
+            <span class="key"><svg aria-hidden="true"><use href="#cup-a" class="cup-taken"/></svg>予約済み</span>
+            <span class="key"><svg aria-hidden="true"><use href="#cup-a" class="cup-open"/></svg>空き</span>
+          </p>
+
+          <label class="session" data-date="2026-11-14">
+            <input type="radio" name="date" value="2026-11-14" disabled>
+            <span class="s-date"><b>11月14日</b><span>(土)</span></span>
+            <span class="s-shelf" aria-hidden="true">
+              <span class="cups">
+                <svg><use href="#cup-a" class="cup-taken"/></svg><svg><use href="#cup-b" class="cup-taken"/></svg><svg><use href="#cup-c" class="cup-taken"/></svg><svg><use href="#cup-b" class="cup-taken"/></svg><svg><use href="#cup-a" class="cup-taken"/></svg><svg><use href="#cup-c" class="cup-taken"/></svg>
+              </span>
+              <span class="plank"></span>
+            </span>
+            <span class="s-status"><b>満席</b></span>
+          </label>
+
+          <label class="session" data-date="2026-11-28">
+            <input type="radio" name="date" value="2026-11-28" checked>
+            <span class="s-date"><b>11月28日</b><span>(土)</span></span>
+            <span class="s-shelf" aria-hidden="true">
+              <span class="cups">
+                <svg><use href="#cup-b" class="cup-taken"/></svg><svg><use href="#cup-c" class="cup-taken"/></svg><svg><use href="#cup-a" class="cup-taken"/></svg><svg><use href="#cup-c" class="cup-taken"/></svg><svg><use href="#cup-a" class="cup-open"/></svg><svg><use href="#cup-b" class="cup-open"/></svg>
+              </span>
+              <span class="plank"></span>
+            </span>
+            <span class="s-status">残り<b>2</b>席</span>
+          </label>
+
+          <label class="session" data-date="2026-12-12">
+            <input type="radio" name="date" value="2026-12-12">
+            <span class="s-date"><b>12月12日</b><span>(土)</span></span>
+            <span class="s-shelf" aria-hidden="true">
+              <span class="cups">
+                <svg><use href="#cup-c" class="cup-taken"/></svg><svg><use href="#cup-a" class="cup-taken"/></svg><svg><use href="#cup-b" class="cup-open"/></svg><svg><use href="#cup-a" class="cup-open"/></svg><svg><use href="#cup-c" class="cup-open"/></svg><svg><use href="#cup-b" class="cup-open"/></svg>
+              </span>
+              <span class="plank"></span>
+            </span>
+            <span class="s-status">残り<b>4</b>席</span>
+          </label>
+
+          <label class="session" data-date="2026-12-26">
+            <input type="radio" name="date" value="2026-12-26">
+            <span class="s-date"><b>12月26日</b><span>(土)</span></span>
+            <span class="s-shelf" aria-hidden="true">
+              <span class="cups">
+                <svg><use href="#cup-a" class="cup-open"/></svg><svg><use href="#cup-c" class="cup-open"/></svg><svg><use href="#cup-b" class="cup-open"/></svg><svg><use href="#cup-a" class="cup-open"/></svg><svg><use href="#cup-b" class="cup-open"/></svg><svg><use href="#cup-c" class="cup-open"/></svg>
+              </span>
+              <span class="plank"></span>
+            </span>
+            <span class="s-status">残り<b>6</b>席</span>
+          </label>
+        </fieldset>
+
+        <div class="book">
+          <a class="btn" id="cta" href="/reserve/?date=2026-11-28">11月28日(土)の回を予約する</a>
+          <p class="book-note" id="cta-note">予約ページへ移動します。料金や時間も、そちらでご確認ください。</p>
+        </div>
+      </form>
+
+      <div class="hero-lead">
+        <p>土と灯(つちとひ)は、職人二人で営む小さな陶芸工房です。ふだんの食卓で使う飯碗、湯呑、小皿をつくっています。</p>
+        <p>月に二回、各回六名までの手びねり体験教室をひらいています。</p>
+      </div>
+
+      <aside class="hero-aside" aria-hidden="true">
+        <h2>体験教室のこと</h2>
+        <dl>
+          <dt>内容</dt><dd>手びねり(ろくろは使いません)</dd>
+          <dt>開催</dt><dd>月に2回</dd>
+          <dt>定員</dt><dd>各回6名まで</dd>
+          <dt>場所</dt><dd>京都・五条坂の工房</dd>
+        </dl>
+      </aside>
+    </div>
+  </div>
+
+  <section id="utsuwa" aria-labelledby="utsuwa-title">
+    <div class="wrap">
+      <h2 class="sec-title" id="utsuwa-title">毎日の食卓の器</h2>
+      <p class="sec-lede">工房でつくっているのは、特別な日のためではなく、毎日手に取る器です。</p>
+
+      <div class="ware-shelf">
+        <figure class="ware"><div class="ph bowl" role="img" aria-label="飯碗の写真(準備中)"><span><span class="nowrap">写真:飯碗</span><br><span class="nowrap">(準備中)</span></span></div></figure>
+        <figure class="ware"><div class="ph cup" role="img" aria-label="湯呑の写真(準備中)"><span><span class="nowrap">写真:湯呑</span><br><span class="nowrap">(準備中)</span></span></div></figure>
+        <figure class="ware"><div class="ph plate" role="img" aria-label="小皿の写真(準備中)"><span><span class="nowrap">写真:小皿</span><br><span class="nowrap">(準備中)</span></span></div></figure>
+        <div class="shelf-line" aria-hidden="true"></div>
+      </div>
+      <div class="ware-caps">
+        <div><h3>飯碗</h3><p>毎朝、<wbr><span class="nowrap">ご飯を</span><wbr><span class="nowrap">よそう器。</span></p></div>
+        <div><h3>湯呑</h3><p><span class="nowrap">お茶を</span><wbr><span class="nowrap">一杯ぶん。</span></p></div>
+        <div><h3>小皿</h3><p><span class="nowrap">漬物や</span><wbr><span class="nowrap">菓子を</span><wbr><span class="nowrap">のせて。</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="kyoshitsu" aria-labelledby="kyoshitsu-title">
+    <div class="wrap class-grid">
+      <div>
+        <h2 class="sec-title" id="kyoshitsu-title">手びねり体験教室</h2>
+        <p class="sec-lede">ろくろを使わず、手で土をつまみ、のばして、器のかたちにしていきます。各回六名までの少人数なので、ゆっくり土にさわれます。</p>
+        <div class="ph class-ph" role="img" aria-label="教室の作業台の写真(準備中)"><span>写真:教室の作業台(準備中)</span></div>
+      </div>
+      <div>
+        <dl class="facts">
+          <div><dt>内容</dt><dd>手びねり(ろくろは使いません)</dd></div>
+          <div><dt>開催</dt><dd class="big">月に2回</dd></div>
+          <div><dt>定員</dt><dd class="big">各回6名まで</dd></div>
+          <div><dt>場所</dt><dd>京都・五条坂の工房</dd></div>
+          <div><dt>料金・時間</dt><dd>予約ページでご確認ください</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="kobo" aria-labelledby="kobo-title">
+    <div class="wrap makers-grid">
+      <div class="makers-text">
+        <h2 class="sec-title" id="kobo-title">職人は二人</h2>
+        <p class="sec-lede">五条坂の小さな工房で、二人で土を練り、かたちをつくり、窯に入れています。教室の日も、同じ作業台に並びます。</p>
+      </div>
+      <div class="makers-shelf">
+        <div class="ph" role="img" aria-label="藤野 遼の写真(準備中)"><span><span class="nowrap">写真:藤野 遼</span><br><span class="nowrap">(準備中)</span></span></div>
+        <div class="ph" role="img" aria-label="千田 葵の写真(準備中)"><span><span class="nowrap">写真:千田 葵</span><br><span class="nowrap">(準備中)</span></span></div>
+      </div>
+      <div class="makers-plank" aria-hidden="true"></div>
+      <div class="makers-names"><p>藤野 遼</p><p>千田 葵</p></div>
+    </div>
+  </section>
+
+  <section id="access" class="visit" aria-labelledby="access-title">
+    <div class="wrap visit-grid">
+      <div>
+        <h2 class="sec-title" id="access-title">五条坂の工房へ</h2>
+        <address>京都市東山区 五条坂</address>
+      </div>
+      <div class="visit-book">
+        <p class="next" id="next-line">次に空きのある回は<span class="nowrap">11月28日(土)</span>、<span class="nowrap">残り2席</span>です。</p>
+        <a class="btn" id="cta-close" href="/reserve/?date=2026-11-28">体験教室を予約する</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>土と灯(つちとひ)|京都・五条坂の陶芸工房</span>
+    <span>© 2026 土と灯</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const form = document.getElementById('seats');
+  const cta = document.getElementById('cta');
+  const note = document.getElementById('cta-note');
+  const nextLine = document.getElementById('next-line');
+  const ctaClose = document.getElementById('cta-close');
+  const rows = [...form.querySelectorAll('.session')];
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dow = ['日', '月', '火', '水', '木', '金', '土'];
+  const label = iso => { const d = new Date(iso + 'T00:00:00'); return `${d.getMonth() + 1}月${d.getDate()}日(${dow[d.getDay()]})`; };
+
+  // 過ぎた回は「終了」にして選べなくする
+  rows.forEach(row => {
+    const d = new Date(row.dataset.date + 'T00:00:00');
+    if (d < today) {
+      const input = row.querySelector('input');
+      input.checked = false; input.disabled = true;
+      row.querySelector('.s-status').innerHTML = '<b>終了</b>';
+    }
+  });
+
+  const update = () => {
+    const chosen = form.querySelector('input:checked');
+    if (chosen) {
+      cta.textContent = `${label(chosen.value)}の回を予約する`;
+      cta.href = `/reserve/?date=${chosen.value}`;
+    } else {
+      cta.textContent = '体験教室の予約ページへ';
+      cta.href = '/reserve/';
+      note.textContent = 'ここに出ている回は受付を終えました。次の日程は予約ページでご確認ください。';
+    }
+  };
+
+  if (!form.querySelector('input:checked')) {
+    const first = form.querySelector('input:not(:disabled)');
+    if (first) first.checked = true;
+  }
+  const firstOpen = form.querySelector('input:not(:disabled)');
+  if (firstOpen && nextLine) {
+    const status = firstOpen.closest('.session').querySelector('.s-status').textContent;
+    nextLine.innerHTML = `次に空きのある回は<span class="nowrap">${label(firstOpen.value)}</span>、<span class="nowrap">${status}</span>です。`;
+    if (ctaClose) ctaClose.href = `/reserve/?date=${firstOpen.value}`;
+  } else if (nextLine) {
+    nextLine.textContent = '次の日程は予約ページでご案内しています。';
+    if (ctaClose) ctaClose.href = '/reserve/';
+  }
+  form.addEventListener('change', update);
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grepline: query structured logs by field</title>
+<meta name="description" content="grepline is an open-source Rust CLI that searches JSON and logfmt logs across many files with a SQL-like filter. Install with brew or cargo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=Martian+Mono:wdth,wght@87.5,500&display=swap">
+<style>
+:root{
+  --bg:#17202B; --surface:#1F2A37; --text:#E8E4DA; --muted:#A3ADBA;
+  --accent:#F3CD4B; --on-accent:#17202B; --border:#3D4B5C; --danger:#FF8A7A; --tick:#384656;
+  --display:"Martian Mono", ui-monospace, monospace;
+  --body:"IBM Plex Sans", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, monospace;
+  --t15:15px; --t16:16px; --t20:20px; --t25:25px; --t31:31px; --t39:39px;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px; --s8:64px; --s12:96px;
+  --r:4px;
+  --gut:192px; /* 24 x space.base: one fixed gutter so the log-line unit aligns across sections */
+  --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 var(--t16)/1.6 var(--body)}
+h1,h2{font-family:var(--display);font-weight:500;font-stretch:87.5%;line-height:1.15;text-wrap:balance;margin:0;letter-spacing:0}
+p{text-wrap:pretty;margin:0}
+code,kbd{font-family:var(--mono)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.vh{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.wrap{width:min(100% - 2*var(--s2), 1200px);margin-inline:auto}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);padding-block:var(--s2)}
+.mark{font-family:var(--display);font-weight:500;font-stretch:87.5%;font-size:var(--t20);text-decoration:none;padding:var(--s1) 0}
+.top nav{display:flex;gap:var(--s1)}
+.top nav a{font-size:var(--t15);color:var(--text);text-decoration:none;padding:var(--s1);white-space:nowrap;border-bottom:1px solid transparent}
+@media (hover:hover) and (pointer:fine){.top nav a:hover{border-bottom-color:var(--muted)}}
+
+/* hero */
+.hero{padding-top:var(--s4)}
+.lede{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--s6);align-items:end}
+.lede h1{font-size:var(--t39)}
+.lede p{margin-top:var(--s2);max-width:60ch}
+.lede p code{font-size:var(--t15);white-space:nowrap}
+
+.install{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:var(--s2);min-width:0}
+.install fieldset{border:0;margin:0 0 var(--s2);padding:0;display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
+.install legend{float:left;font-size:var(--t15);color:var(--muted);margin-right:var(--s1)}
+.opt{position:relative;display:inline-flex}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.box{display:inline-flex;align-items:center;gap:var(--s1);font:400 var(--t15)/1 var(--mono);color:var(--text);border:1px solid var(--muted);border-radius:var(--r);padding:6px 10px;min-height:32px;white-space:nowrap;cursor:pointer}
+.box::before{content:"";width:10px;height:10px;border:1px solid var(--muted);flex:none}
+.opt input[type=radio] + .box::before{border-radius:50%}
+.opt input:checked + .box{border-color:var(--text)}
+.opt input:checked + .box::before{background:var(--accent);border-color:var(--accent)}
+.opt input:focus-visible + .box{outline:2px solid var(--accent);outline-offset:2px}
+.cmdrow{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.cmd{font:400 var(--t20)/1.3 var(--mono);white-space:pre;flex:1 1 auto;min-width:0}
+.cmd::before{content:"$ ";color:var(--muted)}
+.install:has(#via-cargo:checked) .cmd-brew,
+.install:has(#via-brew:checked) .cmd-cargo{display:none}
+.btn{font:600 var(--t16)/1 var(--body);border-radius:var(--r);padding:12px 18px;min-height:44px;white-space:nowrap;cursor:pointer;transition:transform 120ms var(--ease-out)}
+.btn:active{transform:scale(0.97)}
+.btn-fill{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent)}
+.btn-line{background:transparent;color:var(--text);border:1px solid var(--muted)}
+.msg{font-size:var(--t15);margin-top:var(--s1)}
+.msg:empty{display:none}
+
+/* the wall: log line rows */
+.wall{margin-top:var(--s6);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);min-width:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1) var(--s3);flex-wrap:wrap;padding:12px var(--s2);border-bottom:1px solid var(--border)}
+.filter{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap;border:0;margin:0;padding:0}
+.filter legend{float:left;font:400 var(--t15)/1 var(--mono);color:var(--muted);margin-right:var(--s1)}
+.join{font:400 var(--t15)/1 var(--mono);color:var(--text)}
+.pair{display:inline-flex;align-items:center;gap:var(--s1);white-space:nowrap}
+.count{font:400 var(--t15)/1.4 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.rows{list-style:none;margin:0;padding:var(--s1) 0}
+.row{display:grid;grid-template-columns:var(--gut) minmax(0,1fr);column-gap:var(--s2);padding:4px var(--s2);font:400 var(--t15)/1.6 var(--mono)}
+.gut{color:var(--muted);white-space:nowrap}
+.rec{white-space:pre-wrap;min-width:0}
+.tick{display:none;grid-column:2;height:4px;background:var(--tick)}
+.row.is-folded{padding-block:2px}
+.row.is-folded .gut,.row.is-folded .rec{display:none}
+.row.is-folded .tick{display:block}
+.lv-error{color:var(--danger)}
+.on-level .f-level,.on-lat .f-lat{background:var(--border);color:var(--text)}
+.on-level .f-level .lv{color:inherit}
+.wall.ready .row:not(.is-folded) .rec{animation:unfold 160ms var(--ease-out)}
+@keyframes unfold{from{opacity:0}to{opacity:1}}
+.w55{width:55%}.w60{width:60%}.w65{width:65%}.w80{width:80%}.w85{width:85%}.w90{width:90%}.w95{width:95%}.w100{width:100%}
+
+/* facts: one logfmt record */
+.facts{margin-top:var(--s12);border-block:1px solid var(--border);padding-block:var(--s4)}
+.facts .row{padding:0;font-size:var(--t20);line-height:1.5;align-items:baseline}
+.facts .gut{font-size:var(--t15)}
+.kv{white-space:nowrap}
+.kv b{font-weight:400;color:var(--muted)}
+
+/* anatomy */
+.anatomy{margin-top:var(--s12)}
+.anatomy h2,.get h2{font-size:var(--t25)}
+.big{display:block;margin-top:var(--s4);font:500 var(--t31)/1.2 var(--display);font-stretch:87.5%;white-space:pre-wrap}
+.parts{margin:var(--s4) 0 0;border-top:1px solid var(--border)}
+.parts div{display:grid;grid-template-columns:var(--gut) minmax(0,1fr);column-gap:var(--s2);padding-block:var(--s2);border-bottom:1px solid var(--border);align-items:baseline}
+.parts dt{font:400 var(--t20)/1.3 var(--mono);white-space:nowrap}
+.parts dd{margin:0;max-width:62ch}
+.parts dd code{font-size:var(--t15)}
+
+/* install rows */
+.get{margin-top:var(--s12)}
+.get .cmdlist{margin-top:var(--s4);border-top:1px solid var(--border)}
+.get .line{display:grid;grid-template-columns:var(--gut) minmax(0,1fr) auto;column-gap:var(--s2);align-items:center;padding-block:var(--s2);border-bottom:1px solid var(--border)}
+.get .line .gut{font:400 var(--t15)/1.4 var(--mono)}
+.get .after{margin-top:var(--s3);max-width:62ch}
+.get .after code{font-size:var(--t15);white-space:nowrap}
+
+footer{margin-top:var(--s12);padding-block:var(--s4);font-size:var(--t15);color:var(--muted)}
+
+@media (max-width:899px){
+  .lede{grid-template-columns:1fr;gap:var(--s4)}
+}
+@media (max-width:719px){
+  .hero{padding-top:var(--s2)}
+  .lede h1{font-size:var(--t31)}
+  .row{grid-template-columns:minmax(0,1fr)}
+  .tick{grid-column:1}
+  .row:not(.is-folded){padding-block:6px}
+  .facts .row{font-size:var(--t20)}
+  .big{font-size:var(--t25)}
+  .parts div{grid-template-columns:1fr;row-gap:4px}
+  .cmd{white-space:pre-wrap}
+  .get .line{grid-template-columns:minmax(0,1fr);row-gap:var(--s1)}
+  .get .line .btn{justify-self:start}
+  .get .line .cmd{font-size:var(--t16)}
+  .facts,.anatomy,.get,footer{margin-top:var(--s8)}
+}
+@media (max-width:400px){
+  .cmd{font-size:var(--t16)}
+  .install legend{float:none;display:block;width:100%;margin:0 0 var(--s1)}
+}
+@media (min-width:1600px){
+  .wrap{width:min(100% - 2*var(--s8), 1560px)}
+  .hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,11fr);gap:var(--s8);align-items:start;padding-top:var(--s6)}
+  .lede{grid-template-columns:1fr;gap:var(--s4)}
+  .wall{margin-top:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .btn{transition:none}
+  .btn:active{transform:none}
+  .wall.ready .row:not(.is-folded) .rec{animation:none}
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="mark" href="#top" id="top">grepline</a>
+  <nav aria-label="Page">
+    <a href="#filter">Filter syntax</a>
+    <a href="#install">Install</a>
+  </nav>
+</header>
+
+<main>
+  <section class="wrap hero" aria-labelledby="h1">
+    <div class="lede">
+      <div>
+        <h1 id="h1">Query every log file by field.</h1>
+        <p>grepline searches JSON and logfmt logs across many files with a SQL-like filter. Write <code>level=error and latency_ms&gt;500</code> and keep only the lines where it holds.</p>
+      </div>
+      <div class="install" data-install>
+        <fieldset>
+          <legend>Install with</legend>
+          <label class="opt"><input type="radio" name="via" id="via-brew" value="brew" checked><span class="box">brew</span></label>
+          <label class="opt"><input type="radio" name="via" id="via-cargo" value="cargo"><span class="box">cargo</span></label>
+        </fieldset>
+        <div class="cmdrow">
+          <code class="cmd cmd-brew">brew install grepline</code>
+          <code class="cmd cmd-cargo">cargo install grepline</code>
+          <button class="btn btn-fill" type="button" data-copy="hero">Copy<span class="vh"> install command</span></button>
+        </div>
+        <p class="msg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="wall on-level on-lat" data-wall>
+      <div class="bar">
+        <fieldset class="filter">
+          <legend>filter</legend>
+          <label class="opt"><input type="checkbox" value="level" checked><span class="box">level=error</span></label>
+          <span class="pair"><span class="join">and</span>
+          <label class="opt"><input type="checkbox" value="lat" checked><span class="box">latency_ms&gt;500</span></label></span>
+        </fieldset>
+        <output class="count" data-count>6 of 24 lines match, from 4 files</output>
+      </div>
+      <ol class="rows" aria-label="Log lines from four files">
+          <li class="row is-folded" data-level="info" data-lat="38" data-file="gateway.json" aria-hidden="true"><span class="gut">gateway.json:2041</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":38</span>, "route":"/v1/orders", "msg":"request ok"}</code><span class="tick w90"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="112" data-file="billing.logfmt" aria-hidden="true"><span class="gut">billing.logfmt:877</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=112</span> msg="invoice rendered"</code><span class="tick w60"></span></li>
+          <li class="row" data-level="error" data-lat="812" data-file="gateway.json"><span class="gut">gateway.json:2042</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-error">"error"</span></span>, <span class="f f-lat">"latency_ms":812</span>, "route":"/v1/orders", "msg":"upstream timeout"}</code><span class="tick w100"></span></li>
+          <li class="row is-folded" data-level="warn" data-lat="640" data-file="queue.logfmt" aria-hidden="true"><span class="gut">queue.logfmt:3310</span><code class="rec"><span class="f f-level">level=<span class="lv lv-warn">warn</span></span> <span class="f f-lat">latency_ms=640</span> job=export msg="retrying job"</code><span class="tick w65"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="64" data-file="orders.json" aria-hidden="true"><span class="gut">orders.json:519</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":64</span>, "order":"o_4821", "msg":"order created"}</code><span class="tick w90"></span></li>
+          <li class="row" data-level="error" data-lat="1204" data-file="orders.json"><span class="gut">orders.json:520</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-error">"error"</span></span>, <span class="f f-lat">"latency_ms":1204</span>, "order":"o_4822", "msg":"db pool exhausted"}</code><span class="tick w100"></span></li>
+          <li class="row is-folded" data-level="error" data-lat="95" data-file="billing.logfmt" aria-hidden="true"><span class="gut">billing.logfmt:878</span><code class="rec"><span class="f f-level">level=<span class="lv lv-error">error</span></span> <span class="f f-lat">latency_ms=95</span> msg="card declined"</code><span class="tick w55"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="22" data-file="queue.logfmt" aria-hidden="true"><span class="gut">queue.logfmt:3311</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=22</span> job=thumbs msg="job done"</code><span class="tick w60"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="41" data-file="gateway.json" aria-hidden="true"><span class="gut">gateway.json:2043</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":41</span>, "route":"/v1/cart", "msg":"request ok"}</code><span class="tick w90"></span></li>
+          <li class="row" data-level="error" data-lat="930" data-file="queue.logfmt"><span class="gut">queue.logfmt:3312</span><code class="rec"><span class="f f-level">level=<span class="lv lv-error">error</span></span> <span class="f f-lat">latency_ms=930</span> job=export msg="job deadline exceeded"</code><span class="tick w80"></span></li>
+          <li class="row is-folded" data-level="warn" data-lat="488" data-file="orders.json" aria-hidden="true"><span class="gut">orders.json:521</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-warn">"warn"</span></span>, <span class="f f-lat">"latency_ms":488</span>, "order":"o_4823", "msg":"slow query"}</code><span class="tick w85"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="130" data-file="billing.logfmt" aria-hidden="true"><span class="gut">billing.logfmt:879</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=130</span> msg="invoice rendered"</code><span class="tick w60"></span></li>
+          <li class="row" data-level="error" data-lat="503" data-file="gateway.json"><span class="gut">gateway.json:2044</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-error">"error"</span></span>, <span class="f f-lat">"latency_ms":503</span>, "route":"/v1/cart", "msg":"upstream timeout"}</code><span class="tick w100"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="57" data-file="orders.json" aria-hidden="true"><span class="gut">orders.json:522</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":57</span>, "order":"o_4824", "msg":"order created"}</code><span class="tick w90"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="19" data-file="queue.logfmt" aria-hidden="true"><span class="gut">queue.logfmt:3313</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=19</span> job=thumbs msg="job done"</code><span class="tick w60"></span></li>
+          <li class="row" data-level="error" data-lat="2210" data-file="billing.logfmt"><span class="gut">billing.logfmt:880</span><code class="rec"><span class="f f-level">level=<span class="lv lv-error">error</span></span> <span class="f f-lat">latency_ms=2210</span> msg="ledger lock wait"</code><span class="tick w60"></span></li>
+          <li class="row is-folded" data-level="warn" data-lat="702" data-file="gateway.json" aria-hidden="true"><span class="gut">gateway.json:2045</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-warn">"warn"</span></span>, <span class="f f-lat">"latency_ms":702</span>, "route":"/v1/orders", "msg":"slow upstream"}</code><span class="tick w95"></span></li>
+          <li class="row is-folded" data-level="error" data-lat="120" data-file="orders.json" aria-hidden="true"><span class="gut">orders.json:523</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-error">"error"</span></span>, <span class="f f-lat">"latency_ms":120</span>, "order":"o_4825", "msg":"validation failed"}</code><span class="tick w95"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="25" data-file="queue.logfmt" aria-hidden="true"><span class="gut">queue.logfmt:3314</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=25</span> job=mail msg="job done"</code><span class="tick w60"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="98" data-file="billing.logfmt" aria-hidden="true"><span class="gut">billing.logfmt:881</span><code class="rec"><span class="f f-level">level=<span class="lv lv-info">info</span></span> <span class="f f-lat">latency_ms=98</span> msg="payout queued"</code><span class="tick w55"></span></li>
+          <li class="row" data-level="error" data-lat="671" data-file="orders.json"><span class="gut">orders.json:524</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-error">"error"</span></span>, <span class="f f-lat">"latency_ms":671</span>, "order":"o_4826", "msg":"db pool exhausted"}</code><span class="tick w95"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="36" data-file="gateway.json" aria-hidden="true"><span class="gut">gateway.json:2046</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":36</span>, "route":"/v1/cart", "msg":"request ok"}</code><span class="tick w90"></span></li>
+          <li class="row is-folded" data-level="error" data-lat="48" data-file="queue.logfmt" aria-hidden="true"><span class="gut">queue.logfmt:3315</span><code class="rec"><span class="f f-level">level=<span class="lv lv-error">error</span></span> <span class="f f-lat">latency_ms=48</span> job=mail msg="bad payload"</code><span class="tick w65"></span></li>
+          <li class="row is-folded" data-level="info" data-lat="61" data-file="orders.json" aria-hidden="true"><span class="gut">orders.json:525</span><code class="rec">{<span class="f f-level">"level":<span class="lv lv-info">"info"</span></span>, <span class="f f-lat">"latency_ms":61</span>, "order":"o_4827", "msg":"order created"}</code><span class="tick w90"></span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="wrap facts" aria-labelledby="facts-h">
+    <h2 class="vh" id="facts-h">grepline at a glance</h2>
+    <p class="row"><span class="gut">about.logfmt:1</span><span class="rec"><span class="kv"><b>lang=</b>rust</span> <span class="kv"><b>license=</b>MIT</span> <span class="kv"><b>binaries=</b>1</span> <span class="kv"><b>formats=</b>json,logfmt</span> <span class="kv"><b>installs=</b>brew,cargo</span></span></p>
+  </section>
+
+  <section class="wrap anatomy" id="filter" aria-labelledby="filter-h">
+    <h2 id="filter-h">Read the filter left to right</h2>
+    <code class="big">level=error and latency_ms&gt;500</code>
+    <dl class="parts">
+      <div><dt>level=error</dt><dd>The record’s <code>level</code> field equals <code>error</code>, whether the line is JSON or logfmt.</dd></div>
+      <div><dt>and</dt><dd>Both sides must hold for a line to be kept. Untick either clause above to see what it was removing.</dd></div>
+      <div><dt>latency_ms&gt;500</dt><dd>The <code>latency_ms</code> field is greater than 500.</dd></div>
+    </dl>
+  </section>
+
+  <section class="wrap get" id="install" aria-labelledby="install-h">
+    <h2 id="install-h">Install</h2>
+    <div class="cmdlist">
+      <div class="line"><span class="gut">Homebrew</span><code class="cmd" id="c-brew">brew install grepline</code><button class="btn btn-line" type="button" data-copy="c-brew">Copy<span class="vh"> brew command</span></button></div>
+      <div class="line"><span class="gut">Cargo</span><code class="cmd" id="c-cargo">cargo install grepline</code><button class="btn btn-line" type="button" data-copy="c-cargo">Copy<span class="vh"> cargo command</span></button></div>
+    </div>
+    <p class="msg" role="status" aria-live="polite" data-msg-get></p>
+    <p class="after">Either way you get the same single binary. Then filter with <code>level=error and latency_ms&gt;500</code>.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">grepline · open source, MIT licensed · written in Rust</div>
+</footer>
+
+<script>
+(() => {
+  const wall = document.querySelector('[data-wall]');
+  const rows = [...wall.querySelectorAll('.row')];
+  const boxes = [...wall.querySelectorAll('.filter input')];
+  const count = wall.querySelector('[data-count]');
+  function apply() {
+    const on = Object.fromEntries(boxes.map(b => [b.value, b.checked]));
+    wall.classList.toggle('on-level', on.level);
+    wall.classList.toggle('on-lat', on.lat);
+    const files = new Set();
+    let n = 0;
+    for (const r of rows) {
+      const hit = (!on.level || r.dataset.level === 'error') && (!on.lat || Number(r.dataset.lat) > 500);
+      r.classList.toggle('is-folded', !hit);
+      if (hit) { r.removeAttribute('aria-hidden'); n++; files.add(r.dataset.file); }
+      else r.setAttribute('aria-hidden', 'true');
+    }
+    count.textContent = (!on.level && !on.lat)
+      ? `No filter: all ${rows.length} lines shown`
+      : `${n} of ${rows.length} lines match, from ${files.size} file${files.size === 1 ? '' : 's'}`;
+  }
+  boxes.forEach(b => b.addEventListener('change', () => { wall.classList.add('ready'); apply(); }));
+
+  async function copy(btn) {
+    const key = btn.dataset.copy;
+    let el, msg;
+    if (key === 'hero') {
+      const box = btn.closest('[data-install]');
+      const via = box.querySelector('input[name=via]:checked').value;
+      el = box.querySelector('.cmd-' + via);
+      msg = box.querySelector('.msg');
+    } else {
+      el = document.getElementById(key);
+      msg = document.querySelector('[data-msg-get]');
+    }
+    const text = el.textContent.trim();
+    const label = btn.firstChild;
+    try {
+      await navigator.clipboard.writeText(text);
+      label.textContent = 'Copied';
+      msg.textContent = '';
+      setTimeout(() => { label.textContent = 'Copy'; }, 2000);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      msg.textContent = 'This browser blocked the clipboard. The command is selected: press Ctrl+C (⌘C on a Mac) to copy it.';
+    }
+  }
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copy(b)));
+})();
+</script>
+</body>
+</html>
