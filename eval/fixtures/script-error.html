@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Script error</title><meta name="description" content="F14 fixture">
+<style>body{font:16px/1.5 system-ui,sans-serif;color:#111;background:#fff;margin:0;padding:24px}</style></head>
+<body><main><h1>Weekend bread</h1><ul id="list"></ul>
+<script>
+const items = ['Campagne', 'Rye'];
+document.getElementById('list').innerHTML = items.map((x) => '<li><span class='nw'>' + x + '</span></li>').join('');
+</script></main></body></html>

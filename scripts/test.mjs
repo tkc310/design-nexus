@@ -3,6 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -243,6 +244,23 @@ check('cursor rule still prefers the repo source tree', mdc.includes('docs/desig
 check('cursor rule does not inline a trend item', !mdc.includes('アンチ AI スロップ'));
 const agents = fs.readFileSync(path.join(ROOT, 'dist/codex/AGENTS.md'), 'utf8');
 check('codex AGENTS.md does not load the trend db', !agents.includes('design-trends'));
+
+const rep = (f) => { const r = spawnSync(process.execPath, [path.join(S, 'render-check.mjs'), path.join(ROOT, 'eval/fixtures', f), '--repeats', '--widths', '1280', '--json', '--out', fs.mkdtempSync(path.join(os.tmpdir(), 'dn-rep-'))], { encoding: 'utf8' }); try { return JSON.parse(r.stdout); } catch { return null; } };
+const repFact = rep('repeats-fact.html');
+if (repFact && !repFact.skipped) {
+  check('--repeats lists a figure the visible text states four times', (repFact.repeats || []).some((x) => x.text === '12 minutes' && x.count === 4), JSON.stringify(repFact.repeats));
+  const repBtn = rep('repeats-buttons.html');
+  check('--repeats ignores button, link and nav text and code samples', (repBtn.repeats || []).length === 0, JSON.stringify(repBtn.repeats));
+}
+
+const f14 = (f) => { const r = spawnSync(process.execPath, [path.join(S, 'render-check.mjs'), path.join(ROOT, 'eval/fixtures', f), '--widths', '320,1280', '--json', '--out', fs.mkdtempSync(path.join(os.tmpdir(), 'dn-f14-'))], { encoding: 'utf8' }); try { return JSON.parse(r.stdout); } catch { return null; } };
+const se = f14('script-error.html');
+if (se && !se.skipped) {
+  const n = se.findings.filter((f) => f.id === 'F14');
+  check('render flags F14 once for an uncaught script error', n.length === 1 && /Uncaught error/.test(n[0].message), JSON.stringify(n));
+  const ok = f14('repeats-fact.html');
+  check('render does not flag F14 on a page without script errors', !ok.findings.some((f) => f.id === 'F14'));
+}
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

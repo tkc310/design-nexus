@@ -3,7 +3,7 @@
 [索引](../index.md) · [2026-10 のスナップショット](../monthly/2026-10.md)
 
 - **ID**: T07
-- **タグ**: #motion #interaction
+- **タグ**: #motion #interaction #expression
 - **概要**: 装飾としてのスクロールアニメから、状態変化を伝える機能としてのモーションへ移っている。実装も JS ライブラリから CSS ネイティブへ寄っている。
 - **特徴・適用方法**: scroll-driven animations（`animation-timeline`、`view-timeline`）、View Transitions（クロスドキュメントを含む）、anchor positioning はいずれも Interop 2026 の対象。アニメーションでは width、height、left ではなく transform を動かす（レイアウト計算を避けて、カクつきを防ぐ）。エージェントは CSS で書けるものまで JS で書きがちなので、明示的に指示する。配布側では、View Transitions の見本を「エージェントにコピーする」形で出す投稿が出ている。本文から確認できるのは、遷移のセットとエージェント向けコピーがあることまで。anchor positioning は、実装側で回避策が多い、という 10 月の作業報告がある。仕様が Interop の対象であることと、今日の実装が楽であることは別である。
 - **向く場面**: カルーセル、ページ遷移、ローディング、操作のフィードバック。

@@ -8,7 +8,7 @@
 - **領域**: マーケ / プロダクトUI / モバイル を切り替え、和文組版にも対応
 - **改善ループ**: 評価ケース・ルーブリック・自動採点・審査エージェント・採用判定で、スキル自体を更新し続けられる
 
-調査と比較は [docs/comparison.md](docs/comparison.md)、X 上のスキルの検証（2026-10-31）は [docs/design-skills.md](docs/design-skills.md) にあります。流行りのデザイン手法は [docs/design-trends/](docs/design-trends/README.md) に、月次で更新する参照用データベースとして置いています。スキルが開くのは、ヒアリングで流行を取り入れたいと分かったときだけです。AGENTS.md と CLAUDE.md からは読み込みません。
+調査と比較は [docs/comparison.md](docs/comparison.md)、X 上のスキルの検証（2026-10-31）は [docs/design-skills.md](docs/design-skills.md) にあります。流行りのデザイン手法は [docs/design-trends/](docs/design-trends/README.md) に、月次で更新する参照用データベースとして置いています。standard と deep では、方向を提案する前にスキルが開き、デザイン表現のトレンド(`#expression`)のうち合うものを 3 案の 1 つに入れます。開発フローやデザイン原則の項目は候補にしません。不要なときは「トレンドはいらない」と伝えてください。AGENTS.md と CLAUDE.md からは読み込みません。
 
 ## スキルなしと比べた結果
 
@@ -64,6 +64,8 @@ AGENTS.md への追記は `<!-- design-nexus:start -->` 〜 `end` のブロッ�
 
 standard と deep では、作り終えたあとに新しい文脈の見直し(second look)が確かめと直しをもう 1 回行います(v0.15.0)。サブエージェントを使える環境では自動で走り、使えない環境では「second look が残っている」と報告するので、新しいセッションで `references/second-look.md` を実行してください。トークンは 1 ページあたり約 1.9 倍になります。急ぐときは「quick で」と言えば省けます。
 
+費用の目安(2026-11-27、Opus、LP 1 ページ): 作るのに約 2.3〜2.8 ドル、見直しに約 1 ドル。費用のほとんどは、往復のたびに読み直される会話の土台から来ていて、読む参照ファイルや画像の数ではありません。そのため、見直しで読む物を絞っても費用は変わりませんでした(EXP-072・080)。見直しを軽いモデルに替えると約 0.35 倍になりますが、狭い幅での判断が落ちました(EXP-077)。費用を下げたいときに確かに効くのは「quick で」(見直しを省いて約 3 分の 1 減)だけで、狭い幅の崩れが残りやすくなります。
+
 ### チェックを単体で使う
 
 ```bash
@@ -112,7 +114,7 @@ scripts/test.mjs          チェックの回帰テスト
 install.sh                インストーラ
 docs/comparison.md        調査・比較レポート
 docs/design-skills.md     X上のスキル検証（2026-10-31）
-docs/design-trends/       デザイン手法の月次データベース（流行を求められたときだけスキルが読む）
+docs/design-trends/       デザイン手法の月次データベース（方向の提案のときにスキルが読む）
 .github/workflows/pages.yml  フィクスチャ HTML を Pages へ手動公開
 .github/assemble-fixture-pages.mjs  公開物の収集と index.html の生成
 ```

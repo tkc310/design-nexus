@@ -24,6 +24,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--snapshot') opt.snapshot = args[++i];
   else if (a === '--compare') opt.compare = args[++i];
   else if (a === '--hold') opt.hold = true;
+  else if (a === '--repeats') opt.repeats = true; // report facts and phrases the visible text states three or more times (no check ID)
   else if (a === '--keep') { opt.keep.push(args[++i]); opt.hold = true; }
   else if (a === '--time') opt.time = args[++i]; // ISO instant, e.g. 2026-11-04T10:30:00+09:00: pins the page clock
   else if (a === '--tz') opt.tz = args[++i]; // IANA zone for the page, e.g. Asia/Tokyo
@@ -85,6 +86,7 @@ const add = (id, where, message) => {
 const shots = [];
 let look = null;
 let hold = null;
+let repeats = null;
 // Evaluation captures: which widths were tiled, how tall the page was, and which bars were laid out in flow.
 const TILE = { height: 900, step: 840, max: 30 };
 const capture = opt.first || opt.tiles ? { first_screen: opt.first, tiles: opt.tiles, tile_height: TILE.height, tile_step: TILE.step, widths: {} } : null;
@@ -471,6 +473,51 @@ function snapshot() {
     handlers: [...document.querySelectorAll('[onclick], [onsubmit], [onchange], form[action]')].map((e) => `${e.tagName.toLowerCase()} ${e.getAttribute('action') || ''}`.trim()),
     headings: [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => `${h.tagName.toLowerCase()} ${txt(h)}`),
   };
+}
+
+// --repeats: facts and phrases that the visible text outside controls states three or more times, read once at 1280.
+// Report only (no check ID): it feeds the builder's *Say it once* pass on marketing pages. Figures count with their unit
+// (6名, 2 binaries, 500ms); phrases are the longest repeated runs (three or more Latin words, four or more Japanese
+// characters). Buttons, links, navs, labels, form controls, code samples and aria-hidden text are left out.
+function repeatsRead() {
+  const SKIP = 'script, style, noscript, template, nav, a, button, label, select, option, textarea, input, summary, legend, pre, code, kbd, samp, [aria-hidden="true"], [role="button"]';
+  const parts = [];
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const el = n.parentElement;
+    if (!el || el.closest(SKIP)) continue;
+    const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    if (r.width < 1 || r.height < 1 || s.visibility === 'hidden' || s.display === 'none') continue;
+    const t = n.textContent.replace(/\s+/g, ' ').trim();
+    if (t) parts.push(t);
+  }
+  const text = parts.join(' \u0000 ');
+  const tally = new Map();
+  const bump = (k) => tally.set(k, (tally.get(k) || 0) + 1);
+  for (const m of text.matchAll(/(?<![\w:\/.-])\d[\d,.]*\s?(?:[A-Za-z%]{2,}|%|[\u3040-\u30ff\u4e00-\u9fff]{1,2})(?![\w-])/g)) bump(m[0].replace(/\s+/g, ' ').toLowerCase());
+  for (const m of text.matchAll(/\b[A-Z][A-Z0-9]{1,}\b/g)) bump(m[0]);
+  const words = text.toLowerCase().match(/[a-z][a-z'-]*|\u0000/g) || [];
+  for (let i = 0; i + 2 < words.length; i++) if (!words.slice(i, i + 3).includes('\u0000')) bump(words.slice(i, i + 3).join(' '));
+  const ja = text.match(/[\u3040-\u30ff\u4e00-\u9fff\u3005]+/g) || [];
+  const gram = new Map();
+  for (const run of ja) for (let i = 0; i + 4 <= run.length; i++) gram.set(run.slice(i, i + 4), (gram.get(run.slice(i, i + 4)) || 0) + 1);
+  // Chain overlapping repeated 4-grams into the longest repeated run, then count that run.
+  const runs = new Set();
+  for (const run of ja) {
+    let start = -1;
+    for (let i = 0; i + 4 <= run.length + 1; i++) {
+      const hit = i + 4 <= run.length && gram.get(run.slice(i, i + 4)) >= 3;
+      if (hit && start < 0) start = i;
+      if (!hit && start >= 0) { runs.add(run.slice(start, i + 3)); start = -1; }
+    }
+  }
+  for (const r of runs) if (/[\u30a0-\u30ff\u4e00-\u9fff]/.test(r)) tally.set(r, text.split(r).length - 1);
+  let hits = [...tally].filter(([, n]) => n >= 3).map(([k, n]) => ({ text: k, count: n }));
+  // Keep the longest: drop a hit that sits inside a longer hit with the same or a higher count.
+  hits = hits.filter((h) => !hits.some((o) => o !== h && o.text.length > h.text.length && o.text.includes(h.text) && o.count >= h.count));
+  // Merge overlapping Japanese 4-grams into longer runs where they chain with the same count.
+  hits.sort((a, b) => b.count - a.count || b.text.length - a.text.length);
+  return hits.slice(0, 8);
 }
 
 // --hold: what a change that only restyles (an accent, a prose cut) must leave alone. Words are read once at 1280:
@@ -1368,6 +1415,9 @@ try {
   for (const width of opt.widths) {
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ...(opt.tz ? { timezoneId: opt.tz } : {}) });
     const page = await ctx.newPage();
+    // F14: an uncaught script error while the page loads (a syntax error can leave a list or a form empty).
+    const scriptErrors = [];
+    page.on('pageerror', (e) => scriptErrors.push(String(e.message || e).split('\n')[0].slice(0, 160)));
     if (opt.time) await page.clock.setFixedTime(new Date(opt.time)).catch(() => {});
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
@@ -1380,6 +1430,7 @@ try {
       new Promise((r) => setTimeout(r, 5000)),
     ])).catch(() => {});
     await page.waitForTimeout(400);
+    if (width === opt.widths[0]) for (const m of [...new Set(scriptErrors)]) add('F14', 'script', `Uncaught error while the page loads: ${m}. Fix it; part of the page may not render.`);
     const file = path.join(opt.out, `w${width}.png`);
     if (opt.first) {
       const first = path.join(opt.out, `w${width}-first.png`);
@@ -1543,6 +1594,7 @@ try {
     }).length);
   if (moving) add('F05', '@1280px reduced-motion', `${moving} movement animation(s) still run with prefers-reduced-motion: reduce`);
 
+  if (opt.repeats) repeats = await page.evaluate(repeatsRead);
   if (opt.snapshot || opt.compare) {
     const snap = await page.evaluate(snapshot);
     const before = opt.compare ? JSON.parse(fs.readFileSync(opt.compare, 'utf8')) : null;
@@ -1572,10 +1624,11 @@ try {
 }
 
 const counts = summarize(findings);
-if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(hold ? { hold } : {}), ...(capture ? { capture } : {}) }, null, 2));
+if (opt.json) console.log(JSON.stringify({ tool: 'design-nexus-render', url, widths: opt.widths, shots, counts, findings, look, ...(hold ? { hold } : {}), ...(repeats ? { repeats } : {}), ...(capture ? { capture } : {}) }, null, 2));
 else {
   printFindings(findings, `design-nexus render: ${url}\nscreenshots: ${shots.join(', ')}`);
   if (hold) console.log(`\nprose: ${hold.prose_before} → ${hold.prose_after} characters, ${hold.prose_blocks_changed} block(s) changed or cut, ${hold.prose_blocks_added} added`);
+  if (repeats) console.log(`\nrepeats (3+ times in visible text at 1280): ${repeats.length ? repeats.map((r) => `"${r.text}" ×${r.count}`).join(', ') : 'none'}`);
   if (counts.floor) console.log('\nFloor findings remain: the work is not done.');
 }
 process.exit(counts.floor ? 2 : 0);

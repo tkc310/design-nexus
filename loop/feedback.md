@@ -73,3 +73,21 @@
 - expected: フィールドの改善(name の追加、type=email への変更)は照合を通る。必要な状態は操作なしで見える。
 - which rule should have prevented it: render-check の F11 照合、craft.md *Default render*。
 - applies beyond one project because: 検査や規則が「守るほど悪くなる」形になっていると、どのプロジェクトでも同じ回避が起きる。
+
+### 2026-11-28 見比べ 12 組で利用者が挙げた決め手
+- status: open
+- source: human(H3 の見比べページ)
+- case / project: eval 01〜06(EXP-077・078・081 の変種と対照)
+- what happened: 決め手として繰り返し挙がったのは構造だった。「同じ性質の UI・情報は集めてコンパクトにまとめる」「パターン化で認知負荷を下げる」「イラストより先にラベルで節を表す」「細かい装飾の違いで情報の性質を表すと直感的に分かる」「情報は MECE かつ戦略的な順序で」。逆に「予約の導線がしつこい」「黒ベースは気をつけないと怪しく見える」は減点だった。
+- expected: 同じ種類の情報は同じ部品で示し、装飾は情報の種類の違いを表すときだけ変える。行動の誘いは要所に絞る。
+- which rule should have prevented it: craft.md(まとまりと繰り返し)、surface-marketing.md(CTA の数)。未確認。
+- applies beyond one project because: 認知負荷と情報の並べ方は、ページの種類によらない。
+
+### 2026-11-28 日本語の LP で、言い直しを消すと予約の情報まで減る恐れ
+- status: open
+- source: judge(EXP-081・084 のルーブリックなしの審査、02 が 1–6)
+- case / project: eval 02-lp-ja-craft
+- what happened: *Say it once* のあと、第1画面の日付の行から席の空きが消え、「空き状況は予約ページで確認」になったページが負けた。
+- expected: 行動に要る情報(空き、日付、ボタン)は、言い直しに数えず残す。
+- which rule should have prevented it: surface-marketing.md *Say it once*(選択肢を名指すラベルは残す、の範囲)。
+- applies beyond one project because: 予約や購入の LP では、同じ事実が「決める場所」と「説明する場所」の両方に要る。
