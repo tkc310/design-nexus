@@ -1,7 +1,8 @@
 // usage: node eval/facts.mjs <run>[,<run>…]
 // M-080 (EXP-090): an evaluator-side audit of facts the page adds to the brief. For each case, writes FACTS_PROMPT.md
 // holding the brief and the page's visible text at 1280 (with its controls and alt text), for a fresh-context judge
-// that writes facts.json. Then `node eval/facts.mjs --score <run>[,<run>…]` prints the counts.
+// that writes facts.json. M-080b (2026-11-28, after EXP-090): `product` no longer counts this page's own controls and
+// views. Then `node eval/facts.mjs --score <run>[,<run>…]` prints the counts.
 import fs from 'node:fs'; import path from 'node:path'; import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -61,7 +62,7 @@ Kinds:
 - \`contact\`: phone numbers, emails, social handles.
 - \`policy\`: rules and conditions (first-come, refunds, limits, what's allowed, language support).
 - \`process\`: what happens after an action (an email is sent, a digest on Mondays, a reminder a day before).
-- \`product\`: features, platforms, integrations, specs, guarantees, metrics.
+- \`product\`: claims about the product beyond this screen: platforms it runs on, integrations, guarantees, performance or usage numbers, plans. Not the controls and views of this page (search, filters, sorting, paging, a text-size switch, badges, layout choices): designing those is the task.
 - \`sample-data\`: plausible rows the page needs to show its function (names of people or items, specific dates of upcoming sessions, seat or stock counts in a list, log lines, table rows). List these too, but they are allowed.
 
 Do not list the brief's own facts restated, the page's labels and instructions, or placeholder notes.
