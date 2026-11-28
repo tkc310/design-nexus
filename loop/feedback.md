@@ -82,3 +82,12 @@
 - expected: 同じ種類の情報は同じ部品で示し、装飾は情報の種類の違いを表すときだけ変える。行動の誘いは要所に絞る。
 - which rule should have prevented it: craft.md(まとまりと繰り返し)、surface-marketing.md(CTA の数)。未確認。
 - applies beyond one project because: 認知負荷と情報の並べ方は、ページの種類によらない。
+
+### 2026-11-28 日本語の LP で、言い直しを消すと予約の情報まで減る恐れ
+- status: open
+- source: judge(EXP-081・084 のルーブリックなしの審査、02 が 1–6)
+- case / project: eval 02-lp-ja-craft
+- what happened: *Say it once* のあと、第1画面の日付の行から席の空きが消え、「空き状況は予約ページで確認」になったページが負けた。
+- expected: 行動に要る情報(空き、日付、ボタン)は、言い直しに数えず残す。
+- which rule should have prevented it: surface-marketing.md *Say it once*(選択肢を名指すラベルは残す、の範囲)。
+- applies beyond one project because: 予約や購入の LP では、同じ事実が「決める場所」と「説明する場所」の両方に要る。
